@@ -19,7 +19,8 @@ def run(script):
 
 
 def main():
-    for script in ("build_stages.py", "build_chars.py", "build_music.py", "validate.py"):
+    for script in ("build_stages.py", "build_hd_stage.py", "build_chars.py",
+                   "build_music.py", "validate.py"):
         code = run(script)
         if code != 0:
             print(f"\n{script} failed (exit {code})")
