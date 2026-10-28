@@ -1,0 +1,22 @@
+<#f0f000>:Movement:</>
+Walk, jump, crouch						_DPAD_
+Dash forward / back						_F_F_ / _B_B_
+
+<#f0f000>:Guard:</>
+High guard							_F_+^X
+Low guard							_DF_+^X
+Air guard							_AIR_F_+^X
+
+<#f0f000>:Throws:</>
+Due Process							[_B/_F]_+^Y
+
+<#f0f000>:Special Moves:</>
+Lawyer's Slap							_QDF^P
+Scoop Upper							_DSF^P
+Front Page								_QDB^P
+Cross-Examine								_QDF^K
+Deadline Kick								_F_F^K
+
+<#f0f000>:Super Moves:</>
+Interview with a Demon <#bebebe>(1000)</>				_QDF_QDF^P
+Federal Injunction <#bebebe>(1000)</>				_QDB_QDB^P
