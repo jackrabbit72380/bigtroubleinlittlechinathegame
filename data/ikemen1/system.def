@@ -64,25 +64,25 @@ module =                    ;External Lua code
  ;Music will continue to play between screens if the files names
  ;are the same, and both BGMs are specified to loop.
   ;Music to play at title screen.
-title.bgm = sound/Title.mp3
+title.bgm = 
 title.bgm.volume = 100    ;volume scaling factor in percent. 100 is default
 title.bgm.loop = 1        ;Set to 0 to prevent looping
 title.bgm.loopstart = 
 title.bgm.loopend = 
   ;Music to play at char select screen.
-select.bgm = sound/Select.mp3
+select.bgm = 
 select.bgm.volume = 100
 select.bgm.loop = 1
 select.bgm.loopstart = 
 select.bgm.loopend = 
   ;Music to play at versus screen.
-vs.bgm = sound/Versus.mp3
+vs.bgm = 
 vs.bgm.volume = 100
 vs.bgm.loop = 0
 vs.bgm.loopstart = 
 vs.bgm.loopend = 
   ;Music to play at victory screen.
-victory.bgm = sound/Winner.mp3
+victory.bgm = 
 victory.bgm.volume = 100
 victory.bgm.loop = 0
 victory.bgm.loopstart = 
@@ -100,7 +100,7 @@ replay.bgm.loop = 1
 replay.bgm.loopstart = 
 replay.bgm.loopend = 
   ;Music to play at continue screen.
-continue.bgm = sound/Continue.mp3
+continue.bgm = 
 continue.bgm.volume = 100
 continue.bgm.loop = 0
 continue.bgm.loopstart = 
