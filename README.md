@@ -107,10 +107,19 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
 All four BTILC stages are drawn procedurally (no bitmaps committed as source),
-packed into SFF v2, and named for the film's locations. Each backdrop is 1000px
-wide for a ±260px camera scroll (a 520px-wide arena), so the art covers the whole
-screen at both ends of the pan, and each ships a `9000,1` select-screen preview
-sprite.
+packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
+paints them natively at **1280×960** (`localcoord = 1280, 960`), which is arcade
+resolution times four — the engine no longer stretches a 240-line image across
+a 1080p window, and a 16:9 display shows 1707 units of art instead of running to
+black. Each stage canvas is **4000×960**: the camera travels ±1040 and the art
+paints 960 past each end, with players clamped to ±1620. The ground line is row
+800 (`zoffset = 800`). Each stage ships a `9000,1` select-screen preview sprite.
+
+To put real art in a stage, drop `backdrop.png` (and optionally
+`foreground.png`) into `art_src/<stage id>/` and rebuild —
+`tools/build_hd_stage.py` replaces that stage with your image cover-fitted to the
+same 4000×960 canvas and the same geometry, no code changes. That is the same HD
+stage model a high-resolution commercial fan remake uses, applied to art you own.
 
 ## Music
 
@@ -149,14 +158,24 @@ ships in the downloads.
 ## Rebuilding assets
 
 ```sh
-python3 tools/build_stages.py     # regenerate stage art + SFF + DEF
+python3 tools/build_all.py        # every generator, then the validator
+```
+
+Or one at a time:
+
+```sh
+python3 tools/build_stages.py     # arcade-resolution stages (320-space)
+python3 tools/stages_hd.py        # the same four arenas at 1280x960 (shipped)
+python3 tools/build_hd_stage.py   # replaces any stage that has art_src/ art
 python3 tools/build_chars.py      # regenerate the roster folders
+python3 tools/build_music.py      # menu music paths in data/ikemen1/system.def
 python3 tools/validate.py         # offline checks (no engine needed)
 ```
 
 `tools/build_stages.py` accepts `STAGE_DEBUG=1` to dump each layer as PNG into
-`artifacts/`. Requirements: Python 3.9+ and Pillow (only the tooling needs it;
-the game itself does not).
+`artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to
+save 4:3 and 16:9 crops of each arena for eyeballing. Requirements: Python 3.9+
+and Pillow (only the tooling needs it; the game itself does not).
 
 `tools/validate.py` verifies that every roster entry resolves, every character's
 `.air` frame exists in its `.sff`, every stage layer sprite exists, select-screen
