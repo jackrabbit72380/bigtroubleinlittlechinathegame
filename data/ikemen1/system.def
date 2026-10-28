@@ -64,55 +64,55 @@ module =                    ;External Lua code
  ;Music will continue to play between screens if the files names
  ;are the same, and both BGMs are specified to loop.
   ;Music to play at title screen.
-title.bgm = 
+title.bgm = sound/Title.ogg
 title.bgm.volume = 100    ;volume scaling factor in percent. 100 is default
 title.bgm.loop = 1        ;Set to 0 to prevent looping
 title.bgm.loopstart = 
 title.bgm.loopend = 
   ;Music to play at char select screen.
-select.bgm = 
+select.bgm = sound/Select.ogg
 select.bgm.volume = 100
 select.bgm.loop = 1
 select.bgm.loopstart = 
 select.bgm.loopend = 
   ;Music to play at versus screen.
-vs.bgm = 
+vs.bgm = sound/Versus.ogg
 vs.bgm.volume = 100
 vs.bgm.loop = 0
 vs.bgm.loopstart = 
 vs.bgm.loopend = 
   ;Music to play at victory screen.
-victory.bgm = 
+victory.bgm = sound/Winner.ogg
 victory.bgm.volume = 100
 victory.bgm.loop = 0
 victory.bgm.loopstart = 
 victory.bgm.loopend = 
   ;Music to play at option screen.
-option.bgm = 
+option.bgm = sound/Options.ogg
 option.bgm.volume = 100
 option.bgm.loop = 1
 option.bgm.loopstart = 
 option.bgm.loopend = 
   ;Music to play at replay screen.
-replay.bgm = 
+replay.bgm = sound/Replay.ogg
 replay.bgm.volume = 100
 replay.bgm.loop = 1
 replay.bgm.loopstart = 
 replay.bgm.loopend = 
   ;Music to play at continue screen.
-continue.bgm = 
+continue.bgm = sound/Continue.ogg
 continue.bgm.volume = 100
 continue.bgm.loop = 0
 continue.bgm.loopstart = 
 continue.bgm.loopend = 
   ;Music to play at results screen.
-results.bgm = 
+results.bgm = sound/Results.ogg
 results.bgm.volume = 100
 results.bgm.loop = 1
 results.bgm.loopstart = 
 results.bgm.loopend = 
   ;Music to play at hiscore screen.
-hiscore.bgm = 
+hiscore.bgm = sound/Hiscore.ogg
 hiscore.bgm.volume = 100
 hiscore.bgm.loop = 1
 hiscore.bgm.loopstart = 
