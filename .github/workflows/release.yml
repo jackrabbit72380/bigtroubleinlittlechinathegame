@@ -72,6 +72,10 @@ jobs:
           cp README.md "$out/README.md"
           cp docs/DESIGN.md "$out/docs/DESIGN.md"
           if [ ! -f "$out/LICENCE.txt" ]; then cp dl/LICENCE.txt "$out/LICENCE.txt"; fi
+          # A stamp in the game folder, so a stale extracted copy is obvious.
+          printf 'Big Trouble in Little China: The Game\nversion: %s\ncommit: %s\nbuilt: %s\n' \
+            "${{ github.event.inputs.tag || github.ref_name }}" \
+            "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/VERSION.txt"
 
       - name: Verify the bundle is playable
         run: |
@@ -90,8 +94,24 @@ jobs:
             test -f "$out/stages/$s.def" || { echo "missing stage $s"; exit 1; }
             test -f "$out/stages/$s.sff" || { echo "missing stage art $s"; exit 1; }
           done
+          # Geometry guard: the backdrop has to reach at least one screen past
+          # each camera limit, or players walk into an unpainted edge. A stale
+          # stages/ folder is exactly what this catches.
+          for s in lopans_throne wingkong_exchange chinatown_alley porkchop_express; do
+            scroll=$(grep -oE '^boundleft[[:space:]]*=[[:space:]]*-?[0-9]+' "$out/stages/$s.def" | grep -oE '[0-9]+$')
+            startx=$(grep -m1 -oE '^start[[:space:]]*=[[:space:]]*-?[0-9]+' "$out/stages/$s.def" | grep -oE '[-0-9]+$')
+            test -n "$scroll" && test -n "$startx" || { echo "$s: no [Camera] boundleft or layer start"; exit 1; }
+            art=$(( -startx ))
+            need=$(( scroll + 160 ))
+            if [ "$art" -lt "$need" ]; then
+              echo "$s: art reaches -$art but the camera pans +/-$scroll, so it needs -$need or wider"; exit 1
+            fi
+            echo "stage $s: art half-width $art, camera +/-$scroll, needs $need"
+          done
           test -f "$out/LICENCE.txt" || { echo "engine licence is missing from the bundle"; exit 1; }
           grep -qi 'MIT License' "$out/LICENCE.txt" || { echo "LICENCE.txt is not the engine MIT licence"; exit 1; }
+          test -f "$out/VERSION.txt" || { echo "VERSION.txt is missing from the bundle"; exit 1; }
+          echo "--- build stamp ---"; cat "$out/VERSION.txt"
           # Every BGM the screenpack or a stage names must be inside the zip,
           # otherwise that screen or fight plays in silence.
           refs=$( { grep -hE '^[[:space:]]*[a-z]+\.bgm[[:space:]]*=' "$out"/data/ikemen1/system.def 2>/dev/null || true
@@ -140,6 +160,7 @@ jobs:
           body: |
             Ready-to-run builds. Download the zip for your platform, unzip it, and launch —
             the Ikemen GO engine is already inside, so there is nothing else to install.
+            `VERSION.txt` in the game folder names the build you are running.
 
             | Platform | Launch |
             |---|---|

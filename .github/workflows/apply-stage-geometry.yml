@@ -1,0 +1,79 @@
+# One-shot: widen the stage canvas past the camera limits
+#
+# tools/build_stages.py is too large to edit through the API from this session,
+# so the geometry change is applied here verbatim and committed, then this
+# workflow is deleted. Running it twice is harmless: every replacement asserts
+# that its source text is present first.
+
+name: Apply stage geometry patch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rewrite the canvas constants and their documentation
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import sys
+
+          EDITS = {
+              "tools/build_stages.py": [
+                  ("way, so the backdrop is W = VIEW_W + 2*SCROLL wide: exactly the camera's travel.",
+                   "way, and the backdrop paints COVER px past each camera limit, so the view stays\ncovered no matter how far the camera or the zoom travels."),
+                  ("HALF = VIEW_W // 2                   # 160",
+                   "HALF = VIEW_W // 2                   # 160\nCOVER = 240                          # overpaint past each camera limit"),
+                  ("W = VIEW_W + 2 * SCROLL              # 840: full scrollable backdrop",
+                   "W = 2 * (SCROLL + COVER)             # 1000: full scrollable backdrop"),
+                  ("CX = W // 2                          # 420: horizontal centre of the scene",
+                   "CX = W // 2                          # 500: horizontal centre of the scene"),
+                  ("START_X = -(SCROLL + HALF)           # -420: left edge of the backdrop",
+                   "START_X = -(SCROLL + COVER)          # -500: left edge of the backdrop"),
+              ],
+              "README.md": [
+                  ("Each backdrop is 840px", "Each backdrop is 1000px"),
+              ],
+              "docs/DESIGN.md": [
+                  ("draws each stage with Pillow on an 840\u00d7240 canvas",
+                   "draws each stage with Pillow on a 1000\u00d7240 canvas"),
+                  ("so the canvas is exactly\nthe camera's travel (520 px) plus one screen: the backdrop covers the screen edge\nto edge at *both* ends of the scroll.",
+                   "so the canvas is the camera's travel\n(520 px) plus 240 px of overpaint past each end: the backdrop stays painted well\npast both ends of the scroll, and past any zoom the camera is allowed."),
+              ],
+          }
+
+          failed = False
+          for path, pairs in EDITS.items():
+              p = pathlib.Path(path)
+              src = p.read_text(encoding="utf-8")
+              for old, new in pairs:
+                  if old not in src:
+                      print(f"  MISS {path}: {old[:70]!r}")
+                      failed = True
+                      continue
+                  src = src.replace(old, new, 1)
+                  print(f"  ok   {path}: {new.splitlines()[0][:60]}")
+              p.write_text(src, encoding="utf-8")
+
+          if failed:
+              sys.exit(1)
+          PY
+
+      - name: Commit the patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "already patched"
+            exit 0
+          fi
+          git commit -m "Widen the stage canvas past the camera limits"
+          git push
