@@ -1,0 +1,100 @@
+# One-shot: point every menu slot at its conventional filename
+#
+# tools/build_music.py used to blank a slot when no matching track was committed,
+# which meant a player who dropped their own Title.ogg into sound/ still heard
+# silence. This applies the change verbatim and commits it; the workflow is then
+# deleted. Running it twice is harmless: every replacement asserts its source.
+
+name: Apply music path patch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Name a conventional track in every music slot
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import sys
+
+          EDITS = {
+              "tools/build_music.py": [
+                  ('''A slot with no matching file is left
+blank, which the engine treats as "no music"; volume, loop and loop-point lines
+are never touched.''',
+                   '''A slot with a matching file points at it;
+a slot without one still names the conventional path (sound/Title.ogg and so on),
+so a player who drops their own track into sound/ gets music without editing
+anything. Volume, loop and loop-point lines are never touched.'''),
+                  ('''        path = find_track(stem, files)
+        text, count = set_key(text, key, path or "")
+        if count == 0:
+            print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
+            continue
+        print(f"  {key} = {path or '(none)'}" if path else f"  {key} = (no sound/{stem}.*)")''',
+                   '''        found = find_track(stem, files)
+        path = found or f"sound/{stem}.ogg"
+        text, count = set_key(text, key, path)
+        if count == 0:
+            print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
+            continue
+        print(f"  {key} = {path}" + ("" if found else " (track not present yet)"))'''),
+                  ('''    if not any(find_track(stem, files) for stem, _ in SLOTS):
+        print("note: sound/ has no menu tracks yet, so every menu slot is silent")''',
+                   '''    if not any(find_track(stem, files) for stem, _ in SLOTS):
+        print("note: no menu tracks in sound/ yet; every slot still names its conventional\\n"
+              "      filename, so dropping sound/Title.ogg in is enough to start the music")'''),
+              ],
+              ".github/workflows/release.yml": [
+                  ('''          echo "referenced bgm: ${refs:-(none)}"
+          for ref in $refs; do
+            test -f "$out/$ref" || { echo "bgm referenced but missing from the bundle: $ref"; exit 1; }
+            echo "bgm ok: $ref ($(du -h "$out/$ref" | cut -f1))"
+          done''',
+                   '''          echo "referenced bgm: ${refs:-(none)}"
+          for ref in $refs; do
+            if [ -f "$out/$ref" ]; then
+              echo "bgm ok: $ref ($(du -h "$out/$ref" | cut -f1))"
+            else
+              echo "::warning::bgm named but not in the bundle: $ref - that screen stays silent until a track with that name is added to sound/"
+            fi
+          done'''),
+              ],
+          }
+
+          failed = False
+          for path, pairs in EDITS.items():
+              p = pathlib.Path(path)
+              src = p.read_text(encoding="utf-8")
+              for old, new in pairs:
+                  if old not in src:
+                      print(f"  MISS {path}: {old.splitlines()[0][:60]!r}")
+                      failed = True
+                      continue
+                  src = src.replace(old, new, 1)
+                  print(f"  ok   {path}: {new.splitlines()[0][:60]}")
+              p.write_text(src, encoding="utf-8")
+
+          if failed:
+              sys.exit(1)
+          PY
+
+      - name: Commit the patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "already patched"
+            exit 0
+          fi
+          git commit -m "Name the conventional track in every music slot"
+          git push
