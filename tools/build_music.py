@@ -18,9 +18,10 @@ from the files actually present:
 
 Stems are matched case-insensitively. Only extensions the engine can decode are
 eligible (it picks its decoder from the extension), and when several encodings of
-one track exist the first of EXTS wins. A slot with no matching file is left
-blank, which the engine treats as "no music"; volume, loop and loop-point lines
-are never touched.
+one track exist the first of EXTS wins. A slot with a matching file points at it;
+a slot without one still names the conventional path (sound/Title.ogg and so on),
+so a player who drops their own track into sound/ gets music without editing
+anything. Volume, loop and loop-point lines are never touched.
 
 Stage fight music is separate: it lives in [Music] bgmusic of each stages/*.def.
 
@@ -109,12 +110,13 @@ def main():
 
     text = original
     for stem, key in SLOTS:
-        path = find_track(stem, files)
-        text, count = set_key(text, key, path or "")
+        found = find_track(stem, files)
+        path = found or f"sound/{stem}.ogg"
+        text, count = set_key(text, key, path)
         if count == 0:
             print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
             continue
-        print(f"  {key} = {path or '(none)'}" if path else f"  {key} = (no sound/{stem}.*)")
+        print(f"  {key} = {path}" + ("" if found else " (track not present yet)"))
 
     if text != original:
         with open(MOTIF, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
@@ -124,7 +126,8 @@ def main():
         print(f"{os.path.relpath(MOTIF, ROOT)} already up to date")
 
     if not any(find_track(stem, files) for stem, _ in SLOTS):
-        print("note: sound/ has no menu tracks yet, so every menu slot is silent")
+        print("note: no menu tracks in sound/ yet; every slot still names its conventional\n"
+              "      filename, so dropping sound/Title.ogg in is enough to start the music")
     return 0
 
 
