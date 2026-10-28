@@ -19,8 +19,10 @@ def run(script):
 
 
 def main():
-    for script in ("build_stages.py", "build_hd_stage.py", "build_chars.py",
-                   "build_music.py", "validate.py"):
+    # stages_hd paints the same arenas at 1280x960; build_hd_stage then overlays
+    # any stage that has real art in art_src/, so the order matters.
+    for script in ("build_stages.py", "stages_hd.py", "build_hd_stage.py",
+                   "build_chars.py", "build_music.py", "validate.py"):
         code = run(script)
         if code != 0:
             print(f"\n{script} failed (exit {code})")
