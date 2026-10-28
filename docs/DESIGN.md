@@ -48,16 +48,67 @@ art for one fighter and leave the rest alone:
    the base character. Instead, remove the fighter from `ROSTER` in
    `tools/build_chars.py` once its art is hand-made, or keep a backup.
 
-## Stage art pipeline
+## HD stage pipeline (shipped)
+
+The four arenas are painted twice: `tools/build_stages.py` keeps the arcade
+version (1000×240 art, `localcoord = 320, 240`), and `tools/stages_hd.py` paints
+the shipped one at arcade resolution ×4. Same layout, real pixels at 1080p.
+
+| | arcade (`build_stages.py`) | HD (`stages_hd.py`) |
+|---|---|---|
+| localcoord | 320, 240 | **1280, 960** |
+| canvas | 1000 × 240 | **4000 × 960** |
+| camera travel | ±260 | ±1040 |
+| player bounds | ±405 | ±1620 |
+| ground (`zoffset`) | 200 | 800 |
+| screen at 4:3 | 320 × 240 units | 1280 × 960 units |
+| screen at 16:9 | ~427 × 240 units | **1707 × 960 units** |
+
+**Why `localcoord` height is 960 and not 720.** Ikemen derives the vertical
+framing from it. `src/camera.go` does:
+
+```go
+cutlow = (localcoord[1] - zoffset) - localcoord[1] * 0.05
+```
+
+With a 960-row canvas, `zoffset = 800` and `localcoord[1] = 960`, that resolves to
+`100` — consistent, and the same relationship as the arcade stages
+(`(240-200) - 12 = 28`). With `localcoord = 1280, 720` it resolves *negative*: the
+floor sits past the bottom of the coordinate space and the backdrop is framed
+wrong no matter how the art is drawn. Any future stage must keep
+`localcoord[1] == canvas height`.
+
+The 16:9 row is the useful one: the engine scales a stage by height, so a
+16:9 window shows `960 × 16/9 ≈ 1707` units of width. That is why the canvas is
+4000 wide — it covers the full camera travel and both ends of a wide window.
+
+Precedence, in `tools/build_all.py` order:
+
+1. `build_stages.py` — arcade stages
+2. `stages_hd.py` — overwrites the same four ids at 1280×960
+3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
+
+The HD painters use one `SCALE = 4` and read coordinates through `px(n)`, so
+`px(150)` means "150 arcade pixels", which keeps the HD compositions honest
+against the arcade ones. Post-processing is what stops the art reading as flat
+vector shapes: `texture()` multiplies a soft noise so masonry has surface,
+`bloom()` screens the brightest pixels back over the frame for lantern and neon
+glow, `seam()` adds contact shading where walls meet the floor, then vignette and
+grain.
+
+## Stage art pipeline (arcade fallback)
 
 `tools/build_stages.py` draws each stage with Pillow on a 1000×240 canvas. The
-camera travels ±260 px and one screen is 320 px wide, so the canvas is the camera's travel
-(520 px) plus 240 px of overpaint past each end: the backdrop stays painted well
-past both ends of the scroll, and past any zoom the camera is allowed. Players are clamped to ±405 px via
-`leftbound`/`rightbound`, i.e. 15 px inside the painted edge and matching
-`[Bound] screenleft/screenright`, so a fighter can be pushed against the screen
-border but can never walk off the art. Focal elements are centred on the canvas
-midpoint, which is what the match-start camera shows; the rest is pan scenery.
+camera travels ±260 px and one screen is 320 px wide, so the canvas is the
+camera's travel (520 px) plus 240 px of overpaint past each end — 1.5 screens of
+margin per side. Ikemen normalises the visible width to one screen whatever the
+window aspect (it scales stage art by `gameWidth / localcoord`), and these stages
+also set `zoomout = 1`, but the extra paint means the art cannot run out if that
+ever changes. Players are clamped to ±405 px via `leftbound`/`rightbound`, i.e.
+15 px inside the *camera's* painted edge and matching `[Bound]
+screenleft/screenright`, so a fighter can be pushed against the screen border but
+can never walk off the art. Focal elements are centred on the canvas midpoint,
+which is what the match-start camera shows; the rest is pan scenery.
 
 The geometry lives in one place — the `SCROLL` constant at the top of the
 script. Changing it re-derives the canvas width, every layer's `start =` offset,
