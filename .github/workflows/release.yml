@@ -65,7 +65,7 @@ jobs:
           cp -rT "$root" "$out"
 
           # the game's files win over the engine defaults
-          for d in data chars stages font external; do
+          for d in data chars stages font external sound; do
             if [ -d "$d" ]; then cp -rT "$d" "$out/$d"; fi
           done
           mkdir -p "$out/docs"
@@ -92,6 +92,17 @@ jobs:
           done
           test -f "$out/LICENCE.txt" || { echo "engine licence is missing from the bundle"; exit 1; }
           grep -qi 'MIT License' "$out/LICENCE.txt" || { echo "LICENCE.txt is not the engine MIT licence"; exit 1; }
+          # Every BGM the screenpack or a stage names must be inside the zip,
+          # otherwise that screen or fight plays in silence.
+          refs=$( { grep -hE '^[[:space:]]*[a-z]+\.bgm[[:space:]]*=' "$out"/data/ikemen1/system.def 2>/dev/null || true
+                    grep -hE '^[[:space:]]*bgmusic[[:space:]]*=' "$out"/stages/*.def 2>/dev/null || true
+                  } | sed -E 's/^[^=]*=[[:space:]]*//; s/;.*$//; s/[[:space:]]+$//' \
+                  | grep -v '^$' | sort -u || true )
+          echo "referenced bgm: ${refs:-(none)}"
+          for ref in $refs; do
+            test -f "$out/$ref" || { echo "bgm referenced but missing from the bundle: $ref"; exit 1; }
+            echo "bgm ok: $ref ($(du -h "$out/$ref" | cut -f1))"
+          done
           du -sh "$out"
 
       - name: Pack the zip
