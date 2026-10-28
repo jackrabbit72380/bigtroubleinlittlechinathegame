@@ -1,0 +1,17 @@
+# Ikemen GO runtime output
+save/
+*.log
+Ikemen_GO.log
+config.ini
+
+# Python tooling
+__pycache__/
+*.pyc
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# local export
+*.bundle
+*.tar.gz
