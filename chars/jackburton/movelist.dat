@@ -1,0 +1,22 @@
+<#f0f000>:Movement:</>
+Walk, jump, crouch						_DPAD_
+Dash forward / back						_F_F_ / _B_B_
+
+<#f0f000>:Guard:</>
+High guard							_F_+^X
+Low guard							_DF_+^X
+Air guard							_AIR_F_+^X
+
+<#f0f000>:Throws:</>
+Trucker Toss							[_B/_F]_+^Y
+
+<#f0f000>:Special Moves:</>
+Pork Chop Palm							_QDF^P
+Reflex Upper							_DSF^P
+Six-Dollar Blow								_QDB^P
+Knife Hand								_QDF^K
+Big Boot								_F_F^K
+
+<#f0f000>:Super Moves:</>
+It's All in the Reflexes <#bebebe>(1000)</>				_QDF_QDF^P
+Pork Chop Express <#bebebe>(1000)</>				_QDB_QDB^P
