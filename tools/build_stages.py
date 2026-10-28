@@ -1,8 +1,10 @@
 """Build the Big Trouble in Little China stages (art + SFF v2 + DEF).
 
-Canvas geometry: the stage scrolls 150px each way, so the backdrop is 620 wide.
-Only the centre 320x240 window (VIEW) is ever on screen at the match start, so
-every focal element is placed inside it.
+Canvas geometry: one screen is VIEW_W x H and the camera scrolls SCROLL px each
+way, so the backdrop is W = VIEW_W + 2*SCROLL wide: exactly the camera's travel.
+Players are clamped to PLAYER_BOUND px from centre, which is SCREEN_MARGIN inside
+the painted edge, so they can be pushed to the screen border but can never step
+off the artwork. Focal elements are centred on CX so they read at match start.
 
 Run:  python3 tools/build_stages.py            (set STAGE_DEBUG=1 to dump layers)
 Outputs stages/<id>.sff, stages/<id>.def and artifacts/<id>_preview.png
@@ -23,10 +25,17 @@ import art
 import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-W, H = 620, 240            # full scrollable backdrop
-FLOOR_Y = 200              # zoffset
-VIEW = (150, 0, 470, H)    # on-screen window at camera centre
-CX = 310                   # horizontal centre of the scene
+
+VIEW_W, H = 320, 240                 # one screen, in stage pixels
+SCROLL = 260                         # camera travel each way -> 520px-wide arena
+HALF = VIEW_W // 2                   # 160
+W = VIEW_W + 2 * SCROLL              # 840: full scrollable backdrop
+CX = W // 2                          # 420: horizontal centre of the scene
+START_X = -(SCROLL + HALF)           # -420: left edge of the backdrop
+FLOOR_Y = 200                        # zoffset
+VIEW = (CX - HALF, 0, CX + HALF, H)  # on-screen window at camera centre
+SCREEN_MARGIN = 15                   # matches [Bound] screenleft/screenright
+PLAYER_BOUND = SCROLL + HALF - SCREEN_MARGIN   # 405: still on painted floor
 
 
 # ---------------------------------------------------------------- Lo Pan's Throne
@@ -176,8 +185,8 @@ def stage_throne():
     fg = Image.alpha_composite(fg, art.glow(rim, 8, 1.6))
     fg = Image.alpha_composite(fg, rim)
     return [
-        ("bg", 0, 0, base, (-150, 0), (1, 1), 0),
-        ("fg", 3, 0, fg, (-150, 0), (1, 1), 1),
+        ("bg", 0, 0, base, (START_X, 0), (1, 1), 0),
+        ("fg", 3, 0, fg, (START_X, 0), (1, 1), 1),
     ]
 
 
@@ -286,8 +295,8 @@ def stage_wingkong():
     for x in range(0, W, 78):
         fd.rectangle([x + 10, 224, x + 30, 234], fill=(9, 9, 12))
     return [
-        ("bg", 0, 0, base, (-150, 0), (1, 1), 0),
-        ("fg", 3, 0, fg, (-150, 0), (1, 1), 1),
+        ("bg", 0, 0, base, (START_X, 0), (1, 1), 0),
+        ("fg", 3, 0, fg, (START_X, 0), (1, 1), 1),
     ]
 
 
@@ -393,8 +402,8 @@ def stage_alley():
     fd.rectangle([CX + 76, 200, CX + 116, 236], fill=(10, 10, 13))
     fd.ellipse([CX + 76, 194, CX + 116, 208], fill=(12, 12, 15))
     return [
-        ("bg", 0, 0, base, (-150, 0), (1, 1), 0),
-        ("fg", 3, 0, fg, (-150, 0), (1, 1), 1),
+        ("bg", 0, 0, base, (START_X, 0), (1, 1), 0),
+        ("fg", 3, 0, fg, (START_X, 0), (1, 1), 1),
     ]
 
 
@@ -427,11 +436,15 @@ def stage_highway():
 
     # mountain ridges
     d.polygon([(0, 138), (74, 96), (150, 134), (232, 100), (310, 136),
-               (396, 98), (486, 134), (566, 100), (620, 128), (620, 200), (0, 200)],
+               (396, 98), (486, 134), (566, 100), (W, 128), (W, 200), (0, 200)],
               fill=(36, 40, 62))
     d.polygon([(0, 166), (96, 132), (188, 164), (292, 136), (382, 166),
-               (470, 138), (566, 168), (620, 150), (620, 200), (0, 200)],
+               (470, 138), (566, 168), (W, 150), (W, 200), (0, 200)],
               fill=(24, 26, 42))
+
+    # night verge under the ridges: the road is narrower than the wide backdrop,
+    # so the shoulders either side of it need paint instead of empty canvas.
+    d.rectangle([0, 190, W, H], fill=(20, 22, 30))
 
     # road with perspective, vanishing point at the centre
     d.polygon([(CX - 16, 152), (CX + 16, 152), (CX + 168, H), (CX - 168, H)],
@@ -479,8 +492,8 @@ def stage_highway():
     for x in range(16, W, 112):
         fd.rectangle([x, 212, x + 5, 236], fill=(9, 9, 12))
     return [
-        ("bg", 0, 0, base, (-150, 0), (1, 1), 0),
-        ("fg", 3, 0, fg, (-150, 0), (1, 1), 1),
+        ("bg", 0, 0, base, (START_X, 0), (1, 1), 0),
+        ("fg", 3, 0, fg, (START_X, 0), (1, 1), 1),
     ]
 
 
@@ -500,8 +513,8 @@ author = "Big Trouble in Little China: The Game"
 [Camera]
 startx = 0
 starty = 0
-boundleft = -150
-boundright = 150
+boundleft = -{scroll}
+boundright = {scroll}
 boundhigh = -25
 boundlow = 0
 verticalfollow = .2
@@ -521,8 +534,8 @@ p1facing = 1
 p2startx = 70
 p2starty = 0
 p2facing = -1
-leftbound = -1000
-rightbound = 1000
+leftbound = -{playerbound}
+rightbound = {playerbound}
 
 [Bound]
 screenleft = 15
@@ -592,7 +605,7 @@ def build(sid, spec):
     # select-screen preview: the centre of the composed backdrop
     comp = Image.new("RGBA", (W, H), (0, 0, 0, 255))
     for key, group, number, img, start, delta, layerno in layers:
-        comp.alpha_composite(img, (int(start[0] + 150), int(start[1])))
+        comp.alpha_composite(img, (int(start[0] - START_X), int(start[1])))
         if os.environ.get("STAGE_DEBUG"):
             img.save(os.path.join(ROOT, "artifacts", f"{sid}_layer_{key}.png"))
     preview = comp.crop(VIEW).resize((320, 240), Image.LANCZOS)
@@ -602,7 +615,8 @@ def build(sid, spec):
     with open(os.path.join(ROOT, "stages", f"{sid}.sff"), "wb") as f:
         f.write(sff_data)
 
-    out = DEF_HEAD.format(name=spec["name"], display=spec["display"], sff=f"{sid}.sff")
+    out = DEF_HEAD.format(name=spec["name"], display=spec["display"], sff=f"{sid}.sff",
+                          scroll=SCROLL, playerbound=PLAYER_BOUND)
     for key, group, number, img, start, delta, layerno in layers:
         out += DEF_BG.format(key=key, group=group, number=number,
                              layerno=layerno, sx=start[0], sy=start[1],
