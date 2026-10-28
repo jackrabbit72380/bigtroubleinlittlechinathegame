@@ -107,7 +107,7 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
 All four BTILC stages are drawn procedurally (no bitmaps committed as source),
-packed into SFF v2, and named for the film's locations. Each backdrop is 840px
+packed into SFF v2, and named for the film's locations. Each backdrop is 1000px
 wide for a ±260px camera scroll (a 520px-wide arena), so the art covers the whole
 screen at both ends of the pan, and each ships a `9000,1` select-screen preview
 sprite.

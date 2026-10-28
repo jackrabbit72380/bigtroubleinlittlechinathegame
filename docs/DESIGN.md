@@ -50,10 +50,10 @@ art for one fighter and leave the rest alone:
 
 ## Stage art pipeline
 
-`tools/build_stages.py` draws each stage with Pillow on an 840×240 canvas. The
-camera travels ±260 px and one screen is 320 px wide, so the canvas is exactly
-the camera's travel (520 px) plus one screen: the backdrop covers the screen edge
-to edge at *both* ends of the scroll. Players are clamped to ±405 px via
+`tools/build_stages.py` draws each stage with Pillow on a 1000×240 canvas. The
+camera travels ±260 px and one screen is 320 px wide, so the canvas is the camera's travel
+(520 px) plus 240 px of overpaint past each end: the backdrop stays painted well
+past both ends of the scroll, and past any zoom the camera is allowed. Players are clamped to ±405 px via
 `leftbound`/`rightbound`, i.e. 15 px inside the painted edge and matching
 `[Bound] screenleft/screenright`, so a fighter can be pushed against the screen
 border but can never walk off the art. Focal elements are centred on the canvas

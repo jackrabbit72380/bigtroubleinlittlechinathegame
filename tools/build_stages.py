@@ -1,7 +1,8 @@
 """Build the Big Trouble in Little China stages (art + SFF v2 + DEF).
 
 Canvas geometry: one screen is VIEW_W x H and the camera scrolls SCROLL px each
-way, so the backdrop is W = VIEW_W + 2*SCROLL wide: exactly the camera's travel.
+way, and the backdrop paints COVER px past each camera limit, so the view stays
+covered no matter how far the camera or the zoom travels.
 Players are clamped to PLAYER_BOUND px from centre, which is SCREEN_MARGIN inside
 the painted edge, so they can be pushed to the screen border but can never step
 off the artwork. Focal elements are centred on CX so they read at match start.
@@ -29,9 +30,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VIEW_W, H = 320, 240                 # one screen, in stage pixels
 SCROLL = 260                         # camera travel each way -> 520px-wide arena
 HALF = VIEW_W // 2                   # 160
-W = VIEW_W + 2 * SCROLL              # 840: full scrollable backdrop
-CX = W // 2                          # 420: horizontal centre of the scene
-START_X = -(SCROLL + HALF)           # -420: left edge of the backdrop
+COVER = 240                          # overpaint past each camera limit
+W = 2 * (SCROLL + COVER)             # 1000: full scrollable backdrop
+CX = W // 2                          # 500: horizontal centre of the scene
+START_X = -(SCROLL + COVER)          # -500: left edge of the backdrop
 FLOOR_Y = 200                        # zoffset
 VIEW = (CX - HALF, 0, CX + HALF, H)  # on-screen window at camera centre
 SCREEN_MARGIN = 15                   # matches [Bound] screenleft/screenright
