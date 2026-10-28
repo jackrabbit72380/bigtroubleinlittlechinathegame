@@ -37,7 +37,7 @@ art for one fighter and leave the rest alone:
    |---|---|---|
    | 0 | 0,0 … | stance |
    | 20 | 20,x | walk |
-   | 40 / 41 | 40,x / 41,x | jump up / forward |
+   | 40 / 41 | 40,x / 41,x | jump up / jump forward |
    | 100–105 | 100,x | light attacks |
    | 200–205 | 200,x | heavy attacks |
    | 800–820 | 800,x | throw |
@@ -50,11 +50,19 @@ art for one fighter and leave the rest alone:
 
 ## Stage art pipeline
 
-`tools/build_stages.py` draws each stage with Pillow on a 620×240 canvas. The
-camera can travel ±150 px, and only the central 320×240 window is guaranteed to
-be on screen at match start, so every focal element is placed inside that
-window; the outer 150 px on each side is scenery that only appears when the
-camera pans.
+`tools/build_stages.py` draws each stage with Pillow on an 840×240 canvas. The
+camera travels ±260 px and one screen is 320 px wide, so the canvas is exactly
+the camera's travel (520 px) plus one screen: the backdrop covers the screen edge
+to edge at *both* ends of the scroll. Players are clamped to ±405 px via
+`leftbound`/`rightbound`, i.e. 15 px inside the painted edge and matching
+`[Bound] screenleft/screenright`, so a fighter can be pushed against the screen
+border but can never walk off the art. Focal elements are centred on the canvas
+midpoint, which is what the match-start camera shows; the rest is pan scenery.
+
+The geometry lives in one place — the `SCROLL` constant at the top of the
+script. Changing it re-derives the canvas width, every layer's `start =` offset,
+`boundleft`/`boundright` and the player bounds, so widening the arena is a
+one-line change.
 
 Layers are written as SFF v2 PNG32 sprites:
 
