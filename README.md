@@ -6,14 +6,40 @@ the open-source engine that runs M.U.G.E.N resources. Inspired by John Carpenter
 and an emperor who has been waiting two thousand years for a wedding.
 
 This repository is the **game** (roster, stages, screenpack config, tooling). The
-engine binary is not bundled — see [Quick start](#quick-start).
+engine binary is not committed here — the
+[releases](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
+ship it bundled, so players just download and launch.
 
 ![Lo Pan's Throne](artifacts/lopans_throne_preview.png)
 ![Wing Kong Exchange](artifacts/wingkong_exchange_preview.png)
 ![Chinatown Back Alley](artifacts/chinatown_alley_preview.png)
 ![Pork Chop Express](artifacts/porkchop_express_preview.png)
 
-## Quick start
+## Download and play
+
+Nothing to install — every release zip already contains the Ikemen GO engine with
+this game's fighters, stages and screenpack in place.
+
+| Platform | File | Launch |
+|---|---|---|
+| Windows | `BigTroubleInLittleChina-Windows.zip` | unzip, double-click `Ikemen_GO.exe` |
+| Linux | `BigTroubleInLittleChina-Linux.zip` | unzip, `chmod +x Ikemen_GO_Linux && ./Ikemen_GO_Linux` |
+| macOS | `BigTroubleInLittleChina-macOS.zip` | unzip, right-click the app → **Open** the first time |
+
+Grab them from the
+[latest release](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest).
+Releases are produced by the `Build release bundles` workflow, which downloads the
+official engine build for each platform, copies this game's files over it, checks
+that the executable, roster, stages and engine licence are all present, then
+publishes the zips.
+
+If a bundle trips SmartScreen (Windows) or Gatekeeper (macOS), that is because the
+downloads are unsigned: choose *More info → Run anyway*, or right-click → *Open*.
+
+## Run from source
+
+The rest of this README is for editing the game. If you only want to play, use a
+release above.
 
 1. Download an Ikemen GO build (Windows/Linux/macOS) from the
    [releases page](https://github.com/ikemen-engine/Ikemen-GO/releases) — the
@@ -131,8 +157,10 @@ actor likenesses. Character names and move names are used as fan fiction.
 
 ## Legal
 
-* Ikemen GO is licensed separately — see its
+* Ikemen GO is licensed separately under the MIT licence — see its
   [LICENCE](https://github.com/ikemen-engine/Ikemen-GO/blob/develop/LICENCE.txt).
+  The release bundles redistribute an unmodified engine build, and keep the
+  engine's `LICENCE.txt` inside every zip as the licence requires.
 * The IKEMEN1 screenpack in `data/ikemen1/` is by Ohmga Shironeko, redistributed
   under the terms of the Ikemen GO release it ships with.
 * Kung Fu Man sprites are Elecbyte's sample assets.

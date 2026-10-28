@@ -1,0 +1,153 @@
+# Build downloadable game bundles
+#
+# Each release asset is the official Ikemen GO build for one platform with this
+# repository's game files copied over it, so players only download and unzip —
+# no separate engine download and no setup.
+#
+# Ikemen GO is MIT licensed; these bundles redistribute an unmodified engine
+# build and keep its LICENCE.txt inside the archive.
+
+name: Build release bundles
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to create or update"
+        required: true
+        default: "v0.1.0"
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: ${{ matrix.platform }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Windows
+            asset: Ikemen_GO-dev-windows.zip
+            folder: BigTroubleInLittleChina-Windows
+          - platform: Linux
+            asset: Ikemen_GO-dev-linux.zip
+            folder: BigTroubleInLittleChina-Linux
+          - platform: macOS
+            asset: Ikemen_GO-dev-macos.zip
+            folder: BigTroubleInLittleChina-macOS
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch the engine build
+        run: |
+          set -euo pipefail
+          mkdir -p dl stage
+          curl -fL --retry 3 -o dl/engine.zip \
+            "https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/${{ matrix.asset }}"
+          unzip -q dl/engine.zip -d stage
+          # Some platform archives ship without the engine licence; ship it ourselves so
+          # redistribution always carries the MIT notice.
+          curl -fL --retry 3 -o dl/LICENCE.txt \
+            https://raw.githubusercontent.com/ikemen-engine/Ikemen-GO/develop/LICENCE.txt
+
+      - name: Assemble ${{ matrix.platform }} bundle
+        run: |
+          set -euo pipefail
+          root=$(dirname "$(find stage -maxdepth 3 -type d -name data | head -1)")
+          test -d "$root" || { echo "no engine data/ in the archive"; find stage -maxdepth 2; exit 1; }
+          out="out/${{ matrix.folder }}"
+          mkdir -p "$out"
+          cp -rT "$root" "$out"
+
+          # the game's files win over the engine defaults
+          for d in data chars stages font external; do
+            if [ -d "$d" ]; then cp -rT "$d" "$out/$d"; fi
+          done
+          mkdir -p "$out/docs"
+          cp README.md "$out/README.md"
+          cp docs/DESIGN.md "$out/docs/DESIGN.md"
+          if [ ! -f "$out/LICENCE.txt" ]; then cp dl/LICENCE.txt "$out/LICENCE.txt"; fi
+
+      - name: Verify the bundle is playable
+        run: |
+          set -euo pipefail
+          out="out/${{ matrix.folder }}"
+          exe=$(find "$out" -maxdepth 4 -iname 'Ikemen_GO*' -type f | head -1)
+          echo "engine: ${exe:-MISSING}"
+          test -n "$exe" || { echo "engine executable missing"; exit 1; }
+          grep -q '^jackburton' "$out/data/select.def" \
+            || { echo "the roster in data/select.def is not ours"; exit 1; }
+          for id in jackburton wangchi gracielaw eggshen rain lightning thunder lopan; do
+            test -f "$out/chars/$id/$id.sff" || { echo "missing fighter $id"; exit 1; }
+            test -f "$out/chars/$id/$id.cns" || { echo "missing $id.cns"; exit 1; }
+          done
+          for s in lopans_throne wingkong_exchange chinatown_alley porkchop_express; do
+            test -f "$out/stages/$s.def" || { echo "missing stage $s"; exit 1; }
+            test -f "$out/stages/$s.sff" || { echo "missing stage art $s"; exit 1; }
+          done
+          test -f "$out/LICENCE.txt" || { echo "engine licence is missing from the bundle"; exit 1; }
+          grep -qi 'MIT License' "$out/LICENCE.txt" || { echo "LICENCE.txt is not the engine MIT licence"; exit 1; }
+          du -sh "$out"
+
+      - name: Pack the zip
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cd out
+          zip -qr "../dist/${{ matrix.folder }}.zip" "${{ matrix.folder }}"
+          cd ..
+          ls -lh dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: List bundled zips
+        run: ls -lh dist
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Big Trouble in Little China ${{ github.event.inputs.tag || github.ref_name }}
+          body: |
+            Ready-to-run builds. Download the zip for your platform, unzip it, and launch —
+            the Ikemen GO engine is already inside, so there is nothing else to install.
+
+            | Platform | Launch |
+            |---|---|
+            | Windows | double-click `Ikemen_GO.exe` |
+            | Linux | `chmod +x Ikemen_GO_Linux && ./Ikemen_GO_Linux` |
+            | macOS | right-click the app → **Open** the first time (the build is unsigned) |
+
+            **Controls:** arrows to move, `Z`/`X`/`C` to attack, `A` light punch, `S` medium,
+            `D` heavy, `Enter` to start, `Esc` to pause. Full move list per fighter is on the
+            in-game pause menu.
+
+            Roster: Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning, Thunder, Lo Pan.
+            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express.
+
+            Fighter sprites are recoloured Kung Fu Man placeholders (see `docs/DESIGN.md`);
+            the four stages are original to this project. Fan project, not affiliated with the
+            film's rights holders. The Ikemen GO engine is MIT licensed and redistributed
+            unmodified — its `LICENCE.txt` is inside each zip.
+          files: dist/*.zip
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
