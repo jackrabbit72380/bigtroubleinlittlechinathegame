@@ -110,6 +110,10 @@ def scale_weapon_positions(path, k):
                 line = (f"{m.group(1)}{m.group(2)} = "
                         f"{round(float(m.group(3)) * k)}, "
                         f"{round(float(m.group(4)) * k)}")
+            am = re.match(r"^(\s*)anim\s*=\s*(1210|1400)\s*$", line)
+            if am:
+                line = (f"{am.group(1)}anim = "
+                        f"{1500 if am.group(2) == '1210' else 1600}")
         out.append(line)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
@@ -185,6 +189,19 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         ax, ay = sp["axis"]
         sprites.append({"group": group, "number": num, "image": img,
                         "axis": (round(ax * clsn_k), round(ay * clsn_k))})
+
+    # The weapon states ship animating KFM's punch and kick, so on the rig Jack
+    # punched while the bullets flew. They get their own actions and poses.
+    for action, pose in ((1500, "gun_aim"), (1600, "knife_throw")):
+        img = char_rig.render(rig, char_rig.POSES[pose])
+        img = img.resize((max(1, round(img.width * k)),
+                          max(1, round(img.height * k))), Image.LANCZOS)
+        axis = (round(rig.axis[0] * k), round(rig.axis[1] * k))
+        sprites.append({"group": action, "number": 0, "image": img, "axis": axis})
+        air_out.append(
+            f"; weapon pose ({pose}) for state {action}\n[Begin Action {action}]")
+        air_out.append(f"{action},0, 0,0, -1")
+        air_out.append("")
 
     palette = bytearray()
     for i in range(256):
