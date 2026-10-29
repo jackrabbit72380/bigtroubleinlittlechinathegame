@@ -86,7 +86,8 @@ Precedence, in `tools/build_all.py` order:
 
 1. `build_stages.py` — arcade stages
 2. `stages_hd.py` — overwrites the same four ids at 1280×960
-3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
+3. `stage_throne.py` — repaints Lo Pan's Throne from the concept art
+4. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
 
 The HD painters use one `SCALE = 4` and read coordinates through `px(n)`, so
 `px(150)` means "150 arcade pixels", which keeps the HD compositions honest
@@ -95,6 +96,32 @@ vector shapes: `texture()` multiplies a soft noise so masonry has surface,
 `bloom()` screens the brightest pixels back over the frame for lantern and neon
 glow, `seam()` adds contact shading where walls meet the floor, then vignette and
 grain.
+
+### Lo Pan's Throne: the arena from the concept art
+
+`tools/stage_throne.py` paints the arena to follow the throne-room art rather
+than a generic hall: a ring-shaped mezzanine whose arched niches each hold a red
+neon ideogram, with `ring_y()` giving the balcony its outward dip and
+`ring_line()` tracing a cyan and red neon strip along that curve; a colossal
+skull over the gate; a stone staircase in perspective with guardian lions and
+fire bowls at its foot; and a plaza laid out in one-point perspective with an
+engraved inlay ring.
+
+The props are painted as a colour layer plus a height map, then shaded by
+`hillshade()`, so sockets, nasal cavity, fangs and mane read as carved rather
+than drawn. Two details in that pipeline are easy to get wrong:
+
+* `ImageChops.subtract` clamps at zero, so each axis needs both a "falling
+  towards the light" and a "falling away" term to keep the gradient signed. The
+  multiplier itself has to sit near white (208) because it scales the albedo —
+  a mid-grey bias turns every sculpted prop into a silhouette.
+* `art.vignette()` must scale PIL's radial gradient directly. It used to invert
+  the mask, which darkened the *centre* of every stage and left the corners
+  clear; that is why all four arenas read flat and grey.
+
+The skull is composited after `finish()`. It is lit by its own neon, and the
+frame's edge darkening turned it into a glass outline when it went through the
+same pass as the wall behind it.
 
 ## Stage art pipeline (arcade fallback)
 

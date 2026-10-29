@@ -119,9 +119,15 @@ def outline(mask, color, thickness=2, expand=0):
 
 
 def vignette(img, strength=0.75, color=(0, 0, 0)):
+    """Darken towards the frame edges.
+
+    Image.radial_gradient is 0 at the centre and 255 at the edges, so the mask
+    must scale it directly: inverting it darkened the middle of every stage and
+    left the corners untouched.
+    """
     w, h = img.size
     mask = Image.radial_gradient("L").resize((w, h), Image.BICUBIC)
-    mask = mask.point(lambda v: int((255 - v) * strength))
+    mask = mask.point(lambda v: int(v * strength))
     dark = Image.new("RGBA", (w, h), color + (255,))
     dark.putalpha(mask)
     return Image.alpha_composite(img, dark)
