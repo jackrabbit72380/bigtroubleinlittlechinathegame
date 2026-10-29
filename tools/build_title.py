@@ -27,7 +27,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 
 # The four logo slots are all this size with the axis at their centre; keeping
-# it means nothing in system.def has to change.
+# it means nothing in system.def has to change about the sprite itself.
 CANVAS = (699, 257)
 
 RED = (178, 32, 28)
@@ -119,6 +119,44 @@ def flat_line(text, size, cx, cy, seed=0, jitter=0.0, tracking=1.0, weight=0.06)
     return mask
 
 
+def wobble(mask, amp=1.6, seed=7):
+    """Displace the letterform edges through a smooth noise field.
+
+    Painted letters never have a mathematically clean edge. A few pixels of
+    low-frequency drift is what separates brush from type; without it the caps
+    read as set text no matter how heavy the stroke is.
+    """
+    rnd = random.Random(seed)
+    W, H = CANVAS
+    small = (W // 14 + 2, H // 14 + 2)
+    seed_img = Image.new("L", small)
+    seed_img.putdata([rnd.randrange(256) for _ in range(small[0] * small[1])])
+
+    fields = []
+    for phase in (0, 1):
+        f = Image.new("L", small)
+        f.paste(seed_img, (0, 0))
+        if phase:
+            f = f.transpose(Image.FLIP_LEFT_RIGHT)
+        f = f.resize(CANVAS, Image.BICUBIC).filter(ImageFilter.GaussianBlur(2.5))
+        fields.append(list(f.getdata()))
+
+    src = list(mask.getdata())
+    out = [0] * (W * H)
+    fx, fy = fields
+    for y in range(H):
+        row = y * W
+        dy = int((fy[row] - 128) / 128.0 * amp)
+        for x in range(W):
+            sx = x + int((fx[row + x] - 128) / 128.0 * amp)
+            sy = y + dy
+            if 0 <= sx < W and 0 <= sy < H:
+                out[row + x] = src[sy * W + sx]
+    res = Image.new("L", CANVAS, 0)
+    res.putdata(out)
+    return res
+
+
 def brush(mask, seed=11):
     """Soften the type into paint: blended edges plus a little spatter.
 
@@ -132,7 +170,7 @@ def brush(mask, seed=11):
     layer = Image.new("L", CANVAS, 0)
     d = ImageDraw.Draw(layer)
     edge = ImageChops.subtract(mask.filter(ImageFilter.MaxFilter(9)), mask)
-    for _ in range(180):
+    for _ in range(120):
         x, y = rnd.randrange(CANVAS[0]), rnd.randrange(CANVAS[1])
         if edge.getpixel((x, y)) > 80:
             r = rnd.choice((1, 1, 2))
@@ -178,15 +216,54 @@ def paint(mask):
 
 
 def wordmark():
-    """The finished logo on the 699x257 screenpack canvas."""
+    """The finished logo on the 699x257 screenpack canvas.
+
+    The proportions come from the reference art: the caps nearly span the
+    canvas and the small line sits inside the arc, clear of the outer letters.
+    These numbers are not arbitrary - they were found by searching the spacing
+    until the two lines cannot touch, because a tighter arc or a wider small
+    line drops the outer caps straight onto it.
+    """
     W, _H = CANVAS
     cx = W / 2.0
-    big = arc_line("BIG TROUBLE", 84, cx, 26, 500, seed=4, jitter=1.0,
-                   tracking=1.0, weight=0.045)
-    small = flat_line("in Little China", 40, cx, 206, seed=9, jitter=0.5,
-                      tracking=1.02, weight=0.03)
-    mask = ImageChops.lighter(brush(big, seed=4), brush(small, seed=9))
+    # radius 1300 bows the ends about 31px below the apex, which is the arc in
+    # the reference
+    big = arc_line("BIG TROUBLE", 90, cx, 16, 1300, seed=4, jitter=1.0,
+                   tracking=1.02, weight=0.05)
+    small = flat_line("in Little China", 60, cx, 120, seed=9, jitter=0.6,
+                      tracking=1.0, weight=0.032)
+    mask = wobble(ImageChops.lighter(big, small))
+    mask = ImageChops.lighter(brush(mask, seed=4), brush(mask, seed=9))
     return paint(mask)
+
+
+def place_def(start=(0, 132)):
+    """Move the four logo layers to where the reference art has the wordmark.
+
+    system.def ships the engine's own logo at start = -250,155, which put this
+    wordmark down and left of centre. The engine data is restored on every
+    build, so the positions are re-applied here instead of being edited by hand.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    out, section, pending = [], "", False
+    for line in lines:
+        s = line.strip()
+        if s.startswith("["):
+            section, pending = s.lower(), False
+        elif section.startswith("[titlebg title logo"):
+            if s.replace(" ", "") in ("spriteno=0,0", "spriteno=0,1",
+                                       "spriteno=0,2", "spriteno=0,3"):
+                pending = True
+            elif pending and s.replace(" ", "").startswith("start="):
+                line = f"start = {start[0]},{start[1]}"
+                pending = False
+        out.append(line)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
 
 
 def build():
@@ -204,9 +281,9 @@ def build():
     blank = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
 
     # 0,0 + 0,2 were a bright layer and its additive shadow; 0,1 + 0,3 were a
-    # second element the engine drew bottom-right. The wordmark takes the bright
-    # pair, a soft glow takes the shadows, and the second element is cleared so
-    # no engine lettering survives on the screen.
+    # second element the engine drew on top of the first. The wordmark takes the
+    # bright pair, a soft glow takes the shadows, and the second element is
+    # cleared so no engine lettering survives on the screen.
     replacement = {(0, 0): logo, (0, 2): glow, (0, 1): blank, (0, 3): blank}
 
     out = []
@@ -230,6 +307,8 @@ def build():
     with open(SYSTEM_SFF + ".tmp", "wb") as f:
         f.write(blob)
     os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
+
+    place_def()
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     logo.save(os.path.join(ROOT, "artifacts", "title_logo.png"))
