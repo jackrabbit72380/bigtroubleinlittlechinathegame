@@ -20,6 +20,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import art
+import jackburton
 import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -29,7 +30,8 @@ BASE = os.path.join(ROOT, "chars", "kfm")
 ROSTER = [
     dict(
         id="jackburton", name="Jack Burton", display="Jack Burton",
-        pal=(205, 0.85, 1.12), life=1050, attack=105, defence=100,
+        pal=(205, 0.85, 1.12), life=1050, attack=108, defence=100,
+        extra=jackburton,
         xscale=1.0, yscale=1.0, order=0,
         blurb="Truck driver. Reluctant hero. Owns one very good knife.",
         moves=dict(throw="Trucker Toss", palm="Pork Chop Palm", upper="Reflex Upper",
@@ -220,7 +222,7 @@ Air guard\t\t\t\t\t\t\t_AIR_F_+^X
 {blow}\t\t\t\t\t\t\t\t_QDB^P
 {zankou}\t\t\t\t\t\t\t\t_QDF^K
 {knee}\t\t\t\t\t\t\t\t_F_F^K
-
+{extra_specials}
 <#f0f000>:Super Moves:</>
 {super1} <#bebebe>(1000)</>\t\t\t\t_QDF_QDF^P
 {super2} <#bebebe>(1000)</>\t\t\t\t_QDB_QDB^P
@@ -309,16 +311,54 @@ def edit_cns(text, spec):
     return "".join(out)
 
 
+def override_sprites(cid, sprites):
+    """Replace individual sprite slots from art_src/chars/<id>/<group>_<number>.png.
+
+    A dropped-in frame keeps the base sprite's axis, so a painted pose lands in
+    the same place on screen as the frame it replaces. Anything not supplied
+    keeps the generated/base art.
+    """
+    folder = os.path.join(ROOT, "art_src", "chars", cid)
+    if not os.path.isdir(folder):
+        return 0
+    index = {(sp["group"], sp["number"]): i for i, sp in enumerate(sprites)}
+    swapped = 0
+    for name in sorted(os.listdir(folder)):
+        m = re.match(r"^(-?\d+)_(\d+)\.png$", name)
+        if not m:
+            continue
+        key = (int(m.group(1)), int(m.group(2)))
+        if key not in index:
+            continue
+        img = Image.open(os.path.join(folder, name)).convert("RGBA")
+        base = sprites[index[key]]
+        sprites[index[key]] = {"group": key[0], "number": key[1],
+                               "image": img, "axis": base["axis"]}
+        swapped += 1
+    if swapped:
+        print(f"  {cid}: {swapped} painted sprite(s) from art_src/chars/{cid}/")
+    return swapped
+
+
 def build(spec, base_sprites, base_palettes):
     cid = spec["id"]
     dest = os.path.join(ROOT, "chars", cid)
     os.makedirs(dest, exist_ok=True)
 
-    for src, dst in (("kfm.snd", f"{cid}.snd"), ("kfm.air", f"{cid}.air")):
-        shutil.copyfile(os.path.join(BASE, src), os.path.join(dest, dst))
+    extra = spec.get("extra")
+    shutil.copyfile(os.path.join(BASE, "kfm.snd"), os.path.join(dest, f"{cid}.snd"))
+
+    air = open(os.path.join(BASE, "kfm.air"), encoding="utf-8-sig").read()
+    if extra:
+        air += extra.AIR
+    with open(os.path.join(dest, f"{cid}.air"), "w", encoding="utf-8") as f:
+        f.write(air)
 
     cmd = open(os.path.join(BASE, "kfm.cmd"), encoding="utf-8-sig").read()
     cmd = cmd.replace("; The CMD file.", f"; {spec['name']} - command file")
+    if extra:
+        cmd = cmd.replace("[Statedef -1]", extra.CMD_COMMANDS + "[Statedef -1]", 1)
+        cmd = cmd.rstrip("\n") + "\n" + extra.CMD_STATES
     with open(os.path.join(dest, f"{cid}.cmd"), "w", encoding="utf-8") as f:
         f.write(cmd)
 
@@ -331,14 +371,20 @@ def build(spec, base_sprites, base_palettes):
                      ("Kung Fu Zankou", spec["moves"]["zankou"])):
         cns = cns.replace(old, new)
     cns = edit_cns(cns, spec)
+    if extra:
+        cns = cns.rstrip("\n") + "\n" + extra.CNS
     with open(os.path.join(dest, f"{cid}.cns"), "w", encoding="utf-8") as f:
         f.write(cns)
 
     with open(os.path.join(dest, f"{cid}.def"), "w", encoding="utf-8") as f:
         f.write(DEF_TEMPLATE.format(name=spec["name"], display=spec["display"], cid=cid))
 
+    moves = dict(spec["moves"])
+    moves["extra_specials"] = extra.EXTRA_SPECIALS if extra else ""
+    if not extra:
+        moves["extra_specials"] = ""
     with open(os.path.join(dest, "movelist.dat"), "w", encoding="utf-8") as f:
-        f.write(MOVELIST.format(**spec["moves"]))
+        f.write(MOVELIST.format(**moves))
 
     # sprite set: identical art, palette table graded to this fighter
     sprites = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
@@ -346,7 +392,12 @@ def build(spec, base_sprites, base_palettes):
                 "h": sp["h"], "axis": sp["axis"], "pal": sp["pal"],
                 "link": sp["link"]}
                for sp in base_sprites]
-    palettes = [grade_palette(p["rgba"], spec) for p in base_palettes]
+    if extra:
+        sprites += extra.sprites()
+        palettes = extra.palettes(base_palettes, grade_palette, spec)
+    else:
+        palettes = [grade_palette(p["rgba"], spec) for p in base_palettes]
+    override_sprites(cid, sprites)
     with open(os.path.join(dest, f"{cid}.sff"), "wb") as f:
         f.write(sff.write_sff(sprites, palettes))
 
@@ -379,7 +430,68 @@ def roster_sheet():
     print("  wrote artifacts/roster_palettes.png")
 
 
+def dump_frames(cid):
+    """Export a painting template for every sprite slot the fighter references.
+
+    One transparent PNG per (group, number), at the exact size the slot needs,
+    with a magenta crosshair at the sprite axis. Drop finished frames into
+    art_src/chars/<id>/ to replace just those slots. Templates land in a
+    `templates/` subfolder so they never get picked up as finished art.
+    """
+    _d, sprites, _p = sff.read_sff(os.path.join(ROOT, "chars", cid, f"{cid}.sff"))
+    by_key = {(sp["group"], sp["number"]): sp for sp in sprites}
+
+    with open(os.path.join(ROOT, "chars", cid, f"{cid}.air"),
+              encoding="utf-8-sig") as fh:
+        air = fh.read()
+    slots, action = {}, None
+    for raw in air.splitlines():
+        line = raw.split(";", 1)[0].strip()
+        m = re.match(r"\[Begin Action (\d+)\]", line)
+        if m:
+            action = int(m.group(1))
+            continue
+        m = re.match(r"^(-?\d+)\s*,\s*(-?\d+)", line)
+        if m and action is not None and int(m.group(1)) >= 0:
+            slots.setdefault((int(m.group(1)), int(m.group(2))), set()).add(action)
+
+    folder = os.path.join(ROOT, "art_src", "chars", cid, "templates")
+    os.makedirs(folder, exist_ok=True)
+    rows = []
+    for (group, number), actions in sorted(slots.items()):
+        sp = by_key.get((group, number))
+        if not sp:
+            continue
+        img = Image.new("RGBA", (sp["w"], sp["h"]), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        ax, ay = sp["axis"]
+        d.line([(ax - 4, ay), (ax + 4, ay)], fill=(255, 0, 255, 255))
+        d.line([(ax, ay - 4), (ax, ay + 4)], fill=(255, 0, 255, 255))
+        name = f"{group}_{number}.png"
+        img.save(os.path.join(folder, name))
+        rows.append(f"{name}\t{sp['w']} x {sp['h']}\taxis {ax}, {ay}\t"
+                    f"actions {', '.join(str(a) for a in sorted(actions))}")
+
+    with open(os.path.join(folder, "README.md"), "w", encoding="utf-8") as f:
+        f.write(
+            f"# {cid} sprite frames\n\n"
+            "Each PNG is one frame, already at the size and axis the character\n"
+            "needs. Paint the figure with its feet on the crosshair, keep the\n"
+            "canvas size, delete the crosshair, then move the file up into\n"
+            f"`art_src/chars/{cid}/` and rebuild. Frames left in `templates/`\n"
+            "are ignored.\n\n"
+            "| file | size | axis | used by action(s) |\n|---|---|---|---|\n")
+        for row in rows:
+            cells = row.split("\t")
+            f.write("| " + " | ".join(cells) + " |\n")
+    print(f"  {cid}: {len(rows)} frame templates in "
+          f"art_src/chars/{cid}/templates/")
+
+
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "--dump":
+        dump_frames(sys.argv[2] if len(sys.argv) > 2 else "jackburton")
+        return
     if not os.path.isdir(BASE):
         raise SystemExit("chars/kfm base is missing")
     print("Building roster")
