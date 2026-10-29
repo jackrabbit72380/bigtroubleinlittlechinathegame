@@ -89,6 +89,150 @@ def oval_pts(cx, cy, rx, ry, rot=0.0, n=22):
     return pts
 
 
+# ------------------------------------------------------------------ props
+# Local copies: tools/stages_hd.py upstream does not carry these, and
+# this module must rebuild from a plain checkout.
+def hillshade(height, strength=5.0):
+    """Emboss a height map into a shade multiplier, lit from the upper left.
+
+    ImageChops.subtract clamps at zero, so each direction needs both a
+    'falling towards the light' and a 'falling away' term to stay signed.
+    """
+    radius = max(1.5, height.size[0] * 0.02)
+    hmap = height.filter(ImageFilter.GaussianBlur(radius))
+    right = ImageChops.offset(hmap, 2, 0)
+    down = ImageChops.offset(hmap, 0, 2)
+
+    def swing(low, high):
+        lit = ImageChops.subtract(low, high).point(lambda v: min(130, int(v * strength)))
+        dark = ImageChops.subtract(high, low).point(lambda v: min(130, int(v * strength)))
+        return lit, dark
+
+    shade = Image.new("L", height.size, 208)
+    for lit, dark in (swing(hmap, right), swing(hmap, down)):
+        shade = ImageChops.add(shade, lit)
+        shade = ImageChops.subtract(shade, dark)
+    return shade
+
+
+def sculpted(color, height, cx, y_base):
+    """Composite a colour + height pair onto the full canvas at (cx, y_base)."""
+    shade = hillshade(height)
+    rgb = ImageChops.multiply(color, Image.merge("RGB", (shade, shade, shade)))
+    rgba = rgb.convert("RGBA")
+    alpha = height.point(lambda v: 255 if v > 28 else 0).filter(ImageFilter.GaussianBlur(1))
+    rgba.putalpha(alpha)
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    layer.alpha_composite(rgba, (int(cx - color.size[0] / 2), int(y_base - color.size[1])))
+    return layer
+
+
+def torch(d, cx, cy, h=None):
+    """Wall sconce: bracket, cup, and three flame tongues. cy is the bracket foot."""
+    h = h or px(18)
+    d.rectangle([cx - px(1.4), cy - h * 0.42, cx + px(1.4), cy], fill=(56, 43, 33))
+    d.rectangle([cx - px(4.4), cy - h * 0.60, cx + px(4.4), cy - h * 0.40],
+                fill=(92, 71, 48))
+    d.rectangle([cx - px(3.4), cy - h * 0.60, cx + px(3.4), cy - h * 0.50],
+                fill=(214, 132, 52))
+    for off, tall in ((-0.55, 0.72), (0.05, 1.0), (0.55, 0.66)):
+        fx = cx + off * px(3.2)
+        top = cy - h * 0.60 - h * 0.44 * tall
+        d.polygon([(fx - px(2.2), cy - h * 0.58), (fx + px(2.2), cy - h * 0.58),
+                   (fx, top)], fill=(255, 164, 62))
+    d.polygon([(cx - px(1.4), cy - h * 0.58), (cx + px(1.4), cy - h * 0.58),
+               (cx, cy - h * 0.86)], fill=(255, 236, 174))
+
+
+def brazier(d, cx, y_base, h, flame=(255, 176, 70)):
+    """Tripod fire bowl on the plaza: slim legs, wide bowl, clustered flame."""
+    bw = h * 0.26
+    for sx in (-1, 1):
+        d.line([(cx + sx * bw * 0.45, y_base - h * 0.44),
+                (cx + sx * bw * 0.95, y_base)], fill=(62, 48, 36),
+               width=max(1, int(px(1.6))))
+    d.rectangle([cx - px(1.6), y_base - h * 0.48, cx + px(1.6), y_base - h * 0.36],
+                fill=(70, 55, 40))
+    d.polygon([(cx - bw, y_base - h * 0.72), (cx + bw, y_base - h * 0.72),
+               (cx + bw * 0.55, y_base - h * 0.40), (cx - bw * 0.55, y_base - h * 0.40)],
+              fill=(118, 86, 48))
+    d.ellipse([cx - bw, y_base - h * 0.80, cx + bw, y_base - h * 0.64], fill=(160, 116, 58))
+    d.ellipse([cx - bw * 0.78, y_base - h * 0.78, cx + bw * 0.78, y_base - h * 0.66],
+              fill=(226, 144, 54))
+    for off, tall, wide in ((-0.58, 0.40, 1.0), (-0.20, 0.66, 1.1), (0.14, 0.84, 0.9),
+                            (0.46, 0.52, 0.9)):
+        fx = cx + off * bw * 1.15
+        fw = bw * 0.34 * wide
+        top = y_base - h * 0.76 - h * tall * 0.44
+        d.polygon([(fx - fw, y_base - h * 0.78), (fx + fw, y_base - h * 0.78),
+                   (fx + fw * 0.45, top + h * 0.10), (fx, top),
+                   (fx - fw * 0.45, top + h * 0.10)], fill=flame)
+    d.ellipse([cx - bw * 0.55, y_base - h * 0.86, cx + bw * 0.55, y_base - h * 0.74],
+              fill=(255, 226, 150))
+
+
+def guardian(base, cx, y_base, h):
+    """Frontal stone lion on a plinth, sculpted from a height field."""
+    ws, hs = int(h * 0.98), int(h * 1.04)
+    color = Image.new("RGB", (ws, hs), (0, 0, 0))
+    height = Image.new("L", (ws, hs), 0)
+    dc, dh = ImageDraw.Draw(color), ImageDraw.Draw(height)
+    body = (170, 160, 142)
+    dark = (140, 131, 114)
+
+    def both(shape, fill, hv):
+        shape(dc, fill)
+        shape(dh, hv)
+
+    # plinth
+    both(lambda d, f: d.rectangle([ws * 0.04, hs * 0.90, ws * 0.96, hs], fill=f),
+         (146, 137, 120), 152)
+    # haunches, then the chest slab
+    both(lambda d, f: d.ellipse([ws * 0.08, hs * 0.56, ws * 0.92, hs * 0.94], fill=f),
+         body, 208)
+    both(lambda d, f: d.polygon([(ws * 0.26, hs * 0.42), (ws * 0.74, hs * 0.42),
+                                 (ws * 0.86, hs * 0.90), (ws * 0.14, hs * 0.90)], fill=f),
+         body, 226)
+    # forelegs with paws
+    for lx in (0.27, 0.63):
+        both(lambda d, f: d.rectangle([ws * lx, hs * 0.60, ws * (lx + 0.10), hs * 0.92],
+                                      fill=f), body, 238)
+        both(lambda d, f: d.ellipse([ws * lx - ws * 0.02, hs * 0.86,
+                                     ws * (lx + 0.12), hs * 0.96], fill=f),
+             (156, 147, 130), 244)
+    # mane disc behind the head
+    both(lambda d, f: d.ellipse([ws * 0.16, hs * 0.02, ws * 0.84, hs * 0.60], fill=f),
+         dark, 204)
+    for k in range(12):
+        a = 2 * math.pi * k / 12
+        mx, my = ws * 0.5 + math.cos(a) * ws * 0.32, hs * 0.30 + math.sin(a) * ws * 0.28
+        both(lambda d, f, mx=mx, my=my: d.ellipse(
+            [mx - ws * 0.055, my - ws * 0.055, mx + ws * 0.055, my + ws * 0.055],
+            fill=f), (158, 149, 132), 216)
+    # head, muzzle, open jaw
+    both(lambda d, f: d.ellipse([ws * 0.33, hs * 0.16, ws * 0.67, hs * 0.50], fill=f),
+         body, 252)
+    both(lambda d, f: d.rounded_rectangle([ws * 0.40, hs * 0.28, ws * 0.60, hs * 0.42],
+                                          radius=hs * 0.05, fill=f),
+         (182, 172, 154), 255)
+    both(lambda d, f: d.ellipse([ws * 0.40, hs * 0.38, ws * 0.60, hs * 0.50], fill=f),
+         (104, 96, 84), 206)
+    # ears
+    for ex, sgn in ((0.35, -1), (0.65, 1)):
+        both(lambda d, f, ex=ex, sgn=sgn: d.polygon(
+            [(ws * ex, hs * 0.18), (ws * (ex + sgn * 0.09), hs * 0.16),
+             (ws * (ex + sgn * 0.03), hs * 0.05)], fill=f), (156, 147, 130), 240)
+    # brows and sunken eyes
+    for ex in (0.42, 0.58):
+        both(lambda d, f, ex=ex: d.ellipse([ws * ex - ws * 0.045, hs * 0.24,
+                                            ws * ex + ws * 0.045, hs * 0.31], fill=f),
+             (34, 28, 25), 104)
+        both(lambda d, f, ex=ex: d.rectangle([ws * ex - ws * 0.06, hs * 0.205,
+                                              ws * ex + ws * 0.06, hs * 0.235], fill=f),
+             (196, 186, 166), 250)
+    return Image.alpha_composite(base, sculpted(color, height, cx, y_base))
+
+
 # ------------------------------------------------------------------ the hall
 def ring_y(x, off=0.0):
     """Height of the balcony line at x: flat behind the gate, dipping outward."""
@@ -384,7 +528,7 @@ def skull_layer():
 
     alpha = height.point(lambda v: 255 if v > 24 else 0)
     alpha = alpha.filter(ImageFilter.GaussianBlur(0.8))
-    shade = hd.hillshade(height, 4.6)
+    shade = hillshade(height, 4.6)
     rgb = ImageChops.multiply(color, Image.merge("RGB", (shade, shade, shade)))
     layer = rgb.convert("RGBA")
     layer.putalpha(alpha)
@@ -543,7 +687,7 @@ def paint():
               deep=(12, 9, 10), lacquer=(74, 42, 28), lights=False)
         corridor(d, x, base_y - h, base_y, BAY * 0.26)
         if i % 2 == 0:
-            hd.torch(d, x + BAY * 0.33, base_y - px(52))
+            torch(d, x + BAY * 0.33, base_y - px(52))
 
     # gate: dark throat, then the staircase climbing into the mouth
     throat(base)
@@ -559,10 +703,10 @@ def paint():
 
     # guardians either side of the stair foot, fire bowls between them
     for sx in (-1, 1):
-        base = hd.guardian(base, CX + sx * px(126), FLOOR_Y, px(30))
+        base = guardian(base, CX + sx * px(126), FLOOR_Y, px(30))
     d = ImageDraw.Draw(base)
     for sx in (-1, 1):
-        hd.brazier(d, CX + sx * px(88), FLOOR_Y, px(26))
+        brazier(d, CX + sx * px(88), FLOOR_Y, px(26))
         LIGHTS.append((CX + sx * px(88), FLOOR_Y - px(16), px(52), (255, 168, 88), 140))
     plaza(d, FLOOR_Y)
 
