@@ -3457,7 +3457,7 @@ physics = S
 juggle  = 4
 poweradd= 45
 velset = 0,0
-anim = 1210
+anim = 1500
 ctrl = 0
 sprpriority = 2
 
@@ -3579,7 +3579,7 @@ physics = S
 juggle  = 5
 poweradd= 55
 velset = 0,0
-anim = 1400
+anim = 1600
 ctrl = 0
 sprpriority = 2
 
