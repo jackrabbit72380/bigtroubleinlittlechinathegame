@@ -6,6 +6,12 @@ replaced here with the project's wordmark - heavy arched brush capitals reading
 BIG TROUBLE, with "in Little China" set small beneath - so the screenpack's
 positioning, bobbing and fades keep working untouched.
 
+Every size in here is measured from the loaded font rather than written down.
+art.font() falls back through a list of system faces to Pillow's own default,
+so a build machine and a dev machine can resolve different files with different
+advance widths; a layout tuned by hand against one of them clipped the outer
+caps on the other.
+
 Run:  python3 tools/build_title.py
 """
 
@@ -27,8 +33,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 
 # The four logo slots are all this size with the axis at their centre; keeping
-# it means nothing in system.def has to change about the sprite itself.
+# it means the wordmark just has to sit on the same canvas.
 CANVAS = (699, 257)
+
+# Layout targets, as fractions of the canvas width. The caps span most of it,
+# the small line is about half the caps' width and tucks inside their arc.
+BIG_SPAN = 0.86
+SMALL_SPAN = 0.56
+TOP_MARGIN = 40          # artwork starts this far down the 720-line screen
+ARC_RADIUS = 1300        # bows the ends ~31px below the apex, as in the reference
 
 RED = (178, 32, 28)
 RED_DEEP = (104, 12, 12)
@@ -117,6 +130,92 @@ def flat_line(text, size, cx, cy, seed=0, jitter=0.0, tracking=1.0, weight=0.06)
                                      + rnd.uniform(-1.0, 1.0) * jitter))), g)
         pos += adv
     return mask
+
+
+def width_of(img):
+    box = img.getbbox()
+    return 0 if box is None else box[2] - box[0]
+
+
+def sized_to(target, build, guess=60.0, lo=10.0, hi=170.0, passes=5):
+    """Build a line repeatedly until its ink is ``target`` pixels wide."""
+    best, size, best_err = None, guess, None
+    for _ in range(passes):
+        img = build(int(round(size)))
+        wide = width_of(img)
+        if not wide:
+            break
+        err = abs(wide - target)
+        if best_err is None or err < best_err:
+            best, best_err = img, err
+        if err <= 2:
+            break
+        size = max(lo, min(hi, size * target / float(wide)))
+    return best
+
+
+def touches(big, cand, box):
+    """True if the candidate's ink lands on the big line's ink."""
+    region = ImageChops.multiply(big.crop(box), cand.crop(box))
+    return any(v > 40 for v in region.getdata())
+
+
+def caps_line():
+    """BIG TROUBLE, arch across the canvas at a measured width."""
+    cx = CANVAS[0] / 2.0
+
+    def build(size):
+        return arc_line("BIG TROUBLE", size, cx, 16, ARC_RADIUS, seed=4,
+                        jitter=1.0, tracking=1.02, weight=0.05)
+
+    return sized_to(BIG_SPAN * CANVAS[0], build, guess=90.0, hi=150.0)
+
+
+def sized_to_size(target, build, guess=60.0, lo=12.0, hi=120.0, passes=5):
+    """Like sized_to, but returns the size rather than the rendered line."""
+    size, best, best_err = guess, int(guess), None
+    for _ in range(passes):
+        wide = width_of(build(int(round(size))))
+        if not wide:
+            break
+        err = abs(wide - target)
+        if best_err is None or err < best_err:
+            best, best_err = int(round(size)), err
+        if err <= 2:
+            break
+        size = max(lo, min(hi, size * target / float(wide)))
+    return best
+
+
+def subtitle(big):
+    """in Little China, sized to the caps and tucked inside their arc."""
+    cx = CANVAS[0] / 2.0
+    box = big.getbbox()
+    target = SMALL_SPAN * (box[2] - box[0])
+    size = sized_to_size(target, lambda s: flat_line("in Little China", s, cx, 0,
+                                                     seed=9, jitter=0.6,
+                                                     weight=0.032), guess=60.0)
+
+    # Walk down from the middle of the caps: the first spot that touches no
+    # letter is the tightest one that stays inside the arc.
+    for cy in range(box[1] + (box[3] - box[1]) // 3, box[3] + 16):
+        cand = flat_line("in Little China", size, cx, cy, seed=9, jitter=0.6,
+                         weight=0.032)
+        cb = cand.getbbox()
+        if cb is None or cb[0] < 8 or cb[2] > CANVAS[0] - 8:
+            continue
+        if not touches(big, cand, cb):
+            return cand
+
+    # Nothing fits between the outer caps on this face: shrink and sit under.
+    while size > 12:
+        size = int(size * 0.92)
+        cand = flat_line("in Little China", size, cx, box[3] + 4, seed=9,
+                         jitter=0.6, weight=0.032)
+        cb = cand.getbbox()
+        if cb and not touches(big, cand, cb):
+            return cand
+    return flat_line("in Little China", 24, cx, box[3] + 6, seed=9, jitter=0.6)
 
 
 def wobble(mask, amp=1.6, seed=7):
@@ -216,28 +315,19 @@ def paint(mask):
 
 
 def wordmark():
-    """The finished logo on the 699x257 screenpack canvas.
-
-    The proportions come from the reference art: the caps nearly span the
-    canvas and the small line sits inside the arc, clear of the outer letters.
-    These numbers are not arbitrary - they were found by searching the spacing
-    until the two lines cannot touch, because a tighter arc or a wider small
-    line drops the outer caps straight onto it.
-    """
-    W, _H = CANVAS
-    cx = W / 2.0
-    # radius 1300 bows the ends about 31px below the apex, which is the arc in
-    # the reference
-    big = arc_line("BIG TROUBLE", 90, cx, 16, 1300, seed=4, jitter=1.0,
-                   tracking=1.02, weight=0.05)
-    small = flat_line("in Little China", 60, cx, 120, seed=9, jitter=0.6,
-                      tracking=1.0, weight=0.032)
+    """The finished logo on the 699x257 screenpack canvas, and its ink box."""
+    big = caps_line()
+    small = subtitle(big)
     mask = wobble(ImageChops.lighter(big, small))
     mask = ImageChops.lighter(brush(mask, seed=4), brush(mask, seed=9))
-    return paint(mask)
+    logo = paint(mask)
+    box = logo.getchannel("A").getbbox()
+    if box[0] < 4 or box[2] > CANVAS[0] - 4:
+        raise SystemExit(f"title logo overflows its canvas: {box}")
+    return logo, box
 
 
-def place_def(start=(0, 132)):
+def place_def(start):
     """Move the four logo layers to where the reference art has the wordmark.
 
     system.def ships the engine's own logo at start = -250,155, which put this
@@ -246,7 +336,7 @@ def place_def(start=(0, 132)):
     """
     path = os.path.join(ROOT, "data", "ikemen1", "system.def")
     if not os.path.isfile(path):
-        return
+        return start
     with open(path, encoding="utf-8", errors="replace") as f:
         lines = f.read().splitlines()
     out, section, pending = [], "", False
@@ -264,6 +354,7 @@ def place_def(start=(0, 132)):
         out.append(line)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
+    return start
 
 
 def build():
@@ -276,7 +367,7 @@ def build():
     if found != slots:
         raise SystemExit(f"system.sff is missing logo slots: {slots - found}")
 
-    logo = wordmark()
+    logo, box = wordmark()
     glow = logo.filter(ImageFilter.GaussianBlur(3.2))
     blank = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
 
@@ -308,12 +399,19 @@ def build():
         f.write(blob)
     os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
 
-    place_def()
+    # Centre the inked box on the screen and hang it TOP_MARGIN down, measured
+    # from where the ink actually landed rather than from the canvas edge.
+    axis = next(sp["axis"] for sp in sprites
+                if (sp["group"], sp["number"]) == (0, 0))
+    start = (int(round(axis[0] - (box[0] + box[2]) / 2.0)),
+             int(round(TOP_MARGIN + axis[1] - box[1])))
+    place_def(start)
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     logo.save(os.path.join(ROOT, "artifacts", "title_logo.png"))
     print(f"wrote the title logo into data/ikemen1/system.sff "
           f"({len(out)} sprites, slots 0,0-0,3 replaced)")
+    print(f"logo ink box {box}, placed at start = {start[0]},{start[1]}")
 
 
 if __name__ == "__main__":
