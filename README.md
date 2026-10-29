@@ -14,6 +14,7 @@ ship it bundled, so players just download and launch.
 ![Wing Kong Exchange](artifacts/wingkong_exchange_preview.png)
 ![Chinatown Back Alley](artifacts/chinatown_alley_preview.png)
 ![Pork Chop Express](artifacts/porkchop_express_preview.png)
+![The Upside Down](artifacts/the_upside_down_preview.png)
 
 ## Download and play
 
@@ -100,26 +101,27 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 
 | Stage | File | Setting |
 |---|---|---|
-| Lo Pan's Throne | `stages/lopans_throne.def` | skull gate, green neon, red temple glyphs |
+| Lo Pan's Throne | `stages/lopans_throne.def` | skull gate you climb into, green neon, red glyphs |
 | Wing Kong Exchange | `stages/wingkong_exchange.def` | loading bay, neon signage, rain |
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
+| The Upside Down | `stages/the_upside_down.def` | cavern roof, green light shaft, stair into the dark |
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
-All four BTILC stages are drawn procedurally (no bitmaps committed as source),
+All five BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1280×960** (`localcoord = 1280, 960`), which is arcade
 resolution times four — the engine no longer stretches a 240-line image across
 a 1080p window, and a 16:9 display shows 1707 units of art instead of running to
 black. Each stage canvas is **4000×960**: the camera travels ±1040 and the art
-paints 960 past each end, with players clamped to ±1620. The ground line is row
-800 (`zoffset = 800`). Each stage ships a `9000,1` select-screen preview sprite.
+paints 960 past each end, with players clamped to ±1620. Ground line is row 800
+(`zoffset = 800`). Each stage ships a `9000,1` select-screen preview sprite.
 
 To put real art in a stage, drop `backdrop.png` (and optionally
-`foreground.png`) into `art_src/<stage id>/` and rebuild —
-`tools/build_hd_stage.py` replaces that stage with your image cover-fitted to the
-same 4000×960 canvas and the same geometry, no code changes. That is the same HD
-stage model a high-resolution commercial fan remake uses, applied to art you own.
+`foreground.png`) into `art_src/<stage id>/` and rebuild — `tools/build_hd_stage.py`
+replaces that stage with your image cover-fitted to the same 4000×960 canvas and
+the same geometry, no code changes. That is the same HD stage model as a
+high-resolution commercial fan remake, applied to art you own.
 
 ## Music
 
@@ -166,6 +168,8 @@ Or one at a time:
 ```sh
 python3 tools/build_stages.py     # arcade-resolution stages (320-space)
 python3 tools/stages_hd.py        # the same four arenas at 1280x960 (shipped)
+python3 tools/stage_throne.py     # repaint Lo Pan's Throne from the concept art
+python3 tools/stage_upside_down.py # paint The Upside Down, the fifth arena
 python3 tools/build_hd_stage.py   # replaces any stage that has art_src/ art
 python3 tools/build_chars.py      # regenerate the roster folders
 python3 tools/build_music.py      # menu music paths in data/ikemen1/system.def
@@ -174,8 +178,8 @@ python3 tools/validate.py         # offline checks (no engine needed)
 
 `tools/build_stages.py` accepts `STAGE_DEBUG=1` to dump each layer as PNG into
 `artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to
-save 4:3 and 16:9 crops of each arena for eyeballing. Requirements: Python 3.9+
-and Pillow (only the tooling needs it; the game itself does not).
+save 4:3 and 16:9 crops of each arena for eyeballing. Requirements: Python 3.9+ and Pillow (only the tooling needs it;
+the game itself does not).
 
 `tools/validate.py` verifies that every roster entry resolves, every character's
 `.air` frame exists in its `.sff`, every stage layer sprite exists, select-screen
@@ -191,7 +195,7 @@ and Kung Fu Man base, runs `tools/build_all.py`, and commits the resulting
 
 Original to this repo:
 
-* all four stage backdrops and their SFF files
+* all five stage backdrops and their SFF files
 * per-fighter palettes, stats, move lists, victory quotes
 * the asset pipeline (`tools/`) and the validator
 * `data/select.def` roster, arcade ladder and screenpack naming
