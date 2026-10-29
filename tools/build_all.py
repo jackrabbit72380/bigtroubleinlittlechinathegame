@@ -35,6 +35,12 @@ def main():
                            "bernardo-mercurio-jack-turnable.jpg")
     if os.path.isfile(concept):
         scripts += ["jack_cut.py", "bake_char.py"]
+    # The title logo is painted into the screenpack SFF, which a fresh engine
+    # data copy resets on every build, so it is regenerated rather than
+    # committed by hand.
+    title_sff = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "system.sff")
+    if os.path.isfile(title_sff):
+        scripts.append("build_title.py")
     scripts.append("validate.py")
     for script in scripts:
         code = run(script)
