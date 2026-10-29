@@ -25,6 +25,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET_HEIGHT = 318.0     # 3x the 106px base fighter
 BASE_HEIGHT = 106.0
 
+# Weapon actions ship their own art - a bullet, a muzzle flash, an impact and a
+# spinning knife. Baking those as rig poses would draw JACK as the bullet, so
+# these keep the art they were drawn with and are only scaled with the figure.
+WEAPON_ACTIONS = range(7000, 7100)
+
 
 def pose_for(action, frame):
     """Which rig pose stands in for this animation."""
@@ -69,7 +74,7 @@ def parse_air(text):
         m = re.match(r"\[Begin Action\s+(\d+)\]", line)
         if m:
             cur = int(m.group(1))
-            actions[cur] = {"clsn": [], "frames": []}
+            actions[cur] = {"clsn": [], "frames": [], "lines": [], "keys": []}
             continue
         if cur is None or not line:
             continue
@@ -79,7 +84,35 @@ def parse_air(text):
         fm = re.match(r"^(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)\s*,\s*(-?\d+)", line)
         if fm:
             actions[cur]["frames"].append(int(fm.group(5)))
+            actions[cur]["lines"].append(raw.rstrip())
+            actions[cur]["keys"].append((int(fm.group(1)), int(fm.group(2))))
     return actions
+
+
+def scale_weapon_positions(path, k):
+    """Scale pos/sparkxy inside the weapon states to the rig's body scale.
+
+    Those states place a muzzle flash and a hit spark in the fighter's own
+    coordinates, which are base-scale numbers. On a 3x figure that put the
+    flash at his waist, so the two offsets scale with the body.
+    """
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+    out, inside = [], False
+    for line in lines:
+        low = line.strip().lower()
+        if low.startswith("[statedef"):
+            inside = low.startswith(("[statedef 1500]", "[statedef 1600]"))
+        if inside:
+            m = re.match(
+                r"^(\s*)(pos|sparkxy)\s*=\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*$", line)
+            if m:
+                line = (f"{m.group(1)}{m.group(2)} = "
+                        f"{round(float(m.group(3)) * k)}, "
+                        f"{round(float(m.group(4)) * k)}")
+        out.append(line)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
 
 
 def scale_clsn(line, k):
@@ -101,6 +134,15 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     rig = char_rig.load_rig(char_id)
     sprites = []
 
+    # Weapon art is copied through, never rendered - see WEAPON_ACTIONS.
+    weapon = {}
+    src_sff = os.path.join(src, char_id + ".sff")
+    if os.path.isfile(src_sff):
+        _raw, src_sprites, _pals = sff.read_sff(src_sff)
+        for sp in src_sprites:
+            if sp["group"] in WEAPON_ACTIONS:
+                weapon[(sp["group"], sp["number"])] = sp
+
     actions = parse_air(open(os.path.join(src, char_id + ".air"), encoding="utf-8-sig").read())
     print(f"{len(actions)} actions, {sum(len(a['frames']) for a in actions.values())} frames")
 
@@ -108,6 +150,14 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     for number in sorted(actions):
         act = actions[number]
         frames = act["frames"] or [4]
+        if number in WEAPON_ACTIONS:
+            # Keep the projectile art and its own frames exactly as drawn.
+            air_out.append(
+                f"; weapon animation - art kept as drawn\n[Begin Action {number}]")
+            air_out.extend(act["clsn"])
+            air_out.extend(act["lines"])
+            air_out.append("")
+            continue
         air_out.append(f"; baked from the rig\n[Begin Action {number}]")
         air_out.extend(act["clsn"])
         # AIR frames are (group, number) - the sprite's number INSIDE its own
@@ -127,6 +177,15 @@ def bake(char_id, target_height=TARGET_HEIGHT):
             air_out.append(f"{number},{local[pose_name]}, 0,0, {ticks}")
         air_out.append("")
 
+    # Projectile art, scaled with the figure so a bullet is not a 3x body.
+    for (group, num), sp in sorted(weapon.items()):
+        img = sff.decode_sprite(_raw, sp, _pals)
+        img = img.resize((max(1, round(img.width * clsn_k)),
+                          max(1, round(img.height * clsn_k))), Image.LANCZOS)
+        ax, ay = sp["axis"]
+        sprites.append({"group": group, "number": num, "image": img,
+                        "axis": (round(ax * clsn_k), round(ay * clsn_k))})
+
     palette = bytearray()
     for i in range(256):
         palette += bytes((i, i, i, 255))
@@ -140,6 +199,10 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         p = os.path.join(src, name)
         if os.path.isfile(p):
             shutil.copy(p, os.path.join(out, name))
+
+    cns_path = os.path.join(out, char_id + ".cns")
+    if os.path.isfile(cns_path):
+        scale_weapon_positions(cns_path, clsn_k)
 
     def_text = f"""[Info]
 name = "Jack Burton (rig)"
