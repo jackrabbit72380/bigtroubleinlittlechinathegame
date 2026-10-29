@@ -2426,3 +2426,30 @@ Clsn2Default: 1
 5300,0, 0,0, 8
 5300,0, 0,0, 8
 
+; weapon animation - art kept as drawn
+[Begin Action 7000]
+Clsn1: 1
+ Clsn1[0] = -8,-4, 8,4
+7000,0, 0,0, -1
+
+; weapon animation - art kept as drawn
+[Begin Action 7001]
+7001,0, 0,0, 2
+7001,1, 0,0, 2
+7001,2, 0,0, -1
+
+; weapon animation - art kept as drawn
+[Begin Action 7002]
+7002,0, 0,0, 3
+7002,1, 0,0, 3
+7002,2, 0,0, -1
+
+; weapon animation - art kept as drawn
+[Begin Action 7010]
+Clsn1: 1
+ Clsn1[0] = -14,-9, 14,9
+7010,0, 0,0, 3
+7010,1, 0,0, 3
+7010,2, 0,0, 3
+7010,3, 0,0, 3
+

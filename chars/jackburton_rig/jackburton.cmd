@@ -370,6 +370,24 @@ time = 1
 
 
 ; Don't remove the following line. It's required by the CMD standard.
+
+;-| Jack Burton - weapon motions |-----------------------------------------
+[Command]
+name = "gun_a"
+command = ~D, DB, B, a
+
+[Command]
+name = "gun_b"
+command = ~D, DB, B, b
+
+[Command]
+name = "knife_a"
+command = ~F, DF, D, DB, B, a
+
+[Command]
+name = "knife_b"
+command = ~F, DF, D, DB, B, b
+
 [Statedef -1]
 
 ;===========================================================================
@@ -773,3 +791,26 @@ trigger1 = ctrl
 trigger2 = stateno = 600 || stateno = 630 ;jump_x or jump_a
 trigger2 = movecontact
 trigger3 = stateno = 1350 ;Air blocking
+
+;---------------------------------------------------------------------------
+; Jack Burton - weapon specials
+;---------------------------------------------------------------------------
+;Six Shooter (pistol)
+[State -1, Six Shooter]
+type = ChangeState
+value = 1500
+triggerall = command = "gun_a" || command = "gun_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Knife Toss
+[State -1, Knife Toss]
+type = ChangeState
+value = 1600
+triggerall = command = "knife_a" || command = "knife_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
