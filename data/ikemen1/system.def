@@ -1057,6 +1057,15 @@ mask = 1
 
 
 ;-------------------------------------------------------------------
+;------------------------------------
+; Stage-select hint, painted by tools/build_select_ui.py
+[SelectBG Stage Hint]
+type = normal
+spriteno = 221, 0
+start = 0, 668
+layerno = 2
+mask = 1
+
 [VS Screen]
 time = 390                   ;Time to show screen
 fadein.time = 20
