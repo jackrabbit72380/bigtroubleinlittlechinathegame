@@ -23,9 +23,20 @@ def main():
     # Lo Pan's Throne from the concept art, stage_upside_down adds the cavern,
     # and build_hd_stage overlays any stage that has real art in art_src/, so
     # the order matters.
-    for script in ("build_stages.py", "stages_hd.py", "stage_throne.py",
-                   "stage_upside_down.py", "build_hd_stage.py",
-                   "build_chars.py", "build_music.py", "validate.py"):
+    scripts = ["build_stages.py", "stages_hd.py", "stage_throne.py",
+               "stage_upside_down.py", "build_hd_stage.py",
+               "build_chars.py", "build_music.py"]
+    # The puppet rig: cut Jack's concept turnaround into parts, then bake those
+    # parts into a complete character. Only the concept art is needed, which is
+    # already in the repo, so a clean checkout builds Jack itself instead of
+    # anyone having to commit megabytes of generated sprites.
+    concept = os.path.join(TOOLS, os.pardir, "concept_art", "fighters",
+                           "jack_burton",
+                           "bernardo-mercurio-jack-turnable.jpg")
+    if os.path.isfile(concept):
+        scripts += ["jack_cut.py", "bake_char.py"]
+    scripts.append("validate.py")
+    for script in scripts:
         code = run(script)
         if code != 0:
             print(f"\n{script} failed (exit {code})")

@@ -9,7 +9,7 @@
 
 [Characters]
  ; --- playable roster -------------------------------------------------------
-jackburton, stages/chinatown_alley.def, order=0
+jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
 wangchi, stages/wingkong_exchange.def, order=2
 gracielaw, stages/chinatown_alley.def, order=1
 eggshen, stages/wingkong_exchange.def, order=3
