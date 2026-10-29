@@ -2,15 +2,20 @@
 
 The title screen draws its logo from system.sff sprites 0,0-0,3: a bright layer
 plus an additive shadow layer for each of two elements. Those slots are
-replaced here with the project's wordmark - heavy arched brush capitals reading
-BIG TROUBLE, with "in Little China" set small beneath - so the screenpack's
-positioning, bobbing and fades keep working untouched.
+replaced here with the project's wordmark, so the screenpack's positioning,
+bobbing and fades keep working untouched.
 
-Every size in here is measured from the loaded font rather than written down.
-art.font() falls back through a list of system faces to Pillow's own default,
-so a build machine and a dev machine can resolve different files with different
-advance widths; a layout tuned by hand against one of them clipped the outer
-caps on the other.
+The wordmark is the gold-on-maroon lockup: BIG TROUBLE arched across the top,
+then IN / LITTLE / CHINA stacked beneath it, with the two blue ribbon swooshes
+that sweep past the letters. The lockup is composed on a tall scratch canvas and
+then fitted to the sprite, because the stacked lines and the arch's descending
+arms do not fit a short canvas at any font size - and art.font() falls back
+through system faces to Pillow's own default, so the metrics are not constant
+between machines.
+
+If art_src/ui/title_logo.png (or concept_art/ui/title_logo.png) exists, that
+picture is used as the logo instead, fitted to the slot - so the painted film
+art can replace this rendition without touching the pipeline.
 
 Run:  python3 tools/build_title.py
 """
@@ -32,36 +37,38 @@ import sff
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 
-# The four logo slots are all this size with the axis at their centre; keeping
-# it means the wordmark just has to sit on the same canvas.
-CANVAS = (699, 257)
+# The logo sprite. Sized for this lockup rather than the engine's 699x257 slot:
+# the arch plus three stacked lines needs the height.
+CANVAS = (900, 420)
+# Where the lockup is drawn before it is fitted into CANVAS.
+SCRATCH = (900, 660)
+WORK = CANVAS
 
-# Layout targets, as fractions of the canvas width. The caps span most of it,
-# the small line is about half the caps' width and tucks inside their arc.
-BIG_SPAN = 0.86
-SMALL_SPAN = 0.56
-TOP_MARGIN = 40          # artwork starts this far down the 720-line screen
-ARC_RADIUS = 1300        # bows the ends ~31px below the apex, as in the reference
+TOP_MARGIN = 30          # ink starts this far down the 720-line screen
+PAD = 8                  # clearance kept inside the sprite, for the glow
+ARC_RADIUS = 760         # bows the caps' ends well below the apex, as in the film
 
-RED = (178, 32, 28)
-RED_DEEP = (104, 12, 12)
-RED_HI = (222, 74, 54)
-RED_SH = (128, 16, 14)
+GOLD = [(0.00, (255, 250, 208)), (0.34, (255, 233, 142)),
+        (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
+MAROON = [(0.00, (152, 33, 45)), (0.55, (122, 20, 32)), (1.00, (82, 10, 20))]
+CREAM = (255, 248, 230)
+BLUE = (44, 70, 128)
+BLUE_DEEP = (26, 44, 92)
+WHITE = (255, 255, 255)
+
+PLATES = (os.path.join(ROOT, "art_src", "ui", "title_logo.png"),
+          os.path.join(ROOT, "concept_art", "ui", "title_logo.png"))
 
 
+# ------------------------------------------------------------------- type
 def cap_height(size):
     font = art.font(size)
     box = font.getbbox("H")
     return box[3] - box[1]
 
 
-def glyph_mask(ch, size, weight=0.10):
-    """One capital, white on transparent, fattened to brush weight.
-
-    The display face on its own is a thin sans; the reference lettering is
-    blocky, so every glyph is drawn with a heavy stroke to thicken its stems
-    until the counters close up the way painted caps do.
-    """
+def glyph_mask(ch, size, weight=0.06):
+    """One capital, white on transparent, fattened to display weight."""
     font = art.font(size)
     stroke = max(1, int(round(size * weight)))
     box = font.getbbox(ch, stroke_width=stroke)
@@ -72,22 +79,20 @@ def glyph_mask(ch, size, weight=0.10):
     return img
 
 
-def arc_line(text, size, cx, apex_y, radius, seed, jitter=1.0, tracking=0.95,
-             weight=0.10):
+def arc_line(text, size, cx, apex_y, radius, seed, jitter=1.0, tracking=0.98,
+             weight=0.06):
     """Letters along an arc whose tops sit on ``apex_y`` at the centre.
 
     The arc's centre is directly below the apex, so a point at angle ``a`` is at
     (cx + R sin a, apex_y + R (1 - cos a)): the ends of the line drop by the
     sagitta, which is what gives the word its bow.
     """
-    mask = Image.new("L", CANVAS, 0)
+    mask = Image.new("L", WORK, 0)
     rnd = random.Random(seed)
     font = art.font(size)
     chap = cap_height(size)
     widths = [max(1.0, font.getlength(c)) * tracking for c in text]
     total = sum(widths)
-    # the string has to fit the arc without letters colliding, so the half
-    # angle follows from the string's own width: arc length is 2 R theta
     half = (total * 1.02 / 2.0) / radius
     pos = 0.0
     for ch, adv in zip(text, widths):
@@ -97,37 +102,39 @@ def arc_line(text, size, cx, apex_y, radius, seed, jitter=1.0, tracking=0.95,
             gx = cx + radius * math.sin(a)
             gy = apex_y + radius * (1.0 - math.cos(a)) + chap * 0.5
             g = glyph_mask(ch, size, weight)
-            ang = -math.degrees(a) + rnd.uniform(-2.5, 2.5) * jitter
+            ang = -math.degrees(a) + rnd.uniform(-2.0, 2.0) * jitter
             g = g.rotate(ang, resample=Image.BICUBIC, expand=True)
-            gx += rnd.uniform(-1.5, 1.5) * jitter
-            gy += rnd.uniform(-1.5, 1.5) * jitter
+            gx += rnd.uniform(-1.2, 1.2) * jitter
+            gy += rnd.uniform(-1.2, 1.2) * jitter
             mask.paste(g, (int(round(gx - g.width / 2)),
                            int(round(gy - g.height / 2))), g)
         pos += adv
     return mask
 
 
-def flat_line(text, size, cx, cy, seed=0, jitter=0.0, tracking=1.0, weight=0.06):
+def flat_line(text, size, cx, cy, seed=0, jitter=0.0, tracking=0.98, weight=0.06,
+              tilt=0.0):
     """A straight line of type, centred on (cx, cy)."""
-    mask = Image.new("L", CANVAS, 0)
+    mask = Image.new("L", WORK, 0)
     rnd = random.Random(seed)
     font = art.font(size)
     stroke = max(1, int(round(size * weight)))
     widths = [max(1.0, font.getlength(c)) * tracking for c in text]
     total = sum(widths)
     pos = cx - total / 2.0
-    for ch, adv in zip(text, widths):
+    for i, (ch, adv) in enumerate(zip(text, widths)):
         if ch != " ":
             box = font.getbbox(ch, stroke_width=stroke)
             g = Image.new("L", (box[2] - box[0] + 10, box[3] - box[1] + 10), 0)
             ImageDraw.Draw(g).text((5 - box[0], 5 - box[1]), ch, font=font, fill=255,
                                    stroke_width=stroke, stroke_fill=255)
-            if jitter:
-                g = g.rotate(rnd.uniform(-1.2, 1.2) * jitter,
+            ang = tilt * (i / max(1, len(text) - 1) - 0.5) * 2.0
+            if jitter or ang:
+                g = g.rotate(ang + rnd.uniform(-1.0, 1.0) * jitter,
                              resample=Image.BICUBIC, expand=True)
             mask.paste(g, (int(round(pos + box[0] - 5 + (adv - (box[2] - box[0])) / 2)),
                            int(round(cy - g.height / 2
-                                     + rnd.uniform(-1.0, 1.0) * jitter))), g)
+                                     + rnd.uniform(-0.8, 0.8) * jitter))), g)
         pos += adv
     return mask
 
@@ -137,195 +144,258 @@ def width_of(img):
     return 0 if box is None else box[2] - box[0]
 
 
-def sized_to(target, build, guess=60.0, lo=10.0, hi=170.0, passes=5):
-    """Build a line repeatedly until its ink is ``target`` pixels wide."""
-    best, size, best_err = None, guess, None
+def fit_size(target, build, guess=90.0, lo=10.0, hi=280.0, passes=6):
+    """Return the size at which ``build`` draws ``target`` pixels of ink."""
+    best, best_err = int(guess), None
     for _ in range(passes):
-        img = build(int(round(size)))
-        wide = width_of(img)
+        wide = width_of(build(best))
         if not wide:
             break
         err = abs(wide - target)
-        if best_err is None or err < best_err:
-            best, best_err = img, err
+        if best_err is not None and err >= best_err:
+            break
+        best_err = err
         if err <= 2:
             break
-        size = max(lo, min(hi, size * target / float(wide)))
+        best = int(max(lo, min(hi, best * target / float(wide))))
     return best
 
 
-def touches(big, cand, box):
-    """True if the candidate's ink lands on the big line's ink."""
-    region = ImageChops.multiply(big.crop(box), cand.crop(box))
+# ------------------------------------------------------------------- paint
+def touches(a, b, box):
+    """True if b's ink lands on a's ink (compared inside ``box``)."""
+    region = ImageChops.multiply(a.crop(box), b.crop(box))
     return any(v > 40 for v in region.getdata())
 
 
-def caps_line():
-    """BIG TROUBLE, arch across the canvas at a measured width."""
-    cx = CANVAS[0] / 2.0
-
-    def build(size):
-        # apex 30 keeps the ink clear of the canvas top: the additive glow layer
-        # is a blur of this art, so ink running to within a few pixels of the
-        # edge would be cut off square by the sprite boundary.
-        return arc_line("BIG TROUBLE", size, cx, 30, ARC_RADIUS, seed=4,
-                        jitter=1.0, tracking=1.02, weight=0.05)
-
-    return sized_to(BIG_SPAN * CANVAS[0], build, guess=90.0, hi=150.0)
+def fill(mask, stops):
+    """Vertical gradient clipped to a mask."""
+    img = art.vgrad(WORK, [(int(t * (WORK[1] - 1)), c) for t, c in stops])
+    img.putalpha(ImageChops.multiply(mask, img.getchannel("A")))
+    return img
 
 
-def subtitle(big):
-    """in Little China, sized to the caps and tucked inside their arc."""
-    cx = CANVAS[0] / 2.0
-    box = big.getbbox()
-    target = SMALL_SPAN * (box[2] - box[0])
-    size = sized_to_size(target, lambda s: flat_line("in Little China", s, cx, 0,
-                                                     seed=9, jitter=0.6,
-                                                     weight=0.032), guess=60.0)
-
-    # Walk down from the middle of the caps: the first spot that touches no
-    # letter is the tightest one that stays inside the arc.
-    for cy in range(box[1] + (box[3] - box[1]) // 3, box[3] + 16):
-        cand = flat_line("in Little China", size, cx, cy, seed=9, jitter=0.6,
-                         weight=0.032)
-        cb = cand.getbbox()
-        if cb is None or cb[0] < 8 or cb[2] > CANVAS[0] - 8:
-            continue
-        if not touches(big, cand, cb):
-            return cand
-
-    # Nothing fits between the outer caps on this face: shrink and sit under.
-    while size > 12:
-        size = int(size * 0.92)
-        cand = flat_line("in Little China", size, cx, box[3] + 4, seed=9,
-                         jitter=0.6, weight=0.032)
-        cb = cand.getbbox()
-        if cb and not touches(big, cand, cb):
-            return cand
-    return flat_line("in Little China", 24, cx, box[3] + 6, seed=9, jitter=0.6)
+def shifted(mask, delta):
+    out = Image.new("L", WORK, 0)
+    out.paste(mask, delta)
+    return out
 
 
-def sized_to_size(target, build, guess=60.0, lo=12.0, hi=120.0, passes=5):
-    """Like sized_to, but returns the size rather than the rendered line."""
-    size, best, best_err = guess, int(guess), None
-    for _ in range(passes):
-        wide = width_of(build(int(round(size))))
-        if not wide:
-            break
-        err = abs(wide - target)
-        if best_err is None or err < best_err:
-            best, best_err = int(round(size)), err
-        if err <= 2:
-            break
-        size = max(lo, min(hi, size * target / float(wide)))
-    return best
+def block(mask, depth):
+    """The solid shape the letters are extruded into: the mask swept down-right."""
+    dx, dy = depth
+    out = mask
+    steps = max(abs(dx), abs(dy))
+    for i in range(1, steps + 1):
+        out = ImageChops.lighter(out, shifted(mask, (dx * i // steps, dy * i // steps)))
+    return out
 
 
-def wobble(mask, amp=1.6, seed=7):
-    """Displace the letterform edges through a smooth noise field.
+def paint_line(mask, depth=(9, 10)):
+    """Gold face, maroon extrusion, cream keyline, blue outer line."""
+    solid = block(mask, depth)
+    img = Image.new("RGBA", WORK, (0, 0, 0, 0))
 
-    Painted letters never have a mathematically clean edge. A few pixels of
-    low-frequency drift is what separates brush from type; without it the caps
-    read as set text no matter how heavy the stroke is.
-    """
-    rnd = random.Random(seed)
-    W, H = CANVAS
-    small = (W // 14 + 2, H // 14 + 2)
-    seed_img = Image.new("L", small)
-    seed_img.putdata([rnd.randrange(256) for _ in range(small[0] * small[1])])
+    # outer blue keyline, then the cream one inside it
+    img.alpha_composite(fill(solid.filter(ImageFilter.MaxFilter(5)), [(0, BLUE_DEEP)]))
+    img.alpha_composite(fill(solid.filter(ImageFilter.MaxFilter(3)), [(0, CREAM)]))
 
-    fields = []
-    for phase in (0, 1):
-        f = Image.new("L", small)
-        f.paste(seed_img, (0, 0))
-        if phase:
-            f = f.transpose(Image.FLIP_LEFT_RIGHT)
-        f = f.resize(CANVAS, Image.BICUBIC).filter(ImageFilter.GaussianBlur(2.5))
-        fields.append(list(f.getdata()))
+    # the maroon block, darkened toward its foot so the extrusion reads as depth
+    img.alpha_composite(fill(solid, MAROON))
 
-    src = list(mask.getdata())
-    out = [0] * (W * H)
-    fx, fy = fields
-    for y in range(H):
-        row = y * W
-        dy = int((fy[row] - 128) / 128.0 * amp)
-        for x in range(W):
-            sx = x + int((fx[row + x] - 128) / 128.0 * amp)
-            sy = y + dy
-            if 0 <= sx < W and 0 <= sy < H:
-                out[row + x] = src[sy * W + sx]
-    res = Image.new("L", CANVAS, 0)
-    res.putdata(out)
-    return res
+    # the gold face, with a blush of white along its top edge
+    img.alpha_composite(fill(mask, GOLD))
+    lip = ImageChops.subtract(mask, shifted(mask, (0, 3)))
+    img.alpha_composite(fill(lip, [(0, (255, 255, 245))]))
 
-
-def brush(mask, seed=11):
-    """Soften the type into paint: blended edges plus a little spatter.
-
-    Earlier versions multiplied the mask by hard noise, which punched holes
-    through thin strokes and left them looking like outlines. The edges are
-    eased here instead, and only stray dots are added outside the letterform.
-    """
-    rnd = random.Random(seed)
-    eased = mask.filter(ImageFilter.GaussianBlur(1.1)).point(
-        lambda v: 255 if v > 96 else v)
-    layer = Image.new("L", CANVAS, 0)
-    d = ImageDraw.Draw(layer)
-    edge = ImageChops.subtract(mask.filter(ImageFilter.MaxFilter(9)), mask)
-    for _ in range(120):
-        x, y = rnd.randrange(CANVAS[0]), rnd.randrange(CANVAS[1])
-        if edge.getpixel((x, y)) > 80:
-            r = rnd.choice((1, 1, 2))
-            d.ellipse([x - r, y - r, x + r, y + r], fill=255)
-    return ImageChops.lighter(eased, layer)
-
-
-def paint(mask):
-    """Give a letterform mask the painted-red look, with a dark rim."""
-    img = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-    img.alpha_composite(art.outline(mask, RED_DEEP, thickness=2))
-
-    body = Image.new("RGBA", CANVAS, RED + (255,))
-    body.putalpha(mask)
-    img.alpha_composite(body)
-
-    # a few darker brush streaks inside the strokes, clipped to the letterform
-    rnd = random.Random(21)
-    streaks = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-    sd = ImageDraw.Draw(streaks)
-    for _ in range(90):
-        x, y = rnd.randrange(CANVAS[0]), rnd.randrange(CANVAS[1])
-        if mask.getpixel((x, y)) < 128:
-            continue
-        ln = rnd.randint(6, 26)
-        ang = rnd.uniform(-0.5, 0.5)
-        sd.line([(x, y), (x + math.cos(ang) * ln, y + math.sin(ang) * ln)],
-                fill=RED_SH + (rnd.randint(30, 80),), width=rnd.randint(1, 2))
-    img.alpha_composite(streaks)
-
-    # a warm highlight riding the upper edge of each stroke
-    hi = ImageChops.subtract(mask, ImageChops.offset(mask, 1, 4))
-    hi_layer = Image.new("RGBA", CANVAS, RED_HI + (255,))
-    hi_layer.putalpha(ImageChops.multiply(hi, mask).point(lambda v: int(v * 0.5)))
-    img.alpha_composite(hi_layer)
-
-    # slight vertical shading so the paint has weight
-    grad = art.vgrad(CANVAS, [(0, (40, 0, 0)), (CANVAS[1], (0, 0, 0))])
-    shade = grad.copy()
-    shade.putalpha(mask.point(lambda v: int(v * 0.18)))
+    # a soft inner shade at the foot of each letter, so the gold has weight
+    foot = ImageChops.subtract(mask, shifted(mask, (0, -6)))
+    shade = fill(foot, [(0, (200, 110, 20))])
+    shade.putalpha(shade.getchannel("A").point(lambda v: int(v * 0.35)))
     img.alpha_composite(shade)
-    return img.filter(ImageFilter.GaussianBlur(0.5))
+    return img.filter(ImageFilter.GaussianBlur(0.4))
+
+
+# ------------------------------------------------------------------ ribbons
+def catmull(p0, p1, p2, p3, t):
+    t2, t3 = t * t, t * t * t
+    return (0.5 * ((2 * p1[0]) + (-p0[0] + p2[0]) * t
+                   + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2
+                   + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3),
+            0.5 * ((2 * p1[1]) + (-p0[1] + p2[1]) * t
+                   + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2
+                   + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3))
+
+
+def spline(points, steps=240):
+    """Sample a Catmull-Rom spline through ``points``."""
+    pts = [points[0]] + list(points) + [points[-1]]
+    out = []
+    span = len(pts) - 3
+    per = max(1, steps // span)
+    for i in range(span):
+        for s in range(per):
+            out.append(catmull(pts[i], pts[i + 1], pts[i + 2], pts[i + 3],
+                               s / float(per)))
+    out.append(points[-1])
+    return out
+
+
+def lerp(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def ribbon(points, width=(30.0, 26.0), colors=(WHITE, BLUE_DEEP), seed=3):
+    """A tapered brush ribbon along a spline, graded from white to blue."""
+    rnd = random.Random(seed)
+    path = spline(points)
+    layer = Image.new("RGBA", WORK, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    n = len(path)
+    for i, (x, y) in enumerate(path):
+        t = i / float(n - 1)
+        # fat through the middle, thinning at both ends
+        shape = math.sin(math.pi * min(1.0, max(0.02, t))) ** 0.55
+        r = (width[0] + (width[1] - width[0]) * t) * shape
+        r *= 1.0 + rnd.uniform(-0.04, 0.04)
+        col = lerp(colors[0], colors[1], min(1.0, t * 1.1))
+        d.ellipse([x - r, y - r * 0.8, x + r, y + r * 0.8], fill=col + (255,))
+    layer = layer.filter(ImageFilter.GaussianBlur(1.1))
+
+    # a bright crest along the ribbon's upper edge
+    crest = Image.new("RGBA", WORK, (0, 0, 0, 0))
+    cd = ImageDraw.Draw(crest)
+    for i, (x, y) in enumerate(path):
+        t = i / float(n - 1)
+        shape = math.sin(math.pi * min(1.0, max(0.02, t))) ** 0.55
+        r = (width[0] + (width[1] - width[0]) * t) * shape * 0.32
+        if r < 0.8:
+            continue
+        cd.ellipse([x - r, y - r * 0.85 - 3.0, x + r, y + r * 0.4 - 3.0],
+                   fill=(255, 255, 255, 120))
+    layer.alpha_composite(crest.filter(ImageFilter.GaussianBlur(2.2)))
+    return layer
+
+
+# ------------------------------------------------------------------- plate
+def plate():
+    """A painted title logo from art_src, if one has been supplied."""
+    for path in PLATES:
+        if os.path.isfile(path):
+            img = Image.open(path).convert("RGBA")
+            k = min(CANVAS[0] / float(img.width), CANVAS[1] / float(img.height))
+            img = img.resize((max(1, int(round(img.width * k))),
+                              max(1, int(round(img.height * k)))), Image.LANCZOS)
+            out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+            out.alpha_composite(img, ((CANVAS[0] - img.width) // 2,
+                                      (CANVAS[1] - img.height) // 2))
+            return out, path
+    return None, None
+
+
+# -------------------------------------------------------------------- logo
+def lockup():
+    """The lockup on the scratch canvas, before fitting."""
+    cx = WORK[0] / 2.0
+
+    caps_size = fit_size(0.84 * WORK[0],
+                         lambda s: arc_line("BIG TROUBLE", s, cx, 24, ARC_RADIUS,
+                                            seed=4, jitter=1.0),
+                         guess=110)
+    caps = arc_line("BIG TROUBLE", caps_size, cx, 24, ARC_RADIUS, seed=4,
+                    jitter=1.0)
+    cbox = caps.getbbox()
+
+    # The arch's arms dive well below the centre, so the stack is measured from
+    # the middle of the caps - not from the bottom of the whole mask, which is
+    # the tip of the outer letters.
+    middle = caps.crop((int(cx) - 40, 0, int(cx) + 40, WORK[1])).getbbox()
+    mid_bottom = middle[3]
+
+    in_size = max(16, int(round(caps_size * 0.17)))
+    in_mask = flat_line("IN", in_size, cx + 2, mid_bottom + in_size * 0.66,
+                        seed=7, jitter=0.3, weight=0.06)
+    ibox = in_mask.getbbox()
+
+    # LITTLE and CHINA stack under it, narrow enough to sit in the opening
+    # between the arms; if a font's metrics push one into an arm, it drops
+    # until it clears rather than crossing it.
+    # Sized by cap height, not by width: LITTLE has six letters to BIG TROUBLE's
+    # eleven, so matching widths would make its capitals as tall as the arch.
+    little_size = max(24, int(round(caps_size * 0.66)))
+    little_y = ibox[3] + little_size * 0.62
+    little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
+                       jitter=0.4, weight=0.05, tilt=0.5)
+    while little_y < WORK[1] - 60 and touches(caps, little, little.getbbox()):
+        little_y += 4
+        little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
+                           jitter=0.4, weight=0.05, tilt=0.5)
+    lbox = little.getbbox()
+
+    china_size = max(22, int(round(caps_size * 0.62)))
+    china_y = lbox[3] + china_size * 0.60
+    china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13, jitter=0.4,
+                      weight=0.05, tilt=-0.5)
+    while china_y < WORK[1] - 50 and touches(caps, china, china.getbbox()):
+        china_y += 4
+        china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13,
+                          jitter=0.4, weight=0.05, tilt=-0.5)
+    hbox = china.getbbox()
+
+    back = Image.new("RGBA", WORK, (0, 0, 0, 0))
+    # a ribbon falling from behind the left arm, then curling in under the stack
+    left = max(8.0, cbox[0] + 18)
+    back.alpha_composite(ribbon([(left, cbox[3] * 0.46), (left + 66, cbox[3] * 0.30),
+                                 (left + 132, cbox[3] * 0.38),
+                                 (left + 96, lbox[1] + 16),
+                                 (left + 26, hbox[1] + 26),
+                                 (left + 44, hbox[3] + 30)],
+                                width=(46.0, 34.0),
+                                colors=((186, 212, 250), BLUE_DEEP), seed=5))
+    # a ribbon leaving under CHINA and trailing out to the lower right
+    right = min(WORK[0] - 60.0, hbox[2] - 40.0)
+    back.alpha_composite(ribbon([(right - 110, hbox[3] - 8), (right, hbox[3] - 18),
+                                 (right + 74, hbox[3] + 4),
+                                 (right + 126, hbox[3] + 58),
+                                 (right + 146, hbox[3] + 100)],
+                                width=(46.0, 34.0),
+                                colors=((194, 216, 250), BLUE_DEEP), seed=8))
+
+    art_img = Image.new("RGBA", WORK, (0, 0, 0, 0))
+    art_img.alpha_composite(back)
+    art_img.alpha_composite(paint_line(caps, depth=(12, 13)))
+    art_img.alpha_composite(paint_line(in_mask, depth=(5, 6)))
+    art_img.alpha_composite(paint_line(
+        little, depth=(max(4, little_size // 10), max(5, little_size // 9))))
+    art_img.alpha_composite(paint_line(
+        china, depth=(max(4, china_size // 10), max(5, china_size // 9))))
+    return art_img
 
 
 def wordmark():
-    """The finished logo on the 699x257 screenpack canvas, and its ink box."""
-    big = caps_line()
-    small = subtitle(big)
-    mask = wobble(ImageChops.lighter(big, small))
-    mask = ImageChops.lighter(brush(mask, seed=4), brush(mask, seed=9))
-    logo = paint(mask)
-    box = logo.getchannel("A").getbbox()
-    if box[0] < 4 or box[2] > CANVAS[0] - 4:
+    """The lockup fitted into the sprite, with its ink box."""
+    global WORK
+    WORK = SCRATCH
+    try:
+        art_img = lockup()
+    finally:
+        WORK = CANVAS
+
+    box = art_img.getbbox()
+    art_img = art_img.crop(box)
+    room = (CANVAS[0] - PAD * 2, CANVAS[1] - PAD * 2)
+    # fill the slot: the lockup is drawn on a scratch canvas at working size,
+    # so scaling it up into the sprite is how it gets its final resolution
+    k = min(room[0] / float(art_img.width), room[1] / float(art_img.height))
+    art_img = art_img.resize((max(1, int(round(art_img.width * k))),
+                              max(1, int(round(art_img.height * k)))),
+                             Image.LANCZOS)
+
+    logo = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+    logo.alpha_composite(art_img, ((CANVAS[0] - art_img.width) // 2,
+                                   (CANVAS[1] - art_img.height) // 2))
+    box = logo.getbbox()
+    if box[0] < 1 or box[2] > CANVAS[0] - 1 or box[1] < 1 or box[3] > CANVAS[1] - 1:
         raise SystemExit(f"title logo overflows its canvas: {box}")
     return logo, box
 
@@ -370,7 +440,13 @@ def build():
     if found != slots:
         raise SystemExit(f"system.sff is missing logo slots: {slots - found}")
 
-    logo, box = wordmark()
+    painted, source = plate()
+    if painted is None:
+        logo, box = wordmark()
+    else:
+        logo, box = painted, painted.getbbox()
+        print(f"using painted title plate {os.path.relpath(source, ROOT)}")
+
     glow = logo.filter(ImageFilter.GaussianBlur(3.2))
     blank = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
 
