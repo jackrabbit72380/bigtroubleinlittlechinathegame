@@ -1,0 +1,91 @@
+;---------------------------------------------------------------------------
+; The Upside Down
+; Part of Big Trouble in Little China: The Game (Ikemen GO)
+; HD stage: painted at 1280x960 by tools/stages_hd.py.
+;---------------------------------------------------------------------------
+[Info]
+name = "The Upside Down"
+displayname = "The Upside Down"
+versiondate = 10,28,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+
+[Camera]
+startx = 0
+starty = 0
+boundleft = -1040
+boundright = 1040
+boundhigh = -100
+boundlow = 0
+verticalfollow = .2
+floortension = 0
+tension = 60
+overdrawhigh = 0
+overdrawlow = 0
+cuthigh = 140
+cutlow = 100
+zoomout = 1
+zoomin = 1
+
+[PlayerInfo]
+p1startx = -280
+p1starty = 0
+p1facing = 1
+p2startx = 280
+p2starty = 0
+p2facing = -1
+leftbound = -1620
+rightbound = 1620
+
+[Bound]
+screenleft = 60
+screenright = 60
+
+[StageInfo]
+zoffset = 800
+autoturn = 1
+resetBG = 1
+localcoord = 1280, 960
+xscale = 1
+yscale = 1
+
+[Shadow]
+intensity = 96
+color = 0,0,0
+yscale = -.1
+fade.range = -400,-100
+
+[Reflection]
+intensity = 0
+
+[Music]
+bgmusic =
+bgmvolume = 100
+
+[BGdef]
+spr = the_upside_down.sff
+debugbg = 0
+
+; IKEMEN GO select-screen preview
+[Begin Action 9000]
+9000,1, 0,0, -1
+
+[BG bg]
+type = normal
+spriteno = 0,0
+layerno = 0
+start = -2000,0
+delta = 1,1
+trans = none
+mask = 0
+tile = 0,0
+
+[BG fg]
+type = normal
+spriteno = 3,0
+layerno = 1
+start = -2000,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
