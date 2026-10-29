@@ -19,12 +19,13 @@ import os
 import random
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import art
 import stages_hd as hd
+from stage_throne import sculpted
 
 W, H = hd.W, hd.H
 CX, FLOOR_Y, px = hd.CX, hd.FLOOR_Y, hd.px
@@ -44,7 +45,7 @@ def mix(a, b, t):
 
 # ------------------------------------------------------------------ the roof
 def ceiling(base):
-    """Wet earth roof: ragged lower edge, embedded stones."""
+    """Wet earth roof: ragged lower edge, embedded stones, roots hanging down."""
     rnd = random.Random(7)
     d = ImageDraw.Draw(base)
     edge = []
@@ -66,6 +67,7 @@ def ceiling(base):
         r = rnd.randint(int(px(1)), int(px(3)))
         d.ellipse([x, y, x + r, y + r * 0.8],
                   fill=mix((74, 68, 56), (116, 108, 92), rnd.random()))
+    # the wet lip of the roof, catching the shaft
     d.line([(x, y + px(1)) for x, y in edge], fill=(52, 40, 26), width=max(1, px(1)))
 
 
@@ -179,7 +181,7 @@ def trunk(base, x, w_top, w_bot, seed, sway=0.0):
         r = rnd.uniform(px(2), px(7))
         dc.ellipse([cxx - r, ky - r, cxx + r, ky + r], fill=(24, 20, 15))
         dh.ellipse([cxx - r, ky - r, cxx + r, ky + r], fill=146)
-    layer = hd.sculpted(color, height, x, FLOOR_Y - px(14))
+    layer = sculpted(color, height, x, FLOOR_Y - px(14))
     d = ImageDraw.Draw(layer)
     for _ in range(8):
         ex = x + rnd.uniform(-w_bot * 2.4, w_bot * 2.4)
@@ -217,6 +219,7 @@ def ring(base):
     d.arc([RING_CX - RING_RX, RING_CY - RING_RY, RING_CX + RING_RX, RING_CY + RING_RY],
           0, 360, fill=(178, 178, 148), width=max(1, px(1.2)))
 
+    # the stair dropping out of the circle into the pit
     top_y, bot_y = RING_CY - px(18), RING_CY + px(10)
     steps = 7
     for i in range(steps):
