@@ -35,6 +35,10 @@ def main():
                            "bernardo-mercurio-jack-turnable.jpg")
     if os.path.isfile(concept):
         scripts += ["jack_cut.py", "bake_char.py"]
+    # Select-screen portraits: the pre-match screens read each fighter's 9000,0
+    # and 9000,1 out of its own SFF, and a character baked from the rig has
+    # neither, so they are rendered from its own art after the bake.
+    scripts.append("build_portraits.py")
     # The title logo is painted into the screenpack SFF, which a fresh engine
     # data copy resets on every build, so it is regenerated rather than
     # committed by hand.
@@ -47,6 +51,9 @@ def main():
     logo_def = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "logo.def")
     if os.path.isfile(logo_def):
         scripts.append("build_splash.py")
+    # The stage-select hint is another layer in the same screenpack.
+    if os.path.isfile(title_sff):
+        scripts.append("build_select_ui.py")
     scripts.append("validate.py")
     for script in scripts:
         code = run(script)
