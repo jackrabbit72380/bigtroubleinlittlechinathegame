@@ -32,6 +32,7 @@ stages/wingkong_exchange.def
 stages/porkchop_express.def
 stages/lopans_throne.def
 stages/the_upside_down.def
+stages/airport_terminal.def
 stages/stage0.def        ; training room
 
 ;-------------------------------------------------------------------------------

@@ -15,6 +15,7 @@ ship it bundled, so players just download and launch.
 ![Chinatown Back Alley](artifacts/chinatown_alley_preview.png)
 ![Pork Chop Express](artifacts/porkchop_express_preview.png)
 ![The Upside Down](artifacts/the_upside_down_preview.png)
+![Airport Terminal](artifacts/airport_terminal_preview.png)
 
 ## Download and play
 
@@ -106,9 +107,10 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
 | The Upside Down | `stages/the_upside_down.def` | cavern roof, green light shaft, stair into the dark |
+| Airport Terminal | `stages/airport_terminal.def` | gate concourse, floor-to-ceiling glazing, parked airliners, security and baggage belts |
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
-All five BTILC stages are drawn procedurally (no bitmaps committed as source),
+All six BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1280×960** (`localcoord = 1280, 960`), which is arcade
 resolution times four — the engine no longer stretches a 240-line image across
