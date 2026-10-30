@@ -1,11 +1,8 @@
-name: Fix fighter scale and palettes
+# One-shot repair, see tools/_oneshot_fix.py for the two defects it fixes:
+# the rig fighters had no localcoord (drawn 3x too big) and palette grading
+# turned skin magenta. Runs the repair, rebuilds every asset, then removes itself.
 
-# One-shot repair:
-#  * the puppet-rig fighters are authored at 3x scale but their .def files never
-#    declared localcoord, so Ikemen drew them at the 320x240 default and they came
-#    out three times too big (giant cropped boots on the select screen and in play).
-#  * palette grading recoloured skin and whites, turning faces magenta.
-# Applies the source fixes, rebuilds every asset, commits, then removes itself.
+name: Fix fighter scale and palettes
 
 on:
   workflow_dispatch:
@@ -28,62 +25,17 @@ jobs:
       - name: Install generator dependencies
         run: python3 -m pip install --quiet pillow
 
-      - name: Apply the source fixes
-        run: |
-          python3 - <<'PY'
-          p = "tools/bake_char.py"
-          s = open(p, encoding="utf-8").read()
-          old = 'author = "Big Trouble in Little China: The Game"\npal.defaults = 1\n'
-          new = ('author = "Big Trouble in Little China: The Game"\npal.defaults = 1\n'
-                 'localcoord = {int(320 * clsn_k)}, {int(240 * clsn_k)}\n')
-          assert s.count(old) == 1
-          open(p, "w", encoding="utf-8").write(s.replace(old, new))
-          print("patched", p)
-
-          p = "tools/build_chars.py"
-          s = open(p, encoding="utf-8").read()
-          old = '''def grade_colour(rgb, spec):
-              """Hue-rotate and grade one colour, keeping blacks/greys neutral."""
-              hue, sat, val = _rgb_to_hsv(*rgb)
-              if val < 0.06:                      # keep outlines black
-                  return rgb
-              sat_shift = spec["pal"][1]
-              val_shift = spec["pal"][2]
-              hue = (hue + spec["pal"][0] / 360.0) % 1.0
-              # low-saturation pixels (skin highlights, whites) should barely shift
-              hue = (hue * min(1.0, sat * 1.8) + _rgb_to_hsv(*rgb)[0] * (1 - min(1.0, sat * 1.8))) % 1.0
-          '''.replace("\n    ", "\n")
-          new = '''def grade_colour(rgb, spec):
-              """Hue-rotate and grade one colour, keeping skin, whites and blacks neutral.
-
-              Only the clothing colours are meant to move. Grading everything turned
-              faces magenta and hands cyan, so skin tones and near-neutral pixels are
-              passed through untouched.
-              """
-              hue, sat, val = _rgb_to_hsv(*rgb)
-              if val < 0.06:                      # keep outlines black
-                  return rgb
-              if sat < 0.12:                      # whites and greys stay neutral
-                  return rgb
-              if 0.010 <= hue <= 0.110 and 0.15 <= sat <= 0.75 and val >= 0.30:
-                  return rgb                      # skin: shifting this makes faces neon
-              sat_shift = spec["pal"][1]
-              val_shift = spec["pal"][2]
-              hue = (hue + spec["pal"][0] / 360.0) % 1.0
-          '''.replace("\n    ", "\n")
-          assert s.count(old) == 1, s.count(old)
-          open(p, "w", encoding="utf-8").write(s.replace(old, new))
-          print("patched", p)
-          PY
+      - name: Apply the repair
+        run: python3 tools/_oneshot_fix.py
 
       - name: Rebuild every asset
         run: python3 tools/build_all.py
 
-      - name: Commit, then remove this workflow
+      - name: Commit, then remove the one-shot files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          rm -f .github/workflows/fix-scale.yml
+          rm -f .github/workflows/fix-scale.yml tools/_oneshot_fix.py
           git add -A
           git commit -m "Give the rig fighters their real localcoord and stop grading skin tones"
           git push
