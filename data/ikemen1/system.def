@@ -126,11 +126,11 @@ hiscore.bgm.loopend =
 [Title Info]
 fadein.time = 10
 fadeout.time = 10
-menu.pos = 1240,330
+menu.pos = 1240, 260
 menu.tween.factor = 0.5
 menu.item.font = 10,0,-1, 240, 196, 88
 menu.item.active.font = 12,0,-1, 255, 228, 140
-menu.item.spacing = 0, 54
+menu.item.spacing = 0, 40
 menu.item.layerno = 2
 menu.item.active.layerno = 2
 
@@ -174,8 +174,8 @@ textinput.overlay.alpha = 0, 128
 
 ; These parameters define the window in which the items are visible
 ; in.
-menu.window.margins.y = 40, 30
-menu.window.visibleitems = 6
+menu.window.margins.y = 34, 24
+menu.window.visibleitems = 9
 menu.boxcursor.visible = 0         ;Set to 1 to enable default cursor display
 menu.boxcursor.tween.snap = 1      ;Set to 0 to disable cursor snap on menu section change
 menu.boxcursor.tween.factor = 0.5
@@ -624,7 +624,7 @@ stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-;stage.portrait.spr = 9000,1
+stage.portrait.spr = 9000,1
 stage.portrait.offset = -121, -141
 stage.portrait.scale = 0.25, 0.25
 stage.portrait.bg.anim = 110
