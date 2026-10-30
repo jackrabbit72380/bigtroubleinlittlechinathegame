@@ -2506,3 +2506,33 @@ Clsn2Default: 1
 5300,3, 0,0, 8
 5300,2, 0,0, 8
 5300,1, 0,0, 8
+
+;---------------------------------------------------------------------------
+; Lightning - projectile animation set (added by tools/lightning.py)
+;---------------------------------------------------------------------------
+; Bolt (projectile)
+[Begin Action 7000]
+Clsn1: 1
+ Clsn1[0] = -10,-10, 10,10
+7000,0, 0,0, -1
+
+; Discharge at the hand
+[Begin Action 7001]
+7001,0, 0,0, 2
+7001,1, 0,0, 2
+7001,2, 0,0, -1
+
+; Impact spark
+[Begin Action 7002]
+7002,0, 0,0, 3
+7002,1, 0,0, 3
+7002,2, 0,0, -1
+
+; Thunderbolt, crackling on its way out
+[Begin Action 7010]
+Clsn1: 1
+ Clsn1[0] = -30,-14, 30,14
+7010,0, 0,0, 3
+7010,1, 0,0, 3
+7010,2, 0,0, 3
+7010,3, 0,0, 3

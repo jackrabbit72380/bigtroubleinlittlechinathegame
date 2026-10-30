@@ -370,6 +370,24 @@ time = 1
 
 
 ; Don't remove the following line. It's required by the CMD standard.
+
+;-| Lightning - storm motions |-------------------------------------------
+[Command]
+name = "volt_a"
+command = ~D, DB, B, a
+
+[Command]
+name = "volt_b"
+command = ~D, DB, B, b
+
+[Command]
+name = "thunder_a"
+command = ~F, DF, D, DB, B, a
+
+[Command]
+name = "thunder_b"
+command = ~F, DF, D, DB, B, b
+
 [Statedef -1]
 
 ;===========================================================================
@@ -773,3 +791,26 @@ trigger1 = ctrl
 trigger2 = stateno = 600 || stateno = 630 ;jump_x or jump_a
 trigger2 = movecontact
 trigger3 = stateno = 1350 ;Air blocking
+
+;---------------------------------------------------------------------------
+; Lightning - storm specials
+;---------------------------------------------------------------------------
+;Volt Volley (three bolts)
+[State -1, Volt Volley]
+type = ChangeState
+value = 1500
+triggerall = command = "volt_a" || command = "volt_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Thunderbolt (single heavy bolt)
+[State -1, Thunderbolt]
+type = ChangeState
+value = 1600
+triggerall = command = "thunder_a" || command = "thunder_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)

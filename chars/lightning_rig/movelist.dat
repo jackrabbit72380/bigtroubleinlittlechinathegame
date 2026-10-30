@@ -1,0 +1,24 @@
+<#f0f000>:Movement:</>
+Walk, jump, crouch						_DPAD_
+Dash forward / back						_F_F_ / _B_B_
+
+<#f0f000>:Guard:</>
+High guard							_F_+^X
+Low guard							_DF_+^X
+Air guard							_AIR_F_+^X
+
+<#f0f000>:Throws:</>
+Bolt Throw							[_B/_F]_+^Y
+
+<#f0f000>:Special Moves:</>
+Volt Palm							_QDF^P
+Flash Upper							_DSF^P
+Static Blow								_QDB^P
+Arc Hand								_QDF^K
+Thunder Step								_F_F^K
+Volt Volley\t\t\t\t\t\t\t_QDB^K
+Thunderbolt\t\t\t\t\t\t\t_QDBF^K
+
+<#f0f000>:Super Moves:</>
+Chain Lightning <#bebebe>(1000)</>				_QDF_QDF^P
+Storm of the Three <#bebebe>(1000)</>				_QDB_QDB^P

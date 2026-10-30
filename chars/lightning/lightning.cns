@@ -3443,3 +3443,177 @@ triggerall = Time = 1
 trigger1 = stateno = 52 ;Jump land
 trigger2 = stateno = 106 ;Run-back land
 value = 40, 0
+
+;---------------------------------------------------------------------------
+; Lightning - storm specials
+; The volley is three bolts on consecutive thrusts, each weaker than the last,
+; so the whole volley hurts about as much as one solid strike. The Thunderbolt
+; is a single heavy shot that keeps crackling all the way across the screen.
+;---------------------------------------------------------------------------
+[Statedef 1500]
+type    = S
+movetype= A
+physics = S
+juggle  = 4
+poweradd= 45
+velset = 0,0
+anim = 1210
+ctrl = 0
+sprpriority = 2
+
+[State 1500, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1500, discharge 1]
+type = Explod
+trigger1 = AnimElem = 4
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+
+[State 1500, discharge 2]
+type = Explod
+trigger1 = AnimElem = 6
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+
+[State 1500, discharge 3]
+type = Explod
+trigger1 = AnimElem = 8
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+
+[State 1500, bolt 1]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 38
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, bolt 2]
+type = Projectile
+trigger1 = AnimElem = 6
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 34
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, bolt 3]
+type = Projectile
+trigger1 = AnimElem = 8
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 30
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+[Statedef 1600]
+type    = S
+movetype= A
+physics = S
+juggle  = 5
+poweradd= 55
+velset = 0,0
+anim = 1400
+ctrl = 0
+sprpriority = 2
+
+[State 1600, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1600, thunderbolt]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7010
+projhitanim = 7002
+velocity = 11, 0
+removetime = -1
+projshadow = -1
+damage = 82
+attr = S, SP
+guardflag = MA
+pausetime = 8, 14
+sparkno = 1
+sparkxy = -10,-62
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 16
+ground.velocity = -4
+air.velocity = -3.5,-3
+fall = 0
+
+[State 1600, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
