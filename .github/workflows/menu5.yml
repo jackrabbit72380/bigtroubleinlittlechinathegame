@@ -1,0 +1,44 @@
+# One-shot: applies the glyph offset fix to tools/, then leaves main clean.
+# A GITHUB_TOKEN push cannot edit .github/workflows/*, so this job exists only
+# for the duration of the apply.
+
+name: glyph offset fix (one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack the patch
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, pathlib
+          raw = pathlib.Path("_menu5.b64").read_bytes().strip()
+          blob = raw if raw[:2] == b"\x1f\x8b" else base64.b64decode(raw)
+          pathlib.Path("/tmp/menu5.patch").write_bytes(gzip.decompress(blob))
+          print("patch unpacked")
+          PY
+
+      - name: Apply it
+        run: |
+          set -euo pipefail
+          git apply --whitespace=nowarn --verbose /tmp/menu5.patch
+          grep -n "Offset = 0,{cell_h - 1}" tools/build_fonts.py
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q _menu5.b64
+          git add -A
+          git commit -m "Place bitmap glyphs where the TrueType text drew them"
+          git pull --rebase --autostash origin main
+          git push
