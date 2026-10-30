@@ -38,7 +38,9 @@ GOLD = "240, 196, 88"
 BRIGHT = "255, 228, 140"
 DEEP = "176, 126, 44"
 RED = "214, 58, 48"
-MAROON = "72, 10, 16"
+# Warmer than the gold, for player 2 and other secondary labels, so the two
+# sides stay distinguishable without a second loud colour.
+AMBER = "236, 158, 74"
 
 D = "10"   # Display.def
 B = "11"   # Body.def
@@ -60,7 +62,7 @@ REWRITES = (
     # title screen menu
     ("menu.item.font", f"{D},0,-1, {GOLD}"),
     ("menu.item.active.font", f"{D},0,-1, {BRIGHT}"),
-    ("menu.item.selected.font", f"{D},0,1, {RED}"),
+    ("menu.item.selected.font", f"{D},0,1, {BRIGHT}"),
     ("menu.item.selected.active.font", f"{D},0,1, {BRIGHT}"),
     ("menu.item.value.font", f"{B},0,-1, {DEEP}"),
     ("menu.item.value.active.font", f"{B},0,-1, {BRIGHT}"),
@@ -70,13 +72,12 @@ REWRITES = (
     ("title.font", f"{D},0,0, {BRIGHT}"),
     ("loading.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
     # the black bar under the title screen
-    ("footer.title.font", f"{B}, 0, 1, {RED}, 255, -1"),
+    ("footer.title.font", f"{B}, 0, 1, {GOLD}, 255, -1"),
     ("footer.info.font", f"{B}, 0, 0, {GOLD}, 255, -1"),
     ("footer.version.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
     ("footer.title.scale", "1,1"),
     ("footer.info.scale", "1,1"),
     ("footer.version.scale", "1,1"),
-    ("footer.overlay.col", MAROON),
     # The bar is rows 700-719; a 15px face at the engine's 715 clipped its
     # descenders, so centre the three fields inside the bar instead.
     ("footer.title.offset", "5, 702"),
@@ -86,26 +87,26 @@ REWRITES = (
     ("text.font", f"{B}, 0, 1, {GOLD}"),
     # select screen
     ("p1.name.font", f"{D}, 0, 1, {GOLD}"),
-    ("p2.name.font", f"{D}, 0, -1, {RED}"),
+    ("p2.name.font", f"{D}, 0, -1, {AMBER}"),
     ("stage.font", f"{B}, 0, 0, {DEEP}"),
     ("stage.active.font", f"{B}, 0, 0, {BRIGHT}"),
-    ("stage.active2.font", f"{B}, 0, 0, {RED}"),
+    ("stage.active2.font", f"{B}, 0, 0, {DEEP}"),
     ("stage.done.font", f"{B}, 0, 0, {DEEP}"),
     ("record.font", f"{B}, 0, 0, {DEEP}"),
     ("p1.teammenu.selftitle.font", f"{B}, 0, 0, {BRIGHT}"),
     ("p1.teammenu.enemytitle.font", f"{B}, 0, 0, {BRIGHT}"),
     ("p1.teammenu.item.font", f"{B}, 0, 1, {GOLD}"),
     ("p1.teammenu.item.active.font", f"{B}, 0, 1, {BRIGHT}"),
-    ("p1.teammenu.item.active2.font", f"{B}, 0, 1, {RED}"),
-    ("p2.teammenu.selftitle.font", f"{B}, 1, 0, {RED}"),
-    ("p2.teammenu.enemytitle.font", f"{B}, 1, 0, {RED}"),
+    ("p1.teammenu.item.active2.font", f"{B}, 0, 1, {DEEP}"),
+    ("p2.teammenu.selftitle.font", f"{B}, 0, 0, {GOLD}"),
+    ("p2.teammenu.enemytitle.font", f"{B}, 0, 0, {GOLD}"),
     ("p2.teammenu.item.font", f"{B}, 0, -1, {GOLD}"),
-    ("p2.teammenu.item.active.font", f"{B}, 1, -1, {RED}"),
-    ("p2.teammenu.item.active2.font", f"{B}, 1, -1, {BRIGHT}"),
+    ("p2.teammenu.item.active.font", f"{B}, 1, -1, {AMBER}"),
+    ("p2.teammenu.item.active2.font", f"{B}, 1, -1, {GOLD}"),
     ("p1.palmenu.text.font", f"{B}, 0, 1, {GOLD}"),
-    ("p2.palmenu.text.font", f"{B}, 0, -1, {RED}"),
+    ("p2.palmenu.text.font", f"{B}, 0, -1, {AMBER}"),
     ("p1.palmenu.number.font", f"{B}, 0, 0, {GOLD}"),
-    ("p2.palmenu.number.font", f"{B}, 0, 0, {RED}"),
+    ("p2.palmenu.number.font", f"{B}, 0, 0, {AMBER}"),
     # continue / yes / no
     ("continue.font", f"{B}, 0, 0, {GOLD}"),
     ("yes.font", f"{B}, 0, 0, {DEEP}"),
@@ -118,7 +119,7 @@ REWRITES = (
     ("credits.font", f"{B}, 0, 1, {DEEP}"),
     ("start.insert.font", f"{D}, 0, 0, {BRIGHT}"),
     ("start.press.font", f"{D}, 0, 0, {BRIGHT}"),
-    ("start.timer.font", f"{D}, 0, -1, {RED}"),
+    ("start.timer.font", f"{D}, 0, -1, {GOLD}"),
     # scoreboard
     ("item.rank.font", f"{B}, 0, -1, {DEEP}"),
     ("item.rank.active.font", f"{B}, 0, -1, {GOLD}"),
@@ -128,10 +129,10 @@ REWRITES = (
     ("item.result.active2.font", f"{B}, 0, -1, {BRIGHT}"),
     ("item.name.font", f"{B}, 0, 1, {GOLD}"),
     ("item.name.active.font", f"{B}, 0, 1, {BRIGHT}"),
-    ("item.name.active2.font", f"{B}, 0, 1, {RED}"),
+    ("item.name.active2.font", f"{B}, 0, 1, {DEEP}"),
     # key config, movelist, menu chrome
     ("keymenu.p1.playerno.font", f"{B}, 0, 0, {GOLD}"),
-    ("keymenu.p2.playerno.font", f"{B}, 0, 0, {RED}"),
+    ("keymenu.p2.playerno.font", f"{B}, 0, 0, {AMBER}"),
     ("movelist.title.font", f"{D}, 0, 0, {BRIGHT}"),
     ("movelist.text.font", f"{B}, 0, 1, {GOLD}"),
     ("menu.boxcursor.col", BRIGHT),

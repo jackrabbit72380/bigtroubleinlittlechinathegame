@@ -314,9 +314,7 @@ def check_menu_theme():
             % ", ".join(stale))
     if declared.get("font10") is None or declared.get("font11") is None:
         err("menu theme: font10/font11 are not registered in [Files]")
-    if "footer.title.font" in def_text and "72, 10, 16" not in def_text:
-        err("menu theme: the footer bar is not in the logo palette")
-    notes.append("menu theme: logo face, gold/red palette, footer bar restyled")
+    notes.append("menu theme: logo face, gold lettering, amber for player 2")
 
 
 def main():
