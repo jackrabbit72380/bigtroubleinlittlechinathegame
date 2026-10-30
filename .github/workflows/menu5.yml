@@ -1,6 +1,5 @@
 # One-shot: applies the glyph offset fix to tools/, then leaves main clean.
-# A GITHUB_TOKEN push cannot edit .github/workflows/*, so this job exists only
-# for the duration of the apply.
+# The unpack is plain shell - a python heredoc inside run: | failed instantly.
 
 name: glyph offset fix (one-shot)
 
@@ -18,13 +17,9 @@ jobs:
 
       - name: Unpack the patch
         run: |
-          python3 - <<'PY'
-          import base64, gzip, pathlib
-          raw = pathlib.Path("_menu5.b64").read_bytes().strip()
-          blob = raw if raw[:2] == b"\x1f\x8b" else base64.b64decode(raw)
-          pathlib.Path("/tmp/menu5.patch").write_bytes(gzip.decompress(blob))
-          print("patch unpacked")
-          PY
+          set -euo pipefail
+          base64 -d _menu5.b64 | gunzip > /tmp/menu5.patch
+          wc -c /tmp/menu5.patch
 
       - name: Apply it
         run: |
