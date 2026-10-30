@@ -1,4 +1,4 @@
-The Display.ttf face shipped here is DejaVuSans-Bold.ttf, the same one
+The Display.ttf face shipped here is Body, the same one
 tools/build_title.py uses to paint the title wordmark, so the menus and the logo
 are the same typeface.
 
