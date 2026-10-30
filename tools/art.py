@@ -9,6 +9,8 @@ import random
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 
 FONT_CANDIDATES = (
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                 "data", "ikemen1", "fonts", "Display.ttf"),
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
