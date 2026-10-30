@@ -59,7 +59,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic =
+bgmusic = sound/Airport.ogg
 bgmvolume = 100
 
 [BGdef]

@@ -195,74 +195,82 @@ def pelvis():
 def head():
     """Shadowed face under the big fringed straw hat, with lightning on the brim.
 
-    The hat sits ABOVE the skull, not on the shoulders: the brim is drawn high
-    enough that the jaw and the shaded eyes read below it, which is what makes
-    the silhouette recognisable instead of a stack of shapes.
+    The hat sits ABOVE the skull: the brim is drawn high enough that the jaw and
+    the shaded eyes read below it, which is what makes the silhouette
+    recognisable instead of a stack of shapes.
+
+    The art is 94px tall because that is all the room the skeleton leaves above
+    the neck - the body is 318px with the hip at -165 and 110px of torso and
+    neck on top, and a 400px canvas puts the ceiling 97px above the neck. The
+    first version was 154px tall with a 32px-wide face, so the hat overran the
+    canvas and the brim hung over empty air either side of the head; in game
+    that read as a hat floating above a body. The face is now 58px wide and the
+    neck fills the gap down to the collar.
     """
-    W, H = 190, 154
+    W, H = 150, 94
     img = _blank((W, H))
+
+    # --- neck, so the head meets the shoulders instead of hovering ----------
+    neck = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(neck).rectangle([64, 74, 86, 94], fill=255)
+    img.alpha_composite(char_rig._shade(neck, SKIN_DK, SKIN, SKIN_DEEP))
 
     # --- face, in the shade of the brim ------------------------------------
     face = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(face)
-    fd.ellipse([79, 98, 111, 154], fill=255)
-    fd.rectangle([85, 106, 105, 154], fill=255)
+    fd.ellipse([46, 32, 104, 92], fill=255)
+    fd.rectangle([56, 60, 94, 92], fill=255)
     img.alpha_composite(char_rig._shade(face, (170, 126, 98), SKIN, SKIN_DEEP))
     d = ImageDraw.Draw(img)
     # Only the eye band sits in the brim's shade; the jaw and chin stay lit,
     # otherwise the face reads as a dark bar under a hat.
-    d.ellipse([76, 94, 114, 116], fill=(18, 18, 24, 120))
-    d.ellipse([80, 104, 110, 122], fill=SKIN_DK + (70,))
-    for x in (86, 98):                                          # glowing eyes
-        d.line([(x, 106), (x + 7, 105)], fill=(176, 220, 250, 235), width=2)
-        d.line([(x + 1, 111), (x + 6, 111)], fill=(96, 74, 64, 190), width=1)
-    d.line([(92, 108), (90, 120), (95, 121)], fill=SKIN_DEEP + (150,), width=2)
-    d.line([(86, 134), (102, 133)], fill=(112, 60, 52, 205), width=2)
-    d.line([(90, 146), (100, 146)], fill=SKIN_DEEP + (90,), width=2)
+    d.ellipse([44, 34, 106, 60], fill=(18, 18, 24, 130))
+    for x in (58, 74):                                          # glowing eyes
+        d.line([(x, 60), (x + 10, 59)], fill=(176, 220, 250, 235), width=2)
+        d.line([(x + 1, 65), (x + 9, 65)], fill=(96, 74, 64, 190), width=1)
+    d.line([(66, 62), (63, 76), (69, 78)], fill=SKIN_DEEP + (150,), width=2)
+    d.line([(58, 84), (82, 83)], fill=(112, 60, 52, 205), width=2)
 
     # --- brim: a broad disc of woven straw --------------------------------
     brim = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(brim).ellipse([23, 80, 167, 104], fill=255)
+    ImageDraw.Draw(brim).ellipse([8, 28, 142, 52], fill=255)
     img.alpha_composite(char_rig._shade(brim, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    d.arc([23, 82, 167, 104], 198, 342, fill=STRAW_DK + (170,), width=2)
-    d.line([(28, 101), (162, 101)], fill=(96, 74, 46, 90), width=3)   # underside
+    d.arc([8, 30, 142, 52], 198, 342, fill=STRAW_DK + (170,), width=2)
+    d.line([(13, 49), (137, 49)], fill=(96, 74, 46, 90), width=3)     # underside
 
     # --- fringe: shaggy straw hanging off the brim ------------------------
     fringe = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(fringe)
-    for i in range(44):
-        t = i / 43.0
-        x = 24 + 142 * t
-        edge = 97 - abs(t - 0.5) * 11          # the brim curves up at the ends
-        drop = 7 + (i * 29 % 15)               # deterministic ragged lengths
-        fd.line([(x, edge), (x + ((i % 5) - 2) * 1.3, edge + drop)],
+    for i in range(40):
+        t = i / 39.0
+        x = 12 + 126 * t
+        edge = 46 - abs(t - 0.5) * 8           # the brim curves up at the ends
+        drop = 4 + (i * 29 % 9)                # deterministic ragged lengths
+        fd.line([(x, edge), (x + ((i % 5) - 2) * 1.1, edge + drop)],
                 fill=255, width=2)
     img.alpha_composite(char_rig._shade(fringe, STRAW_DK, STRAW, (108, 84, 52)))
 
     # --- crown: woven cone with a bound top -------------------------------
     crown = Image.new("L", (W, H), 0)
     cd = ImageDraw.Draw(crown)
-    cd.polygon([(77, 18), (113, 18), (132, 80), (58, 80)], fill=255)
-    cd.ellipse([73, 10, 117, 26], fill=255)
+    cd.polygon([(56, 6), (94, 6), (106, 30), (44, 30)], fill=255)
+    cd.ellipse([52, 0, 98, 14], fill=255)
     img.alpha_composite(char_rig._shade(crown, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    for i in range(8):
-        y = 24 + i * 7.0
-        half = 21 + i * 3.4
-        d.line([(95 - half, y), (95 + half, y)], fill=STRAW_DK + (110,), width=1)
-    d.line([(71, 24), (60, 78)], fill=STRAW_DK + (150,), width=2)
-    d.line([(119, 24), (130, 78)], fill=STRAW_DK + (150,), width=2)
-    d.line([(95, 14), (95, 78)], fill=STRAW_LIT + (70,), width=2)
-    # the bound tuft on top
-    d.ellipse([88, 4, 102, 16], fill=STRAW_DK + (255,))
     for i in range(4):
-        d.line([(95, 8), (89 + i * 4, 0)], fill=STRAW_LIT + (230,), width=2)
+        y = 10 + i * 5.0
+        half = 17 + i * 4.0
+        d.line([(75 - half, y), (75 + half, y)], fill=STRAW_DK + (110,), width=1)
+    d.line([(53, 12), (46, 29)], fill=STRAW_DK + (150,), width=2)
+    d.line([(97, 12), (104, 29)], fill=STRAW_DK + (150,), width=2)
+    d.line([(75, 6), (75, 29)], fill=STRAW_LIT + (70,), width=2)
+    d.ellipse([69, 0, 81, 9], fill=STRAW_DK + (255,))            # bound tuft
 
     # --- lightning crawling over the hat ----------------------------------
-    _stroke(img, _zig(32, 92, 58, 88, 4, 4, 0.4), width=2)
-    _stroke(img, _zig(138, 90, 162, 94, 4, 4, 1.9), width=2)
-    _stroke(img, _zig(110, 30, 128, 52, 4, 3, 2.6), width=2, glow=False)
+    _stroke(img, _zig(16, 42, 34, 39, 4, 3, 0.4), width=2)
+    _stroke(img, _zig(116, 40, 134, 43, 4, 3, 1.9), width=2)
+    _stroke(img, _zig(88, 12, 100, 24, 4, 2, 2.6), width=2, glow=False)
     return img
 
 
