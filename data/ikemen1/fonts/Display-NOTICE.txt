@@ -1,0 +1,9 @@
+The Display.ttf face shipped here is DejaVuSans-Bold.ttf, the same one
+tools/build_title.py uses to paint the title wordmark, so the menus and the logo
+are the same typeface.
+
+DejaVu fonts are distributed under a free licence derived from the Bitstream Vera
+font licence; the full text is at https://dejavu-fonts.github.io/License.html
+
+Copyright (c) 2003 by Bitstream, Inc. All Rights Reserved. Bitstream Vera is a
+trademark of Bitstream, Inc. DejaVu changes are in the public domain.
