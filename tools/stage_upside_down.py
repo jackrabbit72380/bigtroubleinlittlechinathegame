@@ -1,13 +1,21 @@
-"""The Upside Down: the underground arena under Lo Pan's palace (1280x960).
+"""The Upside Down: the sewer under Chinatown (4000x960 canvas, 1280x960).
 
-Painted from the reference art: a cavern roof of wet earth with roots hanging
-through it, a circle of pale stone inlaid in the floor with a green shaft of
-light falling into it, a stair dropping out of that circle into the dark,
-gnarled trunks framing both sides, mossy rock and a red-eyed face in the wall.
+Painted from the reference art. What has to read on screen:
 
-Scale matters here: a 4:3 match view is 1280 of the 4000-wide canvas, so the
-ring, the stair and the trunk nearest the centre all live inside +-520 px of
-CX. Anything wider fills the whole screen and stops reading as a floor.
+  * a brick sewer vault, not a cave: courses, pilasters, a ribbed brick roof
+  * iron pipes running the walls, with flanges, valves and drips
+  * a steel sump sunk into the floor - the water is grey metal, not green -
+    with a round green platform at the bottom of it glowing up through the water
+  * a ladder on the far left wall and a curved stone stair climbing away on the
+    far right, both lit by gratings in the ceiling
+  * a dead tree fallen across the left of the floor, planks bridging the
+    channel on the right: the two things fighters walk across
+  * a tunnel in the back wall with a dragon in it, hidden except for its eyes
+
+Light direction is the thing to keep straight. Every green source is a grating
+in the roof, so the shafts fall downwards and the metal reflects them. Nothing
+glows up out of the floor except the round platform under the water, and that
+light stays inside the tank.
 
 Run:  python3 tools/stage_upside_down.py     (part of tools/build_all.py)
 """
@@ -19,23 +27,32 @@ import os
 import random
 import sys
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import art
 import stages_hd as hd
-from stage_throne import sculpted
 
 W, H = hd.W, hd.H
 CX, FLOOR_Y, px = hd.CX, hd.FLOOR_Y, hd.px
 
-CEILING = px(24)                          # average lower edge of the earth roof
-RING_CX = CX
-RING_CY = FLOOR_Y - px(8)                 # the circle sits under the fighters' feet
-RING_RX, RING_RY = px(64), px(19)
+ROOF = px(34)                     # underside of the brick vault
+GREEN = (92, 224, 148)
+BRICK = (94, 84, 74)
+MORTAR = (42, 38, 34)
+STEEL = (122, 134, 144)
+STEEL_LIT = (198, 210, 220)
+WATER = (74, 84, 94)
 
-GREEN = (86, 220, 124)
+# Where each feature sits. Kept together so the composition can be re-framed
+# without hunting through the painting code.
+LADDER_X = CX - px(150)
+STAIR_TOP, STAIR_BOT = CX + px(260), CX + px(120)
+SUMP_CX, SUMP_CY = CX - px(40), FLOOR_Y + px(10)
+TUNNEL_CX = CX + px(60)
+TREE_CX = CX - px(150)
+PLANK_CX = CX + px(95)
 
 
 def mix(a, b, t):
@@ -43,375 +60,486 @@ def mix(a, b, t):
     return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
 
 
-# ------------------------------------------------------------------ the roof
-def ceiling(base):
-    """Wet earth roof: ragged lower edge, embedded stones, roots hanging down."""
-    rnd = random.Random(7)
-    d = ImageDraw.Draw(base)
-    edge = []
-    for x in range(0, W + px(4), px(3)):
-        y = CEILING + int(px(13) * math.sin(x / px(46.0)) +
-                          px(6) * math.sin(x / px(13.0) + 1.7) +
-                          rnd.uniform(-px(2), px(2)))
-        edge.append((x, y))
-    d.polygon([(0, -px(6))] + edge + [(W, -px(6))], fill=(34, 24, 16))
-    for _ in range(2200):
-        x = rnd.randint(0, W)
-        y = rnd.randint(-px(4), int(CEILING + px(10)))
-        r = rnd.randint(1, max(2, int(px(2))))
-        d.ellipse([x, y, x + r, y + r * 0.7],
-                  fill=mix((18, 13, 11), (46, 36, 24), rnd.random() * 0.8))
-    for _ in range(120):
-        x = rnd.randint(0, W)
-        y = rnd.randint(int(px(2)), int(CEILING + px(6)))
-        r = rnd.randint(int(px(1)), int(px(3)))
-        d.ellipse([x, y, x + r, y + r * 0.8],
-                  fill=mix((74, 68, 56), (116, 108, 92), rnd.random()))
-    # the wet lip of the roof, catching the shaft
-    d.line([(x, y + px(1)) for x, y in edge], fill=(52, 40, 26), width=max(1, px(1)))
-
-
-def roots(base, seed=12, count=40):
-    """Roots breaking through the roof and hanging into the cavern."""
-    rnd = random.Random(seed)
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    for _ in range(count):
-        x = rnd.randint(0, W)
-        y = rnd.randint(int(CEILING - px(6)), int(CEILING + px(12)))
-        ln = rnd.randint(int(px(20)), int(px(150)))
-        pts, xx, yy = [], float(x), float(y)
-        for _k in range(9):
-            pts.append((xx, yy))
-            xx += rnd.uniform(-px(4), px(4))
-            yy += ln / 8
-        wid = max(1, int(px(1.4) * rnd.uniform(0.7, 1.8)))
-        d.line(pts, fill=(30, 22, 15, 235), width=wid)
-        if ln > px(80):
-            bx, by = pts[-3]
-            d.line([(bx, by), (bx + rnd.uniform(-px(16), px(16)), by + ln * 0.3)],
-                   fill=(27, 20, 14, 210), width=max(1, wid - 1))
-        d.ellipse([pts[-1][0] - 2, pts[-1][1] - 2, pts[-1][0] + 2, pts[-1][1] + 2],
-                  fill=(34, 26, 18, 210))
-    return Image.alpha_composite(base, layer)
-
-
-# ------------------------------------------------------------------ the wall
-def rock_wall(base):
-    """Cave face built from overlapping plates, not masonry courses."""
+# ------------------------------------------------------------------- masonry
+def brick_wall(base):
+    """Damp brick courses, pilasters and moss - a built sewer, not a cave."""
     rnd = random.Random(23)
     d = ImageDraw.Draw(base)
-    d.rectangle([0, 0, W, FLOOR_Y], fill=(19, 21, 23))
-    for layer in range(4):
-        lit = 1.0 - layer / 4.0
-        for _ in range(34):
-            x = rnd.randint(-px(24), W)
-            y = rnd.randint(int(CEILING - px(10)), int(FLOOR_Y))
-            w = rnd.randint(int(px(26)), int(px(150)))
-            h = rnd.randint(int(px(12)), int(px(64)))
-            tone = int(12 + 20 * lit + rnd.uniform(-6, 9))
-            pts = [(x, y), (x + w, y + rnd.randint(-8, 8)),
-                   (x + w + rnd.randint(-10, 12), y + h),
-                   (x + rnd.randint(-8, 10), y + h + rnd.randint(-6, 6))]
-            d.polygon(pts, fill=(tone, tone + 3, tone + 6))
-            d.line(pts + [pts[0]], fill=(max(0, tone - 10),) * 3,
-                   width=max(1, px(1)))
-    seams = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(seams)
-    for i in range(7):
-        y = CEILING + (FLOOR_Y - CEILING) * (i + rnd.random()) / 7
-        pts = [(x, y + math.sin(x / px(120.0) + i) * px(10))
-               for x in range(0, W, px(16))]
-        sd.line(pts, fill=(6, 7, 8, 200), width=max(1, px(2.4)))
-        sd.line([(x, yy - px(2)) for x, yy in pts], fill=(58, 62, 60, 90),
-                width=max(1, px(1.4)))
-    base.alpha_composite(seams.filter(ImageFilter.GaussianBlur(px(1.6))))
-    moss = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    md = ImageDraw.Draw(moss)
-    for _ in range(1100):
-        x = rnd.randint(0, W)
-        y = rnd.randint(int(FLOOR_Y - px(140)), int(FLOOR_Y + px(20)))
-        r = rnd.randint(int(px(2)), int(px(10)))
-        md.ellipse([x, y, x + r, y + r * 0.55],
-                   fill=(52, 84, 36, rnd.randint(20, 90)))
-    base.alpha_composite(moss.filter(ImageFilter.GaussianBlur(px(2))))
+    d.rectangle([0, 0, W, FLOOR_Y], fill=(56, 52, 50))
+    row_h = px(9)
+    for row, y in enumerate(range(int(ROOF - px(6)), int(FLOOR_Y), row_h)):
+        offset = (row % 2) * px(11)
+        for x in range(-px(22) + offset, W, px(22)):
+            tone = rnd.randint(-8, 10)
+            col = mix(BRICK, (78, 68, 58), rnd.random() * 0.5)
+            col = tuple(max(0, min(255, c + tone)) for c in col)
+            d.rectangle([x, y, x + px(21), y + row_h - px(1)], fill=col)
+            d.line([(x, y + row_h - px(1)), (x + px(21), y + row_h - px(1))],
+                   fill=MORTAR, width=1)
+    # pilasters every 150 arcade units, with a lit edge
+    for x in range(-px(20), W, px(150)):
+        d.rectangle([x, ROOF - px(8), x + px(26), FLOOR_Y], fill=(78, 70, 62))
+        d.line([(x, ROOF - px(8)), (x, FLOOR_Y)], fill=(96, 88, 78), width=max(1, px(1)))
+        d.line([(x + px(26), ROOF - px(8)), (x + px(26), FLOOR_Y)],
+               fill=(18, 17, 16), width=max(1, px(1.5)))
+        for y in range(int(ROOF), int(FLOOR_Y), px(46)):
+            d.rectangle([x + px(4), y, x + px(22), y + px(9)], fill=(52, 48, 44))
+    # damp: vertical streaks and moss gathering at the skirting
     damp = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     dd = ImageDraw.Draw(damp)
-    for _ in range(70):
+    for _ in range(150):
         x = rnd.randint(0, W)
-        y = rnd.randint(int(CEILING + px(20)), int(FLOOR_Y - px(40)))
-        dd.rectangle([x, y, x + rnd.randint(int(px(2)), int(px(9))),
-                      y + rnd.randint(int(px(40)), int(px(170)))],
-                     fill=(28, 44, 34, rnd.randint(10, 26)))
-    base.alpha_composite(damp.filter(ImageFilter.GaussianBlur(px(4))))
+        y = rnd.randint(int(ROOF), int(FLOOR_Y - px(30)))
+        dd.rectangle([x, y, x + rnd.randint(int(px(3)), int(px(12))),
+                      y + rnd.randint(int(px(40)), int(px(230)))],
+                     fill=(18, 26, 24, rnd.randint(12, 34)))
+    for _ in range(900):
+        x = rnd.randint(0, W)
+        y = rnd.randint(int(FLOOR_Y - px(90)), int(FLOOR_Y))
+        r = rnd.randint(int(px(2)), int(px(9)))
+        dd.ellipse([x, y, x + r, y + r * 0.6],
+                   fill=(38, 62, 32, rnd.randint(16, 76)))
+    base.alpha_composite(damp.filter(ImageFilter.GaussianBlur(px(2))))
 
 
-def trunk(base, x, w_top, w_bot, seed, sway=0.0):
-    """Gnarled root column, sculpted from a colour + height field for girth."""
-    rnd = random.Random(seed)
-    h = FLOOR_Y - px(16)
-    ws = int(max(w_top, w_bot) * 2.4)
-    color = Image.new("RGB", (ws, h), (0, 0, 0))
-    height = Image.new("L", (ws, h), 0)
-    dc, dh = ImageDraw.Draw(color), ImageDraw.Draw(height)
-    bark = (56, 46, 34)
+def ceiling_vault(base):
+    """Brick barrel roof with ribs and the gratings the light comes through."""
+    rnd = random.Random(11)
+    d = ImageDraw.Draw(base)
+    d.rectangle([0, 0, W, ROOF], fill=(22, 21, 21))
+    for i in range(9):                       # ribs receding into the dark
+        y = int(ROOF - px(4) - i * px(4.2))
+        tone = 40 - i * 3
+        d.line([(0, y), (W, y)], fill=(max(6, tone),) * 3, width=max(1, px(1)))
+    for _ in range(1400):                    # pitted brick
+        x = rnd.randint(0, W)
+        y = rnd.randint(0, int(ROOF))
+        r = rnd.randint(1, int(px(2)))
+        d.ellipse([x, y, x + r, y + r * 0.7],
+                  fill=mix((16, 15, 15), (44, 38, 32), rnd.random()))
+    d.line([(0, ROOF), (W, ROOF)], fill=(72, 64, 54), width=max(1, px(2)))
+    d.line([(0, ROOF + px(2)), (W, ROOF + px(2))], fill=(14, 13, 13),
+           width=max(1, px(2)))
 
-    def width_at(y):
-        t = y / h
-        return (w_top + (w_bot - w_top) * t) * (1 + 0.12 * math.sin(t * 5 + seed))
 
-    for y in range(0, h, 3):
-        t = y / h
-        cxx = ws / 2 + sway * ws * 0.10 * math.sin(t * 3.1 + seed)
-        w = width_at(y)
-        dc.rectangle([cxx - w, y, cxx + w, y + 4], fill=bark)
-        dh.rectangle([cxx - w, y, cxx + w, y + 4], fill=200)
-    for k in range(10):
-        off = rnd.uniform(-0.75, 0.75)
-        for y in range(0, h, 5):
-            t = y / h
-            cxx = ws / 2 + sway * ws * 0.10 * math.sin(t * 3.1 + seed)
-            w = width_at(y)
-            xx = cxx + off * w + math.sin(t * 16 + k) * w * 0.06
-            dc.rectangle([xx - 1, y, xx + 1, y + 6], fill=mix(bark, (96, 78, 52), 0.5))
-            dh.rectangle([xx - 1, y, xx + 1, y + 6], fill=216)
-    for _ in range(7):
-        ky = rnd.randint(int(h * 0.15), int(h * 0.95))
-        cxx = ws / 2 + sway * ws * 0.10 * math.sin(ky / h * 3.1 + seed)
-        r = rnd.uniform(px(2), px(7))
-        dc.ellipse([cxx - r, ky - r, cxx + r, ky + r], fill=(24, 20, 15))
-        dh.ellipse([cxx - r, ky - r, cxx + r, ky + r], fill=146)
-    layer = sculpted(color, height, x, FLOOR_Y - px(14))
+def grating(base, cx, top=px(6), half=px(26), depth=px(14)):
+    """Iron grate set into the roof: the mouth of every light shaft."""
+    d = ImageDraw.Draw(base)
+    d.rectangle([cx - half, top, cx + half, top + depth], fill=(12, 14, 13))
+    d.rectangle([cx - half, top, cx + half, top + depth], outline=(58, 60, 56),
+                width=max(1, px(1)))
+    for x in range(int(cx - half), int(cx + half), px(7)):
+        d.line([(x, top), (x, top + depth)], fill=(40, 42, 40), width=px(2))
+
+
+# ------------------------------------------------------------------- plumbing
+def niches(base):
+    """Arched recesses along the wall so it does not read as flat brick."""
+    for cx in (CX - px(470), CX - px(210), CX + px(340), CX + px(520)):
+        top = FLOOR_Y - px(118)
+        half = px(34)
+        d = ImageDraw.Draw(base)
+        d.rectangle([cx - half, top + px(18), cx + half, FLOOR_Y - px(6)],
+                    fill=(26, 25, 25))
+        d.pieslice([cx - half, top, cx + half, top + px(40)], 180, 360,
+                   fill=(26, 25, 25))
+        d.arc([cx - half, top, cx + half, top + px(40)], 180, 360,
+              fill=(92, 82, 70), width=max(1, px(2)))
+        for x in (cx - half, cx + half):
+            d.line([(x, top + px(18)), (x, FLOOR_Y - px(6))],
+                   fill=(92, 82, 70), width=max(1, px(2)))
+
+
+def pipes(base):
+    """Runs of iron pipe with flanges, valves and the drips under them."""
+    rnd = random.Random(37)
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for _ in range(8):
-        ex = x + rnd.uniform(-w_bot * 2.4, w_bot * 2.4)
-        mid = (x + ex) / 2 + rnd.uniform(-px(8), px(8))
-        d.line([(x, FLOOR_Y - px(18)), (mid, FLOOR_Y - px(5)), (ex, FLOOR_Y + px(5))],
-               fill=(30, 24, 18), width=max(2, int(px(2.2) * rnd.uniform(0.6, 1.2))))
-    return Image.alpha_composite(base, layer)
+    runs = ((px(62), px(4)), (px(116), px(3)), (px(170), px(2)))
+    for y, thick in runs:
+        d.rectangle([0, y, W, y + thick], fill=(84, 92, 100, 255))
+        d.line([(0, y + 1), (W, y + 1)], fill=(158, 172, 182, 235), width=max(1, px(1)))
+        d.line([(0, y + thick - 1), (W, y + thick - 1)], fill=(26, 28, 30, 255),
+               width=max(1, px(1)))
+        for x in range(int(px(40)), W, px(96)):
+            d.rectangle([x, y - px(3), x + px(6), y + thick + px(3)],
+                        fill=(84, 92, 100, 255))
+            d.line([(x, y - px(3)), (x, y + thick + px(3))],
+                   fill=(146, 158, 168, 210), width=max(1, px(1)))
+        for x in range(int(px(72)), W, px(150)):
+            r = px(9)
+            d.ellipse([x - r, y - r, x + r, y + r], outline=(96, 104, 112, 255),
+                      width=max(1, px(2)))
+            d.line([(x - r, y), (x + r, y)], fill=(96, 104, 112, 255), width=px(2))
+            d.line([(x, y - r), (x, y + r)], fill=(96, 104, 112, 255), width=px(2))
+    # brackets and drips
+    for x in range(int(px(20)), W, px(72)):
+        d.rectangle([x, px(58), x + px(4), px(186)], fill=(30, 32, 34, 210))
+    for _ in range(90):
+        x = rnd.randint(0, W)
+        y = rnd.choice(runs)[0] + px(6)
+        ln = rnd.randint(int(px(6)), int(px(34)))
+        d.line([(x, y), (x, y + ln)], fill=(150, 190, 170, rnd.randint(18, 54)),
+               width=max(1, px(1)))
+    base.alpha_composite(layer)
+    return base
 
 
-# ------------------------------------------------------------------ the ring
-def ring(base):
-    """Pale inlaid circle, the lit floor inside it, and the stair down into it."""
+def ladder(base):
+    """Steel ladder on the far left wall, standing in its own shaft of light."""
     d = ImageDraw.Draw(base)
-    d.ellipse([RING_CX - RING_RX, RING_CY - RING_RY,
-               RING_CX + RING_RX, RING_CY + RING_RY], fill=(122, 122, 100))
-    base.alpha_composite(art.radial_light((W, H), (RING_CX, RING_CY + px(2)),
-                                          RING_RX * 0.85, (208, 210, 172), 150))
-    d = ImageDraw.Draw(base)
-    seg = 40
-    for i in range(seg):
-        a0 = 2 * math.pi * i / seg
-        a1 = 2 * math.pi * (i + 1) / seg
-        tone = 92 + int(26 * math.sin(i * 1.9))
-        d.polygon([(RING_CX + math.cos(a0) * RING_RX, RING_CY + math.sin(a0) * RING_RY),
-                   (RING_CX + math.cos(a1) * RING_RX, RING_CY + math.sin(a1) * RING_RY),
-                   (RING_CX + math.cos(a1) * RING_RX * 0.86,
-                    RING_CY + math.sin(a1) * RING_RY * 0.86),
-                   (RING_CX + math.cos(a0) * RING_RX * 0.86,
-                    RING_CY + math.sin(a0) * RING_RY * 0.86)],
-                  fill=(tone + 26, tone + 24, tone + 6))
-        d.line([(RING_CX + math.cos(a0) * RING_RX, RING_CY + math.sin(a0) * RING_RY),
-                (RING_CX + math.cos(a0) * RING_RX * 0.86,
-                 RING_CY + math.sin(a0) * RING_RY * 0.86)],
-               fill=(48, 46, 36), width=max(1, px(1)))
-    d.arc([RING_CX - RING_RX, RING_CY - RING_RY, RING_CX + RING_RX, RING_CY + RING_RY],
-          0, 360, fill=(178, 178, 148), width=max(1, px(1.2)))
+    top, bot = px(24), FLOOR_Y + px(4)
+    # the recess it is bolted into
+    d.rectangle([LADDER_X - px(30), top, LADDER_X + px(30), bot], fill=(18, 18, 19))
+    d.rectangle([LADDER_X - px(30), top, LADDER_X + px(30), bot],
+                outline=(44, 42, 40), width=max(1, px(1)))
+    for side in (-1, 1):
+        x = LADDER_X + side * px(15)
+        d.rectangle([x - px(3), top, x + px(3), bot], fill=(108, 120, 130))
+        d.line([(x - px(3), top), (x - px(3), bot)], fill=(184, 198, 208),
+               width=max(1, px(1)))
+    y = top + px(6)
+    while y < bot - px(5):
+        d.rectangle([LADDER_X - px(16), y, LADDER_X + px(16), y + px(3)],
+                    fill=(132, 146, 156))
+        d.line([(LADDER_X - px(16), y), (LADDER_X + px(16), y)],
+               fill=(196, 210, 220), width=max(1, px(1)))
+        y += px(10)
 
-    # the stair dropping out of the circle into the pit
-    top_y, bot_y = RING_CY - px(18), RING_CY + px(10)
-    steps = 7
+
+def stairway(base):
+    """Curved stone flight climbing away to the upper right."""
+    steps = 17
+    d = ImageDraw.Draw(base)
     for i in range(steps):
         t0, t1 = i / steps, (i + 1) / steps
-        y0 = top_y + (bot_y - top_y) * t0
-        y1 = top_y + (bot_y - top_y) * t1
-        w0 = px(26) - px(11) * t0
-        w1 = px(26) - px(11) * t1
-        tone = int(88 - 74 * t0 ** 0.7)
-        d.polygon([(RING_CX - w0, y0), (RING_CX + w0, y0),
-                   (RING_CX + w1, y1), (RING_CX - w1, y1)],
-                  fill=(tone, tone, int(tone * 0.86)))
-        d.line([(RING_CX - w1, y1), (RING_CX + w1, y1)],
-               fill=(max(0, tone - 30),) * 3, width=max(1, px(1)))
-    d.ellipse([RING_CX - px(13), bot_y - px(3), RING_CX + px(13), bot_y + px(6)],
-              fill=(5, 6, 6))
+
+        def at(t):
+            x = STAIR_TOP + (STAIR_BOT - STAIR_TOP) * t
+            y = px(40) + (FLOOR_Y - px(40)) * (t ** 1.25)
+            w = px(30) + px(16) * t
+            return x, y, w
+
+        x0, y0, w0 = at(t0)
+        x1, y1, w1 = at(t1)
+        tone = 96 + int(24 * t0)
+        d.polygon([(x0 - w0, y0), (x0 + w0, y0), (x1 + w1, y1), (x1 - w1, y1)],
+                  fill=(tone, tone + 1, tone + 2))
+        d.polygon([(x1 - w1, y1), (x1 + w1, y1),
+                   (x1 + w1, y1 + px(8)), (x1 - w1, y1 + px(8))],
+                  fill=(max(0, tone - 14),) * 3)
+        d.line([(x1 - w1, y1), (x1 + w1, y1)], fill=(156, 238, 186),
+               width=max(1, px(1)))
+        # the stringer wall under the flight, so it is a solid stair
+        d.polygon([(x1 - w1, y1 + px(8)), (x1 + w1, y1 + px(8)),
+                   (x1 + w1, y1 + px(26)), (x1 - w1, y1 + px(24))],
+                  fill=(46, 46, 47))
+    # balustrade: posts and a rail following the same curve
+    rail = []
+    for i in range(steps + 1):
+        t = i / steps
+        x = STAIR_TOP + (STAIR_BOT - STAIR_TOP) * t
+        y = px(40) + (FLOOR_Y - px(40)) * (t ** 1.25)
+        rail.append((x, y - px(30)))
+    d.line(rail, fill=(96, 100, 98), width=max(2, px(3)), joint="curve")
+    for i in range(0, steps + 1, 3):
+        x, y = rail[i]
+        d.line([(x, y), (x, y + px(26))], fill=(88, 94, 90), width=max(1, px(2)))
+    d.line([(x, y - px(2)) for x, y in rail], fill=(170, 214, 190),
+           width=max(1, px(1)))
 
 
-def shaft(base):
-    """Green light column falling through the roof into the circle."""
-    top_y, bot_y = CEILING - px(6), RING_CY + px(2)
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    for i in range(22):
-        t = i / 21
-        half = px(8) + (px(26) - px(8)) * t
-        d.polygon([(RING_CX - half, bot_y), (RING_CX + half, bot_y),
-                   (RING_CX + half * 0.62, top_y), (RING_CX - half * 0.62, top_y)],
-                  fill=GREEN + (int(16 + 20 * (1 - t)),))
-    layer = layer.filter(ImageFilter.GaussianBlur(px(6)))
-    core = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    cd = ImageDraw.Draw(core)
-    for i in range(10):
-        t = i / 9
-        half = px(2) + px(3) * t
-        cd.rectangle([RING_CX - half, top_y, RING_CX + half, bot_y],
-                     fill=(226, 255, 214, int(38 + 34 * (1 - t))))
-    core = core.filter(ImageFilter.GaussianBlur(px(2)))
-    out = art.screen(base, layer, glow_radius=px(10), gain=1.1, passes=2)
-    return art.screen(out, core, glow_radius=px(4), gain=0.85)
+# ------------------------------------------------------------------- the tank
+def sump(base):
+    """Steel sump: metal rim, grey water, a green disc glowing under it."""
+    cx, cy = SUMP_CX, SUMP_CY
+    rx, ry = px(70), px(15)
+    d = ImageDraw.Draw(base)
+
+    # recessed steel collar
+    for i in range(6):
+        t = 1 - i / 6.0
+        d.ellipse([cx - rx * t, cy - ry * t, cx + rx * t, cy + ry * t],
+                  outline=(96 + i * 16, 106 + i * 16, 114 + i * 16),
+                  width=max(1, px(2)))
+    for k in range(28):                       # rim bolts
+        a = 2 * math.pi * k / 28
+        bx, by = cx + math.cos(a) * rx * 0.96, cy + math.sin(a) * ry * 0.96
+        d.ellipse([bx - px(1.6), by - px(1.6), bx + px(1.6), by + px(1.6)],
+                  fill=(176, 188, 198))
+
+    # the hole itself: water, with the lit disc showing through from below
+    water = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    wd = ImageDraw.Draw(water)
+    wd.ellipse([cx - rx * 0.90, cy - ry * 0.86, cx + rx * 0.90, cy + ry * 0.86],
+               fill=WATER + (255,))
+    wd.ellipse([cx - rx * 0.66, cy - ry * 0.34, cx + rx * 0.66, cy + ry * 0.92],
+               fill=mix(WATER, (150, 168, 178), 0.5) + (255,))
+    base.alpha_composite(water)
+
+    disc = art.radial_light((W, H), (cx, cy + ry * 0.22), rx * 0.52,
+                            (128, 246, 176), 235)
+    base.alpha_composite(disc.filter(ImageFilter.GaussianBlur(px(3))))
+    d = ImageDraw.Draw(base)
+    d.ellipse([cx - rx * 0.34, cy + ry * 0.02, cx + rx * 0.34, cy + ry * 0.74],
+              outline=(150, 246, 186), width=max(1, px(2)))
+
+    # metal sheen on the water, and the shaft reflected in it as a streak
+    for i in range(9):
+        a = math.pi * (0.12 + 0.76 * i / 8)
+        x0 = cx + math.cos(a) * rx * 0.88
+        y0 = cy + math.sin(a) * ry * 0.84
+        d.line([(x0, y0), (x0 + px(10), y0 + px(2))],
+               fill=(196, 208, 216, 120), width=max(1, px(1)))
+    refl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    rd = ImageDraw.Draw(refl)
+    for i in range(7):
+        w = px(3) + px(1.4) * i
+        rd.rectangle([cx - w, cy - ry * 0.5, cx + w, cy + ry * 0.6],
+                     fill=GREEN + (26 + 10 * i,))
+    base.alpha_composite(refl.filter(ImageFilter.GaussianBlur(px(2))))
 
 
-# ------------------------------------------------------------------ set dressing
-def log(base, cx, cy, ln, thick, seed=3):
-    """Fallen trunk crossing the floor, with sawn end grain facing the camera."""
-    rnd = random.Random(seed)
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    pts_top, pts_bot = [], []
+def tree(base):
+    """Dead tree fallen across the left of the floor, walkable along its trunk."""
+    rnd = random.Random(5)
+    d = ImageDraw.Draw(base)
+    x0, x1 = TREE_CX - px(96), TREE_CX + px(104)
+    yb = FLOOR_Y + px(26)
+    top, bot = [], []
     for i in range(21):
         t = i / 20
-        x = cx - ln / 2 + ln * t
-        y = cy + math.sin(t * 3.4 + seed) * thick * 0.5
-        pts_top.append((x, y - thick * (1 - 0.25 * t)))
-        pts_bot.append((x, y + thick * (1 - 0.25 * t)))
-    d.polygon(pts_top + pts_bot[::-1], fill=(44, 36, 26))
-    for k in range(9):
-        d.line([(p[0], p[1] + k * thick * 0.12) for p in pts_top],
-               fill=(32, 26, 19), width=max(1, px(1)))
-    ex, ey = cx - ln / 2, cy
-    d.ellipse([ex - thick * 0.5, ey - thick, ex + thick * 0.5, ey + thick],
-              fill=(96, 76, 50))
-    for r in range(3):
-        rr = thick * (0.18 + r * 0.22)
-        d.arc([ex - rr * 0.6, ey - rr, ex + rr * 0.6, ey + rr], 0, 360,
-              fill=(72, 56, 36), width=max(1, px(1)))
-    for _ in range(60):
-        x = cx - ln / 2 + rnd.uniform(0, ln)
-        y = cy - thick * 0.9 + rnd.uniform(-thick * 0.1, thick * 0.2)
-        d.ellipse([x, y, x + rnd.uniform(px(2), px(5)), y + px(3)],
-                  fill=(46, 74, 32, 150))
-    return Image.alpha_composite(base, layer.filter(ImageFilter.GaussianBlur(px(0.6))))
+        x = x0 + (x1 - x0) * t
+        y = yb - math.sin(t * 2.4) * px(7)
+        thick = px(13) * (1 - 0.30 * t)
+        top.append((x, y - thick))
+        bot.append((x, y + thick * 0.7))
+    d.polygon(top + bot[::-1], fill=(76, 63, 45))
+    for k in range(7):                        # bark ridges
+        d.line([(x, y - px(2) + k * px(2.6)) for x, y in top],
+               fill=(54, 45, 33), width=max(1, px(1)))
+    d.line(top, fill=(124, 106, 74), width=max(1, px(1)))
+    # broken branch stubs and a snag of roots
+    for t, up in ((0.22, -1), (0.55, 1), (0.78, -1)):
+        bx = x0 + (x1 - x0) * t
+        by = yb - math.sin(t * 2.4) * px(7)
+        d.line([(bx, by), (bx + up * px(18), by - px(26))], fill=(66, 55, 40),
+               width=max(2, px(3)))
+        d.line([(bx + up * px(18), by - px(26)),
+                (bx + up * px(26), by - px(38))], fill=(38, 32, 24),
+               width=max(1, px(2)))
+    for _ in range(90):                       # moss on the bark
+        x = rnd.uniform(x0, x1)
+        y = rnd.uniform(yb - px(14), yb + px(6))
+        d.ellipse([x, y, x + px(3), y + px(2)], fill=(46, 74, 34, 140))
 
 
-def puddle(base, cx, cy, rx, ry, seed=0):
-    rnd = random.Random(seed)
-    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(layer)
-    d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=(8, 12, 11, 210))
-    d.arc([cx - rx, cy - ry, cx + rx, cy + ry], 190, 350,
-          fill=(70, 120, 88, 130), width=max(1, px(1.4)))
-    for _ in range(6):
-        sx = cx + rnd.uniform(-rx * 0.7, rx * 0.7)
-        sy = cy + rnd.uniform(-ry * 0.5, ry * 0.5)
-        d.line([(sx, sy), (sx + rnd.uniform(-px(8), px(8)), sy + px(1))],
-               fill=(120, 190, 140, rnd.randint(40, 90)), width=max(1, px(1)))
-    return Image.alpha_composite(base, layer.filter(ImageFilter.GaussianBlur(px(0.8))))
-
-
-def demon(base, cx, cy, w, h):
-    """A face in the rock: carved brow, and eyes that are the only warm light."""
-    rnd = random.Random(41)
+def planks(base):
+    """Boards bridging the channel on the right side of the floor."""
+    rnd = random.Random(9)
     d = ImageDraw.Draw(base)
-    d.polygon([(cx - w * 0.60, cy + h * 0.55), (cx - w * 0.46, cy - h * 0.16),
-               (cx - w * 0.18, cy - h * 0.44), (cx + w * 0.18, cy - h * 0.44),
-               (cx + w * 0.46, cy - h * 0.16), (cx + w * 0.60, cy + h * 0.55)],
-              fill=(14, 13, 14))
-    d.polygon([(cx - w * 0.40, cy - h * 0.08), (cx - w * 0.10, cy - h * 0.22),
-               (cx + w * 0.10, cy - h * 0.22), (cx + w * 0.40, cy - h * 0.08),
-               (cx + w * 0.28, cy + h * 0.03), (cx - w * 0.28, cy + h * 0.03)],
-              fill=(26, 23, 23))
-    for sx in (-1, 1):
-        d.polygon([(cx + sx * w * 0.32, cy - h * 0.28),
-                   (cx + sx * w * 0.50, cy - h * 0.50),
-                   (cx + sx * w * 0.42, cy - h * 0.22)], fill=(20, 18, 18))
-    d.polygon([(cx - w * 0.12, cy + h * 0.14), (cx + w * 0.12, cy + h * 0.14),
-               (cx + w * 0.07, cy + h * 0.32), (cx - w * 0.07, cy + h * 0.32)],
-              fill=(7, 6, 7))
-    for _ in range(8):
-        x = cx + rnd.uniform(-w * 0.58, w * 0.58)
-        d.line([(x, cy - h * 0.38), (x + rnd.uniform(-px(3), px(3)), cy + h * 0.38)],
-               fill=(21, 20, 20), width=max(1, px(1)))
+    cx, cy = PLANK_CX, FLOOR_Y + px(22)
+    ln = px(120)
+    d.polygon([(cx - ln * 0.6, cy - px(6)), (cx + ln * 0.6, cy - px(4)),
+               (cx + ln * 0.62, cy + px(34)), (cx - ln * 0.6, cy + px(36))],
+              fill=(16, 17, 18))
+    for i in range(5):
+        y = cy + i * px(7)
+        off = i * px(3) - px(6)
+        d.polygon([(cx - ln / 2 + off, y), (cx + ln / 2 - off * 0.6, y + px(2)),
+                   (cx + ln / 2 - off * 0.6, y + px(8)),
+                   (cx - ln / 2 + off, y + px(7))],
+                  fill=(118 + i * 4, 92 + i * 3, 62 + i * 3))
+        d.line([(cx - ln / 2 + off, y + px(1)), (cx + ln / 2 - off * 0.6, y + px(3))],
+               fill=(146, 118, 80), width=max(1, px(1)))
+        for _ in range(14):
+            x = rnd.uniform(cx - ln / 2, cx + ln / 2)
+            d.line([(x, y + px(2)), (x + px(10), y + px(2))],
+                   fill=(84, 66, 44), width=1)
+        for nx in (cx - ln / 2 + px(6), cx + ln / 2 - px(8)):
+            d.ellipse([nx, y + px(3), nx + px(2), y + px(5)], fill=(150, 160, 166))
+
+
+# ------------------------------------------------------------------ back wall
+def tunnel(base):
+    """Arched opening in the back wall, and the dragon hiding in it."""
+    cx, top, half = TUNNEL_CX, FLOOR_Y - px(112), px(32)
+    d = ImageDraw.Draw(base)
+    d.rectangle([cx - half, top + px(20), cx + half, FLOOR_Y], fill=(9, 10, 11))
+    d.pieslice([cx - half, top, cx + half, top + px(70)], 180, 360, fill=(9, 10, 11))
+    # a rim of lit brick around the mouth, so it is an opening and not a hole
+    d.arc([cx - half - px(4), top - px(4), cx + half + px(4), top + px(74)],
+          180, 360, fill=(132, 116, 96), width=max(1, px(2)))
+    # voussoirs around the opening
+    for i in range(13):
+        a = math.pi + math.pi * i / 12
+        x0 = cx + math.cos(a) * half
+        y0 = top + px(35) + math.sin(a) * px(35)
+        x1 = cx + math.cos(a) * (half + px(9))
+        y1 = top + px(35) + math.sin(a) * px(49)
+        d.line([(x0, y0), (x1, y1)], fill=(52, 46, 42), width=max(2, px(3)))
+    d.line([(cx - half, top + px(35)), (cx - half, FLOOR_Y)],
+           fill=(64, 56, 48), width=max(1, px(2)))
+    d.line([(cx + half, top + px(35)), (cx + half, FLOOR_Y)],
+           fill=(64, 56, 48), width=max(1, px(2)))
+    # the far end of the tunnel is not quite black
+    haze = art.radial_light((W, H), (cx, FLOOR_Y - px(60)), px(34),
+                            (60, 140, 100), 54)
+    base.alpha_composite(haze)
+    return dragon(base, cx, FLOOR_Y - px(72), px(38), px(46))
+
+
+def dragon(base, cx, cy, w, h):
+    """Only the skull and a coil of neck catch the light; the eyes are red."""
+    rnd = random.Random(63)
+    d = ImageDraw.Draw(base)
+    dark, lit = (26, 26, 28), (78, 88, 82)
+    # skull: long snout running left, heavy brow, jaw hanging open
+    d.polygon([(cx - w * 0.10, cy - h * 0.42), (cx + w * 0.30, cy - h * 0.52),
+               (cx + w * 0.48, cy - h * 0.20), (cx + w * 0.40, cy + h * 0.10),
+               (cx + w * 0.10, cy + h * 0.22), (cx - w * 0.18, cy + h * 0.10),
+               (cx - w * 0.26, cy - h * 0.16)], fill=dark)
+    d.polygon([(cx - w * 0.24, cy - h * 0.06), (cx - w * 0.60, cy + h * 0.02),
+               (cx - w * 0.58, cy + h * 0.16), (cx - w * 0.20, cy + h * 0.20)],
+              fill=dark)
+    d.polygon([(cx - w * 0.22, cy + h * 0.20), (cx - w * 0.54, cy + h * 0.30),
+               (cx - w * 0.44, cy + h * 0.40), (cx - w * 0.08, cy + h * 0.34)],
+              fill=(12, 12, 13))
+    # horns swept back
+    for sx, sy in ((cx + w * 0.18, cy - h * 0.50), (cx + w * 0.34, cy - h * 0.34)):
+        d.polygon([(sx, sy), (sx + w * 0.16, sy - h * 0.30),
+                   (sx + w * 0.22, sy - h * 0.06), (sx + w * 0.06, sy + h * 0.04)],
+                  fill=(30, 30, 32))
+    for k in range(7):                        # teeth
+        tx = cx - w * 0.50 + k * w * 0.055
+        d.polygon([(tx, cy + h * 0.12), (tx + w * 0.02, cy + h * 0.12),
+                   (tx + w * 0.01, cy + h * 0.20)], fill=(120, 116, 104))
+    for _ in range(16):                       # scales catching the green
+        x = cx + rnd.uniform(-w * 0.3, w * 0.45)
+        y = cy + rnd.uniform(-h * 0.45, h * 0.2)
+        d.arc([x, y, x + px(4), y + px(3)], 200, 340, fill=lit, width=1)
     eyes = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     ed = ImageDraw.Draw(eyes)
-    for sx in (-1, 1):
-        ex = cx + sx * w * 0.19
-        ed.ellipse([ex - px(4), cy - h * 0.12, ex + px(4), cy - h * 0.04],
-                   fill=(255, 44, 28))
-        ed.ellipse([ex - px(1.6), cy - h * 0.105, ex + px(1.6), cy - h * 0.058],
-                   fill=(255, 216, 184))
-        ed.ellipse([ex - px(2.6), cy + h * 0.19, ex + px(2.6), cy + h * 0.235],
-                   fill=(182, 26, 18))
-    return art.screen(base, eyes, glow_radius=px(6), gain=1.4, passes=2)
+    for sx in (cx - w * 0.06, cx + w * 0.16):
+        ed.ellipse([sx - px(4), cy - h * 0.22, sx + px(4), cy - h * 0.13],
+                   fill=(255, 40, 28))
+        ed.ellipse([sx - px(1.6), cy - h * 0.205, sx + px(1.6), cy - h * 0.155],
+                   fill=(255, 220, 190))
+    return art.screen(base, eyes, glow_radius=px(7), gain=1.5, passes=2)
 
 
-def mist(img, seed=5):
+# ------------------------------------------------------------------ light, air
+def shaft(base, x, top_y, bot_y, half_top, half_bot, strength=1.0):
+    """Green column falling from a roof grating to a surface below it."""
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for i in range(18):
+        t = i / 17
+        half = half_top + (half_bot - half_top) * t
+        d.polygon([(x - half, bot_y), (x + half, bot_y),
+                   (x + half_top * 0.8, top_y), (x - half_top * 0.8, top_y)],
+                  fill=GREEN + (int((9 + 15 * (1 - t)) * strength),))
+    layer = layer.filter(ImageFilter.GaussianBlur(px(5)))
+    core = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    cd = ImageDraw.Draw(core)
+    for i in range(7):
+        t = i / 6
+        half = half_top * 0.30 + (half_bot * 0.16) * t
+        cd.rectangle([x - half, top_y, x + half, bot_y],
+                     fill=(230, 255, 222, int((22 + 20 * (1 - t)) * strength)))
+    core = core.filter(ImageFilter.GaussianBlur(px(2)))
+    out = art.screen(base, layer, glow_radius=px(8), gain=1.0, passes=2)
+    return art.screen(out, core, glow_radius=px(3), gain=0.8)
+
+
+def mist(img, seed=17):
     rnd = random.Random(seed)
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
-    for _ in range(8):
-        y = FLOOR_Y - px(rnd.randint(20, 90))
+    for _ in range(10):
+        y = FLOOR_Y - px(rnd.randint(10, 80))
         d.ellipse([rnd.randint(-px(80), W // 2), y,
-                   rnd.randint(W // 2, W + px(80)), y + px(rnd.randint(14, 40))],
-                  fill=(20, 74, 48, rnd.randint(10, 24)))
-    return Image.alpha_composite(img, layer.filter(ImageFilter.GaussianBlur(px(18))))
+                   rnd.randint(W // 2, W + px(80)), y + px(rnd.randint(12, 34))],
+                  fill=(26, 84, 58, rnd.randint(8, 22)))
+    return Image.alpha_composite(img, layer.filter(ImageFilter.GaussianBlur(px(16))))
+
+
+def drips(img, seed=4):
+    """Water coming off the pipes and the roof - the sewer reading."""
+    rnd = random.Random(seed)
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    for _ in range(220):
+        x = rnd.randint(0, W)
+        y = rnd.randint(int(ROOF), int(FLOOR_Y))
+        ln = rnd.randint(int(px(4)), int(px(16)))
+        d.line([(x, y), (x, y + ln)], fill=(150, 196, 176, rnd.randint(14, 40)), width=1)
+    return Image.alpha_composite(img, layer)
 
 
 # ------------------------------------------------------------------ the arena
 def paint():
-    base = hd.blank([(0, (6, 7, 9)), (30, (10, 12, 14)), (90, (14, 17, 19)),
-                     (150, (17, 20, 21)), (200, (17, 19, 20)), (240, (8, 10, 10))])
-    rock_wall(base)
-    d = ImageDraw.Draw(base)
+    base = hd.blank([(0, (5, 7, 8)), (40, (9, 12, 13)), (110, (13, 16, 18)),
+                     (170, (15, 18, 19)), (210, (14, 16, 17)), (240, (7, 9, 9))])
+    brick_wall(base)
+    ceiling_vault(base)
+    niches(base)
+    pipes(base)
+    tunnel(base)
+    ladder(base)
+    stairway(base)
 
-    # floor: broken paving with the ring inlaid on top of it
-    d.rectangle([0, FLOOR_Y, W, H], fill=(27, 28, 27))
+    d = ImageDraw.Draw(base)
+    # floor: wet slabs
+    d.rectangle([0, FLOOR_Y, W, H], fill=(70, 72, 72))
     rnd = random.Random(31)
-    for _ in range(160):
+    for _ in range(220):
         x = rnd.randint(-px(10), W)
         y = rnd.randint(int(FLOOR_Y), int(H))
-        w = rnd.randint(int(px(20)), int(px(80)))
-        h = rnd.randint(int(px(6)), int(px(20)))
-        tone = rnd.randint(22, 40)
+        w = rnd.randint(int(px(18)), int(px(74)))
+        h = rnd.randint(int(px(6)), int(px(18)))
+        tone = rnd.randint(58, 86)
         d.polygon([(x, y), (x + w, y + rnd.randint(-3, 3)),
                    (x + w + rnd.randint(-4, 4), y + h),
-                   (x + rnd.randint(-3, 3), y + h)],
-                  fill=(tone, tone + 1, tone))
-    base = log(base, CX - px(150), FLOOR_Y + px(14), px(150), px(11), seed=3)
-    ring(base)
-    base = demon(base, CX + px(146), FLOOR_Y - px(150), px(62), px(56))
-    base = trunk(base, CX - px(176), px(34), px(58), seed=2, sway=-1)
-    base = trunk(base, CX + px(198), px(30), px(52), seed=5, sway=1)
-    ceiling(base)
-    base = roots(base)
-    base = puddle(base, CX - px(72), FLOOR_Y + px(32), px(46), px(13), seed=3)
-    base = puddle(base, CX + px(150), FLOOR_Y + px(40), px(58), px(15), seed=8)
+                   (x + rnd.randint(-3, 3), y + h)], fill=(tone, tone + 1, tone + 2))
+    d.line([(0, FLOOR_Y), (W, FLOOR_Y)], fill=(84, 86, 84), width=max(1, px(1.4)))
+
+    sump(base)
+    tree(base)
+    planks(base)
 
     base = hd.shade(base, [
-        (hd.light(RING_CX, RING_CY, px(120), (66, 210, 128), 92), px(12), 1.2),
-        (hd.light(RING_CX, CEILING + px(30), px(80), (52, 176, 110), 54), px(10), 1.0),
-        (hd.light(RING_CX, px(120), px(300), (44, 150, 104), 40), px(16), 1.0),
-        (hd.light(CX - px(176), FLOOR_Y - px(300), px(120), (70, 190, 130), 38),
-         px(12), 1.0),
-        (hd.light(CX + px(146), FLOOR_Y - px(152), px(44), (188, 30, 22), 62),
+        (hd.light(SUMP_CX, SUMP_CY + px(4), px(120), (78, 216, 140), 122), px(14), 1.3),
+        (hd.light(LADDER_X, px(120), px(120), (64, 196, 126), 84), px(12), 1.15),
+        (hd.light((STAIR_TOP + STAIR_BOT) / 2, FLOOR_Y - px(60), px(150),
+                  (70, 208, 134), 88), px(12), 1.15),
+        (hd.light(TUNNEL_CX, FLOOR_Y - px(96), px(60), (188, 30, 22), 54),
          px(8), 1.1),
-        (hd.light(CX - px(150), FLOOR_Y + px(10), px(60), (36, 96, 70), 26),
-         px(12), 1.0),
+        (hd.light(SUMP_CX, FLOOR_Y, px(130), (44, 108, 80), 48), px(12), 1.1),
+        (hd.light(LADDER_X, FLOOR_Y, px(90), (60, 190, 120), 62), px(14), 1.1),
+        (hd.light((STAIR_TOP + STAIR_BOT) / 2, FLOOR_Y, px(110), (64, 196, 126), 62),
+         px(14), 1.1),
     ])
-    base = shaft(base)
+
+    grating(base, SUMP_CX)
+    grating(base, LADDER_X)
+    grating(base, (STAIR_TOP + STAIR_BOT) / 2)
+    base = shaft(base, SUMP_CX, px(14), FLOOR_Y + px(10), px(26), px(34), 1.0)
+    base = shaft(base, LADDER_X, px(14), FLOOR_Y, px(20), px(22), 0.85)
+    base = shaft(base, (STAIR_TOP + STAIR_BOT) / 2, px(14), FLOOR_Y, px(22), px(28), 0.9)
+    base = drips(base)
     base = mist(base)
-    base = hd.finish(base, 9, 5, 0.44, FLOOR_Y)
-    base = shaft(base)
+    base = hd.finish(base, 11, 5, 0.48, FLOOR_Y)
 
     fg = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     fd = ImageDraw.Draw(fg)
-    for i in range(px(20)):
-        a = int(190 * (1 - i / px(20)) ** 1.4)
+    for i in range(px(22)):
+        a = int(200 * (1 - i / px(22)) ** 1.4)
         fd.line([(0, H - i), (W, H - i)], fill=(4, 6, 5, a))
-    for cx, w in ((CX - px(168), px(120)), (CX + px(196), px(104))):
-        fd.polygon([(cx - w, H), (cx - w * 0.5, H - px(24)),
-                    (cx + w * 0.4, H - px(18)), (cx + w, H)],
-                   fill=(7, 9, 8, 232))
+    # a pipe crossing in front of the camera, and the tank's near lip
+    fd.rectangle([0, H - px(16), W, H - px(9)], fill=(16, 18, 19, 235))
+    fd.line([(0, H - px(16)), (W, H - px(16))], fill=(52, 58, 62, 200),
+            width=max(1, px(1)))
     return [("bg", 0, 0, base, 0),
             ("fg", 3, 0, fg, 1)]
 
