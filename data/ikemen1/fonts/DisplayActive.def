@@ -1,0 +1,19 @@
+[FNT v2]
+; FNT v2 version number.  Don't change this.
+fntversion = 2,00
+; Name of this font.
+name = "DisplayActive"
+
+[Def]
+; Bitmap glyphs: the gold face and maroon extrusion are in the art,
+; so the engine draws the wordmark look instead of a flat colour.
+Type = bitmap
+BankType = palette
+; width is the space advance, height is the cell height
+Size = 15,45
+Spacing = 0,0
+; the engine shifts glyphs by offset.y - Size.y + 1, and the TrueType
+; defs this replaces had no Size at all, so this cancels the shift and
+; puts the top of each glyph on the y the menu asks for
+Offset = 0,44
+File = DisplayActive.sff
