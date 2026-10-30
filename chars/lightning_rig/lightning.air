@@ -2430,28 +2430,28 @@ Clsn2Default: 1
 [Begin Action 7000]
 Clsn1: 1
  Clsn1[0] = -10,-10, 10,10
-7000,0, 0,0, -1
+7000,0, 0,0, -1, , A
 
 ; weapon animation - art kept as drawn
 [Begin Action 7001]
-7001,0, 0,0, 2
-7001,1, 0,0, 2
-7001,2, 0,0, -1
+7001,0, 0,0, 2, , A
+7001,1, 0,0, 2, , A
+7001,2, 0,0, -1, , A
 
 ; weapon animation - art kept as drawn
 [Begin Action 7002]
-7002,0, 0,0, 3
-7002,1, 0,0, 3
-7002,2, 0,0, -1
+7002,0, 0,0, 3, , A
+7002,1, 0,0, 3, , A
+7002,2, 0,0, -1, , A
 
 ; weapon animation - art kept as drawn
 [Begin Action 7010]
 Clsn1: 1
  Clsn1[0] = -30,-14, 30,14
-7010,0, 0,0, 3
-7010,1, 0,0, 3
-7010,2, 0,0, 3
-7010,3, 0,0, 3
+7010,0, 0,0, 3, , A
+7010,1, 0,0, 3, , A
+7010,2, 0,0, 3, , A
+7010,3, 0,0, 3, , A
 
 ; weapon action for state 1500
 [Begin Action 1500]

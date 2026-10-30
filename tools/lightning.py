@@ -141,33 +141,37 @@ def palettes(base_palettes, grade, spec):
 AIR = """
 ;---------------------------------------------------------------------------
 ; Lightning - projectile animation set (added by tools/lightning.py)
+; The 7000-series frames carry the AIR blend flag A, so the bolt and the
+; discharge composite additively wherever they are drawn. Projectiles take no
+; trans parameter in Ikemen, so this is the only way to make the bolt glow;
+; MKT HD's Raiden flags his effect anims the same way (A1, AS256D149).
 ;---------------------------------------------------------------------------
 ; Bolt (projectile)
 [Begin Action 7000]
 Clsn1: 1
  Clsn1[0] = -10,-10, 10,10
-7000,0, 0,0, -1
+7000,0, 0,0, -1, , A
 
 ; Discharge at the hand
 [Begin Action 7001]
-7001,0, 0,0, 2
-7001,1, 0,0, 2
-7001,2, 0,0, -1
+7001,0, 0,0, 2, , A
+7001,1, 0,0, 2, , A
+7001,2, 0,0, -1, , A
 
 ; Impact spark
 [Begin Action 7002]
-7002,0, 0,0, 3
-7002,1, 0,0, 3
-7002,2, 0,0, -1
+7002,0, 0,0, 3, , A
+7002,1, 0,0, 3, , A
+7002,2, 0,0, -1, , A
 
 ; Thunderbolt, crackling on its way out
 [Begin Action 7010]
 Clsn1: 1
  Clsn1[0] = -30,-14, 30,14
-7010,0, 0,0, 3
-7010,1, 0,0, 3
-7010,2, 0,0, 3
-7010,3, 0,0, 3
+7010,0, 0,0, 3, , A
+7010,1, 0,0, 3, , A
+7010,2, 0,0, 3, , A
+7010,3, 0,0, 3, , A
 """
 
 
