@@ -36,7 +36,7 @@ SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 # its 1280x720 select-screen space.
 SPRITE = (221, 0)
 STRIP = (300, 30)
-POS = (0, 668)
+POS = (0, 700)
 
 GOLD = (255, 214, 96)
 GOLD_DEEP = (120, 78, 16)

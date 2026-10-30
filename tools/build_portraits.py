@@ -27,7 +27,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Same shapes the engine's own roster uses: a 25x25 cell and a 120x140 VS art,
 # with the axis at the sprite's top-left (as the engine art is).
-CELL = (25, 25)
+# The cell art is painted at the grid cell size so it can be drawn at scale 1
+# with the axis at the sprite corner, which is how the engine lays out its own
+# 25x25 portraits in a 24px cell.
+CELL = (120, 120)
+BUST = 100                 # the bust sits inside the cell bevel
+SIDE = (300, 520)          # the tall art shown beside the grid
 BIG = (120, 140)
 AXIS = (0, 0)
 
@@ -61,34 +66,68 @@ def fit(img, size, head=False):
     return out
 
 
-def patch_character(path):
-    """Add 9000,0 and 9000,1 to a fighter's SFF if they are missing."""
-    d, sprites, palettes = sff.read_sff(path)
-    have = {(sp["group"], sp["number"]) for sp in sprites}
-    if (9000, 0) in have and (9000, 1) in have:
-        return False
+def cell_art(img):
+    """The roster cell: a head-and-shoulders crop centred on the cell plate."""
+    out = Image.new("RGBA", CELL, (0, 0, 0, 0))
+    bust = img.crop((0, 0, img.width, max(1, int(img.height * 0.52))))
+    k = min(BUST / float(bust.width), BUST / float(bust.height))
+    bust = bust.resize((max(1, int(round(bust.width * k))),
+                        max(1, int(round(bust.height * k)))), Image.LANCZOS)
+    out.alpha_composite(bust, ((CELL[0] - bust.width) // 2,
+                               (CELL[1] - bust.height) // 2))
+    return out
 
-    art = standing_frame(d, sprites, palettes)
-    if art is None:
+
+def patch_character(path):
+    """Rebuild the cell and VS portraits from the idle frame.
+
+    They are rewritten every build rather than only when missing: the cell size
+    lives in the screenpack, so a portrait left over from an older cell size is
+    worse than no portrait at all.
+    """
+    d, sprites, palettes = sff.read_sff(path)
+    standing = standing_frame(d, sprites, palettes)
+    if standing is None:
         print(f"  {os.path.relpath(path, ROOT)}: no group-0 art, skipped")
         return False
 
+    # Pick a source with real pixels. The base roster is a recoloured copy of
+    # Kung Fu Man, whose own portrait is pristine PNG8 art, so it is decoded
+    # with this fighter's palette. Anything that already has a portrait of its
+    # own (the rig fighters) uses its standing frame instead.
+    base_sff = os.path.join(ROOT, "chars", "kfm", "kfm.sff")
+    source = None
+    if len(palettes) > 1 and os.path.isfile(base_sff) and \
+            os.path.abspath(base_sff) != os.path.abspath(path):
+        bd, base_sprites, _bp = sff.read_sff(base_sff)
+        rec = {(sp["group"], sp["number"]): sp
+               for sp in base_sprites}.get((9000, 1))
+        if rec is not None:
+            source = sff.decode_sprite(bd, rec, palettes).convert("RGBA")
+    if source is None:
+        source = standing
+    box = source.getchannel("A").getbbox()
+    if box:
+        source = source.crop(box)
+
+    cell = cell_art(source)
+    side = fit(source, SIDE)
     out = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
             "format": sp["format"], "depth": sp["depth"], "w": sp["w"],
             "h": sp["h"], "axis": sp["axis"], "pal": sp["pal"],
-            "link": sp["link"]} for sp in sprites]
-    if (9000, 1) not in have:
-        out.append({"group": 9000, "number": 1, "image": fit(art, BIG),
-                    "axis": AXIS})
-    if (9000, 0) not in have:
-        out.append({"group": 9000, "number": 0,
-                    "image": fit(art, CELL, head=True), "axis": AXIS})
+            "link": sp["link"]}
+           for sp in sprites
+           if (sp["group"], sp["number"]) not in ((9000, 0), (9000, 1))]
+    out.append({"group": 9000, "number": 0, "image": cell, "axis": AXIS})
+    out.append({"group": 9000, "number": 1, "image": fit(source, BIG),
+                "axis": AXIS})
+    out.append({"group": 9000, "number": 2, "image": side, "axis": AXIS})
 
     blob = sff.write_sff(out, [p["rgba"] for p in palettes] if palettes else [])
     with open(path + ".tmp", "wb") as f:
         f.write(blob)
     os.replace(path + ".tmp", path)
-    print(f"  added portraits to {os.path.relpath(path, ROOT)}")
+    print(f"  portraits rebuilt in {os.path.relpath(path, ROOT)}")
     return True
 
 

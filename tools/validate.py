@@ -207,8 +207,74 @@ def check_stage(def_path):
     notes.append(f"{label}: {layers} layers, {len(sprites)} sprites")
 
 
+def check_select_screen(chars):
+    """The portrait grid painted by tools/build_select_grid.py."""
+    def_text = read(os.path.join(ROOT, "data", "ikemen1", "system.def"))
+    parts = def_text.split("[Select Info]", 1)
+    if len(parts) < 2:
+        err("system.def: no [Select Info] block")
+        return
+    body = parts[1].split("\n[", 1)[0]
+    opts = {}
+    for line in body.splitlines():
+        if "=" in line and not line.strip().startswith(";"):
+            key, value = line.split("=", 1)
+            opts[key.strip().lower()] = value.split(";")[0].strip()
+
+    if opts.get("rows") != "2" or opts.get("columns") != "5":
+        err("select screen: grid is %s rows by %s columns, expected 2 by 5"
+            % (opts.get("rows"), opts.get("columns")))
+    if opts.get("cell.size") != "120,120":
+        err("select screen: cell.size is %r, expected 120,120" % opts.get("cell.size"))
+    if opts.get("portrait.spr") != "9000,0":
+        err("select screen: portrait.spr is %r, expected 9000,0" % opts.get("portrait.spr"))
+    if "p1.face.window" not in opts or "p2.face.window" not in opts:
+        err("select screen: the big side portraits have no window")
+
+    sff_path = os.path.join(ROOT, "data", "ikemen1", "system.sff")
+    if not os.path.isfile(sff_path):
+        err("select screen: data/ikemen1/system.sff is missing")
+        return
+    _d, sprites, _p = sff.read_sff(sff_path)
+    have = {(sp["group"], sp["number"]): sp for sp in sprites}
+    for group, number in ((220, 0), (222, 0), (223, 0), (223, 1), (223, 2), (223, 3)):
+        if (group, number) not in have:
+            err("select screen: system.sff has no sprite %d,%d" % (group, number))
+    bg = have.get((220, 0))
+    if bg and (bg["w"], bg["h"]) != (1280, 720):
+        err("select screen: background is %dx%d, expected 1280x720" % (bg["w"], bg["h"]))
+    if "spriteno = 220, 0" not in def_text:
+        err("select screen: [SelectBGdef] does not draw the painted background")
+
+    for name, _stage in chars:
+        def_path, folder = resolve_char(name)
+        if not (def_path and os.path.isfile(def_path)):
+            continue
+        files = dict(ini_sections(read(def_path)).get("files", []))
+        char_sff = os.path.join(folder, files.get("sprite", ""))
+        if not os.path.isfile(char_sff):
+            continue
+        _cd, char_sprites, _cp = sff.read_sff(char_sff)
+        cell = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get((9000, 0))
+        if cell is None:
+            err("%s: no select portrait 9000,0" % name)
+        elif (cell["w"], cell["h"]) != (120, 120):
+            err("%s: select portrait is %dx%d, expected 120x120"
+                % (name, cell["w"], cell["h"]))
+        want = {(9000, 1): (120, 140), (9000, 2): (300, 520)}
+        for key, size in want.items():
+            hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
+            if hit is None:
+                err("%s: no portrait sprite %d,%d" % (name, key[0], key[1]))
+            elif (hit["w"], hit["h"]) != size:
+                err("%s: portrait %d,%d is %dx%d, expected %dx%d"
+                    % (name, key[0], key[1], hit["w"], hit["h"], size[0], size[1]))
+    notes.append("select screen: 5x2 portrait grid, 120px cells, framed sides")
+
+
 def main():
     chars = check_select()
+    check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):
