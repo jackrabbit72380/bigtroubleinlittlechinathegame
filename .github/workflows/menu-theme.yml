@@ -1,0 +1,49 @@
+# One-shot: applies the menu-theme patch (tools only), then leaves main clean.
+# The patch touches no workflow file: a GITHUB_TOKEN push that edits
+# .github/workflows/* is rejected without the `workflows` permission.
+# build-assets.yml picks up the push and regenerates system.def + the fonts.
+
+name: Menu theme (one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack the patch
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, pathlib
+          raw = pathlib.Path("_menu.b64").read_bytes().strip()
+          blob = raw if raw[:2] == b"\x1f\x8b" else base64.b64decode(raw)
+          patch = gzip.decompress(blob)
+          pathlib.Path("/tmp/menu.patch").write_bytes(patch)
+          print(len(patch), "bytes of patch")
+          PY
+
+      - name: Apply it
+        run: |
+          set -euo pipefail
+          git apply --whitespace=nowarn --verbose /tmp/menu.patch
+          test -f tools/build_fonts.py
+          grep -q build_fonts tools/build_all.py
+          grep -q "Display.ttf" tools/art.py
+          grep -q check_menu_theme tools/validate.py
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q _menu.b64
+          git add -A
+          git commit -m "Dress the menus in the title logo's face and palette"
+          git pull --rebase --autostash origin main
+          git push
