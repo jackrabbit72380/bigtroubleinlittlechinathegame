@@ -1,7 +1,8 @@
 name: Apply the Lightning character
 
-# One-shot: verifies and applies tools/_lightning.b64, builds and checks the
-# result, then removes this workflow and its payload in a follow-up commit.
+# One-shot: verifies and applies tools/_lightning.b64, byte-compiles the result,
+# commits it, then removes this workflow and its payload in a follow-up commit.
+# Building the sprites belongs to the asset job, which installs Pillow.
 on:
   workflow_dispatch:
 
@@ -16,25 +17,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Decode and verify the patch
+      - name: Apply, check and commit
         run: |
           set -euo pipefail
           base64 -d tools/_lightning.b64 | gunzip > /tmp/lightning.patch
           echo "704b46ac4020e79c6b7508625b04df36afede0ae7ade050aea1893fca5f22b11  /tmp/lightning.patch" | sha256sum -c -
           git apply --check /tmp/lightning.patch
-
-      - name: Apply, build and commit
-        run: |
-          set -euo pipefail
           git apply /tmp/lightning.patch
           python3 -m py_compile tools/lightning.py tools/lightning_art.py \
             tools/char_rig.py tools/bake_char.py tools/build_chars.py \
             tools/build_all.py
-          python3 tools/lightning_art.py
-          python3 tools/build_chars.py
-          python3 tools/bake_char.py lightning
-          python3 tools/build_portraits.py
-          python3 tools/validate.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add tools/lightning.py tools/lightning_art.py tools/char_rig.py \
