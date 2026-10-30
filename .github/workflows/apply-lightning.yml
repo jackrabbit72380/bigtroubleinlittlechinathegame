@@ -1,7 +1,7 @@
 name: Apply the Lightning character
 
 # One-shot: verifies and applies tools/_lightning.b64, builds and checks the
-# result, then removes this workflow and its payload in the same commit.
+# result, then removes this workflow and its payload in a follow-up commit.
 on:
   workflow_dispatch:
 
@@ -41,7 +41,8 @@ jobs:
             tools/bake_char.py tools/build_chars.py tools/build_all.py \
             data/select.def docs/DESIGN.md
           git commit -q -m "Add Lightning as a rig-built fighter"
-          git rm -q .github/workflows/apply-lightning.yml tools/_lightning.b64
-          git commit -q --amend --no-edit
           git push origin HEAD:main
-          echo "applied at $(git rev-parse HEAD)"
+          git rm -q .github/workflows/apply-lightning.yml tools/_lightning.b64
+          git commit -q -m "Remove the one-shot Lightning workflow"
+          git push origin HEAD:main
+          echo "landed at $(git rev-parse HEAD)"
