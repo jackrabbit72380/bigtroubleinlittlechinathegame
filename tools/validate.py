@@ -272,8 +272,56 @@ def check_select_screen(chars):
     notes.append("select screen: 5x2 portrait grid, 120px cells, framed sides")
 
 
+def check_menu_theme():
+    """Menus wear the title logo's face and its gold/red palette.
+
+    tools/build_fonts.py installs Display/Body and retints system.def; this fails
+    loudly if a regeneration left a font pointing at a file that is not shipped,
+    or if any of the old blue/pink text colours survived.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        err("menu theme: data/ikemen1/system.def is missing")
+        return
+    def_text = read(path)
+
+    declared = {}
+    for line in def_text.splitlines():
+        m = re.match(r"^\s*(font\d+)\s*=\s*(\S+)", line, re.I)
+        if m and not line.strip().startswith(";"):
+            declared[m.group(1).lower()] = m.group(2)
+    for key, rel in declared.items():
+        if not (os.path.isfile(os.path.join(ROOT, "data", rel))
+                or os.path.isfile(os.path.join(ROOT, "font", rel))):
+            err("menu theme: %s points at %s, which is not shipped" % (key, rel))
+
+    for name in ("Display", "Body"):
+        fdef = os.path.join(ROOT, "data", "ikemen1", "fonts", name + ".def")
+        if not os.path.isfile(fdef):
+            err("menu theme: %s.def is missing" % name)
+            continue
+        body = read(fdef)
+        if not re.search(r"^Type\s*=\s*truetype", body, re.I | re.M):
+            err("menu theme: %s.def is not a truetype font, so RGB tints are ignored" % name)
+        f = re.search(r"^File\s*=\s*(\S+)", body, re.I | re.M)
+        if not f or not os.path.isfile(os.path.join(os.path.dirname(fdef), f.group(1))):
+            err("menu theme: %s.def does not point at a shipped typeface" % name)
+
+    stale = [c for c in ("123,206,255", "255,210,239", "210,210,255", "0,247,247")
+             if c in def_text]
+    if stale:
+        err("menu theme: system.def still uses the old menu colours (%s)"
+            % ", ".join(stale))
+    if declared.get("font10") is None or declared.get("font11") is None:
+        err("menu theme: font10/font11 are not registered in [Files]")
+    if "footer.title.font" in def_text and "72, 10, 16" not in def_text:
+        err("menu theme: the footer bar is not in the logo palette")
+    notes.append("menu theme: logo face, gold/red palette, footer bar restyled")
+
+
 def main():
     chars = check_select()
+    check_menu_theme()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
