@@ -469,17 +469,20 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
 POSES = {
     # Arms are single bent pieces: only the shoulder value does anything, and
     # it is a swing away from the drawn guard. Legs are absolute.
+    # Idle arms hang: the parts are cut in a raised guard, so an idle pose has
+    # to swing them back down by ~30 degrees. Held up at the drawn guard it read
+    # as a man holding an invisible tray, which is not a fighting stance.
     "stance": dict(lean=4, head=-2,
-                   arm_n=(6, 0, 0), arm_f=(-6, 0, 0),
+                   arm_n=(-30, 0, 0), arm_f=(-26, 0, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "breath": dict(lean=3, head=-3, lift=1,
-                   arm_n=(9, 0, 0), arm_f=(-5, 0, 0),
+                   arm_n=(-27, 0, 0), arm_f=(-29, 0, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "walk_a": dict(lean=7, head=-4, shift=1,
-                   arm_n=(13, 0, 0), arm_f=(-14, 0, 0),
+                   arm_n=(-22, 0, 0), arm_f=(-34, 0, 0),
                    leg_n=(26, -18, 92), leg_f=(-22, 4, 86)),
     "walk_b": dict(lean=6, head=-3, shift=-1,
-                   arm_n=(2, 0, 0), arm_f=(-4, 0, 0),
+                   arm_n=(-34, 0, 0), arm_f=(-22, 0, 0),
                    leg_n=(-16, 2, 84), leg_f=(24, -20, 96)),
     "crouch": dict(lean=16, head=8,
                    arm_n=(18, 0, 0), arm_f=(8, 0, 0),
