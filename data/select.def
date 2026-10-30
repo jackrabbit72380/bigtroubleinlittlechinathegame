@@ -16,7 +16,7 @@ eggshen, stages/wingkong_exchange.def, order=3
 
  ; --- the Three Storms ------------------------------------------------------
 rain, stages/porkchop_express.def, order=1
-lightning, stages/chinatown_alley.def, order=1
+lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
 thunder, stages/lopans_throne.def, order=2
 
  ; --- final boss ------------------------------------------------------------

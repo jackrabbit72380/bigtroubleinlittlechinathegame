@@ -21,6 +21,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import art
 import jackburton
+import lightning
 import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -144,6 +145,7 @@ ROSTER = [
     dict(
         id="lightning", name="Lightning", display="Lightning",
         pal=(272, 1.35, 1.1), life=1000, attack=105, defence=100,
+        extra=lightning,
         xscale=1.0, yscale=1.0, order=1,
         blurb="Fastest of the Three Storms, all narrow eyes and quicker hands.",
         moves=dict(throw="Bolt Throw", palm="Volt Palm", upper="Flash Upper",

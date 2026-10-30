@@ -37,15 +37,34 @@ WEAPON_ACTIONS = range(7000, 7100)
 # trigger frame lasts exactly one tick: AnimElem is true for as long as its
 # element is displayed, so a longer one would spawn each shot twice.
 WEAPON_POSES = {
-    # 1500 Six Shooter: sound on element 3, a round on 4, 6 and 8.
-    1500: [("gun_aim", 5), ("gun_aim", 3), ("gun_aim", 1),
-           ("gun_fire", 1), ("gun_aim", 4),
-           ("gun_fire", 1), ("gun_aim", 4),
-           ("gun_fire", 1), ("gun_aim", 8)],
-    # 1600 Knife Toss: sound on element 3, the blade leaves on element 4.
-    1600: [("knife", 5), ("knife", 2), ("knife", 1),
-           ("knife_throw", 1), ("knife_throw", 4), ("knife_throw", 5)],
+    "jackburton": {
+        # 1500 Six Shooter: sound on element 3, a round on 4, 6 and 8.
+        1500: [("gun_aim", 5), ("gun_aim", 3), ("gun_aim", 1),
+               ("gun_fire", 1), ("gun_aim", 4),
+               ("gun_fire", 1), ("gun_aim", 4),
+               ("gun_fire", 1), ("gun_aim", 8)],
+        # 1600 Knife Toss: sound on element 3, the blade leaves on element 4.
+        1600: [("knife", 5), ("knife", 2), ("knife", 1),
+               ("knife_throw", 1), ("knife_throw", 4),
+               ("knife_throw", 5)],
+    },
+    # Lightning throws electricity on the same element numbers, so his states
+    # keep the same triggers: sound on 3, a bolt on 4, 6 and 8.
+    "lightning": {
+        1500: [("cast", 5), ("cast", 3), ("cast", 1),
+               ("cast_release", 1), ("cast", 4),
+               ("cast_release", 1), ("cast", 4),
+               ("cast_release", 1), ("cast", 8)],
+        1600: [("cast", 5), ("cast", 2), ("cast", 1),
+               ("cast_release", 1), ("cast_release", 4),
+               ("cast_release", 5)],
+    },
 }
+
+# Parts drawn at target scale need no rescale. Jack's are cut from a 607px
+# turnaround and scaled down; Lightning's painter already works at 318px.
+ART_HEIGHT = {"lightning": TARGET_HEIGHT}
+DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning"}
 
 
 def pose_for(action, frame):
@@ -148,10 +167,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     os.makedirs(out, exist_ok=True)
 
     work = os.path.join(ROOT, "art_src", "chars", char_id, "work", "front.png")
-    art_h = Image.open(work).height if os.path.isfile(work) else 607.0
+    art_h = ART_HEIGHT.get(char_id)
+    if art_h is None:
+        art_h = Image.open(work).height if os.path.isfile(work) else 607.0
     k = target_height / art_h
     clsn_k = target_height / BASE_HEIGHT
 
+    poses = WEAPON_POSES.get(char_id, WEAPON_POSES["jackburton"])
     rig = char_rig.load_rig(char_id)
     sprites = []
 
@@ -171,7 +193,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     for number in sorted(actions):
         act = actions[number]
         frames = act["frames"] or [4]
-        if number in WEAPON_POSES:
+        if number in poses:
             # Written below from the rig, one frame per pose change.
             continue
         if number in WEAPON_ACTIONS:
@@ -213,7 +235,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     # The weapon states ship animating KFM's punch and kick, so on the rig Jack
     # punched while the bullets flew. They get their own multi-frame actions,
     # one sprite per pose change, so the AnimElem triggers in the states land.
-    for action, frames in WEAPON_POSES.items():
+    for action, frames in poses.items():
         air_out.append(
             f"; weapon action for state {action}\n[Begin Action {action}]")
         local = {}
@@ -247,9 +269,10 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     if os.path.isfile(cns_path):
         scale_weapon_positions(cns_path, clsn_k)
 
+    display = DISPLAY.get(char_id, char_id.title())
     def_text = f"""[Info]
-name = "Jack Burton (rig)"
-displayname = "Jack Burton"
+name = "{display} (rig)"
+displayname = "{display}"
 versiondate = 10,29,2026
 mugenversion = 1.0
 author = "Big Trouble in Little China: The Game"

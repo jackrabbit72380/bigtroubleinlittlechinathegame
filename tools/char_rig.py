@@ -73,7 +73,7 @@ AXIS = (180, 372)         # ground contact point inside the canvas
 SUPERSAMPLE = 1
 
 # Draw order, back to front. Far limbs sit behind the torso, near ones in front.
-ORDER = ["thigh_f", "shin_f", "foot_f", "arm_f",
+ORDER = ["cape", "thigh_f", "shin_f", "foot_f", "arm_f",
          "uarm_f", "farm_f", "hand_f",
          "pelvis", "torso", "head",
          "thigh_n", "shin_n", "foot_n", "arm_n",
@@ -220,7 +220,7 @@ def load_rig(char_id):
     # segments, so only complain about a segment when its single piece is absent.
     missing = []
     for n in ORDER:
-        if n == "prop" or n in parts:
+        if n in ("prop", "cape") or n in parts:
             continue
         if n.startswith(("uarm_", "farm_", "hand_")) and ("arm_" + n[-1]) in parts:
             continue
@@ -424,6 +424,16 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 part["base"] = BASE_ANGLE.get("prop", 0.0) + rig.art.get(which, 0.0)
                 _place(out, part, pose.get("prop_angle", 0.0), wri_n)
             continue
+        # A cloak hangs from the shoulders, behind everything else, and only
+        # partly follows the torso: it drapes, so it rides 35% of the lean.
+        if name == "cape":
+            if "cape" in rig.parts:
+                part = dict(rig.parts["cape"])
+                part["name"] = "cape"
+                part["base"] = 0.0
+                _place(out, part, torso_dir * 0.35 + pose.get("cape", 0.0),
+                       shoulder)
+            continue
         if name not in rig.parts or name not in joints:
             continue
         part = dict(rig.parts[name])
@@ -496,6 +506,14 @@ POSES = {
                         arm_n=(34, 0, 0), arm_f=(-10, 0, 0),
                         leg_n=(26, -18, 88), leg_f=(-22, 10, 92),
                         prop=True, prop_part="prop_knife", prop_angle=-40),
+    # Lightning's specials: hands charged, then hurled forward. The cloak
+    # trails the lean instead of swinging with the arms.
+    "cast": dict(lean=-6, head=3, shift=-2, cape=-12,
+                 arm_n=(26, 0, 0), arm_f=(18, 0, 0),
+                 leg_n=(14, -10, 88), leg_f=(-18, 10, 92)),
+    "cast_release": dict(lean=11, shift=4, head=-4, cape=9,
+                         arm_n=(44, 0, 0), arm_f=(-4, 0, 0),
+                         leg_n=(24, -16, 88), leg_f=(-20, 10, 92)),
     "block": dict(lean=-4, lift=-4, head=6,
                   arm_n=(24, 0, 0), arm_f=(20, 0, 0),
                   leg_n=(6, -4, 88), leg_f=(-10, 6, 92)),
@@ -509,7 +527,8 @@ POSES = {
 
 SHEET_ORDER = ["stance", "breath", "walk_a", "walk_b", "crouch", "jump",
                "jab", "cross", "upper", "boot", "low_kick", "block",
-               "gun_aim", "gun_fire", "knife", "hit", "win"]
+               "gun_aim", "gun_fire", "knife", "cast", "cast_release",
+               "hit", "win"]
 
 
 # ------------------------------------------------------------- demo part art

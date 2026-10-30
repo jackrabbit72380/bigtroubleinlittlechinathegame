@@ -12,9 +12,9 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 
 
-def run(script):
-    print(f"$ python3 tools/{script}")
-    result = subprocess.run([sys.executable, os.path.join(TOOLS, script)])
+def run(script, *args):
+    print("$ python3 tools/" + " ".join((script,) + args))
+    result = subprocess.run([sys.executable, os.path.join(TOOLS, script), *args])
     return result.returncode
 
 
@@ -34,7 +34,10 @@ def main():
                            "jack_burton",
                            "bernardo-mercurio-jack-turnable.jpg")
     if os.path.isfile(concept):
-        scripts += ["jack_cut.py", "bake_char.py"]
+        scripts += ["jack_cut.py", ("bake_char.py", "jackburton")]
+    # Lightning has no turnaround to cut: his parts are painted in code, so the
+    # only inputs are the tools themselves and a clean checkout can build him.
+    scripts += ["lightning_art.py", ("bake_char.py", "lightning")]
     # Select-screen portraits: the pre-match screens read each fighter's 9000,0
     # and 9000,1 out of its own SFF, and a character baked from the rig has
     # neither, so they are rendered from its own art after the bake.
@@ -55,8 +58,9 @@ def main():
     if os.path.isfile(title_sff):
         scripts.append("build_select_ui.py")
     scripts.append("validate.py")
-    for script in scripts:
-        code = run(script)
+    for entry in scripts:
+        script, *args = (entry,) if isinstance(entry, str) else entry
+        code = run(script, *args)
         if code != 0:
             print(f"\n{script} failed (exit {code})")
             return code

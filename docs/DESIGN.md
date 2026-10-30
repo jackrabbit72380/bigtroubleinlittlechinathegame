@@ -24,6 +24,28 @@ Grading avoids recolouring outlines (very dark colours are left alone) and fades
 the hue shift out for low-saturation pixels, which keeps skin highlights and
 whites from turning neon.
 
+## Lightning: the second fighter cut from parts
+
+Jack's parts come from a photographic turnaround. Lightning has none, so
+`tools/lightning_art.py` paints his parts from the concept sheet instead: the
+huge fringed straw hat, the slate robe with its beaded demon-face chest and grey
+waist chevron, the crimson cloak, the black boots, and the blue current that
+crawls over his hands and his hat brim. It writes the same
+`art_src/chars/lightning/parts/` a hand-drawn turnaround would, so the rig, the
+baker and the validator do not care where the pixels came from.
+
+The rig grew one part for him: `cape`. It is drawn first, behind everything
+else, hangs from the shoulder joint and rides only 35% of the torso's lean, so it
+drapes instead of swinging with the arms. Its pose angle is `cape` in `POSES`,
+which is why the two storm poses (`cast`, `cast_release`) also set it.
+
+His specials are electricity, not weapons, but they occupy the same slots Jack's
+pistol and knife do: states 1500 and 1600, animations 7000/7001/7002/7010, and
+the same element numbers inside those states (sound on 3, a bolt on 4, 6 and 8),
+so the triggers that make Jack's pistol fire make Lightning's bolts fly.
+`WEAPON_POSES` in `tools/bake_char.py` is now keyed by fighter for exactly that
+reason - the frame layout has to match, but the poses are his own.
+
 ## Replacing the art
 
 Each fighter folder is a normal MUGEN/Ikemen character folder. To swap in real
