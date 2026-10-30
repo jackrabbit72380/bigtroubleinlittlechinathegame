@@ -1,0 +1,33 @@
+name: Apply the additive lightning change
+
+# One-shot: applies tools/_lightning2.patch, byte-compiles it, pushes, then
+# deletes itself and its payload. The asset job rebuilds chars/ from tools/.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply and push
+        run: |
+          set -euo pipefail
+          git apply --check tools/_lightning2.patch
+          git apply tools/_lightning2.patch
+          python3 -m py_compile tools/lightning.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/lightning.py
+          git commit -q -m "Make Lightning's discharges and charge additive"
+          git push origin HEAD:main
+          git rm -q .github/workflows/apply-lightning2.yml tools/_lightning2.patch
+          git commit -q -m "Remove the one-shot lightning workflow"
+          git push origin HEAD:main
+          echo "landed at $(git rev-parse HEAD)"

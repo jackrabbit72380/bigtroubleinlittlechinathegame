@@ -1,0 +1,86 @@
+{
+  "scale": 1.0,
+  "canvas": [
+    640,
+    780
+  ],
+  "axis": [
+    300,
+    700
+  ],
+  "metrics": {
+    "hip_y": -315,
+    "shoulder_y": -495.0,
+    "neck_y": -503.0,
+    "knee_y": -171,
+    "ankle_y": -35,
+    "torso_len": 180.0,
+    "neck_len": 8.0,
+    "uarm": 86.7,
+    "farm": 55.2,
+    "hand": 34.0,
+    "thigh": 140.5,
+    "shin": 136.1,
+    "shoulder_half": 85.5,
+    "hip_half": 24.0
+  },
+  "pivots": {
+    "head": [
+      33,
+      114
+    ],
+    "torso": [
+      88,
+      180
+    ],
+    "pelvis": [
+      53,
+      6
+    ],
+    "arm_f": [
+      133,
+      32
+    ],
+    "arm_n": [
+      50,
+      27
+    ],
+    "thigh_f": [
+      42,
+      12
+    ],
+    "shin_f": [
+      46,
+      0
+    ],
+    "thigh_n": [
+      33,
+      12
+    ],
+    "shin_n": [
+      9,
+      0
+    ],
+    "prop": [
+      26.5,
+      75.2
+    ],
+    "prop_knife": [
+      17,
+      12
+    ]
+  },
+  "angles": {
+    "head": 0.0,
+    "torso": 0.0,
+    "pelvis": 0.0,
+    "arm_f": -64.01,
+    "arm_n": 44.23,
+    "thigh_f": -4.9,
+    "shin_f": -2.53,
+    "thigh_n": 4.9,
+    "shin_n": 2.53,
+    "prop": 0.0,
+    "prop_knife": 0.0
+  }
+}

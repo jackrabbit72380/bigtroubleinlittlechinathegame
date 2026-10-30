@@ -1,0 +1,22 @@
+<#f0f000>:Movement:</>
+Walk, jump, crouch						_DPAD_
+Dash forward / back						_F_F_ / _B_B_
+
+<#f0f000>:Guard:</>
+High guard							_F_+^X
+Low guard							_DF_+^X
+Air guard							_AIR_F_+^X
+
+<#f0f000>:Throws:</>
+Storm Slam							[_B/_F]_+^Y
+
+<#f0f000>:Special Moves:</>
+Thunder Palm							_QDF^P
+Warrior Upper							_DSF^P
+Storm Blow								_QDB^P
+Axe Hand								_QDF^K
+Earthshaker								_F_F^K
+
+<#f0f000>:Super Moves:</>
+Thunder Roar <#bebebe>(1000)</>				_QDF_QDF^P
+Three Storms <#bebebe>(1000)</>				_QDB_QDB^P

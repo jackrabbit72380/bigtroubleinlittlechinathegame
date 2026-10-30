@@ -1,0 +1,27 @@
+[Info]
+name = "Lightning (rig)"
+displayname = "Lightning"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+
+[Files]
+cmd      = lightning.cmd
+cns      = lightning.cns
+st       = lightning.cns
+stcommon = common1.cns
+sprite   = lightning.sff
+anim     = lightning.air
+sound    = lightning.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480
