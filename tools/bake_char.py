@@ -30,6 +30,23 @@ BASE_HEIGHT = 106.0
 # these keep the art they were drawn with and are only scaled with the figure.
 WEAPON_ACTIONS = range(7000, 7100)
 
+# The weapon states fire their sound and each round on a specific animation
+# element, so these actions have to be long enough to contain those elements.
+# They used to be a single frame with time -1, which meant AnimElem 3/4/6 never
+# arrived and the pistol and the knife silently never produced anything. Every
+# trigger frame lasts exactly one tick: AnimElem is true for as long as its
+# element is displayed, so a longer one would spawn each shot twice.
+WEAPON_POSES = {
+    # 1500 Six Shooter: sound on element 3, a round on 4, 6 and 8.
+    1500: [("gun_aim", 5), ("gun_aim", 3), ("gun_aim", 1),
+           ("gun_fire", 1), ("gun_aim", 4),
+           ("gun_fire", 1), ("gun_aim", 4),
+           ("gun_fire", 1), ("gun_aim", 8)],
+    # 1600 Knife Toss: sound on element 3, the blade leaves on element 4.
+    1600: [("knife", 5), ("knife", 2), ("knife", 1),
+           ("knife_throw", 1), ("knife_throw", 4), ("knife_throw", 5)],
+}
+
 
 def pose_for(action, frame):
     """Which rig pose stands in for this animation."""
@@ -154,6 +171,9 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     for number in sorted(actions):
         act = actions[number]
         frames = act["frames"] or [4]
+        if number in WEAPON_POSES:
+            # Written below from the rig, one frame per pose change.
+            continue
         if number in WEAPON_ACTIONS:
             # Keep the projectile art and its own frames exactly as drawn.
             air_out.append(
@@ -191,16 +211,22 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                         "axis": (round(ax * clsn_k), round(ay * clsn_k))})
 
     # The weapon states ship animating KFM's punch and kick, so on the rig Jack
-    # punched while the bullets flew. They get their own actions and poses.
-    for action, pose in ((1500, "gun_aim"), (1600, "knife_throw")):
-        img = char_rig.render(rig, char_rig.POSES[pose])
-        img = img.resize((max(1, round(img.width * k)),
-                          max(1, round(img.height * k))), Image.LANCZOS)
-        axis = (round(rig.axis[0] * k), round(rig.axis[1] * k))
-        sprites.append({"group": action, "number": 0, "image": img, "axis": axis})
+    # punched while the bullets flew. They get their own multi-frame actions,
+    # one sprite per pose change, so the AnimElem triggers in the states land.
+    for action, frames in WEAPON_POSES.items():
         air_out.append(
-            f"; weapon pose ({pose}) for state {action}\n[Begin Action {action}]")
-        air_out.append(f"{action},0, 0,0, -1")
+            f"; weapon action for state {action}\n[Begin Action {action}]")
+        local = {}
+        for pose, ticks in frames:
+            if pose not in local:
+                img = char_rig.render(rig, char_rig.POSES[pose])
+                img = img.resize((max(1, round(img.width * k)),
+                                  max(1, round(img.height * k))), Image.LANCZOS)
+                axis = (round(rig.axis[0] * k), round(rig.axis[1] * k))
+                local[pose] = len(local)
+                sprites.append({"group": action, "number": local[pose],
+                                "image": img, "axis": axis})
+            air_out.append(f"{action},{local[pose]}, 0,0, {ticks}")
         air_out.append("")
 
     palette = bytearray()
