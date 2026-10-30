@@ -1,7 +1,7 @@
-# One-shot: applies the Airport Terminal stage patch, then removes itself so
-# main keeps only the normal build-assets workflow. Without this job the patch
-# would have to be transcribed into the Contents API, and its quoting broke the
-# payload on the way out.
+# One-shot: applies the Airport Terminal stage patch, then leaves main clean.
+# The patch deliberately touches no workflow file: a GITHUB_TOKEN push that
+# edits .github/workflows/* is rejected without the `workflows` permission, and
+# that is what broke the first attempt.
 
 name: Airport Terminal stage (one-shot)
 
@@ -35,15 +35,15 @@ jobs:
           test -f tools/stage_airport.py
           grep -q airport_terminal data/select.def
           grep -q stage_airport tools/build_all.py
-          grep -q airport_terminal .github/workflows/release.yml
           grep -q 'Airport Terminal' README.md
 
-      - name: Commit, self-delete, push
+      - name: Commit and push
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -q _airport.b64 .github/workflows/airport-stage.yml
+          git rm -q _airport.b64
           git add -A
           git commit -m "Add the Airport Terminal stage"
+          git pull --rebase --autostash origin main
           git push
