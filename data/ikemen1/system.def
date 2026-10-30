@@ -366,54 +366,54 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 [Select Info]
 fadein.time = 10
 fadeout.time = 10
-rows = 10
-columns = 8
-wrapping = 1                       ;1 to let cursor wrap around
-pos = 525,195                      ;Position to draw to
-showemptyboxes = 1                 ;1 to show empty boxes
-moveoveremptyboxes = 1             ;1 to allow cursor to move over empty boxes
+rows = 2
+columns = 5
+wrapping = 1
+pos = 324,100
+showemptyboxes = 0
+moveoveremptyboxes = 0
 coopqueue = 1                      ;1 to allow character selection queuing in coop modes
-cell.size = 24,24                  ;x,y size of each cell (in pixels)
-cell.spacing = 4                   ;Space between each cell
-cell.bg.spr = 150,0                ;Note: Don't use animation for cells
-cell.bg.scale = .25,.25
-cell.random.spr = 151,0            ;Icon for random select (don't use animation)
+cell.size = 120,120
+cell.spacing = 8
+cell.bg.spr = 222,0
+cell.bg.scale = 1,1
+cell.random.spr = 151,0
 cell.random.switchtime = 4         ;Time to wait before changing to another random portrait
-cell.random.scale = .25,.25
+cell.random.scale = 1.6,1.6
 p1.cursor.tween.factor = 0.5, 0.5
 p1.cursor.startcell = 0,0
-p1.cursor.active.anim = 160
-p1.cursor.active.scale = .25,.25
-p1.cursor.done.spr = 161,0
-p1.cursor.done.scale = .25,.25
+;p1.cursor.active.anim = 160
+p1.cursor.active.scale = 1,1
+p1.cursor.done.spr = 223,0
+p1.cursor.done.scale = 1,1
 p1.cursor.move.snd = 100,0
 p1.cursor.done.snd = 100,1
 p1.random.move.snd = 100,0
 p2.cursor.tween.factor = 0.5, 0.5
 p2.cursor.startcell = 0,7
-p2.cursor.active.anim = 170
-p2.cursor.active.scale = .25,.25
-p2.cursor.done.spr = 171,0
-p2.cursor.done.scale = .25,.25
+;p2.cursor.active.anim = 170
+p2.cursor.active.scale = 1,1
+p2.cursor.done.spr = 223,1
+p2.cursor.done.scale = 1,1
 p2.cursor.blink = 0                ;1 to blink p2's cursor if overlapping p1's
 p2.cursor.move.snd = 100,0
 p2.cursor.done.snd = 100,1
 p2.random.move.snd = 100,0
 p3.cursor.tween.factor = 0.5, 0.5
 p3.cursor.startcell = 3,0
-p3.cursor.active.anim = 172
-p3.cursor.active.scale = .25,.25
-p3.cursor.done.spr = 173,0
-p3.cursor.done.scale = .25,.25
+;p3.cursor.active.anim = 172
+p3.cursor.active.scale = 1,1
+p3.cursor.done.spr = 223,2
+p3.cursor.done.scale = 1,1
 p3.cursor.move.snd = 100,0
 p3.cursor.done.snd = 100,1
 p3.random.move.snd = 100,0
 p4.cursor.tween.factor = 0.5, 0.5
 p4.cursor.startcell = 3,7
-p4.cursor.active.anim = 174
-p4.cursor.active.scale = .25,.25
-p4.cursor.done.spr = 175,0
-p4.cursor.done.scale = .25,.25
+;p4.cursor.active.anim = 174
+p4.cursor.active.scale = 1,1
+p4.cursor.done.spr = 223,3
+p4.cursor.done.scale = 1,1
 p4.cursor.move.snd = 100,0
 p4.cursor.done.snd = 100,1
 p4.random.move.snd = 100,0
@@ -423,11 +423,11 @@ stage.done.snd = 100,1
 cancel.snd = 100,2
 portrait.spr = 9000,0
 portrait.offset = 0,0
-portrait.scale = .25,.25
+portrait.scale = 1,1
 portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
-title.offset = 640,48              ;Position of title (Arcade Mode, etc)
+title.offset = 640,30
 title.font = 4,0,0                 ;Font of title (-1 for none)
 title.layerno = 2
 
@@ -454,75 +454,15 @@ title.replay.text = REPLAY
 
 ; Cell Projection
 
-cell.*-0.xangle = 10
-cell.*-0.projection = perspective
-cell.*-0.focallength = 50
-cell.*-0.spacing = 7.5, 0
-cell.*-0.scale = 0.3,0.3
-cell.*-0.offset = -11, -46
 
-cell.*-1.xangle = 10
-cell.*-1.projection = perspective
-cell.*-1.focallength = 50
-cell.*-1.spacing = 8.75, -46
-cell.*-1.scale = 0.315,0.315
-cell.*-1.offset = -16, 0
 
-cell.*-2.xangle = 10
-cell.*-2.projection = perspective
-cell.*-2.focallength = 50
-cell.*-2.spacing = 10, -22
-cell.*-2.scale = 0.325,0.325
-cell.*-2.offset = -21, 0
 
-cell.*-3.xangle = 10
-cell.*-3.projection = perspective
-cell.*-3.focallength = 50
-cell.*-3.spacing = 11.5, -13.5
-cell.*-3.scale = 0.34,0.34
-cell.*-3.offset = -27, 0
 
-cell.*-4.xangle = 10
-cell.*-4.projection = perspective
-cell.*-4.focallength = 50
-cell.*-4.spacing = 13, -8.5
-cell.*-4.scale = 0.355,0.355
-cell.*-4.offset = -33, 0
 
-cell.*-5.xangle = 10
-cell.*-5.projection = perspective
-cell.*-5.focallength = 50
-cell.*-5.spacing = 14.5, -5
-cell.*-5.scale = 0.37,0.37
-cell.*-5.offset = -39, 0
 
-cell.*-6.xangle = 10
-cell.*-6.projection = perspective
-cell.*-6.focallength = 50
-cell.*-6.spacing = 16.25, -2.2
-cell.*-6.scale = 0.39,0.39
-cell.*-6.offset = -46, 0
 
-cell.*-7.xangle = 10
-cell.*-7.projection = perspective
-cell.*-7.focallength = 50
-cell.*-7.spacing = 18.375, 0.3
-cell.*-7.scale = 0.405,0.405
-cell.*-7.offset = -54, 0
 
-cell.*-8.xangle = 10
-cell.*-8.projection = perspective
-cell.*-8.focallength = 50
-cell.*-8.spacing = 20.7, 2.7
-cell.*-8.scale = 0.422,0.422
-cell.*-8.offset = -63, 0
 
-cell.*-9.xangle = 10
-cell.*-9.projection = perspective
-cell.*-9.focallength = 50
-cell.*-9.spacing = 23, 5
-cell.*-9.scale = 0.46,0.46
-cell.*-9.offset = -73, 0
 
 ; If defined draws a sprite or anim from the screenpack on cells using the slot parameter in select.def.
 cell.slot.anim = 158
@@ -541,7 +481,7 @@ p1.face.anim = 0                   ;Animated portraits
 p1.face.offset = 280, 560          ;Position to place the portrait
 p1.face.scale = 0.75,0.75
 p1.face.facing = 1
-p1.face.window = 0,46, 476,629
+p1.face.window = 0,0,1,1
 p1.face.applypal = 1               ;Display portrait with selected palette (requires shared palette)
 p1.face.layerno = 2
 
@@ -569,7 +509,7 @@ p2.face.anim = 0
 p2.face.offset = 1000, 560
 p2.face.scale = 0.75,0.75
 p2.face.facing = -1
-p2.face.window = 802,46, 1280,629
+p2.face.window = 0,0,1,1
 p2.face.applypal = 1
 p2.face.layerno = 2
 
@@ -597,26 +537,26 @@ p1.face.done.anim = 181            ;Portrait to use when selection is confirmed
 p2.face.done.anim = 181
 
 ;Secondary big portraits
-p1.face2.spr = 9000,1              ;Secondary portrait
-p1.face2.projection = perspective
-p1.face2.yangle = 70
+p1.face2.spr = 9000,2
+;p1.face2.projection = perspective
+;p1.face2.yangle = 70
 p1.face2.layerno = 2
-p1.face2.focallength = 400
-p1.face2.offset = 0, 94
-p1.face2.scale = 1, 1
+;p1.face2.focallength = 400
+p1.face2.offset = 8,150
+p1.face2.scale = 1,1
 p1.face2.facing = 1
-p1.face2.window = 0,46, 476,629
+p1.face2.window = 0,86,320,712
 p1.face2.applypal = 1
 
-p2.face2.spr = 9000,1
-p2.face2.projection = perspective
-p2.face2.yangle = -70
+p2.face2.spr = 9000,2
+;p2.face2.projection = perspective
+;p2.face2.yangle = -70
 p2.face2.layerno = 2
-p2.face2.focallength = 400
-p2.face2.offset = 1279, 94
-p2.face2.scale = 1, 1
+;p2.face2.focallength = 400
+p2.face2.offset = 1266,150
+p2.face2.scale = 1,1
 p2.face2.facing = -1
-p2.face2.window = 802,46, 1280,629
+p2.face2.window = 962,86,1276,712
 p2.face2.applypal = 1
 
 p1.face2.random.spr = 151,0
@@ -672,7 +612,7 @@ p2.name.spacing = -15,25
 p2.name.layerno = 2
 
 ;Stage select
-stage.pos = 640,707
+stage.pos = 640,660
 stage.font = 3,0,0
 stage.active.font = 3,0,0
 stage.active2.font = 3,0,0, 200,256,200  ;Second font color for blinking
@@ -681,7 +621,7 @@ stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-stage.portrait.spr = 9000,1
+;stage.portrait.spr = 9000,1
 stage.portrait.offset = -121, -141
 stage.portrait.scale = 0.25, 0.25
 stage.portrait.bg.anim = 110
@@ -868,6 +808,19 @@ p2.palmenu.value.snd = 100, 0
 p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
+cell.bg.offset = 0,0
+p1.cursor.active.spr = 223,0
+p1.cursor.active.offset = 0,0
+p1.cursor.done.offset = 0,0
+p2.cursor.active.spr = 223,1
+p2.cursor.active.offset = 0,0
+p2.cursor.done.offset = 0,0
+p3.cursor.active.spr = 223,2
+p3.cursor.active.offset = 0,0
+p3.cursor.done.offset = 0,0
+p4.cursor.active.spr = 223,3
+p4.cursor.active.offset = 0,0
+p4.cursor.done.offset = 0,0
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
@@ -1064,6 +1017,15 @@ type = normal
 spriteno = 221, 0
 start = 0, 668
 layerno = 2
+mask = 1
+
+;------------------------------------
+; Select-screen background, painted by tools/build_select_grid.py
+[SelectBG Portrait Grid]
+type = normal
+spriteno = 220, 0
+start = -640, 0
+layerno = 0
 mask = 1
 
 [VS Screen]

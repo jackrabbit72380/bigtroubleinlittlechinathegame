@@ -240,11 +240,24 @@ def decode_sprite(d, sp, palettes=None, palidx=None):
     if fmt in (FMT_PNG8, FMT_PNG24, FMT_PNG32):
         img = Image.open(BytesIO(data[4:]))
         img.load()
+        if fmt == FMT_PNG8 and img.mode == "P" and palettes:
+            # A PNG8 sprite carries indices only; its colours live in the SFF
+            # palette, so PIL's own default palette would paint it wrong.
+            which = sp["pal"] if palidx is None else palidx
+            flat = []
+            for c in palette_rgb(palettes, which):
+                flat.extend(c)
+            img.putpalette(flat)
+            img.info["transparency"] = 0
         return img.convert("RGBA")
     if fmt == FMT_RAW and sp["depth"] == 32:
         return Image.frombytes("RGBA", (w, h), data)
     if fmt == FMT_RAW or fmt == FMT_LZ5:
-        idx = data if fmt == FMT_RAW else lz5_decode(data, w, h)
+        # LZ5 payloads carry a 4-byte length prefix (Ikemen readV2 seeks to
+        # offset+4 and reads datasize-4), so the compressed stream starts
+        # after it. Feeding the prefix in desyncs every run and shifts the
+        # image into scanline mush.
+        idx = data if fmt == FMT_RAW else lz5_decode(data[4:], w, h)
         img = Image.frombytes("P", (w, h), idx[:w * h])
         if palettes:
             which = sp["pal"] if palidx is None else palidx

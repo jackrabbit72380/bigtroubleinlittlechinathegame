@@ -54,6 +54,10 @@ def main():
     logo_def = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "logo.def")
     if os.path.isfile(logo_def):
         scripts.append("build_splash.py")
+    # The select screen itself: the portrait grid, its frames and cursors,
+    # painted into the same system.sff.
+    if os.path.isfile(title_sff):
+        scripts.append("build_select_grid.py")
     # The stage-select hint is another layer in the same screenpack.
     if os.path.isfile(title_sff):
         scripts.append("build_select_ui.py")
