@@ -95,8 +95,16 @@ def patch_character(path):
     # Kung Fu Man, whose own portrait is pristine PNG8 art, so it is decoded
     # with this fighter's palette. Anything that already has a portrait of its
     # own (the rig fighters) uses its standing frame instead.
-    base_sff = os.path.join(ROOT, "chars", "kfm", "kfm.sff")
+    # A rig character cut from a turnaround leaves its whole figure in
+    # art_src/<id>/work/front.png. That figure has no seams, so portraits are
+    # painted from it rather than from a reassembled idle frame whose limb
+    # joints can show as notches.
+    char_id = os.path.basename(os.path.dirname(path)).replace("_rig", "")
+    front = os.path.join(ROOT, "art_src", "chars", char_id, "work", "front.png")
     source = None
+    if os.path.isfile(front):
+        source = Image.open(front).convert("RGBA")
+    base_sff = os.path.join(ROOT, "chars", "kfm", "kfm.sff")
     if len(palettes) > 1 and os.path.isfile(base_sff) and \
             os.path.abspath(base_sff) != os.path.abspath(path):
         bd, base_sprites, _bp = sff.read_sff(base_sff)

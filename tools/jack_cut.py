@@ -52,8 +52,8 @@ FOOT_Y = 575
 
 HEAD_BOX = (254, 2, 352, 120)
 TORSO_POLY = [(212, 150), (240, 126), (272, 112), (328, 112),
-              (360, 126), (388, 150), (368, 296), (236, 296)]
-PELVIS_POLY = [(238, 258), (362, 258), (352, 336), (248, 336)]
+              (360, 126), (388, 150), (372, 306), (228, 306)]
+PELVIS_POLY = [(226, 248), (374, 248), (358, 344), (242, 344)]
 # The boot shaft belongs to the shin; the foot crop starts below the ankle,
 # because overlapping the two duplicated the boot in every pose.
 FOOT_N_BOX = (316, 574, 452, 616)
@@ -195,6 +195,29 @@ def main():
     figure = matte(view, bg)
     bbox = figure.getbbox()
     art = figure.crop(bbox)
+
+    # CROP slices the turnaround, so the pose beside the front view leaks in.
+    # Its hand and knife are disconnected from the figure, which is what showed
+    # up as a third hand floating beside Jack's head. Keep the figure's own
+    # component and drop everything else.
+    alpha = art.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+    blobs = components(alpha, min_area=200)
+    if blobs:
+        keep = Image.new("L", art.size, 0)
+        kp = keep.load()
+        for x, y in max(blobs, key=len):
+            kp[x, y] = 255
+        keep = keep.filter(ImageFilter.MaxFilter(5))
+        # NOTE: the canvas keeps its size on purpose. Every joint, polygon and
+        # box below is measured in pixels of this cutout, so tightening the
+        # crop to the figure would shift the origin and scatter the parts.
+        kept = Image.new("RGBA", art.size, (0, 0, 0, 0))
+        kept.paste(art, (0, 0), keep)
+        dropped = len(blobs) - 1
+        art = kept
+        if dropped:
+            print(f"dropped {dropped} stray component(s) from the crop")
+
     art.save(os.path.join(WORK, "front.png"))
     print(f"front cutout {art.size}, background {bg}")
 
@@ -359,14 +382,22 @@ def main():
     def leg(side, hip, knee, ankle):
         a1 = math.degrees(math.atan2(knee[0] - hip[0], knee[1] - hip[1]))
         a2 = math.degrees(math.atan2(ankle[0] - knee[0], ankle[1] - knee[1]))
+        # The jeans are much wider than a tapered quad drawn on the bone, so the
+        # polygon shaved the outer hip into an angular notch and the pocket and
+        # seam edges vanished. A box down the leg keeps every pixel of denim.
+        # Each thigh stops at the body's mid-line so the far leg cannot capture
+        # the near one; the crotch and hips are covered by the pelvis on top.
+        if side == "f":
+            x0, x1 = hip[0] - 92, 302
+        else:
+            x0, x1 = 298, hip[0] + 92
         emit_shape(f"thigh_{side}", hip,
-                   polygon=limb_poly(hip, knee, 32, 29, pad0=10, pad1=10),
-                   angle=a1)
+                   box=(x0, hip[1] - 26, x1, knee[1] + 12), angle=a1)
         # A tapered polygon clipped the boot narrower than the art, leaving a
         # gap above the sole. A box around the leg keeps the boot continuous.
-        x0 = min(knee[0], ankle[0]) - 40
-        x1 = max(knee[0], ankle[0]) + 40
-        emit_shape(f"shin_{side}", knee, box=(x0, knee[1], x1, ankle[1] + 8),
+        x0 = min(knee[0], ankle[0]) - 46
+        x1 = max(knee[0], ankle[0]) + 46
+        emit_shape(f"shin_{side}", knee, box=(x0, knee[1] - 8, x1, ankle[1] + 8),
                    angle=a2)
         return a1, a2
 
