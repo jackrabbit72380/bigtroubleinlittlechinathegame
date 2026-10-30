@@ -45,18 +45,18 @@ import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SCALE = 4
-LOCAL_W, LOCAL_H = 1280, 960
+SCALE = 4.5
+LOCAL_W, LOCAL_H = 1920, 1080
 S = SCALE
-W, H = 320 * S, 240 * S                  # 1280 x 960 painted area per screen
-SCROLL = 260 * S                         # camera travel
-COVER = 240 * S                          # overpaint beyond the camera limit
+W, H = int(640 * S), int(240 * S)        # 2880 x 1080 painted area per screen
+SCROLL = 1788                            # camera travel, from MK Trilogy HD
+COVER = 1012                             # overpaint: art reaches +/-2800
 W = 2 * (SCROLL + COVER)                 # 4000: full stage canvas
 CX = W // 2                              # 2000
-FLOOR_Y = 200 * S                        # 800: ground line = zoffset
+FLOOR_Y = int(200 * S)                   # 900: ground line = zoffset
 START_X = -(SCROLL + COVER)              # -2000
-PLAYER_BOUND = 405 * S                   # 1620
-SCREEN_MARGIN = 15 * S                   # 60
+PLAYER_BOUND = SCROLL + 580              # 2368
+SCREEN_MARGIN = int(round(15 * S))       # 68
 VIEW_W = int(LOCAL_H * 16 / 9)           # 1707: what a 16:9 window shows
 
 
@@ -650,7 +650,7 @@ def build(sid):
     comp = layers[0][3].copy()
     for _key, _g, _n, img, _layerno in layers[1:]:
         comp.alpha_composite(img, (0, 0))
-    view = comp.crop((CX - 640, 0, CX + 640, H)).resize((320, 240), Image.LANCZOS)
+    view = comp.crop((CX - LOCAL_W // 2, 0, CX + LOCAL_W // 2, H)) .resize((320, 240), Image.LANCZOS)
     sprites.append({"group": 9000, "number": 1, "image": view, "axis": (160, 120)})
 
     data = sff.write_sff(sprites)
@@ -660,14 +660,14 @@ def build(sid):
         fh.write(DEF_TEMPLATE.format(
             sid=sid, name=name, scroll=SCROLL, playerbound=PLAYER_BOUND,
             margin=SCREEN_MARGIN, zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
-            boundhigh=-25 * S, cuthigh=35 * S, cutlow=25 * S,
-            startx=-70 * S, p2startx=70 * S, start_x=START_X,
+            boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
+            startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,
         ))
     # README preview: the 4:3 match-start view, same path build_stages.py uses so
     # the docs show what actually ships
     arts = os.path.join(ROOT, "artifacts")
     os.makedirs(arts, exist_ok=True)
-    view_43 = comp.crop((CX - 640, 0, CX + 640, H))
+    view_43 = comp.crop((CX - LOCAL_W // 2, 0, CX + LOCAL_W // 2, H)) 
     view_43.save(os.path.join(arts, f"{sid}_preview.png"))
     view_169 = comp.crop((CX - VIEW_W // 2, 0, CX + VIEW_W // 2, H))
     view_169.resize((int(VIEW_W * 0.5), H // 2), Image.LANCZOS).save(
