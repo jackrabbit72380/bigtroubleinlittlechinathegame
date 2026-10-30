@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           out="out/${{ matrix.folder }}"
-          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express"
+          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express airport_terminal"
           exe=$(find "$out" -maxdepth 4 -iname 'Ikemen_GO*' -type f | head -1)
           echo "engine: ${exe:-MISSING}"
           test -n "$exe" || { echo "engine executable missing"; exit 1; }
@@ -182,10 +182,11 @@ jobs:
             in-game pause menu.
 
             Roster: Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning, Thunder, Lo Pan.
-            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express.
+            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express,
+            Airport Terminal.
 
             Fighter sprites are recoloured Kung Fu Man placeholders (see `docs/DESIGN.md`);
-            the four stages are original to this project. Fan project, not affiliated with the
+            the six stages are original to this project. Fan project, not affiliated with the
             film's rights holders. The Ikemen GO engine is MIT licensed and redistributed
             unmodified — its `LICENCE.txt` is inside each zip.
           files: dist/*.zip
