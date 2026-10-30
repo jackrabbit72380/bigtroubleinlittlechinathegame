@@ -59,7 +59,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic =
+bgmusic = 
 bgmvolume = 100
 
 [BGdef]
