@@ -1,0 +1,48 @@
+# One-shot: applies the rebalanced menu palette (tools only), then leaves main
+# clean. No workflow file is touched - a GITHUB_TOKEN push cannot edit
+# .github/workflows/*, and its push does not trigger build-assets.yml either, so
+# the assets are rebuilt by an app-token commit afterwards.
+
+name: Menu palette rebalance (one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack the patch
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, pathlib
+          raw = pathlib.Path("_menu2.b64").read_bytes().strip()
+          blob = raw if raw[:2] == b"\x1f\x8b" else base64.b64decode(raw)
+          patch = gzip.decompress(blob)
+          pathlib.Path("/tmp/menu2.patch").write_bytes(patch)
+          print(len(patch), "bytes of patch")
+          PY
+
+      - name: Apply it
+        run: |
+          set -euo pipefail
+          git apply --whitespace=nowarn --verbose /tmp/menu2.patch
+          grep -q AMBER tools/build_fonts.py
+          ! grep -q MAROON tools/build_fonts.py
+          grep -q "amber for player 2" tools/validate.py
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q _menu2.b64
+          git add -A
+          git commit -m "Keep the menu lettering gold instead of red"
+          git pull --rebase --autostash origin main
+          git push
