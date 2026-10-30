@@ -1,0 +1,35 @@
+# One-shot: sets the bitmap font Offset so glyphs land where the TrueType text
+# did, then leaves main clean. No payload, no heredoc - just sed.
+
+name: def offset (one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set the offset
+        run: |
+          set -euo pipefail
+          sed -i "s|Offset = 0,0|Offset = 0,{cell_h - 1}|" tools/build_fonts.py
+          sed -i "s|; width is the space advance, height is the cell height|; width is the space advance, height is the cell height\\n; the engine shifts glyphs by offset.y - Size.y + 1, and the TrueType defs this\\n; replaces had no Size at all, so this puts glyph tops on the y the menu asks for|" tools/build_fonts.py
+          grep -n 'Offset = 0,{cell_h - 1}' tools/build_fonts.py
+          grep -n 'offset.y - Size.y' tools/build_fonts.py
+          python3 -c "compile(open('tools/build_fonts.py').read(),'f','exec')"
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/build_fonts.py
+          git commit -m "Place bitmap glyphs where the TrueType text drew them"
+          git pull --rebase --autostash origin main
+          git push
