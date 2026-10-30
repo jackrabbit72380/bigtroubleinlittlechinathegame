@@ -1011,21 +1011,21 @@ mask = 1
 
 ;-------------------------------------------------------------------
 ;------------------------------------
-; Stage-select hint, painted by tools/build_select_ui.py
-[SelectBG Stage Hint]
-type = normal
-spriteno = 221, 0
-start = 0, 668
-layerno = 2
-mask = 1
-
-;------------------------------------
 ; Select-screen background, painted by tools/build_select_grid.py
 [SelectBG Portrait Grid]
 type = normal
 spriteno = 220, 0
 start = -640, 0
 layerno = 0
+mask = 1
+
+;------------------------------------
+; Stage-select hint, painted by tools/build_select_ui.py
+[SelectBG Stage Hint]
+type = normal
+spriteno = 221, 0
+start = 0, 700
+layerno = 2
 mask = 1
 
 [VS Screen]
