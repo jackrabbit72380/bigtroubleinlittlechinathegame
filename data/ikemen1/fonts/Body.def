@@ -1,0 +1,16 @@
+[FNT v2]
+; FNT v2 version number.  Don't change this.
+fntversion = 2,00
+; Name of this font.
+name = "Body"
+
+[Def]
+; TrueType, so system.def can tint it with R,G,B.
+Type = truetype
+; Size of font: width, height.  Only height is used for truetype fonts.
+Size = 15,15
+Spacing = 1,1
+Offset = 0,0
+; The same face the title wordmark is painted with.
+File = Display.ttf
+Blend = 1
