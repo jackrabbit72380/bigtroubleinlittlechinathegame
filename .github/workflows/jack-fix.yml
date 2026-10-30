@@ -1,0 +1,42 @@
+# One-shot: applies tools/jack_fix.b64 (the jack_cut.py and build_portraits.py
+# changes), rebuilds the roster, then removes itself and the payload.
+
+name: Fix Jack's cut
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unpack and apply the fix
+        run: |
+          base64 -d tools/jack_fix.b64 | gunzip > /tmp/jack.patch
+          git apply --whitespace=nowarn /tmp/jack.patch
+
+      - name: Install generator dependencies
+        run: python3 -m pip install --quiet pillow
+
+      - name: Rebuild every asset
+        run: python3 tools/build_all.py
+
+      - name: Commit, then remove the one-shot files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f tools/jack_fix.b64 .github/workflows/jack-fix.yml
+          git add -A
+          git commit -m "Rebuild Jack from a clean crop: no stray hand, whole hips"
+          git push
