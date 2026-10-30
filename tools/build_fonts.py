@@ -50,6 +50,7 @@ RED = "214, 58, 48"
 AMBER = "236, 158, 74"
 
 D = "10"   # Display.def
+DA = "12"  # DisplayActive.def
 B = "11"   # Body.def
 
 # Where the logo's face lives on a normal Linux box, best first. The matplotlib
@@ -68,9 +69,9 @@ TTF_DIRS = (
 REWRITES = (
     # title screen menu
     ("menu.item.font", f"{D},0,-1, {GOLD}"),
-    ("menu.item.active.font", f"{D},0,-1, {BRIGHT}"),
+    ("menu.item.active.font", f"{DA},0,-1, {BRIGHT}"),
     ("menu.item.selected.font", f"{D},0,1, {BRIGHT}"),
-    ("menu.item.selected.active.font", f"{D},0,1, {BRIGHT}"),
+    ("menu.item.selected.active.font", f"{DA},0,1, {BRIGHT}"),
     ("menu.item.value.font", f"{B},0,-1, {DEEP}"),
     ("menu.item.value.active.font", f"{B},0,-1, {BRIGHT}"),
     ("menu.item.value.conflict.font", f"{B},0,-1, {RED}"),
@@ -151,8 +152,14 @@ FACE = [(0.00, (255, 250, 208)), (0.34, (255, 233, 142)),
         (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
 EXTRUDE = [(0.00, (152, 33, 45)), (0.55, (122, 20, 32)), (1.00, (82, 10, 20))]
 LIP = (255, 248, 230)
+# The selected item: the same gold lifted toward white, as the logo's highlight
+# band. Bitmap glyphs are truecolor, so a font spec's R,G,B cannot tint them -
+# the active look has to be baked as well.
+FACE_ACTIVE = [(0.00, (255, 255, 240)), (0.34, (255, 246, 190)),
+               (0.68, (255, 214, 110)), (1.00, (250, 166, 52))]
 
-FONTS = (("Display", 34, 3), ("Body", 13, 2))
+FONTS = (("Display", 34, 3, FACE), ("DisplayActive", 34, 3, FACE_ACTIVE),
+         ("Body", 13, 2, FACE))
 
 
 def _gradient(size, stops):
@@ -183,7 +190,7 @@ def _shift(mask, dx, dy):
     return out
 
 
-def glyph(ch, font, cell_h, depth):
+def glyph(ch, font, cell_h, depth, face_stops=FACE):
     """One glyph: maroon extrusion, gold face, cream lip along the top edge."""
     ascent, _descent = font.getmetrics()
     adv = max(1, int(round(font.getlength(ch))))
@@ -200,7 +207,7 @@ def glyph(ch, font, cell_h, depth):
     block.putalpha(solid)
     out.alpha_composite(block)
 
-    face = _gradient((w, cell_h), FACE)
+    face = _gradient((w, cell_h), face_stops)
     face.putalpha(mask)
     out.alpha_composite(face)
 
@@ -210,7 +217,7 @@ def glyph(ch, font, cell_h, depth):
     return out
 
 
-def write_font(name, px, depth, ttf):
+def write_font(name, px, depth, ttf, face_stops=FACE):
     """Bake Display/Body into bitmap fonts and write their .def."""
     font = ImageFont.truetype(ttf, px)
     ascent, descent = font.getmetrics()
@@ -220,7 +227,7 @@ def write_font(name, px, depth, ttf):
     sprites = []
     for code in range(33, 127):
         sprites.append({"group": 0, "number": code, "axis": (0, 0),
-                        "image": glyph(chr(code), font, cell_h, depth)})
+                        "image": glyph(chr(code), font, cell_h, depth, face_stops)})
     # the engine takes the space advance from Size, not from a glyph
     with open(os.path.join(FONT_DIR, name + ".sff"), "wb") as fh:
         fh.write(sff.write_sff(sprites))
@@ -231,7 +238,7 @@ def write_font(name, px, depth, ttf):
             f'; so the engine draws the wordmark look instead of a flat colour.\n'
             f'Type = bitmap\nBankType = palette\n'
             f'; width is the space advance, height is the cell height\n'
-            f'Size = {space_w},{cell_h}\nSpacing = 0,0\nOffset = 0,0\n'
+            f'Size = {space_w},{cell_h}\nSpacing = 0,0\n; the engine shifts glyphs by offset.y - Size.y + 1, and the TrueType\n; defs this replaces had no Size at all, so this cancels the shift and\n; puts the top of each glyph on the y the menu asks for\nOffset = 0,{cell_h - 1}\n'
             f'File = {name}.sff\n')
     path = os.path.join(FONT_DIR, name + ".def")
     if not os.path.isfile(path) or open(path, encoding="utf-8-sig").read() != body:
@@ -294,8 +301,8 @@ def install_ttf():
         print(f"  vendored {name} from {src}")
     else:
         print(f"  {os.path.relpath(dst, ROOT)} already current")
-    for name, px, depth in FONTS:
-        write_font(name, px, depth, dst)
+    for name, px, depth, face_stops in FONTS:
+        write_font(name, px, depth, dst, face_stops)
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
@@ -320,18 +327,23 @@ def set_key(text, key, value):
 
 
 def ensure_font_files(text):
-    """Register Display/Body as font10/font11 unless they already are."""
-    if re.search(r"^[ \t]*font1[01][ \t]*=", text, re.MULTILINE | re.IGNORECASE):
+    """Register Display, Body and DisplayActive as font10, font11, font12."""
+    wanted = (("Display", 10), ("Body", 11), ("DisplayActive", 12))
+    missing = [f"font{handle} = ikemen1/fonts/{name}.def"
+               for name, handle in wanted
+               if not re.search(r"^\s*font%d\s*=" % handle, text,
+                                re.MULTILINE | re.IGNORECASE)]
+    if not missing:
         return text, 0
     nl = "\r\n" if "\r\n" in text else "\n"
-    anchor = re.search(r"^[ \t]*font9[ \t]*=.*$", text, re.MULTILINE | re.IGNORECASE)
-    if anchor is None:
-        anchor = re.search(r"^[ \t]*font[0-9]+[ \t]*=.*$", text, re.MULTILINE | re.IGNORECASE)
-    if anchor is None:
+    last = None
+    for last in re.finditer(r"^\s*font[0-9]+\s*=.*$", text,
+                            re.MULTILINE | re.IGNORECASE):
+        pass
+    if last is None:
         return text, 0
-    added = (nl + "font10 = ikemen1/fonts/Display.def" + nl
-             + "font11 = ikemen1/fonts/Body.def")
-    return text[:anchor.end()] + added + text[anchor.end():], 2
+    added = "".join(nl + line for line in missing)
+    return text[:last.end()] + added + text[last.end():], len(missing)
 
 
 def main():
