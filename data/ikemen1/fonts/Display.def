@@ -5,12 +5,12 @@ fntversion = 2,00
 name = "Display"
 
 [Def]
-; TrueType, so system.def can tint it with R,G,B.
-Type = truetype
-; Size of font: width, height.  Only height is used for truetype fonts.
-Size = 36,36
-Spacing = 1,1
+; Bitmap glyphs: the gold face and maroon extrusion are in the art,
+; so the engine draws the wordmark look instead of a flat colour.
+Type = bitmap
+BankType = palette
+; width is the space advance, height is the cell height
+Size = 15,45
+Spacing = 0,0
 Offset = 0,0
-; The same face the title wordmark is painted with.
-File = Display.ttf
-Blend = 1
+File = Display.sff
