@@ -19,6 +19,7 @@ Run:  python3 tools/build_select_ui.py
 from __future__ import annotations
 
 import os
+import re
 import sys
 
 from PIL import Image, ImageDraw, ImageFilter
@@ -116,6 +117,42 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
     return len(out)
 
 
+
+# The title menu asks for 6 visible rows at 54px spacing from y=330, which puts
+# its window bottom at 724 on a 720-high screen: the last row is clipped and the
+# menu scrolls, so EXIT and OPTIONS sat below the screen edge. The tree has 9
+# top-level items, so give all 9 a row that fits: 34+9*40+24 = 418 tall from
+# y=260, ending at 678, clear of the footer at 700.
+TITLE_LAYOUT = [
+    ("menu.pos", "1240, 260"),
+    ("menu.item.spacing", "0, 40"),
+    ("menu.window.visibleitems", "9"),
+    ("menu.window.margins.y", "34, 24"),
+]
+
+
+def layout(text):
+    """Fit the whole title menu on screen and turn the stage preview on."""
+    changed = []
+    for key, value in TITLE_LAYOUT:
+        pat = re.compile(rf"^{re.escape(key)}\s*=.*$", re.M)
+        if pat.search(text):
+            new_text = pat.sub(f"{key} = {value}", text, count=1)
+            if new_text != text:
+                changed.append(key)
+            text = new_text
+        else:
+            text = text.replace("[Title Info]\n",
+                                f"[Title Info]\n{key} = {value}\n", 1)
+            changed.append(key)
+    # [Select Info] ships with the stage portrait commented out, so the select
+    # screen drew only the empty frame that stage.portrait.bg.spr paints.
+    if ";stage.portrait.spr = 9000,1" in text:
+        text = text.replace(";stage.portrait.spr = 9000,1",
+                            "stage.portrait.spr = 9000,1", 1)
+        changed.append("stage.portrait.spr")
+    return text, changed
+
 def layer_block():
     return (
         "\n;------------------------------------\n"
@@ -139,6 +176,8 @@ def patch_def():
     marker = "\n[VS Screen]"
     if marker not in text:
         raise SystemExit("system.def has no [VS Screen]; cannot place the hint")
+    text, changed = layout(text)
+    print("  system.def layout: " + (", ".join(changed) or "already set"))
     text = text.replace(marker, layer_block() + marker, 1)
     with open(SYSTEM_DEF + ".tmp", "w", encoding="utf-8") as f:
         f.write(text)
