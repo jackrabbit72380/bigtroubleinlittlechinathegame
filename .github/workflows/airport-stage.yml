@@ -1,0 +1,49 @@
+# One-shot: applies the Airport Terminal stage patch, then removes itself so
+# main keeps only the normal build-assets workflow. Without this job the patch
+# would have to be transcribed into the Contents API, and its quoting broke the
+# payload on the way out.
+
+name: Airport Terminal stage (one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack the patch
+        run: |
+          python3 - <<'PY'
+          import base64, gzip, pathlib
+          raw = pathlib.Path("_airport.b64").read_bytes().strip()
+          blob = raw if raw[:2] == b"\x1f\x8b" else base64.b64decode(raw)
+          patch = gzip.decompress(blob)
+          pathlib.Path("/tmp/stage.patch").write_bytes(patch)
+          print(len(patch), "bytes of patch")
+          PY
+
+      - name: Apply it
+        run: |
+          set -euo pipefail
+          git apply --whitespace=nowarn --verbose /tmp/stage.patch
+          test -f tools/stage_airport.py
+          grep -q airport_terminal data/select.def
+          grep -q stage_airport tools/build_all.py
+          grep -q airport_terminal .github/workflows/release.yml
+          grep -q 'Airport Terminal' README.md
+
+      - name: Commit, self-delete, push
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q _airport.b64 .github/workflows/airport-stage.yml
+          git add -A
+          git commit -m "Add the Airport Terminal stage"
+          git push
