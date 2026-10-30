@@ -277,6 +277,7 @@ versiondate = 10,29,2026
 mugenversion = 1.0
 author = "Big Trouble in Little China: The Game"
 pal.defaults = 1
+localcoord = {int(320 * clsn_k)}, {int(240 * clsn_k)}
 
 [Files]
 cmd      = {char_id}.cmd

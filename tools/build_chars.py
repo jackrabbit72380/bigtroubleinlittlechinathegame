@@ -261,15 +261,22 @@ def _hsv_to_rgb(h, s, v):
 
 
 def grade_colour(rgb, spec):
-    """Hue-rotate and grade one colour, keeping blacks/greys neutral."""
+    """Hue-rotate and grade one colour, keeping skin, whites and blacks neutral.
+
+    Only the clothing colours are meant to move. Grading everything turned faces
+    magenta and hands cyan, so skin tones and near-neutral pixels pass through
+    untouched and the fighter keeps his own face.
+    """
     hue, sat, val = _rgb_to_hsv(*rgb)
     if val < 0.06:                      # keep outlines black
         return rgb
+    if sat < 0.12:                      # whites and greys stay neutral
+        return rgb
+    if 0.010 <= hue <= 0.110 and 0.15 <= sat <= 0.75 and val >= 0.30:
+        return rgb                      # skin: shifting this turns faces neon
     sat_shift = spec["pal"][1]
     val_shift = spec["pal"][2]
     hue = (hue + spec["pal"][0] / 360.0) % 1.0
-    # low-saturation pixels (skin highlights, whites) should barely shift
-    hue = (hue * min(1.0, sat * 1.8) + _rgb_to_hsv(*rgb)[0] * (1 - min(1.0, sat * 1.8))) % 1.0
     sat = min(1.0, sat * sat_shift)
     val = min(1.0, val * val_shift)
     return _hsv_to_rgb(hue, sat, val)
