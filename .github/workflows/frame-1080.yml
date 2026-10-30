@@ -1,0 +1,88 @@
+name: Reframe stages at 1920x1080
+
+# One-shot: rewrites the stage geometry constants to MK Trilogy HD's framing
+# (localcoord 1920,1080, camera +/-1788) and removes this workflow in the same
+# commit, so it never lives on main.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  reframe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rewrite the geometry blocks
+        run: |
+          python3 - <<'PY'
+          import re
+
+          def patch(path, subs):
+              text = open(path).read()
+              for old, new in subs:
+                  if old not in text:
+                      raise SystemExit(f"pattern missing in {path}: {old[:60]!r}")
+                  text = text.replace(old, new, 1)
+              open(path, "w").write(text)
+              print(f"patched {path}")
+
+          patch("tools/stages_hd.py", [
+              ("SCALE = 4\nLOCAL_W, LOCAL_H = 1280, 960",
+               "SCALE = 4.5\nLOCAL_W, LOCAL_H = 1920, 1080"),
+              ("W, H = 320 * S, 240 * S                  # 1280 x 960 painted area per screen",
+               "W, H = int(640 * S), int(240 * S)        # 2880 x 1080 painted area per screen"),
+              ("SCROLL = 260 * S                         # camera travel",
+               "SCROLL = 1788                            # camera travel, from MK Trilogy HD"),
+              ("COVER = 240 * S                          # overpaint beyond the camera limit",
+               "COVER = 1012                             # overpaint: art reaches +/-2800"),
+              ("FLOOR_Y = 200 * S                        # 800: ground line = zoffset",
+               "FLOOR_Y = int(200 * S)                   # 900: ground line = zoffset"),
+              ("PLAYER_BOUND = 405 * S                   # 1620",
+               "PLAYER_BOUND = SCROLL + 580              # 2368"),
+              ("SCREEN_MARGIN = 15 * S                   # 60",
+               "SCREEN_MARGIN = int(round(15 * S))       # 68"),
+              ("view = comp.crop((CX - 640, 0, CX + 640, H))",
+               "view = comp.crop((CX - LOCAL_W // 2, 0, CX + LOCAL_W // 2, H)) "),
+              ("view_43 = comp.crop((CX - 640, 0, CX + 640, H))",
+               "view_43 = comp.crop((CX - LOCAL_W // 2, 0, CX + LOCAL_W // 2, H)) "),
+              ("boundhigh=-25 * S, cuthigh=35 * S, cutlow=25 * S,",
+               "boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),"),
+              ("startx=-70 * S, p2startx=70 * S, start_x=START_X,",
+               "startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,"),
+          ])
+
+          patch("tools/build_hd_stage.py", [
+              ("SCALE = 4\nLOCAL_W, LOCAL_H = 1280, 960            # == canvas height, see docstring",
+               "SCALE = 4.5\nLOCAL_W, LOCAL_H = 1920, 1080"),
+              ("VIEW_W, H = 320 * SCALE, 240 * SCALE          # 1280 x 960",
+               "VIEW_W, H = int(640 * SCALE), int(240 * SCALE)  # 2880 x 1080"),
+              ("SCROLL = 260 * SCALE                          # 1040",
+               "SCROLL = 1788                                 # camera travel"),
+              ("COVER = 240 * SCALE                           # 960",
+               "COVER = 1012                                  # art reaches +/-2800"),
+              ("ZOFFSET = 200 * SCALE                         # 800",
+               "ZOFFSET = int(200 * SCALE)                    # 900"),
+              ("PLAYER_BOUND = 405 * SCALE                    # 1620",
+               "PLAYER_BOUND = SCROLL + 580                   # 2368"),
+              ("SCREEN_MARGIN = 15 * SCALE                    # 60",
+               "SCREEN_MARGIN = int(round(15 * SCALE))        # 68"),
+          ])
+          PY
+
+      - name: Check the generators still import
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 -c "import sys; sys.path.insert(0,'tools'); import stages_hd, build_hd_stage; print(stages_hd.W, stages_hd.H, stages_hd.FLOOR_Y, stages_hd.SCROLL)"
+
+      - name: Commit and remove this workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q .github/workflows/frame-1080.yml
+          git add tools/stages_hd.py tools/build_hd_stage.py
+          git commit -m "Frame every stage at 1920x1080 to match MK Trilogy HD"
+          git push
