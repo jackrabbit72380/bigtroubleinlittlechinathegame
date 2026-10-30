@@ -1,0 +1,46 @@
+# One-shot: applies tools/select_screen.b64, rebuilds every asset with the new
+# tools/build_select_grid.py, then removes itself and the payload. The selection
+# screen is painted into data/ikemen1/system.sff by that tool, so nothing here is
+# hand-committed art.
+
+name: Rebuild the character select screen
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Unpack and apply the select-screen sources
+        run: |
+          base64 -d tools/select_screen.b64 | gunzip > /tmp/select.patch
+          sha256sum /tmp/select.patch
+          git apply --whitespace=nowarn /tmp/select.patch
+          ls -l tools/build_select_grid.py
+
+      - name: Install generator dependencies
+        run: python3 -m pip install --quiet pillow
+
+      - name: Rebuild every asset
+        run: python3 tools/build_all.py
+
+      - name: Commit, then remove the one-shot files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f tools/select_screen.b64 .github/workflows/select-grid.yml
+          git add -A
+          git commit -m "Rebuild the character select screen as an arcade portrait grid"
+          git push
