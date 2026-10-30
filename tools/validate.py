@@ -301,11 +301,24 @@ def check_menu_theme():
             err("menu theme: %s.def is missing" % name)
             continue
         body = read(fdef)
-        if not re.search(r"^Type\s*=\s*truetype", body, re.I | re.M):
-            err("menu theme: %s.def is not a truetype font, so RGB tints are ignored" % name)
         f = re.search(r"^File\s*=\s*(\S+)", body, re.I | re.M)
-        if not f or not os.path.isfile(os.path.join(os.path.dirname(fdef), f.group(1))):
-            err("menu theme: %s.def does not point at a shipped typeface" % name)
+        asset = os.path.join(os.path.dirname(fdef), f.group(1)) if f else ""
+        if not f or not os.path.isfile(asset):
+            err("menu theme: %s.def does not point at a shipped font file" % name)
+            continue
+        if re.search(r"^Type\s*=\s*bitmap", body, re.I | re.M):
+            # baked glyphs: the gold face must actually be in the sheet
+            if not asset.lower().endswith(".sff"):
+                err("menu theme: %s.def is a bitmap font but does not ship a .sff" % name)
+                continue
+            _h, sheet, _pl = sff.read_sff(asset)
+            codes = {sp["number"] for sp in sheet if sp["group"] == 0}
+            missing = [c for c in range(65, 91) if c not in codes]
+            if missing:
+                err("menu theme: %s.sff has no glyphs for %s"
+                    % (name, ", ".join(chr(c) for c in missing[:6])))
+        elif not re.search(r"^Type\s*=\s*truetype", body, re.I | re.M):
+            err("menu theme: %s.def is neither a bitmap nor a truetype font" % name)
 
     stale = [c for c in ("123,206,255", "255,210,239", "210,210,255", "0,247,247")
              if c in def_text]
@@ -314,7 +327,7 @@ def check_menu_theme():
             % ", ".join(stale))
     if declared.get("font10") is None or declared.get("font11") is None:
         err("menu theme: font10/font11 are not registered in [Files]")
-    notes.append("menu theme: logo face, gold lettering, amber for player 2")
+    notes.append("menu theme: logo face, gold face on maroon extrusion")
 
 
 def main():

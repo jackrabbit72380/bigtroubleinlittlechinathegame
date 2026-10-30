@@ -9,12 +9,14 @@ because build-assets.yml copies the engine's data/ over ours on every run and
 anything typed into data/ikemen1/system.def by hand is lost:
 
 1. The logo's TrueType face is copied to data/ikemen1/fonts/Display.ttf.
-2. Display.def (36px, headings and menus) and Body.def (15px, footers and
-   values) are written next to it. These are TrueType fonts, so the engine's
-   ``R,G,B`` in a font spec actually tints them - bitmap fonts ignore it and go
-   by palette bank, which is why the old menus could only be 8 fixed colours.
+2. Display.sff/.def (34px menus and names) and Body.sff/.def (13px bottom bar)
+   are baked from it with the wordmark's own treatment: a maroon extrusion down
+   and right, a gold gradient face, and a cream lip along the top edge. Ikemen
+   draws TrueType glyphs in one flat colour - src/font.go has no shadow or
+   outline for them - so a 3D menu face has to be art, which is why these are
+   bitmap fonts.
 3. Every menu/select/scoreboard font spec in system.def is repointed at those
-   two fonts and retinted to the logo's gold/red palette.
+   two fonts.
 
 Run:  python3 tools/build_fonts.py
 """
@@ -26,6 +28,11 @@ import os
 import re
 import shutil
 import sys
+
+from PIL import Image, ImageChops, ImageDraw, ImageFont
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sff  # noqa: E402  (local helper import after sys.path)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT_DIR = os.path.join(ROOT, "data", "ikemen1", "fonts")
@@ -80,9 +87,9 @@ REWRITES = (
     ("footer.version.scale", "1,1"),
     # The bar is rows 700-719; a 15px face at the engine's 715 clipped its
     # descenders, so centre the three fields inside the bar instead.
-    ("footer.title.offset", "5, 702"),
-    ("footer.info.offset", "640, 702"),
-    ("footer.version.offset", "1275, 702"),
+    ("footer.title.offset", "5, 700"),
+    ("footer.info.offset", "640, 700"),
+    ("footer.version.offset", "1275, 700"),
     # infobox, game over text, story text
     ("text.font", f"{B}, 0, 1, {GOLD}"),
     # select screen
@@ -139,41 +146,101 @@ REWRITES = (
     ("menu.boxbg.col", "40, 10, 14"),
 )
 
-DISPLAY_DEF = """[FNT v2]
-; FNT v2 version number.  Don't change this.
-fntversion = 2,00
-; Name of this font.
-name = "Display"
+# The wordmark's own layers, from tools/build_title.py.
+FACE = [(0.00, (255, 250, 208)), (0.34, (255, 233, 142)),
+        (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
+EXTRUDE = [(0.00, (152, 33, 45)), (0.55, (122, 20, 32)), (1.00, (82, 10, 20))]
+LIP = (255, 248, 230)
 
-[Def]
-; TrueType, so system.def can tint it with R,G,B.
-Type = truetype
-; Size of font: width, height.  Only height is used for truetype fonts.
-Size = 36,36
-Spacing = 1,1
-Offset = 0,0
-; The same face the title wordmark is painted with.
-File = Display.ttf
-Blend = 1
-"""
+FONTS = (("Display", 34, 3), ("Body", 13, 2))
 
-BODY_DEF = """[FNT v2]
-; FNT v2 version number.  Don't change this.
-fntversion = 2,00
-; Name of this font.
-name = "Body"
 
-[Def]
-; TrueType, so system.def can tint it with R,G,B.
-Type = truetype
-; Size of font: width, height.  Only height is used for truetype fonts.
-Size = 15,15
-Spacing = 1,1
-Offset = 0,0
-; The same face the title wordmark is painted with.
-File = Display.ttf
-Blend = 1
-"""
+def _gradient(size, stops):
+    """Vertical gradient over a whole cell, so the face shades like the logo."""
+    w, h = size
+    img = Image.new("RGBA", (w, h))
+    pix = img.load()
+    stops = sorted(stops)
+    for y in range(h):
+        t = y / max(1, h - 1)
+        col = stops[-1][1]
+        for i in range(len(stops) - 1):
+            t0, c0 = stops[i]
+            t1, c1 = stops[i + 1]
+            if t0 <= t <= t1:
+                k = (t - t0) / max(1e-6, t1 - t0)
+                col = tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
+                break
+        row = col + (255,)
+        for x in range(w):
+            pix[x, y] = row
+    return img
+
+
+def _shift(mask, dx, dy):
+    out = Image.new("L", mask.size, 0)
+    out.paste(mask, (dx, dy))
+    return out
+
+
+def glyph(ch, font, cell_h, depth):
+    """One glyph: maroon extrusion, gold face, cream lip along the top edge."""
+    ascent, _descent = font.getmetrics()
+    adv = max(1, int(round(font.getlength(ch))))
+    w = adv + depth + 1
+    mask = Image.new("L", (w, cell_h), 0)
+    ImageDraw.Draw(mask).text((0, ascent), ch, font=font, fill=255, anchor="ls")
+
+    solid = mask
+    for i in range(1, depth + 1):
+        solid = ImageChops.lighter(solid, _shift(mask, i, i))
+
+    out = Image.new("RGBA", (w, cell_h), (0, 0, 0, 0))
+    block = _gradient((w, cell_h), EXTRUDE)
+    block.putalpha(solid)
+    out.alpha_composite(block)
+
+    face = _gradient((w, cell_h), FACE)
+    face.putalpha(mask)
+    out.alpha_composite(face)
+
+    lip = Image.new("RGBA", (w, cell_h), LIP + (255,))
+    lip.putalpha(ImageChops.subtract(mask, _shift(mask, 0, 1)))
+    out.alpha_composite(lip)
+    return out
+
+
+def write_font(name, px, depth, ttf):
+    """Bake Display/Body into bitmap fonts and write their .def."""
+    font = ImageFont.truetype(ttf, px)
+    ascent, descent = font.getmetrics()
+    cell_h = ascent + descent + depth + 1
+    space_w = max(2, int(round(font.getlength(" "))) + depth)
+
+    sprites = []
+    for code in range(33, 127):
+        sprites.append({"group": 0, "number": code, "axis": (0, 0),
+                        "image": glyph(chr(code), font, cell_h, depth)})
+    # the engine takes the space advance from Size, not from a glyph
+    with open(os.path.join(FONT_DIR, name + ".sff"), "wb") as fh:
+        fh.write(sff.write_sff(sprites))
+
+    body = (f'[FNT v2]\n; FNT v2 version number.  Don\'t change this.\n'
+            f'fntversion = 2,00\n; Name of this font.\nname = "{name}"\n\n'
+            f'[Def]\n; Bitmap glyphs: the gold face and maroon extrusion are in the art,\n'
+            f'; so the engine draws the wordmark look instead of a flat colour.\n'
+            f'Type = bitmap\nBankType = palette\n'
+            f'; width is the space advance, height is the cell height\n'
+            f'Size = {space_w},{cell_h}\nSpacing = 0,0\nOffset = 0,0\n'
+            f'File = {name}.sff\n')
+    path = os.path.join(FONT_DIR, name + ".def")
+    if not os.path.isfile(path) or open(path, encoding="utf-8-sig").read() != body:
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(body)
+    print(f"  baked {name}: {len(sprites)} glyphs, {px}px face, "
+          f"{depth}px extrusion, cell {space_w}x{cell_h}")
+    return len(sprites)
+
 
 NOTICE = """The Display.ttf face shipped here is {name}, the same one
 tools/build_title.py uses to paint the title wordmark, so the menus and the logo
@@ -227,12 +294,8 @@ def install_ttf():
         print(f"  vendored {name} from {src}")
     else:
         print(f"  {os.path.relpath(dst, ROOT)} already current")
-    for fname, body in (("Display.def", DISPLAY_DEF), ("Body.def", BODY_DEF)):
-        path = os.path.join(FONT_DIR, fname)
-        if not os.path.isfile(path) or open(path, encoding="utf-8-sig").read() != body:
-            with open(path, "w", encoding="utf-8", newline="\n") as fh:
-                fh.write(body)
-            print(f"  wrote {os.path.relpath(path, ROOT)}")
+    for name, px, depth in FONTS:
+        write_font(name, px, depth, dst)
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
