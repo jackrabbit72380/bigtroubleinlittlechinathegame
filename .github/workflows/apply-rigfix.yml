@@ -1,0 +1,33 @@
+name: apply-rigfix
+
+# One-shot: applies tools/_rigfix.diff to main and pushes. The patch was
+# generated against this branch and verified with `git apply --check`.
+on: workflow_dispatch
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply the patch
+        run: |
+          if ! git apply --ignore-whitespace --verbose tools/_rigfix.diff; then
+            echo "git apply failed, falling back to patch(1)"
+            patch -p1 --batch --no-backup-if-mismatch < tools/_rigfix.diff
+          fi
+          echo "--- changed files ---"
+          git diff --stat
+          grep -n "rot = angle_deg - base" tools/char_rig.py
+          grep -n "W, H = 150, 94" tools/lightning_art.py
+          grep -n "Airport.ogg" stages/airport_terminal.def
+      - name: Commit and push
+        run: |
+          rm -f tools/_rigfix.diff
+          git config user.name "asset-bot"
+          git config user.email "asset-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "Keep the fighters' limbs on their joints"
+          git push
