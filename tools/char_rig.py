@@ -911,13 +911,16 @@ POSE_SETS = {
         # Arms swung only part way down: the parts are cut in a guard, so
         # hanging them fully (-44) clasped the hands at his waist. Held here the
         # elbows stay wide and the palms sit forward, which is the stance the
-        # concept draws.
+        # concept draws. The far arm's part is MIRRORED, so its angle runs the
+        # other way to keep the two arms symmetric.
         "stance": dict(lean=-2, head=1, cape=-4,
-                       arm_n=(-20, 0, 0), arm_f=(-16, 0, 0),
-                       leg_n=(26, -16, 82), leg_f=(-28, 16, 98)),
+                       arm_n=(-18, 0, 0), arm_f=(14, 0, 0),
+                       leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
+        # He stands nearly upright in the concept; the old 26/-28 split squatted
+        # him into a crab stance that made the boots look enormous.
         "breath": dict(lean=-3, head=0, lift=1, cape=-2,
-                       arm_n=(-24, 0, 0), arm_f=(-20, 0, 0),
-                       leg_n=(26, -16, 82), leg_f=(-28, 16, 98)),
+                        arm_n=(-22, 0, 0), arm_f=(18, 0, 0),
+                        leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
     },
 }
 
