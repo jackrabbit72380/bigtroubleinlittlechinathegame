@@ -27,6 +27,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import char_rig
+import hat_cut
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARTS = os.path.join(ROOT, "art_src", "chars", "lightning", "parts")
@@ -205,111 +206,51 @@ def pelvis():
 def head():
     """The hat hides the face; only two blue eyes burn out of its shade.
 
-    Rewritten to the second concept sheet. The hat is no longer a shallow dish
-    sitting on his brow: it is a broad woven brim that comes down over the eyes,
-    with a truncated cone crown and a fan of straw out of the top. Underneath,
-    the face is sunk in the brim's shadow and the only lit things on it are the
-    eyes, which is the look in both the painted sheet and the film still.
+    The hat is not drawn here. It is cut from the HD render in
+    ``concept_art/fighters/lightning`` by ``tools/hat_cut.py``, because the
+    render is the real prop and its banded weave and straw fan survive the
+    reduction better than a redrawing did. Everything else - the skull, the
+    shadow the brim throws over it, the eyes - is flat sprite tones drawn here,
+    since those have to sit on the character's palette. The brim comes down to
+    the eye line, so at fighting distance he is a hat with two lit slits.
     """
     W, H = 150, 94
     img = _blank((W, H))
 
     # --- neck, so the head meets the shoulders instead of hovering ----------
     neck = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(neck).rectangle([62, 72, 88, 94], fill=255)
+    ImageDraw.Draw(neck).rectangle([62, 70, 88, 94], fill=255)
     img.alpha_composite(char_rig._shade(neck, SKIN_DK, SKIN, SKIN_DEEP))
 
-    # --- skull, then the brim's shadow laid over nearly all of it -----------
+    # --- skull, nearly all of it lost in the brim's shadow ------------------
     face = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(face)
-    fd.ellipse([44, 26, 106, 92], fill=255)
-    fd.rectangle([56, 56, 94, 92], fill=255)
+    fd.ellipse([44, 30, 106, 92], fill=255)
+    fd.rectangle([56, 58, 94, 92], fill=255)
     img.alpha_composite(char_rig._shade(face, (150, 110, 86),
                                        (196, 150, 118), SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    d.ellipse([40, 22, 110, 78], fill=(12, 12, 18, 210))        # brim shadow
-    d.line([(60, 82), (90, 81)], fill=(104, 54, 46, 200), width=2)   # mouth
-    d.line([(70, 86), (80, 86)], fill=SKIN_LIT + (90,), width=1)     # chin
+    d.ellipse([34, 52, 116, 92], fill=(10, 10, 15, 212))        # brim shadow
+    d.ellipse([40, 68, 110, 90], fill=(6, 6, 9, 92))            # deepest, at the jaw
+    d.line([(63, 86), (87, 85)], fill=(96, 50, 44, 175), width=2)    # mouth
 
-    # --- the only lit thing under the hat ----------------------------------
+    # --- the hat, straight out of the render -------------------------------
+    hat_img = hat_cut.hat(134, 68)
+    img.alpha_composite(hat_img, ((W - hat_img.width) // 2,
+                                  70 - hat_img.height))
+
+    # --- the only lit thing under it ---------------------------------------
     for cx in (62, 88):
         glow = _blank((W, H))
-        ImageDraw.Draw(glow).ellipse([cx - 17, 55, cx + 17, 77],
-                                     fill=BOLT + (120,))
-        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(4)))
+        ImageDraw.Draw(glow).ellipse([cx - 11, 69, cx + 11, 81],
+                                     fill=BOLT + (105,))
+        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(3)))
     d = ImageDraw.Draw(img)
     for cx, sgn in ((62, -1), (88, 1)):
-        d.line([(cx - 9, 71), (cx + 9, 68)], fill=(16, 28, 56, 255), width=5)
-        d.line([(cx - 8, 70), (cx + 8, 68)], fill=BOLT + (255,), width=3)
-        d.line([(cx - 4, 69), (cx + 5, 68)], fill=BOLT_CORE + (255,), width=1)
-        d.point([(cx + sgn * 7, 68)], fill=(255, 255, 255, 255))
-    # lashes drawn as little arcs, the way the sheet draws them
-    _stroke(img, _zig(50, 62, 68, 57, 4, 2, 0.6), width=2)
-    _stroke(img, _zig(100, 62, 82, 57, 4, 2, 1.6), width=2)
-
-    # --- brim: broad and drooping, the rim turned down and woven -----------
-    # The new sheet's hat is not a flat plate: the brim sags away from the
-    # crown and its outer rim curls down, thick and dark, so the silhouette
-    # reads as a bell rather than a disc.
-    brim = Image.new("L", (W, H), 0)
-    bd = ImageDraw.Draw(brim)
-    rx = 71.0
-    bd.ellipse([75 - rx, 34, 75 + rx, 50], fill=255)             # top surface
-    front, lip = [], []
-    for i in range(61):                                          # sagging rim
-        x = 4 + 2 * rx * i / 60
-        u = (x - 75) / rx
-        y = 42 + 8 * math.sqrt(max(0.0, 1 - u * u))               # near edge
-        front.append((x, y))
-        lip.append((x, y + 4 + 9 * abs(u) ** 1.2))                # rolled over
-    bd.polygon(front + lip[::-1], fill=255)
-    bd.ellipse([0, 42, 10, 56], fill=255)                        # rounded ends
-    bd.ellipse([140, 42, 150, 56], fill=255)
-    img.alpha_composite(char_rig._shade(brim, STRAW, STRAW_LIT, STRAW_DK))
-    d = ImageDraw.Draw(img)
-    for ry in (0.44, 0.30, 0.17):                                # concentric weave
-        d.arc([75 - 74 * ry, 42 - 8 * ry, 75 + 74 * ry, 42 + 8 * ry],
-              202, 338, fill=STRAW_DK + (110,), width=1)
-    for i in range(15):                                          # radial weave
-        a = math.pi * (0.05 + 0.9 * i / 14)
-        x, y = 75 + math.cos(a) * 72, 45 + math.sin(a) * 8
-        d.line([(75 + (x - 75) * 0.5, 42 + (y - 42) * 0.5), (x, y)],
-               fill=STRAW_DK + (60,), width=1)
-    d.line(lip, fill=(94, 72, 44, 215), width=3)                 # dark rolled rim
-    d.line([(x, y - 2) for x, y in lip], fill=STRAW_DK + (120,), width=1)
-    d.line(front, fill=(120, 96, 62, 150), width=1)
-
-    # --- crown: tall woven cone, banded, straw bursting out of the top -----
-    crown = Image.new("L", (W, H), 0)
-    cd = ImageDraw.Draw(crown)
-    cd.polygon([(44, 45), (106, 45), (91, 15), (59, 15)], fill=255)
-    cd.ellipse([59, 5, 91, 23], fill=255)
-    img.alpha_composite(char_rig._shade(crown, STRAW, STRAW_LIT, STRAW_DK))
-    d = ImageDraw.Draw(img)
-    for i in range(7):                                           # vertical weave
-        t = i / 6.0
-        d.line([(46 + 58 * t, 44), (61 + 28 * t, 16)],
-               fill=STRAW_DK + (95,), width=1)
-    for yb, w in ((21, 1), (27, 2), (31, 2), (35, 2), (40, 3)):   # banded weave
-        half = 15 + (yb - 15) * 0.533
-        d.line([(75 - half, yb), (75 + half, yb)],
-               fill=(116, 90, 56, 195), width=w)
-    d.line([(44, 45), (106, 45)], fill=HATBAND + (255,), width=2)   # base binding
-
-    # --- straw fan out of the crown ---------------------------------------
-    for i in range(11):
-        a = -1.0 + 2.0 * i / 10
-        d.line([(75 + math.sin(a) * 3, 10),
-                (75 + math.sin(a) * 13, 10 - (7 + 5 * math.cos(a)))],
-               fill=STRAW_DK + (235,), width=1)
-    d.line([(75, 11), (75, 3)], fill=STRAW_LIT + (210,), width=1)
-
-    # --- current crawling over the hat -------------------------------------
-    _stroke(img, _zig(8, 56, 32, 50, 4, 3, 0.4), width=2)
-    _stroke(img, _zig(118, 48, 143, 58, 4, 3, 1.9), width=2)
-    _stroke(img, _zig(55, 44, 70, 25, 4, 2, 2.6), width=2, glow=False)
-    _stroke(img, _zig(97, 24, 105, 42, 4, 2, 0.9), width=1, glow=False)
-    _stroke(img, _zig(46, 33, 58, 39, 3, 2, 1.4), width=1, glow=False)
+        d.line([(cx - 7, 75), (cx + 7, 73)], fill=(12, 22, 46, 255), width=4)
+        d.line([(cx - 6, 74), (cx + 6, 73)], fill=BOLT + (255,), width=2)
+        d.point([(cx - 1, 74)], fill=BOLT_CORE + (255,))
+        d.point([(cx + sgn * 5, 73)], fill=(255, 255, 255, 255))
     return img
 
 
