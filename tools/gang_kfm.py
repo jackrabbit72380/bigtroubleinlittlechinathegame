@@ -300,26 +300,27 @@ def draw_machete(d, grip, length=120.0, angle=-0.10):
     def P(t, u):
         return (gx + dx * t + nx * u, gy + dy * t + ny * u)
 
-    # grip through the fist, brass guard where the blade starts
-    d.line([P(-26, 3), P(6, 3)], fill=BLADE["spine"], width=15)
-    d.line([P(-24, 3), P(5, 3)], fill=BLADE["grip"], width=10)
-    for t in (-18, -12, -6):
-        d.line([P(t, -2), P(t + 1, 8)], fill=LEATHER["mid"], width=2)
-    d.line([P(6, -9), P(6, 15)], fill=BLADE["guard"], width=5)
-    d.ellipse([*P(-27, -1), *P(-21, 5)], fill=BLADE["guard"])
+    # grip through the fist, brass guard and pommel
+    d.line([P(-24, 2), P(4, 2)], fill=BLADE["spine"], width=14)
+    d.line([P(-22, 2), P(3, 2)], fill=LEATHER["mid"], width=9)
+    for t in (-16, -10, -4):
+        d.line([P(t, -3), P(t + 1, 7)], fill=LEATHER["dark"], width=2)
+    d.line([P(6, -10), P(6, 16)], fill=BLADE["guard"], width=5)
+    d.line([P(-26, 0), P(-21, 4)], fill=BLADE["guard"], width=4)
 
-    # Blade: straight spine, deep belly, and a tip cut away on the edge side
-    # the way a chopper's is - a square end reads as a pipe, not a blade.
-    outer = [P(6, -6), P(length * 0.72, -6), P(length * 0.95, 2),
-             P(length, 14), P(length * 0.78, 21), P(6, 19)]
-    d.polygon(outer, fill=BLADE["edge"])
-    inner = [P(9, -4), P(length * 0.71, -4), P(length * 0.93, 3),
-             P(length - 4, 13), P(length * 0.77, 18), P(9, 16)]
-    d.polygon(inner, fill=BLADE["steel"])
-    d.polygon([P(10, 10), P(length * 0.80, 11), P(length * 0.77, 18), P(10, 16)],
-              fill=BLADE["steel_mid"])          # shadow side of the belly
-    d.line([P(9, -4), P(length * 0.71, -4)], fill=BLADE["spine"], width=4)
-    d.line([P(10, 16), P(length * 0.77, 18)], fill=BLADE["steel_hi"], width=3)
+    # Cel-shaded blade: dark outline, mid steel body, lit top third, bright
+    # cutting edge and a chopper tip cut away on the edge side.
+    outer = [P(6, -7), P(length * 0.70, -7), P(length * 0.94, 1),
+             P(length, 12), P(length * 0.76, 22), P(6, 21)]
+    d.polygon(outer, fill=BLADE["spine"])
+    body = [P(8, -5), P(length * 0.70, -5), P(length * 0.92, 2),
+            P(length - 4, 11), P(length * 0.75, 19), P(8, 19)]
+    d.polygon(body, fill=BLADE["steel_mid"])
+    d.polygon([P(9, -4), P(length * 0.70, -4), P(length * 0.76, 5), P(9, 7)],
+              fill=BLADE["steel"])
+    d.line([P(9, 18), P(length * 0.75, 19), P(length - 4, 10)],
+           fill=BLADE["steel_hi"], width=3)
+    d.line([P(10, 2), P(length * 0.78, 3)], fill=BLADE["steel_hi"], width=1)
 
 
 def draw_hatchet(d, grip, length=104.0, angle=-1.02):
@@ -338,20 +339,20 @@ def draw_hatchet(d, grip, length=104.0, angle=-1.02):
         d.line([P(t, -4), P(t, 4)], fill=LEATHER["mid"], width=2)
 
     # Axe head: narrow where it meets the haft, flaring out to a curved bit.
-    head = [P(length * 0.56, -13), P(length * 0.62, 11), P(length * 0.82, 22),
-            P(length * 1.00, 20), P(length * 1.04, 2), P(length * 0.92, -13),
-            P(length * 0.74, -16)]
-    d.polygon(head, fill=BLADE["edge"])
-    inner = [P(length * 0.60, -10), P(length * 0.65, 9), P(length * 0.83, 18),
-             P(length * 0.97, 17), P(length * 1.00, 2), P(length * 0.89, -10),
-             P(length * 0.74, -13)]
-    d.polygon(inner, fill=BLADE["steel"])
-    d.polygon([P(length * 0.66, 2), P(length * 0.86, 12), P(length * 0.96, 15),
-               P(length * 0.97, 6)], fill=BLADE["steel_mid"])
-    # bright bit along the cutting curve, dark poll behind it
-    d.line([P(length * 0.80, 20), P(length * 0.98, 18), P(length * 1.02, 3)],
+    # Axe head drawn cel-style: dark outline, mid steel body, lit cheek, and a
+    # bright bit along the curved cutting edge.
+    head = [P(length * 0.54, -14), P(length * 0.60, 12), P(length * 0.80, 23),
+            P(length * 1.02, 21), P(length * 1.06, 0), P(length * 0.94, -14),
+            P(length * 0.72, -17)]
+    d.polygon(head, fill=BLADE["spine"])
+    inner = [P(length * 0.58, -11), P(length * 0.63, 10), P(length * 0.81, 19),
+             P(length * 0.98, 17), P(length * 1.01, 1), P(length * 0.90, -11),
+             P(length * 0.73, -14)]
+    d.polygon(inner, fill=BLADE["steel_mid"])
+    d.polygon([P(length * 0.62, -10), P(length * 0.90, -9), P(length * 0.86, 0),
+               P(length * 0.64, -1)], fill=BLADE["steel"])
+    d.line([P(length * 0.80, 20), P(length * 0.99, 18), P(length * 1.04, 1)],
            fill=BLADE["steel_hi"], width=3)
-    d.line([P(length * 0.58, -12), P(length * 0.72, -15)], fill=BLADE["spine"], width=4)
 
 
 def draw_pistol(d, grip, angle=-0.04, big=1.0):
