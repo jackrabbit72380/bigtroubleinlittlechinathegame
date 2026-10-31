@@ -33,38 +33,41 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARTS = os.path.join(ROOT, "art_src", "chars", "lightning", "parts")
 
 # --------------------------------------------------------------------- palette
-ROBE = (30, 30, 36)
-ROBE_LIT = (58, 58, 68)
-ROBE_DK = (12, 12, 16)
+# Colours are lifted from the painted concept (juan-ruiz-03.jpg) rather than
+# guessed, so the sprites sit in the same light as the picture: a charcoal
+# robe, steel-blue plate, and a cloak whose lining is oxblood, not red.
+ROBE = (26, 26, 33)
+ROBE_LIT = (44, 44, 55)
+ROBE_DK = (13, 13, 18)
 ROBE_TRIM = (86, 84, 92)
 
-SKIN = (206, 158, 124)
-SKIN_LIT = (234, 192, 158)
-SKIN_DK = (146, 104, 78)
-SKIN_DEEP = (96, 68, 52)
+SKIN = (216, 172, 142)
+SKIN_LIT = (238, 198, 170)
+SKIN_DK = (156, 112, 84)
+SKIN_DEEP = (98, 68, 52)
 
-BEAD = (188, 192, 202)
-BEAD_LIT = (246, 248, 252)
-BEAD_DK = (104, 108, 120)
+BEAD = (98, 114, 134)
+BEAD_LIT = (156, 174, 196)
+BEAD_DK = (52, 66, 84)
 
-CAPE = (26, 22, 26)
-CAPE_LIT = (52, 44, 48)
-CAPE_DK = (8, 6, 8)
-CAPE_LINING = (98, 22, 28)
-CAPE_LINING_LIT = (140, 36, 42)
+CAPE = (34, 30, 30)
+CAPE_LIT = (60, 52, 50)
+CAPE_DK = (16, 13, 14)
+CAPE_LINING = (68, 14, 30)
+CAPE_LINING_LIT = (96, 24, 42)
 
 STRAW = (206, 184, 140)
 STRAW_LIT = (238, 220, 180)
 STRAW_DK = (146, 120, 80)
 HATBAND = (58, 42, 28)
 
-TROUSER = (28, 28, 34)
-TROUSER_LIT = (50, 50, 60)
-TROUSER_DK = (10, 10, 14)
+TROUSER = (38, 38, 48)
+TROUSER_LIT = (58, 58, 70)
+TROUSER_DK = (22, 22, 30)
 
-BOOT = (26, 26, 32)
-BOOT_LIT = (62, 64, 74)
-BOOT_DK = (10, 10, 14)
+BOOT = (34, 34, 42)
+BOOT_LIT = (60, 62, 74)
+BOOT_DK = (16, 16, 22)
 
 BOLT = (128, 200, 255)
 BOLT_CORE = (242, 250, 255)
@@ -114,10 +117,13 @@ def torso():
     W, H = 132, 130
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(14, 22), (118, 22), (108, 64), (99, 106), (97, 130),
-               (35, 130), (33, 106), (24, 64)], fill=255)
-    d.ellipse([2, 2, 64, 60], fill=255)          # shoulder caps
-    d.ellipse([68, 2, 130, 60], fill=255)
+    d.polygon([(24, 20), (108, 20), (102, 64), (96, 106), (94, 130),
+               (38, 130), (36, 106), (30, 64)], fill=255)
+    # Shoulder caps sized to the joints at +-48, not to the canvas: at 62px
+    # across they were half the figure's width and he read as a barrel next to
+    # the concept's narrow shoulders.
+    d.ellipse([16, 4, 60, 58], fill=255)
+    d.ellipse([72, 4, 116, 58], fill=255)
     img = char_rig._shade(mask, ROBE, ROBE_LIT, ROBE_DK)
     d = ImageDraw.Draw(img)
 
@@ -129,7 +135,7 @@ def torso():
     pd.polygon([(27, 24), (105, 24), (101, 76), (31, 76)], fill=255)
     for i in range(7):
         x = 30 + i * 10.4
-        pd.polygon([(x, 74), (x + 10.4, 74), (x + 5.2, 92)], fill=255)
+        pd.polygon([(x, 74), (x + 10.4, 74), (x + 5.2, 96)], fill=255)
     img.alpha_composite(char_rig._shade(pm, BEAD, BEAD_LIT, BEAD_DK))
 
     beads = _blank((W, H))
@@ -165,9 +171,9 @@ def torso():
 
     # --- grey waist chevron and belt --------------------------------------
     d.polygon([(44, 90), (66, 103), (88, 90), (88, 99), (66, 113), (44, 99)],
-              fill=(126, 132, 142, 255))
+              fill=(78, 82, 94, 255))
     d.polygon([(44, 90), (66, 103), (66, 108), (44, 95)],
-              fill=(158, 164, 174, 255))
+              fill=(104, 110, 124, 255))
     d.rectangle([33, 108, 99, 120], fill=(16, 14, 16, 255))
     d.rectangle([58, 106, 74, 122], fill=(178, 156, 106, 255))
     d.rectangle([62, 110, 70, 118], fill=(96, 78, 46, 255))
@@ -180,7 +186,8 @@ def torso():
                fill=ROBE_DK + (150,), width=2)
     for x in (36, 96):
         d.line([(x, 34), (x - 1, 100)], fill=ROBE_LIT + (90,), width=2)
-    return img
+    # trim the over-wide canvas so the part is as wide as the shoulders it has
+    return img.resize((114, H), Image.LANCZOS)
 
 
 # ---------------------------------------------------------------------- pelvis
@@ -199,7 +206,7 @@ def pelvis():
         d.line([(x, 22), (x + (3 if x < 50 else -3), 70)],
                fill=ROBE_DK + (130,), width=2)
     d.line([(12, 60), (24, 70)], fill=ROBE_LIT + (80,), width=2)
-    return img
+    return img.resize((86, H), Image.LANCZOS)
 
 
 # ------------------------------------------------------------------------ head
@@ -214,43 +221,46 @@ def head():
     since those have to sit on the character's palette. The brim comes down to
     the eye line, so at fighting distance he is a hat with two lit slits.
     """
-    W, H = 150, 94
+    W, H = 158, 96
+    cx = W // 2
     img = _blank((W, H))
 
     # --- neck, so the head meets the shoulders instead of hovering ----------
     neck = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(neck).rectangle([62, 70, 88, 94], fill=255)
+    ImageDraw.Draw(neck).rectangle([cx - 13, 72, cx + 13, H], fill=255)
     img.alpha_composite(char_rig._shade(neck, SKIN_DK, SKIN, SKIN_DEEP))
 
     # --- skull, nearly all of it lost in the brim's shadow ------------------
     face = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(face)
-    fd.ellipse([44, 30, 106, 92], fill=255)
-    fd.rectangle([56, 58, 94, 92], fill=255)
+    fd.ellipse([cx - 31, 32, cx + 31, 94], fill=255)
+    fd.rectangle([cx - 19, 60, cx + 19, 94], fill=255)
     img.alpha_composite(char_rig._shade(face, (150, 110, 86),
-                                       (196, 150, 118), SKIN_DEEP))
+                                      (196, 150, 118), SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    d.ellipse([34, 52, 116, 92], fill=(10, 10, 15, 212))        # brim shadow
-    d.ellipse([40, 68, 110, 90], fill=(6, 6, 9, 92))            # deepest, at the jaw
-    d.line([(63, 86), (87, 85)], fill=(96, 50, 44, 175), width=2)    # mouth
+    d.ellipse([cx - 41, 54, cx + 41, 94], fill=(10, 10, 15, 212))   # brim shadow
+    d.ellipse([cx - 35, 70, cx + 35, 92], fill=(6, 6, 9, 92))       # deepest, jaw
+    d.line([(cx - 12, 88), (cx + 12, 87)], fill=(96, 50, 44, 175), width=2)
 
     # --- the hat, straight out of the render -------------------------------
-    hat_img = hat_cut.hat(134, 68)
-    img.alpha_composite(hat_img, ((W - hat_img.width) // 2,
-                                  70 - hat_img.height))
+    # The concept's brim is a little under half the figure's width; the body is
+    # slimmed to suit it rather than the hat shrunk to fit the body.
+    hat_img = hat_cut.hat(140, 74)
+    img.alpha_composite(hat_img, (cx - hat_img.width // 2,
+                                  72 - hat_img.height))
 
     # --- the only lit thing under it ---------------------------------------
-    for cx in (62, 88):
+    for ex in (cx - 17, cx + 17):
         glow = _blank((W, H))
-        ImageDraw.Draw(glow).ellipse([cx - 11, 69, cx + 11, 81],
+        ImageDraw.Draw(glow).ellipse([ex - 11, 71, ex + 11, 83],
                                      fill=BOLT + (105,))
         img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(3)))
     d = ImageDraw.Draw(img)
-    for cx, sgn in ((62, -1), (88, 1)):
-        d.line([(cx - 7, 75), (cx + 7, 73)], fill=(12, 22, 46, 255), width=4)
-        d.line([(cx - 6, 74), (cx + 6, 73)], fill=BOLT + (255,), width=2)
-        d.point([(cx - 1, 74)], fill=BOLT_CORE + (255,))
-        d.point([(cx + sgn * 5, 73)], fill=(255, 255, 255, 255))
+    for ex, sgn in ((cx - 17, -1), (cx + 17, 1)):
+        d.line([(ex - 7, 77), (ex + 7, 75)], fill=(12, 22, 46, 255), width=4)
+        d.line([(ex - 6, 76), (ex + 6, 75)], fill=BOLT + (255,), width=2)
+        d.point([(ex - 1, 76)], fill=BOLT_CORE + (255,))
+        d.point([(ex + sgn * 5, 75)], fill=(255, 255, 255, 255))
     return img
 
 
@@ -269,23 +279,23 @@ def arm(near=True):
     # upper sleeve, hanging from the shoulder
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(37, 14), (73, 14), (78, 54), (33, 58)], fill=255)
-    d.ellipse([sh[0] - 20, sh[1] - 10, sh[0] + 20, sh[1] + 18], fill=255)
-    d.ellipse([elbow[0] - 22, elbow[1] - 16, elbow[0] + 22, elbow[1] + 14], fill=255)
+    d.polygon([(41, 14), (69, 14), (73, 54), (36, 58)], fill=255)
+    d.ellipse([sh[0] - 16, sh[1] - 9, sh[0] + 16, sh[1] + 16], fill=255)
+    d.ellipse([elbow[0] - 18, elbow[1] - 14, elbow[0] + 18, elbow[1] + 12], fill=255)
     img.alpha_composite(char_rig._shade(mask, base, lit, dark))
 
     # forearm sleeve, angled out towards the enemy
     fmask = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(fmask)
-    fd.line([elbow, wrist], fill=255, width=24)
-    fd.ellipse([elbow[0] - 13, elbow[1] - 13, elbow[0] + 13, elbow[1] + 13], fill=255)
-    fd.ellipse([wrist[0] - 13, wrist[1] - 13, wrist[0] + 13, wrist[1] + 13], fill=255)
+    fd.line([elbow, wrist], fill=255, width=20)
+    fd.ellipse([elbow[0] - 11, elbow[1] - 11, elbow[0] + 11, elbow[1] + 11], fill=255)
+    fd.ellipse([wrist[0] - 11, wrist[1] - 11, wrist[0] + 11, wrist[1] + 11], fill=255)
     img.alpha_composite(char_rig._shade(fmask, base, lit, dark))
 
     d = ImageDraw.Draw(img)
     # flared cuff at the wrist
-    d.line([(92, 80), (104, 88)], fill=(132, 134, 144, 255), width=30)
-    d.line([(95, 82), (102, 87)], fill=dark + (210,), width=22)
+    d.line([(92, 80), (104, 88)], fill=(132, 134, 144, 255), width=26)
+    d.line([(95, 82), (102, 87)], fill=dark + (210,), width=18)
 
     # hand: wrist, palm, four fingers
     hx, hy = 116, 96
@@ -311,18 +321,18 @@ def arm(near=True):
 # ------------------------------------------------------------------------ legs
 def thigh():
     W, H = 54, 86
-    return _limb((W, H), [(7, 2), (47, 2), (49, 46), (44, 84), (10, 84), (5, 46)],
+    return _limb((W, H), [(10, 2), (44, 2), (46, 46), (41, 84), (13, 84), (8, 46)],
                  TROUSER, TROUSER_LIT, TROUSER_DK)
 
 
 def shin():
     """Baggy trouser above, tall black boot below."""
     W, H = 46, 86
-    leg = _limb((W, H), [(6, 2), (40, 2), (42, 38), (38, 84), (8, 84), (4, 38)],
+    leg = _limb((W, H), [(9, 2), (37, 2), (39, 38), (35, 84), (11, 84), (7, 38)],
                 TROUSER, TROUSER_LIT, TROUSER_DK)
     bootmask = Image.new("L", (W, H), 0)
     bd = ImageDraw.Draw(bootmask)
-    bd.polygon([(4, 34), (42, 34), (38, 84), (8, 84)], fill=255)
+    bd.polygon([(7, 34), (39, 34), (35, 84), (11, 84)], fill=255)
     boot = char_rig._shade(bootmask, BOOT, BOOT_LIT, BOOT_DK)
     img = Image.alpha_composite(leg, boot)
     d = ImageDraw.Draw(img)
@@ -347,31 +357,47 @@ def foot():
 
 # ------------------------------------------------------------------------ cape
 def cape():
-    """Crimson cloak from the shoulders to below the knee."""
-    W, H = 172, 226
+    """Wool cloak to the floor, hanging open with its lining turned out.
+
+    The concept wears it that way: the left front swung clear of the body so a
+    long wedge of oxblood lining faces the camera, the wool gathering in deep
+    folds down the right, and the hem ragged along the ground. It reads as one
+    mass at fighting size, which is what a cape should do.
+    """
+    W, H = 190, 240
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(58, 6), (114, 6), (162, 178), (146, 206), (118, 192),
-               (96, 214), (70, 196), (40, 212), (16, 182), (26, 120)],
-              fill=255)
-    d.ellipse([50, 0, 122, 26], fill=255)
+    d.polygon([(62, 6), (128, 6), (170, 156), (184, 216), (158, 202),
+               (138, 228), (112, 206), (92, 230), (66, 208), (40, 228),
+               (16, 204), (6, 156), (24, 118)], fill=255)
+    d.ellipse([52, 0, 138, 30], fill=255)
     img = char_rig._shade(mask, CAPE, CAPE_LIT, CAPE_DK)
     d = ImageDraw.Draw(img)
-    # oxblood lining showing down the inside edge, then deep folds in the wool
-    d.polygon([(58, 10), (86, 10), (74, 120), (48, 96)],
-              fill=CAPE_LINING + (190,))
-    d.polygon([(30, 120), (40, 96), (56, 150), (34, 176)],
-              fill=CAPE_LINING + (170,))
-    d.polygon([(140, 120), (130, 96), (116, 152), (136, 178)],
-              fill=CAPE_LINING + (150,))
-    for x0, x1 in ((46, 26), (68, 54), (92, 104), (116, 148), (134, 162)):
-        d.line([(x0, 30), (x1, 196)], fill=CAPE_DK + (120,), width=3)
-    for x0, x1 in ((56, 44), (80, 84), (104, 118)):
-        d.line([(x0, 40), (x1, 150)], fill=CAPE_LIT + (70,), width=3)
-    d.line([(60, 24), (44, 150)], fill=CAPE_LINING_LIT + (90,), width=2)
+
+    # the lining, swung round to the front on the left, and a sliver of it
+    # showing on the right where that edge turns away
+    lining = Image.new("L", (W, H), 0)
+    ld = ImageDraw.Draw(lining)
+    ld.polygon([(60, 10), (92, 10), (86, 128), (66, 196), (30, 210),
+                (14, 172), (34, 104)], fill=255)
+    ld.polygon([(126, 12), (140, 12), (150, 150), (140, 196), (126, 152)],
+               fill=255)
+    img.alpha_composite(char_rig._shade(lining, CAPE_LINING,
+                                        CAPE_LINING_LIT, CAPE_DK))
+
+    # folds: shadow creases down both sides, lit ridges on the wool
+    for x0, x1 in ((30, 14), (52, 40), (70, 60), (96, 108), (118, 148),
+                   (142, 172)):
+        d.line([(x0, 34), (x1, 210)], fill=CAPE_DK + (120,), width=3)
+    for x0, x1 in ((44, 36), (84, 92), (106, 122)):
+        d.line([(x0, 44), (x1, 160)], fill=CAPE_LIT + (70,), width=3)
+    for x0, x1 in ((46, 26), (72, 56)):
+        d.line([(x0, 30), (x1, 196)], fill=CAPE_LINING_LIT + (110,), width=2)
+    d.line([(134, 24), (146, 170)], fill=CAPE_LINING_LIT + (90,), width=2)
+
     # clasp across the shoulders
-    d.line([(54, 14), (118, 14)], fill=(122, 126, 136, 255), width=6)
-    d.ellipse([80, 8, 96, 24], fill=(168, 146, 98, 255))
+    d.line([(58, 12), (128, 12)], fill=(122, 126, 136, 255), width=6)
+    d.ellipse([85, 6, 101, 22], fill=(168, 146, 98, 255))
     return img
 
 
@@ -383,7 +409,7 @@ RIG_JSON = {
         "arm_f": [56, 14],
         "foot_n": [14, 32],
         "foot_f": [14, 32],
-        "cape": [86, 12],
+        "cape": [95, 12],
     },
 }
 
