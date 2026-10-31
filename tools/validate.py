@@ -207,8 +207,133 @@ def check_stage(def_path):
     notes.append(f"{label}: {layers} layers, {len(sprites)} sprites")
 
 
+def check_select_screen(chars):
+    """The portrait grid painted by tools/build_select_grid.py."""
+    def_text = read(os.path.join(ROOT, "data", "ikemen1", "system.def"))
+    parts = def_text.split("[Select Info]", 1)
+    if len(parts) < 2:
+        err("system.def: no [Select Info] block")
+        return
+    body = parts[1].split("\n[", 1)[0]
+    opts = {}
+    for line in body.splitlines():
+        if "=" in line and not line.strip().startswith(";"):
+            key, value = line.split("=", 1)
+            opts[key.strip().lower()] = value.split(";")[0].strip()
+
+    if opts.get("rows") != "2" or opts.get("columns") != "5":
+        err("select screen: grid is %s rows by %s columns, expected 2 by 5"
+            % (opts.get("rows"), opts.get("columns")))
+    if opts.get("cell.size") != "120,120":
+        err("select screen: cell.size is %r, expected 120,120" % opts.get("cell.size"))
+    if opts.get("portrait.spr") != "9000,0":
+        err("select screen: portrait.spr is %r, expected 9000,0" % opts.get("portrait.spr"))
+    if "p1.face.window" not in opts or "p2.face.window" not in opts:
+        err("select screen: the big side portraits have no window")
+
+    sff_path = os.path.join(ROOT, "data", "ikemen1", "system.sff")
+    if not os.path.isfile(sff_path):
+        err("select screen: data/ikemen1/system.sff is missing")
+        return
+    _d, sprites, _p = sff.read_sff(sff_path)
+    have = {(sp["group"], sp["number"]): sp for sp in sprites}
+    for group, number in ((220, 0), (222, 0), (223, 0), (223, 1), (223, 2), (223, 3)):
+        if (group, number) not in have:
+            err("select screen: system.sff has no sprite %d,%d" % (group, number))
+    bg = have.get((220, 0))
+    if bg and (bg["w"], bg["h"]) != (1280, 720):
+        err("select screen: background is %dx%d, expected 1280x720" % (bg["w"], bg["h"]))
+    if "spriteno = 220, 0" not in def_text:
+        err("select screen: [SelectBGdef] does not draw the painted background")
+
+    for name, _stage in chars:
+        def_path, folder = resolve_char(name)
+        if not (def_path and os.path.isfile(def_path)):
+            continue
+        files = dict(ini_sections(read(def_path)).get("files", []))
+        char_sff = os.path.join(folder, files.get("sprite", ""))
+        if not os.path.isfile(char_sff):
+            continue
+        _cd, char_sprites, _cp = sff.read_sff(char_sff)
+        cell = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get((9000, 0))
+        if cell is None:
+            err("%s: no select portrait 9000,0" % name)
+        elif (cell["w"], cell["h"]) != (120, 120):
+            err("%s: select portrait is %dx%d, expected 120x120"
+                % (name, cell["w"], cell["h"]))
+        want = {(9000, 1): (120, 140), (9000, 2): (300, 520)}
+        for key, size in want.items():
+            hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
+            if hit is None:
+                err("%s: no portrait sprite %d,%d" % (name, key[0], key[1]))
+            elif (hit["w"], hit["h"]) != size:
+                err("%s: portrait %d,%d is %dx%d, expected %dx%d"
+                    % (name, key[0], key[1], hit["w"], hit["h"], size[0], size[1]))
+    notes.append("select screen: 5x2 portrait grid, 120px cells, framed sides")
+
+
+def check_menu_theme():
+    """Menus wear the title logo's face and its gold/red palette.
+
+    tools/build_fonts.py installs Display/Body and retints system.def; this fails
+    loudly if a regeneration left a font pointing at a file that is not shipped,
+    or if any of the old blue/pink text colours survived.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        err("menu theme: data/ikemen1/system.def is missing")
+        return
+    def_text = read(path)
+
+    declared = {}
+    for line in def_text.splitlines():
+        m = re.match(r"^\s*(font\d+)\s*=\s*(\S+)", line, re.I)
+        if m and not line.strip().startswith(";"):
+            declared[m.group(1).lower()] = m.group(2)
+    for key, rel in declared.items():
+        if not (os.path.isfile(os.path.join(ROOT, "data", rel))
+                or os.path.isfile(os.path.join(ROOT, "font", rel))):
+            err("menu theme: %s points at %s, which is not shipped" % (key, rel))
+
+    for name in ("Display", "Body"):
+        fdef = os.path.join(ROOT, "data", "ikemen1", "fonts", name + ".def")
+        if not os.path.isfile(fdef):
+            err("menu theme: %s.def is missing" % name)
+            continue
+        body = read(fdef)
+        f = re.search(r"^File\s*=\s*(\S+)", body, re.I | re.M)
+        asset = os.path.join(os.path.dirname(fdef), f.group(1)) if f else ""
+        if not f or not os.path.isfile(asset):
+            err("menu theme: %s.def does not point at a shipped font file" % name)
+            continue
+        if re.search(r"^Type\s*=\s*bitmap", body, re.I | re.M):
+            # baked glyphs: the gold face must actually be in the sheet
+            if not asset.lower().endswith(".sff"):
+                err("menu theme: %s.def is a bitmap font but does not ship a .sff" % name)
+                continue
+            _h, sheet, _pl = sff.read_sff(asset)
+            codes = {sp["number"] for sp in sheet if sp["group"] == 0}
+            missing = [c for c in range(65, 91) if c not in codes]
+            if missing:
+                err("menu theme: %s.sff has no glyphs for %s"
+                    % (name, ", ".join(chr(c) for c in missing[:6])))
+        elif not re.search(r"^Type\s*=\s*truetype", body, re.I | re.M):
+            err("menu theme: %s.def is neither a bitmap nor a truetype font" % name)
+
+    stale = [c for c in ("123,206,255", "255,210,239", "210,210,255", "0,247,247")
+             if c in def_text]
+    if stale:
+        err("menu theme: system.def still uses the old menu colours (%s)"
+            % ", ".join(stale))
+    if declared.get("font10") is None or declared.get("font11") is None:
+        err("menu theme: font10/font11 are not registered in [Files]")
+    notes.append("menu theme: logo face, gold face on maroon extrusion")
+
+
 def main():
     chars = check_select()
+    check_menu_theme()
+    check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):

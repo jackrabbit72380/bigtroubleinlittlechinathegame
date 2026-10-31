@@ -9,18 +9,34 @@
 
 [Characters]
  ; --- playable roster -------------------------------------------------------
-jackburton, stages/chinatown_alley.def, order=0
+jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
 wangchi, stages/wingkong_exchange.def, order=2
 gracielaw, stages/chinatown_alley.def, order=1
 eggshen, stages/wingkong_exchange.def, order=3
 
  ; --- the Three Storms ------------------------------------------------------
 rain, stages/porkchop_express.def, order=1
-lightning, stages/chinatown_alley.def, order=1
+lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
 thunder, stages/lopans_throne.def, order=2
 
  ; --- final boss ------------------------------------------------------------
 lopan, stages/lopans_throne.def, order=4
+
+ ; --- the Chang Sing: tan gi over black, staff in hand ----------------------
+changsing_bo_rig/changsing_bo.def, stages/chinatown_alley.def, order=1
+changsing_lin_rig/changsing_lin.def, stages/chinatown_alley.def, order=1
+changsing_shi_rig/changsing_shi.def, stages/wingkong_exchange.def, order=1
+changsing_han_rig/changsing_han.def, stages/chinatown_alley.def, order=1
+changsing_wei_rig/changsing_wei.def, stages/wingkong_exchange.def, order=1
+changsing_tam_rig/changsing_tam.def, stages/chinatown_alley.def, order=1
+
+ ; --- the Wing Kong: black gi with red trim, machete in hand -----------------
+wingkong_gou_rig/wingkong_gou.def, stages/wingkong_exchange.def, order=2
+wingkong_ma_rig/wingkong_ma.def, stages/wingkong_exchange.def, order=2
+wingkong_zhao_rig/wingkong_zhao.def, stages/chinatown_alley.def, order=2
+wingkong_lu_rig/wingkong_lu.def, stages/wingkong_exchange.def, order=2
+wingkong_shen_rig/wingkong_shen.def, stages/wingkong_exchange.def, order=2
+wingkong_bai_rig/wingkong_bai.def, stages/chinatown_alley.def, order=2
 
 randomselect
 
@@ -31,6 +47,7 @@ stages/chinatown_alley.def
 stages/wingkong_exchange.def
 stages/porkchop_express.def
 stages/lopans_throne.def
+stages/upside_down.def
 stages/stage0.def        ; training room
 
 ;-------------------------------------------------------------------------------

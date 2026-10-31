@@ -54,17 +54,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART_SRC = os.path.join(ROOT, "art_src")
 
 # HD geometry: the arcade numbers in tools/build_stages.py times four.
-SCALE = 4
-LOCAL_W, LOCAL_H = 1280, 960            # == canvas height, see docstring
-VIEW_W, H = 320 * SCALE, 240 * SCALE          # 1280 x 960
-SCROLL = 260 * SCALE                          # 1040
-COVER = 240 * SCALE                           # 960
+SCALE = 4.5
+LOCAL_W, LOCAL_H = 1920, 1080
+VIEW_W, H = int(640 * SCALE), int(240 * SCALE)  # 2880 x 1080
+SCROLL = 1788                                 # camera travel
+COVER = 1012                                  # art reaches +/-2800
 W = 2 * (SCROLL + COVER)                      # 4000
 CX = W // 2                                   # 2000
 START_X = -(SCROLL + COVER)                   # -2000
-ZOFFSET = 200 * SCALE                         # 800
-PLAYER_BOUND = 405 * SCALE                    # 1620
-SCREEN_MARGIN = 15 * SCALE                    # 60
+ZOFFSET = int(200 * SCALE)                    # 900
+PLAYER_BOUND = SCROLL + 580                   # 2368
+SCREEN_MARGIN = int(round(15 * SCALE))        # 68
 
 DEF_TEMPLATE = """;---------------------------------------------------------------------------
 ; {name}
