@@ -2546,3 +2546,10 @@ Clsn1: 1
 7020,0, 0,0, 4, , A
 7020,1, 0,0, 4, , A
 7020,2, 0,0, -1, , A
+
+; Current around his hands - an effect laid over the body, never in it
+[Begin Action 7030]
+7030,0, 0,0, 3, , A
+7030,1, 0,0, 3, , A
+7030,2, 0,0, 3, , A
+7030,3, 0,0, -1, , A
