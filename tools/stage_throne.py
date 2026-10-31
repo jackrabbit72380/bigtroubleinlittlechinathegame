@@ -60,7 +60,7 @@ MOUTH_HALF = int(0.335 * SKULL_W)
 # The aperture, in skull-layer coordinates: wide under the brow, waisted at the
 # cheeks, and open at the bottom so the fog has somewhere to come from.
 MOUTH_PTS = [(0.176, 0.606), (0.500, 0.580), (0.824, 0.606), (0.856, 0.780),
-             (0.828, 1.02), (0.172, 1.02), (0.144, 0.780)]
+             (0.828, 1.005), (0.172, 1.005), (0.144, 0.780)]
 
 
 def mouth_canvas():
@@ -509,7 +509,7 @@ def skull_layer():
     # side. The middle stays clear on purpose: the mouth is the doorway, so
     # these are its jambs - you should read a way in, not a closed jaw.
     for sx in (-1, 1):
-        tooth(ws * 0.5 + sx * ws * 0.250, hs * 1.020, ws * 0.056,
+        tooth(ws * 0.5 + sx * ws * 0.250, hs * 1.060, ws * 0.056,
               hs * 0.845, lean=sx * ws * 0.010)
 
     # gum line shadow
@@ -604,6 +604,21 @@ def skull_layer():
     hot = art.outline(sil, (150, 246, 196), thickness=max(1, int(SKULL_W * 0.003)),
                       expand=2)
     neon = Image.alpha_composite(rim, hot)
+
+    # The mouth's own edge, and the lower teeth standing in it, get the same
+    # neon. The rim above is traced from the outer silhouette, so it only ran
+    # round the dome and the jaw: the lower teeth sat in the fog as bare bone.
+    band = Image.new("L", (SKULL_W, SKULL_H), 0)
+    ImageDraw.Draw(band).rectangle(
+        [int(SKULL_W * 0.19), int(SKULL_H * 0.78),
+         int(SKULL_W * 0.81), SKULL_H], fill=255)
+    jaw = ImageChops.multiply(alpha.point(lambda v: 255 if v > 90 else 0), band)
+    jaw_rim = art.outline(jaw, (46, 208, 128),
+                          thickness=max(2, int(SKULL_W * 0.008)), expand=1)
+    jaw_hot = art.outline(jaw, (150, 246, 196),
+                          thickness=max(1, int(SKULL_W * 0.003)), expand=2)
+    neon = Image.alpha_composite(neon, jaw_rim)
+    neon = Image.alpha_composite(neon, jaw_hot)
 
     def full(img):
         out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
