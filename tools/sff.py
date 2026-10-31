@@ -45,7 +45,12 @@ FMT_PNG32 = 12
 
 def png_bytes(img: Image.Image) -> bytes:
     buf = BytesIO()
-    img.convert("RGBA").save(buf, format="PNG", optimize=True)
+    if img.mode == "P":
+        # A paletted image keeps its indices and lets the SFF palette paint it,
+        # which is a fraction of the size of a 32-bit copy for flat sprite art.
+        img.save(buf, format="PNG", optimize=True, bits=8)
+    else:
+        img.convert("RGBA").save(buf, format="PNG", optimize=True)
     return buf.getvalue()
 
 
@@ -79,7 +84,11 @@ def write_sff(sprites, palettes=None) -> bytes:
             img = sp["image"]
             png = png_bytes(img)
             payload = struct.pack("<I", len(png)) + png
-            fmt, depth, w, h = FMT_PNG32, 32, img.width, img.height
+            if img.mode == "P":
+                fmt, depth = FMT_PNG8, 8
+            else:
+                fmt, depth = FMT_PNG32, 32
+            w, h = img.width, img.height
         else:  # verbatim pass-through of an existing sprite payload
             payload = sp["raw"]
             fmt, depth, w, h = sp["format"], sp["depth"], sp["w"], sp["h"]
