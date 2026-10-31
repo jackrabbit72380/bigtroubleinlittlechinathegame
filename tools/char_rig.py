@@ -190,8 +190,12 @@ class Rig:
         return self.metrics
 
 
-def load_rig(char_id):
-    folder = os.path.join(PARTS_DIR, char_id, "parts")
+def load_rig(char_id, view=None):
+    # view="side" loads the profile part set, so a fight pose faces the other
+    # fighter. Portraits and the win pose keep the front set: those are the two
+    # places the game wants the fighter looking at the camera.
+    sub = "parts_side" if view == "side" else "parts"
+    folder = os.path.join(PARTS_DIR, char_id, sub)
     if not os.path.isdir(folder):
         raise SystemExit(f"no parts at {os.path.relpath(folder, ROOT)}")
     cfg = {}
@@ -202,7 +206,8 @@ def load_rig(char_id):
 
     parts = {}
     default_pivots = cfg.get("pivots", {})
-    for name in ORDER:
+    extras = ("holster_gun", "holster_knife", "prop_gun")
+    for name in list(ORDER) + list(extras):
         path = os.path.join(folder, f"{name}.png")
         if not os.path.isfile(path):
             continue
@@ -427,14 +432,37 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 continue
         order.append(nm)
 
+    # Holstered weapons ride the body: the pistol sits in the waistband behind
+    # the torso, the knife down the outside of the boot. Both are drawn in every
+    # pose, because he only holds a weapon during the move that uses it.
+    if "holster_gun" in rig.parts and "pelvis" in order:
+        order.insert(order.index("pelvis"), "holster_gun")
+    if "holster_knife" in rig.parts and "shin_n" in order:
+        order.insert(order.index("shin_n") + 1, "holster_knife")
+
     for name in order:
         if name == "prop":
             which = pose.get("prop_part", "prop")
+            # A rig cut for the side view carries its own pistol art; the front
+            # rig only has the generic one, so fall back instead of dropping it.
+            if which not in rig.parts and which == "prop_gun" and "prop" in rig.parts:
+                which = "prop"
             if which in rig.parts and pose.get("prop"):
                 part = dict(rig.parts[which])
                 part["name"] = "prop"
                 part["base"] = BASE_ANGLE.get("prop", 0.0) + rig.art.get(which, 0.0)
                 _place(out, part, pose.get("prop_angle", 0.0), wri_n)
+            continue
+        # A holstered weapon is pinned to the body, not to a swinging joint: the
+        # gun leans with the waist, the knife only tips slightly with the shin.
+        if name in ("holster_gun", "holster_knife"):
+            part = dict(rig.parts[name])
+            part["name"] = name
+            part["base"] = 0.0
+            if name == "holster_gun":
+                _place(out, part, rig.art.get(name, 0.0) + torso_dir * 0.5, hip)
+            else:
+                _place(out, part, rig.art.get(name, 0.0) + leg_n[1] * 0.3, kn_n)
             continue
         # A cloak hangs from the shoulders, behind everything else, and only
         # partly follows the torso: it drapes, so it rides 35% of the lean.

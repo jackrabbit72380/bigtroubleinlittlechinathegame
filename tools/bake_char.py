@@ -175,6 +175,24 @@ def bake(char_id, target_height=TARGET_HEIGHT):
 
     poses = WEAPON_POSES.get(char_id, WEAPON_POSES["jackburton"])
     rig = char_rig.load_rig(char_id)
+
+    # Fight poses are drawn from the profile part set so the two fighters face
+    # each other; only the win pose keeps the front set, because that is the one
+    # time a fighter is supposed to look at the camera. Each set is fitted to
+    # the same on-screen height, since they were cut at different resolutions.
+    front_rig = rig
+    side_rig = None
+    if os.path.isdir(os.path.join(ROOT, "art_src", "chars", char_id, "parts_side")):
+        side_rig = char_rig.load_rig(char_id, "side")
+    fit = {"front": None, "side": None}
+    for key, r in (("front", front_rig), ("side", side_rig)):
+        if r is None:
+            continue
+        probe = char_rig.render(r, char_rig.rest_pose(r))
+        box = probe.getbbox()
+        height = (box[3] - box[1]) if box else r.canvas[1]
+        fit[key] = TARGET_HEIGHT / float(max(1, height))
+
     sprites = []
 
     # Weapon art is copied through, never rendered - see WEAPON_ACTIONS.
@@ -213,10 +231,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         for i, ticks in enumerate(frames):
             pose_name = pose_for(number, i)
             if pose_name not in local:
-                img = char_rig.render(rig, char_rig.POSES[pose_name])
-                img = img.resize((max(1, round(img.width * k)),
-                                  max(1, round(img.height * k))), Image.LANCZOS)
-                axis = (round(rig.axis[0] * k), round(rig.axis[1] * k))
+                side = side_rig is not None and pose_name != "win"
+                use = side_rig if side else front_rig
+                kk = fit["side" if side else "front"]
+                img = char_rig.render(use, char_rig.POSES[pose_name])
+                img = img.resize((max(1, round(img.width * kk)),
+                                  max(1, round(img.height * kk))), Image.LANCZOS)
+                axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
                 local[pose_name] = len(local)
                 sprites.append({"group": number, "number": local[pose_name],
                                 "image": img, "axis": axis})
@@ -241,10 +262,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         local = {}
         for pose, ticks in frames:
             if pose not in local:
-                img = char_rig.render(rig, char_rig.POSES[pose])
-                img = img.resize((max(1, round(img.width * k)),
-                                  max(1, round(img.height * k))), Image.LANCZOS)
-                axis = (round(rig.axis[0] * k), round(rig.axis[1] * k))
+                side = side_rig is not None and pose != "win"
+                use = side_rig if side else front_rig
+                kk = fit["side" if side else "front"]
+                img = char_rig.render(use, char_rig.POSES[pose])
+                img = img.resize((max(1, round(img.width * kk)),
+                                  max(1, round(img.height * kk))), Image.LANCZOS)
+                axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
                 local[pose] = len(local)
                 sprites.append({"group": action, "number": local[pose],
                                 "image": img, "axis": axis})
