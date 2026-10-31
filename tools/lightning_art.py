@@ -1,10 +1,11 @@
 """Lightning: the puppet rig's second fighter, painted from the concept sheet.
 
 Jack's parts are cut out of a photographic turnaround by ``jack_cut.py``.
-Lightning has no turnaround - the references are a painted concept, a statue
-and a sprite - so his parts are drawn here instead: the huge fringed straw hat,
-the slate robe with its beaded demon-face chest, the crimson cloak, the black
-boots, and the blue lightning crawling over his hands and his hat brim.
+Lightning has no turnaround - the references are painted concepts, a statue
+and a sprite - so his parts are drawn here instead: the wide low straw hat with
+its dark band, the black robe under a plated silver bib, the black cloak with
+its oxblood lining, the black leather trousers and tall boots, and the blue
+lightning crawling over his hands and his hat brim.
 
 Output is exactly what ``char_rig`` expects:
 
@@ -31,31 +32,34 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARTS = os.path.join(ROOT, "art_src", "chars", "lightning", "parts")
 
 # --------------------------------------------------------------------- palette
-ROBE = (54, 62, 78)
-ROBE_LIT = (88, 100, 122)
-ROBE_DK = (26, 32, 44)
-ROBE_TRIM = (104, 116, 136)
+ROBE = (30, 30, 36)
+ROBE_LIT = (58, 58, 68)
+ROBE_DK = (12, 12, 16)
+ROBE_TRIM = (86, 84, 92)
 
 SKIN = (206, 158, 124)
 SKIN_LIT = (234, 192, 158)
 SKIN_DK = (146, 104, 78)
 SKIN_DEEP = (96, 68, 52)
 
-BEAD = (122, 138, 160)
-BEAD_LIT = (186, 200, 220)
-BEAD_DK = (58, 70, 90)
+BEAD = (188, 192, 202)
+BEAD_LIT = (246, 248, 252)
+BEAD_DK = (104, 108, 120)
 
-CAPE = (140, 26, 40)
-CAPE_LIT = (182, 46, 56)
-CAPE_DK = (68, 10, 18)
+CAPE = (26, 22, 26)
+CAPE_LIT = (52, 44, 48)
+CAPE_DK = (8, 6, 8)
+CAPE_LINING = (98, 22, 28)
+CAPE_LINING_LIT = (140, 36, 42)
 
-STRAW = (198, 172, 126)
-STRAW_LIT = (232, 210, 166)
-STRAW_DK = (138, 112, 72)
+STRAW = (206, 184, 140)
+STRAW_LIT = (238, 220, 180)
+STRAW_DK = (146, 120, 80)
+HATBAND = (58, 42, 28)
 
-TROUSER = (42, 44, 54)
-TROUSER_LIT = (68, 72, 86)
-TROUSER_DK = (18, 18, 24)
+TROUSER = (28, 28, 34)
+TROUSER_LIT = (50, 50, 60)
+TROUSER_DK = (10, 10, 14)
 
 BOOT = (26, 26, 32)
 BOOT_LIT = (62, 64, 74)
@@ -116,10 +120,16 @@ def torso():
     img = char_rig._shade(mask, ROBE, ROBE_LIT, ROBE_DK)
     d = ImageDraw.Draw(img)
 
-    # --- beaded chest apron ------------------------------------------------
-    plate = [(29, 26), (103, 26), (95, 88), (37, 88)]
-    pm = _shape((W, H), plate)
-    img.alpha_composite(char_rig._shade(pm, BEAD_DK, (76, 90, 110), (34, 42, 56)))
+    # --- silver bib, scalloped at the hem ----------------------------------
+    # The concept wears a plated silver bib over the black robe rather than the
+    # slate bead apron he started with; the hem hangs in points over the belly.
+    pm = Image.new("L", (W, H), 0)
+    pd = ImageDraw.Draw(pm)
+    pd.polygon([(27, 24), (105, 24), (101, 76), (31, 76)], fill=255)
+    for i in range(7):
+        x = 30 + i * 10.4
+        pd.polygon([(x, 74), (x + 10.4, 74), (x + 5.2, 92)], fill=255)
+    img.alpha_composite(char_rig._shade(pm, BEAD, BEAD_LIT, BEAD_DK))
 
     beads = _blank((W, H))
     bd = ImageDraw.Draw(beads)
@@ -137,8 +147,8 @@ def torso():
     beads.putalpha(ImageChops.multiply(beads.getchannel("A"), pm))
     img.alpha_composite(beads)
 
-    # --- the demon face worked into the apron ------------------------------
-    d.ellipse([48, 44, 86, 80], fill=(30, 36, 48, 235))
+    # --- the demon face worked into the bib --------------------------------
+    d.ellipse([48, 44, 86, 80], fill=(22, 22, 28, 235))
     d.arc([48, 44, 86, 80], 200, 340, fill=BEAD_LIT + (200,), width=2)
     for sx in (58, 72):
         d.ellipse([sx - 5, 50, sx + 5, 59], fill=(214, 52, 46, 255))
@@ -157,7 +167,7 @@ def torso():
               fill=(126, 132, 142, 255))
     d.polygon([(44, 90), (66, 103), (66, 108), (44, 95)],
               fill=(158, 164, 174, 255))
-    d.rectangle([33, 108, 99, 120], fill=(28, 22, 20, 255))
+    d.rectangle([33, 108, 99, 120], fill=(16, 14, 16, 255))
     d.rectangle([58, 106, 74, 122], fill=(178, 156, 106, 255))
     d.rectangle([62, 110, 70, 118], fill=(96, 78, 46, 255))
 
@@ -182,7 +192,7 @@ def pelvis():
     d.ellipse([6, 50, 94, 78], fill=255)
     img = char_rig._shade(mask, ROBE, ROBE_LIT, ROBE_DK)
     d = ImageDraw.Draw(img)
-    d.rectangle([28, 4, 72, 18], fill=(28, 22, 20, 255))
+    d.rectangle([28, 4, 72, 18], fill=(16, 14, 16, 255))
     d.rectangle([44, 2, 58, 20], fill=(178, 156, 106, 255))
     for x in (30, 42, 56, 70):
         d.line([(x, 22), (x + (3 if x < 50 else -3), 70)],
@@ -222,31 +232,41 @@ def head():
     fd.rectangle([56, 60, 94, 92], fill=255)
     img.alpha_composite(char_rig._shade(face, (170, 126, 98), SKIN, SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    # Only the eye band sits in the brim's shade; the jaw and chin stay lit,
-    # otherwise the face reads as a dark bar under a hat.
-    d.ellipse([44, 34, 106, 60], fill=(18, 18, 24, 130))
-    for x in (58, 74):                                          # glowing eyes
-        d.line([(x, 60), (x + 10, 59)], fill=(176, 220, 250, 235), width=2)
-        d.line([(x + 1, 65), (x + 9, 65)], fill=(96, 74, 64, 190), width=1)
-    d.line([(66, 62), (63, 76), (69, 78)], fill=SKIN_DEEP + (150,), width=2)
-    d.line([(58, 84), (82, 83)], fill=(112, 60, 52, 205), width=2)
+    # Only the brow sits in the brim's shade; the eyes are set low enough that
+    # the fringe cannot eat them, and the jaw stays lit so the face reads as a
+    # face rather than a dark bar under a hat.
+    d.ellipse([44, 34, 106, 62], fill=(18, 18, 24, 110))
+    d.rectangle([50, 34, 100, 56], fill=(92, 62, 46, 120))       # brow in shade
+    d.line([(70, 54), (80, 53)], fill=(58, 38, 30, 160), width=2)
+    for cx in (62, 88):                                          # narrow lit eyes
+        d.ellipse([cx - 10, 58, cx + 10, 73], fill=(56, 36, 30, 200))
+        d.line([(cx - 6, 66), (cx + 6, 65)], fill=(22, 14, 12, 235), width=4)
+        d.line([(cx - 5, 66), (cx + 5, 65)], fill=(178, 222, 252, 245), width=2)
+        d.point([(cx, 65)], fill=(255, 255, 255, 255))
+    d.line([(74, 68), (71, 79), (78, 81)], fill=SKIN_DEEP + (175,), width=2)
+    d.line([(62, 74), (56, 78)], fill=SKIN_DEEP + (95,), width=2)
+    d.line([(88, 74), (94, 78)], fill=SKIN_DEEP + (95,), width=2)
+    d.line([(64, 84), (86, 83)], fill=(108, 56, 48, 210), width=2)
+    d.line([(70, 88), (80, 88)], fill=SKIN_LIT + (110,), width=1)
 
     # --- brim: a broad disc of woven straw --------------------------------
+    # The concept hat is far wider and flatter than the tall crown he had: a
+    # shallow disc from ear to ear with the crown barely rising off it.
     brim = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(brim).ellipse([8, 28, 142, 52], fill=255)
+    ImageDraw.Draw(brim).ellipse([1, 26, 149, 50], fill=255)
     img.alpha_composite(char_rig._shade(brim, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    d.arc([8, 30, 142, 52], 198, 342, fill=STRAW_DK + (170,), width=2)
-    d.line([(13, 49), (137, 49)], fill=(96, 74, 46, 90), width=3)     # underside
+    d.arc([1, 28, 149, 50], 198, 342, fill=STRAW_DK + (170,), width=2)
+    d.line([(5, 47), (145, 47)], fill=(96, 74, 46, 90), width=3)      # underside
 
     # --- fringe: shaggy straw hanging off the brim ------------------------
     fringe = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(fringe)
     for i in range(40):
         t = i / 39.0
-        x = 12 + 126 * t
-        edge = 46 - abs(t - 0.5) * 8           # the brim curves up at the ends
-        drop = 4 + (i * 29 % 9)                # deterministic ragged lengths
+        x = 5 + 140 * t
+        edge = 44 - abs(t - 0.5) * 6           # the brim curves up at the ends
+        drop = 2 + (i * 29 % 6)                # deterministic ragged lengths
         fd.line([(x, edge), (x + ((i % 5) - 2) * 1.1, edge + drop)],
                 fill=255, width=2)
     img.alpha_composite(char_rig._shade(fringe, STRAW_DK, STRAW, (108, 84, 52)))
@@ -254,18 +274,20 @@ def head():
     # --- crown: woven cone with a bound top -------------------------------
     crown = Image.new("L", (W, H), 0)
     cd = ImageDraw.Draw(crown)
-    cd.polygon([(56, 6), (94, 6), (106, 30), (44, 30)], fill=255)
-    cd.ellipse([52, 0, 98, 14], fill=255)
+    cd.polygon([(58, 11), (92, 11), (104, 28), (46, 28)], fill=255)
+    cd.ellipse([56, 4, 94, 16], fill=255)
     img.alpha_composite(char_rig._shade(crown, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    for i in range(4):
-        y = 10 + i * 5.0
-        half = 17 + i * 4.0
+    for i in range(3):
+        y = 13 + i * 5.0
+        half = 19 + i * 3.5
         d.line([(75 - half, y), (75 + half, y)], fill=STRAW_DK + (110,), width=1)
-    d.line([(53, 12), (46, 29)], fill=STRAW_DK + (150,), width=2)
-    d.line([(97, 12), (104, 29)], fill=STRAW_DK + (150,), width=2)
-    d.line([(75, 6), (75, 29)], fill=STRAW_LIT + (70,), width=2)
-    d.ellipse([69, 0, 81, 9], fill=STRAW_DK + (255,))            # bound tuft
+    d.line([(55, 15), (48, 27)], fill=STRAW_DK + (150,), width=2)
+    d.line([(95, 15), (102, 27)], fill=STRAW_DK + (150,), width=2)
+    # dark band lashed round the base of the crown
+    d.polygon([(48, 22), (102, 22), (103, 27), (47, 27)], fill=HATBAND + (255,))
+    d.line([(48, 22), (102, 22)], fill=(196, 166, 112, 200), width=1)
+    d.line([(75, 12), (75, 27)], fill=STRAW_LIT + (70,), width=2)
 
     # --- lightning crawling over the hat ----------------------------------
     _stroke(img, _zig(16, 42, 34, 39, 4, 3, 0.4), width=2)
@@ -280,7 +302,7 @@ def arm(near=True):
     W, H = 148, 132
     img = _blank((W, H))
     base, lit, dark = (ROBE, ROBE_LIT, ROBE_DK) if near else (
-        (42, 48, 62), (68, 78, 96), (18, 22, 32))
+        (18, 18, 22), (36, 36, 44), (8, 8, 10))
     skin = (SKIN, SKIN_LIT, SKIN_DK) if near else (SKIN_DK, SKIN, SKIN_DEEP)
     sh = (54.0, 14.0)
     elbow = (56.0, 62.0)
@@ -304,7 +326,7 @@ def arm(near=True):
 
     d = ImageDraw.Draw(img)
     # flared cuff at the wrist
-    d.line([(92, 80), (104, 88)], fill=ROBE_TRIM + (255,), width=30)
+    d.line([(92, 80), (104, 88)], fill=(132, 134, 144, 255), width=30)
     d.line([(95, 82), (102, 87)], fill=dark + (210,), width=22)
 
     # hand: wrist, palm, four fingers
@@ -377,13 +399,18 @@ def cape():
     d.ellipse([50, 0, 122, 26], fill=255)
     img = char_rig._shade(mask, CAPE, CAPE_LIT, CAPE_DK)
     d = ImageDraw.Draw(img)
-    # inner lining showing at the shoulders, then deep folds down the length
+    # oxblood lining showing down the inside edge, then deep folds in the wool
     d.polygon([(58, 10), (86, 10), (74, 120), (48, 96)],
-              fill=CAPE_DK + (150,))
+              fill=CAPE_LINING + (190,))
+    d.polygon([(30, 120), (40, 96), (56, 150), (34, 176)],
+              fill=CAPE_LINING + (170,))
+    d.polygon([(140, 120), (130, 96), (116, 152), (136, 178)],
+              fill=CAPE_LINING + (150,))
     for x0, x1 in ((46, 26), (68, 54), (92, 104), (116, 148), (134, 162)):
         d.line([(x0, 30), (x1, 196)], fill=CAPE_DK + (120,), width=3)
     for x0, x1 in ((56, 44), (80, 84), (104, 118)):
         d.line([(x0, 40), (x1, 150)], fill=CAPE_LIT + (70,), width=3)
+    d.line([(60, 24), (44, 150)], fill=CAPE_LINING_LIT + (90,), width=2)
     # clasp across the shoulders
     d.line([(54, 14), (118, 14)], fill=(122, 126, 136, 255), width=6)
     d.ellipse([80, 8, 96, 24], fill=(168, 146, 98, 255))

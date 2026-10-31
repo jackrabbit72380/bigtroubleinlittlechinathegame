@@ -3461,6 +3461,17 @@ anim = 1500
 ctrl = 0
 sprpriority = 2
 
+[State 1500, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 12
+length = 12
+timegap = 1
+framegap = 2
+trans = add
+paladd = 12, 44, 86
+palmul = 1.0, 1.05, 1.22
+
 [State 1500, sound]
 type = PlaySnd
 trigger1 = AnimElem = 3
@@ -3475,6 +3486,7 @@ pos = 120, -210
 postype = p1
 sprpriority = 4
 removetime = -2
+trans = add
 
 [State 1500, discharge 2]
 type = Explod
@@ -3485,6 +3497,7 @@ pos = 120, -210
 postype = p1
 sprpriority = 4
 removetime = -2
+trans = add
 
 [State 1500, discharge 3]
 type = Explod
@@ -3495,6 +3508,7 @@ pos = 120, -210
 postype = p1
 sprpriority = 4
 removetime = -2
+trans = add
 
 [State 1500, bolt 1]
 type = Projectile
@@ -3582,6 +3596,17 @@ velset = 0,0
 anim = 1600
 ctrl = 0
 sprpriority = 2
+
+[State 1600, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 16
+length = 14
+timegap = 1
+framegap = 2
+trans = add
+paladd = 12, 44, 86
+palmul = 1.0, 1.05, 1.22
 
 [State 1600, sound]
 type = PlaySnd
