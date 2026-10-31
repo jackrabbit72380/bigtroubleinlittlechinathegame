@@ -247,41 +247,69 @@ def head():
     _stroke(img, _zig(50, 62, 68, 57, 4, 2, 0.6), width=2)
     _stroke(img, _zig(100, 62, 82, 57, 4, 2, 1.6), width=2)
 
-    # --- brim: broad, shallow and woven, its front edge over the eyes ------
+    # --- brim: broad and drooping, the rim turned down and woven -----------
+    # The new sheet's hat is not a flat plate: the brim sags away from the
+    # crown and its outer rim curls down, thick and dark, so the silhouette
+    # reads as a bell rather than a disc.
     brim = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(brim).ellipse([0, 32, 150, 60], fill=255)
+    bd = ImageDraw.Draw(brim)
+    rx = 71.0
+    bd.ellipse([75 - rx, 34, 75 + rx, 50], fill=255)             # top surface
+    front, lip = [], []
+    for i in range(61):                                          # sagging rim
+        x = 4 + 2 * rx * i / 60
+        u = (x - 75) / rx
+        y = 42 + 8 * math.sqrt(max(0.0, 1 - u * u))               # near edge
+        front.append((x, y))
+        lip.append((x, y + 4 + 9 * abs(u) ** 1.2))                # rolled over
+    bd.polygon(front + lip[::-1], fill=255)
+    bd.ellipse([0, 42, 10, 56], fill=255)                        # rounded ends
+    bd.ellipse([140, 42, 150, 56], fill=255)
     img.alpha_composite(char_rig._shade(brim, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    d.arc([0, 34, 150, 60], 196, 344, fill=STRAW_DK + (205,), width=2)
-    d.line([(2, 59), (148, 59)], fill=(102, 78, 48, 140), width=2)
-    for i in range(17):                                          # radial weave
-        a = math.pi * (0.06 + 0.88 * i / 16)
-        x = 75 + math.cos(a) * 73
-        y = 48 - math.sin(a) * 12
-        d.line([(75 + (x - 75) * 0.34, 48 + (y - 48) * 0.34), (x, y)],
-               fill=STRAW_DK + (70,), width=1)
+    for ry in (0.44, 0.30, 0.17):                                # concentric weave
+        d.arc([75 - 74 * ry, 42 - 8 * ry, 75 + 74 * ry, 42 + 8 * ry],
+              202, 338, fill=STRAW_DK + (110,), width=1)
+    for i in range(15):                                          # radial weave
+        a = math.pi * (0.05 + 0.9 * i / 14)
+        x, y = 75 + math.cos(a) * 72, 45 + math.sin(a) * 8
+        d.line([(75 + (x - 75) * 0.5, 42 + (y - 42) * 0.5), (x, y)],
+               fill=STRAW_DK + (60,), width=1)
+    d.line(lip, fill=(94, 72, 44, 215), width=3)                 # dark rolled rim
+    d.line([(x, y - 2) for x, y in lip], fill=STRAW_DK + (120,), width=1)
+    d.line(front, fill=(120, 96, 62, 150), width=1)
 
-    # --- crown: truncated cone, bound, with straw fraying off the top ------
+    # --- crown: tall woven cone, banded, straw bursting out of the top -----
     crown = Image.new("L", (W, H), 0)
     cd = ImageDraw.Draw(crown)
-    cd.polygon([(48, 40), (102, 40), (84, 10), (66, 10)], fill=255)
-    cd.ellipse([64, 4, 86, 16], fill=255)
+    cd.polygon([(44, 45), (106, 45), (91, 15), (59, 15)], fill=255)
+    cd.ellipse([59, 5, 91, 23], fill=255)
     img.alpha_composite(char_rig._shade(crown, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    for i in range(6):                                           # vertical weave
-        t = i / 5.0
-        d.line([(50 + 50 * t, 39), (67 + 16 * t, 11)],
-               fill=STRAW_DK + (90,), width=1)
-    d.line([(48, 39), (102, 39)], fill=HATBAND + (255,), width=3)   # band
-    for i in range(7):                                           # frayed tuft
-        a = -0.9 + 1.8 * i / 6
-        d.line([(75, 8), (75 + math.sin(a) * 9, 8 - math.cos(a) * 8)],
-               fill=STRAW_DK + (230,), width=1)
+    for i in range(7):                                           # vertical weave
+        t = i / 6.0
+        d.line([(46 + 58 * t, 44), (61 + 28 * t, 16)],
+               fill=STRAW_DK + (95,), width=1)
+    for yb, w in ((21, 1), (27, 2), (31, 2), (35, 2), (40, 3)):   # banded weave
+        half = 15 + (yb - 15) * 0.533
+        d.line([(75 - half, yb), (75 + half, yb)],
+               fill=(116, 90, 56, 195), width=w)
+    d.line([(44, 45), (106, 45)], fill=HATBAND + (255,), width=2)   # base binding
+
+    # --- straw fan out of the crown ---------------------------------------
+    for i in range(11):
+        a = -1.0 + 2.0 * i / 10
+        d.line([(75 + math.sin(a) * 3, 10),
+                (75 + math.sin(a) * 13, 10 - (7 + 5 * math.cos(a)))],
+               fill=STRAW_DK + (235,), width=1)
+    d.line([(75, 11), (75, 3)], fill=STRAW_LIT + (210,), width=1)
 
     # --- current crawling over the hat -------------------------------------
-    _stroke(img, _zig(18, 58, 40, 54, 4, 3, 0.4), width=2)
-    _stroke(img, _zig(112, 52, 136, 58, 4, 3, 1.9), width=2)
-    _stroke(img, _zig(70, 12, 88, 30, 4, 2, 2.6), width=2, glow=False)
+    _stroke(img, _zig(8, 56, 32, 50, 4, 3, 0.4), width=2)
+    _stroke(img, _zig(118, 48, 143, 58, 4, 3, 1.9), width=2)
+    _stroke(img, _zig(55, 44, 70, 25, 4, 2, 2.6), width=2, glow=False)
+    _stroke(img, _zig(97, 24, 105, 42, 4, 2, 0.9), width=1, glow=False)
+    _stroke(img, _zig(46, 33, 58, 39, 3, 2, 1.4), width=1, glow=False)
     return img
 
 
