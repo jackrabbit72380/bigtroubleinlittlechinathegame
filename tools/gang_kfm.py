@@ -1,15 +1,18 @@
 """Gang fighters built from the real Kung Fu Man art instead of drawn parts.
 
-The base sprites in chars/kfm are 32-colour indexed art, 47x106 for the idle
-frame. Every gang member is that same art, recoloured by rewriting the palette
-roles (gi cloth, trousers, headband and belt, hair, skin) and then upscaled to
-the roster's 318px height. That keeps Kung Fu Man's real anatomy and shading -
-the thing the painted puppet bodies could not fake - while still giving each
-member his own cloth tone, headband colour and weapon.
+The base sprites in chars/kfm are indexed art, 47x106 for the idle frame. Every
+gang member is that same art, recoloured by rewriting the palette roles (gi
+cloth, trousers, headband and belt, hair, skin) and then upscaled to the
+roster's 318px height. That keeps Kung Fu Man's real anatomy and shading while
+still giving each member his own cloth tone, headband colour and weapon.
 
-Weapons are painted in after the recolour: the lead fist is found by its skin
-colour, and the staff or machete is drawn out of that grip, so the frames that
-ship are the frames that hold the weapon.
+Every member is the same height: identity comes from what he carries and what
+is on his face and head - a moustache, a beard, long hair, a bandolier of brass
+bullets, a staff, a machete, a hatchet or two gold pistols - not from scale.
+
+Props are painted onto the real frames: the hands are found by their skin
+colour and the face by the top of the silhouette, so the weapon stays in the
+fist and the moustache stays on the face in all 279 frames.
 
 Run:  python3 tools/gang_kfm.py --sheet
 """
@@ -19,11 +22,10 @@ from __future__ import annotations
 import colorsys
 import math
 import os
+import re
 import sys
 
-import re
-
-from PIL import Image, ImageDraw, ImageFilter, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageOps
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -32,7 +34,7 @@ import sff
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "chars", "kfm")
 SCALE = 3                      # 106px base -> 318px, the roster height
-PAD_X, PAD_Y = 78, 46          # room around the figure for staff and machete
+PAD_X, PAD_Y = 96, 60          # room around the figure for staff and machete
 
 # Every colour Kung Fu Man uses in palette 0, with the role it plays. The base
 # wears a white gi, pale baggy trousers, a blue headband/belt/shoes and black
@@ -85,26 +87,57 @@ WING = {
     "trim_d": (0x6d, 0x16, 0x1b), "trim": (0xa8, 0x22, 0x28), "trim_l": (0xcf, 0x38, 0x3c),
 }
 
-STAFF = dict(wood=(0x6b, 0x4a, 0x2a), wood_hi=(0x8f, 0x66, 0x3b),
-             cap=(0xc8, 0x95, 0x2f), edge=(0x2b, 0x1d, 0x10))
-BLADE = dict(steel=(0x74, 0x7e, 0x8f), steel_hi=(0xe6, 0xec, 0xf4),
-             spine=(0x24, 0x28, 0x30), grip=(0x8c, 0x1c, 0x22),
-             edge=(0x46, 0x4d, 0x5a))
+# Hair presets. "shaved" borrows the skin ramp, so the scalp is bare.
+HAIR = {
+    "black": ((0x14, 0x12, 0x10), (0x2c, 0x28, 0x24)),
+    "brown": ((0x2b, 0x1c, 0x12), (0x46, 0x30, 0x20)),
+    "grey": ((0x5d, 0x5b, 0x57), (0x84, 0x82, 0x7c)),
+    "shaved": (SKIN["skin_d"], SKIN["skin_2"]),
+}
 
-# id, gang, cloth tone, skin tone, headband tone, weapon, build scale, weapon length
+STAFF = dict(wood=(0x6b, 0x4a, 0x2a), wood_hi=(0x9c, 0x72, 0x44),
+             cap=(0xc8, 0x95, 0x2f), edge=(0x2b, 0x1d, 0x10))
+BLADE = dict(steel=(0x8d, 0x97, 0xa6), steel_mid=(0x6d, 0x77, 0x86),
+             steel_hi=(0xe8, 0xee, 0xf6), spine=(0x25, 0x29, 0x31),
+             grip=(0x3a, 0x24, 0x18), guard=(0xc8, 0x95, 0x2f),
+             edge=(0x4a, 0x51, 0x5d))
+GOLD = dict(dark=(0x6b, 0x48, 0x12), mid=(0xc9, 0x96, 0x2f), lit=(0xf4, 0xd8, 0x78))
+LEATHER = dict(dark=(0x33, 0x24, 0x1a), mid=(0x5d, 0x43, 0x2e), lit=(0x8a, 0x66, 0x46))
+BRASS = GOLD
+
+# One entry per fighter. Everything is the same height; no build scale.
+#   cloth / skin / band : tone multipliers on the gang palette
+#   hair   : preset name          face : "", "moustache", "beard", "full"
+#   gear   : "", "bandolier"      weapon: staff, machete, hatchet, pistols
 MEMBERS = [
-    ("changsing_bo", "chang", 1.02, 1.00, 1.00, "staff", 1.05, 214),
-    ("changsing_lin", "chang", 0.88, 1.06, 0.70, "staff", 0.96, 196),
-    ("changsing_shi", "chang", 1.12, 0.94, 1.00, "staff", 1.10, 208),
-    ("changsing_han", "chang", 0.80, 0.88, 0.55, "staff", 0.93, 230),
-    ("changsing_wei", "chang", 1.16, 1.02, 1.15, "staff", 0.98, 186),
-    ("changsing_tam", "chang", 0.94, 0.98, 0.40, "staff", 1.02, 222),
-    ("wingkong_gou", "wing", 1.00, 1.00, 1.00, "machete", 1.08, 124),
-    ("wingkong_ma", "wing", 0.86, 1.06, 1.12, "machete", 0.97, 112),
-    ("wingkong_zhao", "wing", 1.12, 0.92, 0.70, "machete", 1.12, 132),
-    ("wingkong_lu", "wing", 0.78, 1.00, 0.45, "machete", 0.94, 104),
-    ("wingkong_shen", "wing", 1.18, 0.96, 1.18, "machete", 1.01, 118),
-    ("wingkong_bai", "wing", 0.92, 1.04, 0.30, "machete", 1.05, 128),
+    dict(id="changsing_bo", gang="chang", cloth=1.02, skin=1.00, band=1.00,
+         hair="black", face="moustache", gear="", weapon="staff", length=216),
+    dict(id="changsing_lin", gang="chang", cloth=0.90, skin=1.06, band=0.72,
+         hair="brown", face="", gear="", weapon="staff", length=200),
+    dict(id="changsing_shi", gang="chang", cloth=1.12, skin=0.94, band=1.00,
+         hair="black", face="beard", gear="", weapon="staff", length=210),
+    dict(id="changsing_han", gang="chang", cloth=0.82, skin=0.88, band=0.55,
+         hair="grey", face="full", gear="", weapon="staff", length=228),
+    dict(id="changsing_wei", gang="chang", cloth=1.16, skin=1.02, band=1.20,
+         hair="black", face="", gear="", weapon="staff", length=192),
+    dict(id="changsing_tam", gang="chang", cloth=0.95, skin=0.98, band=0.40,
+         hair="black", face="moustache", gear="", weapon="staff", length=222),
+    dict(id="wingkong_gou", gang="wing", cloth=1.00, skin=1.00, band=1.00,
+         hair="black", face="moustache", gear="", weapon="machete", length=124),
+    dict(id="wingkong_ma", gang="wing", cloth=0.88, skin=1.06, band=1.15,
+         hair="black", face="", gear="", weapon="machete", length=116),
+    dict(id="wingkong_zhao", gang="wing", cloth=1.12, skin=0.92, band=0.70,
+         hair="black", face="beard", gear="", weapon="machete", length=132),
+    dict(id="wingkong_lu", gang="wing", cloth=0.80, skin=1.00, band=0.50,
+         hair="brown", face="", gear="", weapon="machete", length=110),
+    # Gold Gun Gerald: bandoliers of brass bullets and a gold pistol in each
+    # hand. No blade of any kind.
+    dict(id="wingkong_gerald", gang="wing", cloth=0.94, skin=0.96, band=1.10,
+         hair="brown", face="full", gear="bandolier", weapon="pistols", length=44),
+    # Wing Kong Hatchet Man: bald with long hair down the back, heavy
+    # moustache, hatchet in the lead fist.
+    dict(id="wingkong_hatchet", gang="wing", cloth=1.06, skin=1.04, band=0.85,
+         hair="brown", face="moustache", gear="", weapon="hatchet", length=104),
 ]
 
 
@@ -123,13 +156,20 @@ def _warm(c, k):
     return (int(r * 255), int(g * 255), int(b * 255))
 
 
-def colour_map(gang, cloth=1.0, skin=1.0, band=1.0):
+def member(cid):
+    return next(m for m in MEMBERS if m["id"] == cid)
+
+
+def colour_map(gang, cloth=1.0, skin=1.0, band=1.0, hair="black"):
     """old RGB -> new RGB for one member."""
     base = CHANG if gang == "chang" else WING
+    hair_d, hair_h = HAIR[hair]
     out = {}
     for rgb, role in ROLE.items():
         if role.startswith("skin"):
             out[rgb] = _warm(SKIN[role], skin)
+        elif role.startswith("hair"):
+            out[rgb] = hair_d if role == "hair" else hair_h
         elif role.startswith("trim"):
             out[rgb] = _shade(base[role], band)
         elif role.startswith("gi"):
@@ -169,149 +209,303 @@ def upscale(img, scale=SCALE):
     return big.filter(ImageFilter.UnsharpMask(radius=1.2, percent=45, threshold=3))
 
 
-def lead_fist(img, skin_rgb):
-    """Centre of the hand that is furthest forward, so a weapon has a grip."""
+# --------------------------------------------------------------- finding things
+def _opaque(img):
+    return img.split()[3].point(lambda a: 255 if a else 0)
+
+
+def hands(img, skin_rgb, limit=2):
+    """Centre of each fist, most forward first, so a weapon has a grip."""
     w, h = img.size
     px = img.load()
-    best = None
-    for y in range(h):
-        for x in range(w):
-            r, g, b, a = px[x, y]
-            if a and (r, g, b) in skin_rgb:
-                reach = x + y * 0.15        # forward and a little low wins
-                if best is None or reach > best[0]:
-                    best = (reach, x, y)
-    if not best:
+    pts = [(x, y) for y in range(h) for x in range(w)
+           if px[x, y][3] and (px[x, y][0], px[x, y][1], px[x, y][2]) in skin_rgb]
+    out = []
+    while pts and len(out) < limit:
+        best = max(pts, key=lambda p: p[0] + p[1] * 0.15)
+        near = [p for p in pts
+                if abs(p[0] - best[0]) < 17 and abs(p[1] - best[1]) < 17]
+        out.append((sum(p[0] for p in near) / len(near),
+                    sum(p[1] for p in near) / len(near)))
+        taken = set(near)
+        pts = [p for p in pts if p not in taken]
+    return out
+
+
+def head_anchor(img):
+    """Centre, height and half-width of the head, taken from the silhouette."""
+    mask = _opaque(img)
+    box = mask.getbbox()
+    if not box:
         return None
-    _, bx, by = best
-    xs, ys, n = 0, 0, 0
-    for y in range(max(0, by - 9), min(h, by + 10)):
-        for x in range(max(0, bx - 9), min(w, bx + 10)):
-            r, g, b, a = px[x, y]
-            if a and (r, g, b) in skin_rgb:
-                xs, ys, n = xs + x, ys + y, n + 1
-    return (xs / n, ys / n)
+    top = box[1]
+    height = box[3] - top
+    band = top + max(5, int(height * 0.17))
+    px = mask.load()
+    xs = [x for y in range(top, band) for x in range(box[0], box[2]) if px[x, y]]
+    if not xs:
+        return None
+    lo, hi = min(xs), max(xs)
+    hw = max(7.0, (hi - lo) / 2.0)
+    return ((lo + hi) / 2.0, top + height * 0.075, hw)
 
 
-def draw_staff(d, grip, length=210.0, angle=-0.14):
+def torso_band(img):
+    """Left, top, right, bottom of the chest, for the bandolier."""
+    mask = _opaque(img)
+    box = mask.getbbox()
+    if not box:
+        return None
+    top, height = box[1], box[3] - box[1]
+    y0, y1 = int(top + height * 0.31), int(top + height * 0.50)
+    px = mask.load()
+    lefts, rights = [], []
+    for y in range(y0, y1):
+        row = [x for x in range(box[0], box[2]) if px[x, y]]
+        if row:
+            lefts.append(row[0])
+            rights.append(row[-1])
+    if not lefts:
+        return None
+    return (min(lefts), y0, max(rights), y1)
+
+
+# --------------------------------------------------------------------- weapons
+def draw_staff(d, grip, length=216.0, angle=-0.14):
     """A six-foot staff held out in front, butt behind the fist."""
     gx, gy = grip
     dx, dy = math.cos(angle), math.sin(angle)
-    x0, y0 = gx - dx * length * 0.20, gy - dy * length * 0.20
-    x1, y1 = gx + dx * length * 0.80, gy + dy * length * 0.80
-    d.line([(x0, y0), (x1, y1)], fill=STAFF["edge"], width=9)
-    d.line([(x0, y0), (x1, y1)], fill=STAFF["wood"], width=7)
-    d.line([(x0 - dy * 1.5, y0 + dx * 1.5), (x1 - dy * 1.5, y1 + dx * 1.5)],
+    x0, y0 = gx - dx * length * 0.22, gy - dy * length * 0.22
+    x1, y1 = gx + dx * length * 0.78, gy + dy * length * 0.78
+    d.line([(x0, y0), (x1, y1)], fill=STAFF["edge"], width=11)
+    d.line([(x0, y0), (x1, y1)], fill=STAFF["wood"], width=8)
+    d.line([(x0 - dy * 2, y0 + dx * 2), (x1 - dy * 2, y1 + dx * 2)],
            fill=STAFF["wood_hi"], width=2)
     for t in (0.0, 1.0):
         cx, cy = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
-        d.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=STAFF["cap"])
+        d.ellipse([cx - 6, cy - 6, cx + 6, cy + 6], fill=STAFF["cap"],
+                  outline=STAFF["edge"])
 
 
-def draw_machete(d, grip, length=120.0, angle=-0.12):
-    """A heavy chopper held out front: wrapped grip, guard, broad blade."""
+def draw_machete(d, grip, length=120.0, angle=-0.10):
+    """A long chopper: straight spine, deep belly, chamfered tip, wrapped grip.
+
+    Coordinates run along the blade (t) and across it (u, positive = the side
+    the edge hangs on), so the shape stays the same at any hand angle.
+    """
     gx, gy = grip
     dx, dy = math.cos(angle), math.sin(angle)
     nx, ny = -dy, dx
 
-    # wrapped grip running through the fist, pommel behind it
-    d.line([(gx - dx * 22, gy - dy * 22), (gx + dx * 8, gy + dy * 8)],
-           fill=BLADE["edge"], width=14)
-    d.line([(gx - dx * 20, gy - dy * 20), (gx + dx * 7, gy + dy * 7)],
-           fill=BLADE["grip"], width=9)
+    def P(t, u):
+        return (gx + dx * t + nx * u, gy + dy * t + ny * u)
 
-    # small guard between fist and blade
-    d.line([(gx + dx * 8 + nx * 11, gy + dy * 8 + ny * 11),
-            (gx + dx * 8 - nx * 11, gy + dy * 8 - ny * 11)],
-           fill=BLADE["spine"], width=5)
+    # grip through the fist, brass guard where the blade starts
+    d.line([P(-26, 3), P(6, 3)], fill=BLADE["spine"], width=15)
+    d.line([P(-24, 3), P(5, 3)], fill=BLADE["grip"], width=10)
+    for t in (-18, -12, -6):
+        d.line([P(t, -2), P(t + 1, 8)], fill=LEATHER["mid"], width=2)
+    d.line([P(6, -9), P(6, 15)], fill=BLADE["guard"], width=5)
+    d.ellipse([*P(-27, -1), *P(-21, 5)], fill=BLADE["guard"])
 
-    # broad chopper: spine along the top, deep belly hanging below it, and the
-    # hilt end buried in the fist so there is never a gap to read as floating
-    bx, by = gx + dx * 2, gy + dy * 2
-    tipx, tipy = gx + dx * length, gy + dy * length
-    quad = [(bx - nx * 6, by - ny * 6), (tipx - nx * 4, tipy - ny * 4),
-            (tipx + nx * 30, tipy + ny * 30), (bx + nx * 20, by + ny * 20)]
-    d.polygon(quad, fill=BLADE["edge"])
-    inner = [(bx - nx * 4, by - ny * 4), (tipx - nx * 2, tipy - ny * 2),
-             (tipx + nx * 27, tipy + ny * 27), (bx + nx * 17, by + ny * 17)]
+    # Blade: straight spine, deep belly, and a tip cut away on the edge side
+    # the way a chopper's is - a square end reads as a pipe, not a blade.
+    outer = [P(6, -6), P(length * 0.72, -6), P(length * 0.95, 2),
+             P(length, 14), P(length * 0.78, 21), P(6, 19)]
+    d.polygon(outer, fill=BLADE["edge"])
+    inner = [P(9, -4), P(length * 0.71, -4), P(length * 0.93, 3),
+             P(length - 4, 13), P(length * 0.77, 18), P(9, 16)]
     d.polygon(inner, fill=BLADE["steel"])
-    d.line([(bx - nx * 4, by - ny * 4), (tipx - nx * 1, tipy - ny * 1)],
-           fill=BLADE["spine"], width=4)
-    d.line([(bx + nx * 18, by + ny * 18), (tipx + nx * 28, tipy + ny * 28)],
-           fill=BLADE["steel_hi"], width=4)
+    d.polygon([P(10, 10), P(length * 0.80, 11), P(length * 0.77, 18), P(10, 16)],
+              fill=BLADE["steel_mid"])          # shadow side of the belly
+    d.line([P(9, -4), P(length * 0.71, -4)], fill=BLADE["spine"], width=4)
+    d.line([P(10, 16), P(length * 0.77, 18)], fill=BLADE["steel_hi"], width=3)
 
 
-def paint_weapon(img, gang, skin_rgb, kind, length=210.0):
-    """Draw the gang's weapon out of the lead fist."""
-    grip = lead_fist(img, skin_rgb)
-    if not grip:
+def draw_hatchet(d, grip, length=104.0, angle=-1.02):
+    """Short haft with a wedge head, held up the way Hatchet Man holds it."""
+    gx, gy = grip
+    dx, dy = math.cos(angle), math.sin(angle)
+    nx, ny = -dy, dx
+
+    def P(t, u):
+        return (gx + dx * t + nx * u, gy + dy * t + ny * u)
+
+    d.line([P(-length * 0.34, 0), P(length * 0.62, 0)], fill=BLADE["spine"], width=12)
+    d.line([P(-length * 0.32, 0), P(length * 0.60, 0)], fill=STAFF["wood"], width=7)
+    d.line([P(-length * 0.30, -2), P(length * 0.58, -2)], fill=STAFF["wood_hi"], width=2)
+    for t in (-length * 0.06, 0.02 * length, length * 0.10):
+        d.line([P(t, -4), P(t, 4)], fill=LEATHER["mid"], width=2)
+
+    # Axe head: narrow where it meets the haft, flaring out to a curved bit.
+    head = [P(length * 0.56, -13), P(length * 0.62, 11), P(length * 0.82, 22),
+            P(length * 1.00, 20), P(length * 1.04, 2), P(length * 0.92, -13),
+            P(length * 0.74, -16)]
+    d.polygon(head, fill=BLADE["edge"])
+    inner = [P(length * 0.60, -10), P(length * 0.65, 9), P(length * 0.83, 18),
+             P(length * 0.97, 17), P(length * 1.00, 2), P(length * 0.89, -10),
+             P(length * 0.74, -13)]
+    d.polygon(inner, fill=BLADE["steel"])
+    d.polygon([P(length * 0.66, 2), P(length * 0.86, 12), P(length * 0.96, 15),
+               P(length * 0.97, 6)], fill=BLADE["steel_mid"])
+    # bright bit along the cutting curve, dark poll behind it
+    d.line([P(length * 0.80, 20), P(length * 0.98, 18), P(length * 1.02, 3)],
+           fill=BLADE["steel_hi"], width=3)
+    d.line([P(length * 0.58, -12), P(length * 0.72, -15)], fill=BLADE["spine"], width=4)
+
+
+def draw_pistol(d, grip, angle=-0.04, big=1.0):
+    """A gold automatic, barrel forward, seen side on."""
+    gx, gy = grip
+    dx, dy = math.cos(angle), math.sin(angle)
+    nx, ny = -dy, dx
+
+    def P(t, u):
+        return (gx + dx * t + nx * u, gy + dy * t + ny * u)
+
+    s = big
+    # grip running down-back out of the fist
+    d.line([P(-8 * s, 4 * s), P(6 * s, 16 * s)], fill=BLADE["spine"], width=int(11 * s))
+    d.line([P(-7 * s, 5 * s), P(5 * s, 15 * s)], fill=LEATHER["dark"],
+           width=int(7 * s))
+    # slide and frame
+    d.polygon([P(-6 * s, -7 * s), P(30 * s, -7 * s), P(32 * s, 1 * s),
+               P(6 * s, 3 * s), P(-6 * s, 2 * s)], fill=GOLD["mid"])
+    d.line([P(-5 * s, -6 * s), P(29 * s, -6 * s)], fill=GOLD["lit"], width=int(3 * s))
+    d.line([P(6 * s, 2 * s), P(32 * s, 0)], fill=GOLD["dark"], width=int(2 * s))
+    # muzzle, hammer, trigger guard
+    d.line([P(30 * s, -7 * s), P(33 * s, -6 * s)], fill=GOLD["dark"], width=int(4 * s))
+    d.line([P(-6 * s, -6 * s), P(-9 * s, -2 * s)], fill=GOLD["dark"], width=int(3 * s))
+    d.arc([*P(6 * s, 3 * s), *P(18 * s, 14 * s)], 300, 180, fill=GOLD["dark"],
+          width=max(2, int(2 * s)))
+
+
+def paint_weapons(img, m):
+    """Draw what the member carries out of his fist (or fists)."""
+    skin_rgb = {_warm(SKIN[r], m["skin"]) for r in SKIN}
+    fists = hands(img, skin_rgb, limit=2 if m["weapon"] == "pistols" else 1)
+    if not fists:
         return img
     layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
+    kind, length = m["weapon"], m["length"]
     if kind == "staff":
-        draw_staff(d, grip, length)
-    else:
-        draw_machete(d, grip, length)
+        draw_staff(d, fists[0], length)
+    elif kind == "machete":
+        draw_machete(d, fists[0], length)
+    elif kind == "hatchet":
+        draw_hatchet(d, fists[0], length)
+    elif kind == "pistols":
+        for i, grip in enumerate(fists):
+            draw_pistol(d, (grip[0], grip[1] - 2), -0.04 if i == 0 else 0.12)
     return Image.alpha_composite(img, layer)
 
 
-def member_sprite(cid, group=0, number=0, weapon=True):
-    gang, cloth, skin, band, kind, build_scale, length = next(
-        m for m in MEMBERS if m[0] == cid)[1:]
-    raw, sprites, pal = sff.read_sff(os.path.join(BASE, "kfm.sff"))
-    sp = next(s for s in sprites if s["group"] == group and s["number"] == number)
-    img = sff.decode_sprite(raw, sp, pal, 0)
-    img = upscale(recolour(img, colour_map(gang, cloth, skin, band)))
-    img = ImageOps.expand(img, (PAD_X, PAD_Y, PAD_X, PAD_Y), fill=(0, 0, 0, 0))
-    if weapon:
-        skins = {_warm(SKIN[r], skin) for r in SKIN}
-        img = paint_weapon(img, gang, skins, kind, length)
-    if build_scale != 1.0:
-        img = img.resize((max(1, round(img.width * build_scale)),
-                          max(1, round(img.height * build_scale))), Image.LANCZOS)
+# ------------------------------------------------------------------- identity
+def paint_identity(img, m):
+    """Long hair, moustache, beard and the bandolier of brass bullets."""
+    head = head_anchor(img)
+    hair_d, hair_h = HAIR[m["hair"]]
+    if head:
+        cx, cy, hw = head
+        layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        d = ImageDraw.Draw(layer)
+        if m["id"] == "wingkong_hatchet":
+            # long hair falling down the back, behind the shoulders
+            d.polygon([(cx + hw * 0.50, cy - hw * 0.30),
+                       (cx - hw * 0.25, cy - hw * 0.95),
+                       (cx - hw * 0.95, cy - hw * 0.15),
+                       (cx - hw * 0.88, cy + hw * 1.20),
+                       (cx - hw * 0.55, cy + hw * 1.00),
+                       (cx - hw * 0.38, cy + hw * 0.25),
+                       (cx + hw * 0.05, cy + hw * 0.10)],
+                      fill=hair_d + (255,))
+            d.line([(cx - hw * 0.55, cy - hw * 0.45),
+                    (cx - hw * 0.62, cy + hw * 0.95)], fill=hair_h + (200,), width=3)
+        if m["face"] in ("moustache", "full"):
+            d.polygon([(cx + hw * 0.10, cy + hw * 0.16),
+                       (cx + hw * 0.66, cy + hw * 0.26),
+                       (cx + hw * 0.52, cy + hw * 0.70),
+                       (cx + hw * 0.18, cy + hw * 0.42)],
+                      fill=hair_d + (255,))
+        if m["face"] in ("beard", "full"):
+            d.polygon([(cx - hw * 0.16, cy + hw * 0.52),
+                       (cx + hw * 0.60, cy + hw * 0.48),
+                       (cx + hw * 0.40, cy + hw * 1.12),
+                       (cx + hw * 0.02, cy + hw * 1.02)],
+                      fill=hair_d + (255,))
+        img = Image.alpha_composite(img, layer)
+
+    if m["gear"] == "bandolier":
+        band = torso_band(img)
+        if band:
+            x0, y0, x1, y1 = band
+            layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+            d = ImageDraw.Draw(layer)
+            for flip in (False, True):
+                ax = x1 - 8 if flip else x0 + 8
+                bx = x0 + 8 if flip else x1 - 8
+                d.line([(ax, y0), (bx, y1)], fill=LEATHER["dark"] + (255,), width=10)
+                d.line([(ax, y0), (bx, y1)], fill=LEATHER["mid"] + (255,), width=7)
+                n = max(5, int(abs(bx - ax) / 11))
+                for i in range(n):
+                    t = (i + 0.5) / n
+                    cx, cy = ax + (bx - ax) * t, y0 + (y1 - y0) * t
+                    d.rectangle([cx - 3, cy - 5, cx + 3, cy + 5],
+                                fill=BRASS["mid"], outline=BRASS["dark"])
+                    d.rectangle([cx - 2, cy - 4, cx + 2, cy - 1],
+                                fill=BRASS["lit"])
+            # buckle at the belt line
+            d.rectangle([(x0 + x1) / 2 - 7, y1 - 4, (x0 + x1) / 2 + 7, y1 + 8],
+                        fill=BRASS["mid"], outline=BRASS["dark"])
+            # keep it on the body: clip to the silhouette
+            layer.putalpha(ImageChops.multiply(layer.getchannel("A"), _opaque(img)))
+            img = Image.alpha_composite(img, layer)
     return img
 
 
-def sheet(path="artifacts/kfm_gang_proto.png"):
-    from PIL import ImageDraw as Draw
-    from PIL import ImageFont
-
-    def font(size):
-        try:
-            return ImageFont.load_default(size=size)
-        except Exception:
-            return ImageFont.load_default()
-
+def member_sprite(cid, group=0, number=0, weapon=True):
+    m = member(cid)
     raw, sprites, pal = sff.read_sff(os.path.join(BASE, "kfm.sff"))
-    sp = next(s for s in sprites if s["group"] == 0 and s["number"] == 0)
-    original_big = upscale(sff.decode_sprite(raw, sp, pal, 0))
+    sp = next(s for s in sprites if s["group"] == group and s["number"] == number)
+    img = sff.decode_sprite(raw, sp, pal, 0)
+    img = upscale(recolour(img, colour_map(m["gang"], m["cloth"], m["skin"],
+                                           m["band"], m["hair"])))
+    img = ImageOps.expand(img, (PAD_X, PAD_Y, PAD_X, PAD_Y), fill=(0, 0, 0, 0))
+    img = paint_identity(img, m)
+    if weapon:
+        img = paint_weapons(img, m)
+    return img
 
-    cw, ch, pad = 300, 430, 30
-    cols = 7
-    img_sheet = Image.new("RGB", (cw * cols, ch * 3), (24, 26, 33))
-    d = Draw.Draw(img_sheet)
-    d.text((10, 12), "", fill=(226, 228, 238))
 
-    cells = [("Kung Fu Man (base, 3x)", original_big, 0, 0)]
-    for i, m in enumerate(MEMBERS[:6]):
-        cells.append((m[0].replace("_", " ").title(), member_sprite(m[0]), i + 1, 0))
-    for i, m in enumerate(MEMBERS[6:]):
-        cells.append((m[0].replace("_", " ").title(), member_sprite(m[0]), i, 1))
+# ----------------------------------------------------------------------- build
+def prop_colours():
+    out = []
+    for group in (STAFF, BLADE, GOLD, LEATHER):
+        out.extend(group.values())
+    return out
 
-    # action row: the same member across the animation set, weapon following
-    picks = [sprites[40], sprites[120], sprites[200]]
-    for i, p in enumerate(picks):
-        g, n = p["group"], p["number"]
-        cells.append((f"changsing_bo {g},{n}", member_sprite("changsing_bo", g, n), i, 2))
 
-    for name, img, col, row in cells:
-        x = col * cw + cw // 2 - img.width // 2
-        y = row * ch + ch - pad - img.height
-        img_sheet.paste(img, (x, y), img)
-        d.text((col * cw + 10, row * ch + 10), name, font=font(15), fill=(226, 228, 238))
-        d.line([(col * cw, row * ch), (col * cw, row * ch + ch)], fill=(44, 48, 58))
-    img_sheet.save(path)
-    print("wrote", path, img_sheet.size)
+def member_palette(m):
+    """One 256-colour palette for a member: index 0 transparent, then his art."""
+    colours = []
+    for rgb in list(colour_map(m["gang"], m["cloth"], m["skin"], m["band"],
+                               m["hair"]).values()) + prop_colours():
+        rgb = tuple(rgb[:3])
+        if rgb not in colours:
+            colours.append(rgb)
+    flat = [255, 0, 255]                    # index 0: the SFF's transparent entry
+    for rgb in colours[:255]:
+        flat.extend(rgb)
+    flat += [0] * (768 - len(flat))
+
+    pal_bytes = bytearray()
+    for i in range(256):
+        r, g, b = flat[i * 3:i * 3 + 3]
+        pal_bytes += bytes((r, g, b, 0 if i == 0 else 255))
+    pal_img = Image.new("P", (1, 1))
+    pal_img.putpalette(flat)
+    return bytes(pal_bytes), pal_img
 
 
 def scale_air(text, k):
@@ -336,38 +530,12 @@ def scale_air(text, k):
     return "\n".join(out) + "\n"
 
 
-def member_palette(gang, cloth=1.0, skin=1.0, band=1.0):
-    """One 256-colour palette for a member: index 0 transparent, then his art."""
-    colours = []
-    for rgb in list(colour_map(gang, cloth, skin, band).values()) + [
-            STAFF["wood"], STAFF["wood_hi"], STAFF["cap"], STAFF["edge"],
-            BLADE["steel"], BLADE["steel_hi"], BLADE["spine"], BLADE["grip"],
-            BLADE["edge"]]:
-        rgb = tuple(rgb[:3])
-        if rgb not in colours:
-            colours.append(rgb)
-    flat = [255, 0, 255]                    # index 0: the SFF's transparent entry
-    for rgb in colours[:255]:
-        flat.extend(rgb)
-    flat += [0] * (768 - len(flat))
-
-    pal_bytes = bytearray()
-    for i in range(256):
-        r, g, b = flat[i * 3:i * 3 + 3]
-        pal_bytes += bytes((r, g, b, 0 if i == 0 else 255))
-    pal_img = Image.new("P", (1, 1))
-    pal_img.putpalette(flat)
-    return bytes(pal_bytes), pal_img
-
-
 def build(cid):
-    """Bake one gang member: recoloured, upscaled, armed Kung Fu Man art."""
-    gang, cloth, skin, band, kind, build_scale, length = next(
-        m for m in MEMBERS if m[0] == cid)[1:]
+    """Bake one gang member: recoloured, upscaled, dressed Kung Fu Man art."""
+    m = member(cid)
     raw, sprites, pal = sff.read_sff(os.path.join(BASE, "kfm.sff"))
-    cmap = colour_map(gang, cloth, skin, band)
-    skins = {_warm(SKIN[r], skin) for r in SKIN}
-    pal_bytes, pal_img = member_palette(gang, cloth, skin, band)
+    cmap = colour_map(m["gang"], m["cloth"], m["skin"], m["band"], m["hair"])
+    pal_bytes, pal_img = member_palette(m)
 
     out = []
     for sp in sprites:
@@ -376,10 +544,8 @@ def build(cid):
         img = sff.decode_sprite(raw, sp, pal, 0)
         img = upscale(recolour(img, cmap))
         img = ImageOps.expand(img, (PAD_X, PAD_Y, PAD_X, PAD_Y), fill=(0, 0, 0, 0))
-        img = paint_weapon(img, gang, skins, kind, length)
-        if build_scale != 1.0:
-            img = img.resize((max(1, round(img.width * build_scale)),
-                              max(1, round(img.height * build_scale))), Image.LANCZOS)
+        img = paint_identity(img, m)
+        img = paint_weapons(img, m)
 
         # 8-bit on the member's own palette: same art, a tenth of the bytes.
         indexed = img.convert("RGB").quantize(palette=pal_img,
@@ -392,8 +558,7 @@ def build(cid):
         ax, ay = sp["axis"]
         out.append({"group": sp["group"], "number": sp["number"],
                     "image": flat_p,
-                    "axis": (round(ax * SCALE * build_scale) + PAD_X,
-                             round(ay * SCALE * build_scale) + PAD_Y)})
+                    "axis": (round(ax * SCALE) + PAD_X, round(ay * SCALE) + PAD_Y)})
 
     d = os.path.join(ROOT, "chars", cid + "_rig")
     os.makedirs(d, exist_ok=True)
@@ -413,12 +578,40 @@ def build(cid):
     print(f"{cid}: {len(out)} sprites -> chars/{cid}_rig")
 
 
+def sheet(path="artifacts/kfm_gang_proto.png"):
+    from PIL import ImageFont
+
+    def font(size):
+        try:
+            return ImageFont.load_default(size=size)
+        except Exception:
+            return ImageFont.load_default()
+
+    cw, ch = 300, 430
+    rows = 2
+    img_sheet = Image.new("RGB", (cw * 6, ch * rows), (24, 26, 33))
+    d = ImageDraw.Draw(img_sheet)
+    for i, m in enumerate(MEMBERS):
+        img = member_sprite(m["id"])
+        col, row = i % 6, i // 6
+        x = col * cw + cw // 2 - img.width // 2
+        y = row * ch + ch - 20 - img.height
+        img_sheet.paste(img, (x, y), img)
+        d.text((col * cw + 10, row * ch + 10), m["id"].split("_")[1].title(),
+               font=font(15), fill=(226, 228, 238))
+        d.line([(col * cw, row * ch), (col * cw, row * ch + ch)], fill=(44, 48, 58))
+    img_sheet.save(path)
+    print("wrote", path, img_sheet.size)
+
+
 if __name__ == "__main__":
     if "--sheet" in sys.argv:
         sheet()
     elif "--build" in sys.argv:
-        for cid in (sys.argv[sys.argv.index("--build") + 1].split(",")
-                    if len(sys.argv) > sys.argv.index("--build") + 1 else [m[0] for m in MEMBERS]):
+        i = sys.argv.index("--build")
+        ids = (sys.argv[i + 1].split(",") if len(sys.argv) > i + 1
+               else [m["id"] for m in MEMBERS])
+        for cid in ids:
             build(cid)
     else:
         print("usage: python3 tools/gang_kfm.py [--sheet | --build [id,id,...]]")

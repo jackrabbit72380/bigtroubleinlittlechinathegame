@@ -60,19 +60,19 @@ GANG = {
 MEMBERS = [
     ("changsing", [
         ("bo", "Bo the Doorman", "flat", "staff", 1.00),
-        ("lin", "Lin the Runner", "ponytail", "staff", 0.97),
-        ("shi", "Shi the Brawler", "spike", "staff", 1.06),
-        ("han", "Han the Elder", "topknot", "staff", 1.01),
-        ("wei", "Wei the Quiet", "long", "staff", 0.95),
-        ("tam", "Tam Longarm", "bandana", "staff", 1.08),
+        ("lin", "Lin the Runner", "ponytail", "staff", 1.00),
+        ("shi", "Shi the Brawler", "spike", "staff", 1.00),
+        ("han", "Han the Elder", "topknot", "staff", 1.00),
+        ("wei", "Wei the Quiet", "long", "staff", 1.00),
+        ("tam", "Tam Longarm", "bandana", "staff", 1.00),
     ]),
     ("wingkong", [
-        ("gou", "Gou the Enforcer", "shaved", "machete", 1.05),
-        ("ma", "Ma Redhand", "bandana", "machete", 1.02),
-        ("zhao", "Zhao the Butcher", "bald", "machete", 1.09),
-        ("lu", "Lu the Wire", "topknot", "machete", 0.96),
-        ("shen", "Shen the Knife", "ponytail", "machete", 0.99),
-        ("bai", "Bai Blackcoat", "long", "machete", 1.03),
+        ("gou", "Gou the Enforcer", "shaved", "machete", 1.00),
+        ("ma", "Ma Redhand", "bandana", "machete", 1.00),
+        ("zhao", "Zhao the Butcher", "bald", "machete", 1.00),
+        ("lu", "Lu the Wire", "topknot", "machete", 1.00),
+        ("gerald", "Gold Gun Gerald", "shaved", "pistols", 1.00),
+        ("hatchet", "Hatchet Man", "long", "hatchet", 1.00),
     ]),
 ]
 

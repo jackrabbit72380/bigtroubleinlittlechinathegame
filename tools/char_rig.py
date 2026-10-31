@@ -88,9 +88,11 @@ BASE_ANGLE = {"foot_f": 90.0, "foot_n": 90.0, "prop": 90.0}
 # drawn). Everything else is absolute.
 RELATIVE = ("arm_n", "arm_f")
 
-# Parts that get a joint socket disc. The torso and head must never be in
-# here: they are not limbs, and a disc over the head erases the face.
-SOCKETED = ("uarm_", "farm_", "hand_", "arm_", "thigh_", "shin_", "foot_")
+# Parts that get a joint socket disc. A one-piece arm is deliberately not
+# here: its shoulder is already covered by the torso's own shoulder cap and
+# the disc sat on top of that as a grey ball, which made the fighters read as
+# mannequins with ball joints.
+SOCKETED = ("uarm_", "farm_", "hand_", "thigh_", "shin_", "foot_")
 
 LIMB_LEN = {
     "uarm_n": M["uarm"], "uarm_f": M["uarm"],
@@ -188,8 +190,12 @@ class Rig:
         return self.metrics
 
 
-def load_rig(char_id):
-    folder = os.path.join(PARTS_DIR, char_id, "parts")
+def load_rig(char_id, view=None):
+    # view="side" loads the profile part set, so a fight pose faces the other
+    # fighter. Portraits and the win pose keep the front set: those are the two
+    # places the game wants the fighter looking at the camera.
+    sub = "parts_side" if view == "side" else "parts"
+    folder = os.path.join(PARTS_DIR, char_id, sub)
     if not os.path.isdir(folder):
         raise SystemExit(f"no parts at {os.path.relpath(folder, ROOT)}")
     cfg = {}
@@ -200,7 +206,8 @@ def load_rig(char_id):
 
     parts = {}
     default_pivots = cfg.get("pivots", {})
-    for name in ORDER:
+    extras = ("holster_gun", "holster_knife", "prop_gun")
+    for name in list(ORDER) + list(extras):
         path = os.path.join(folder, f"{name}.png")
         if not os.path.isfile(path):
             continue
@@ -238,16 +245,26 @@ def _place(dst, part, angle_deg, joint):
     img = part["image"]
     px, py = part["pivot"]
     base = part.get("base", 0.0)
-    # Rendered poses read correctly with this sign (verified against the
-    # stand-in sheet); flipping it swings every limb the wrong way.
-    rot = -(angle_deg - base)
+    # Positive angles swing the limb toward the enemy (+x in the skeleton's
+    # seg()), and a downward-hanging part rotated toward +x turns CLOCKWISE on
+    # screen, which is rotate() with a negative angle. This had the sign the
+    # other way, so every limb left its joint in the opposite direction: a
+    # 26-degree thigh put the art's knee at x=287 while the skeleton's knee was
+    # at 362, and the boot hung 70px away from the leg it belonged to.
+    rot = angle_deg - base
     if abs(rot) > 0.01:
         out = img.rotate(rot, resample=Image.BICUBIC, expand=True)
         cx, cy = img.width * 0.5, img.height * 0.5
         dx, dy = px - cx, py - cy
         th = math.radians(rot)
-        rx = dx * math.cos(th) - dy * math.sin(th)
-        ry = dx * math.sin(th) + dy * math.cos(th)
+        # PIL rotates the CONTENT counter-clockwise, so a point of the image
+        # moves by the inverse of the rotation matrix written the usual way.
+        # With the forward matrix here the pivot orbited the image centre: a
+        # 10-degree joint slid the part 25px off its socket and a 30-degree one
+        # threw it 72px away, which is why every posed limb looked detached
+        # while the rest pose (0 degrees, no rotation) was perfect.
+        rx = dx * math.cos(th) + dy * math.sin(th)
+        ry = -dx * math.sin(th) + dy * math.cos(th)
         opx, opy = out.width * 0.5 + rx, out.height * 0.5 + ry
         geo = (out, opx, opy)
     else:
@@ -272,7 +289,7 @@ def _avg_rgb(img):
     return tuple(v // n for v in tot)
 
 
-def _socket(dst, part, joint, scale=0.15):
+def _socket(dst, part, joint, scale=0.11):
     """A colour-matched disc at a limb's own socket.
 
     Rotated parts leave a visible gap or a hard step at the joint; a disc
@@ -282,7 +299,7 @@ def _socket(dst, part, joint, scale=0.15):
     img = part["image"]
     # Thickness, not length: a bent arm's part is as wide as it is long, and
     # sizing the disc from that painted a dinner-plate over the chest.
-    r = max(5, min(16, int(min(img.width, img.height) * scale)))
+    r = max(4, min(12, int(min(img.width, img.height) * scale)))
     col = _avg_rgb(img)
     lit = tuple(min(255, c + 30) for c in col)
     dark = tuple(int(c * 0.70) for c in col)
@@ -415,14 +432,37 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 continue
         order.append(nm)
 
+    # Holstered weapons ride the body: the pistol sits in the waistband behind
+    # the torso, the knife down the outside of the boot. Both are drawn in every
+    # pose, because he only holds a weapon during the move that uses it.
+    if "holster_gun" in rig.parts and "pelvis" in order:
+        order.insert(order.index("pelvis"), "holster_gun")
+    if "holster_knife" in rig.parts and "shin_n" in order:
+        order.insert(order.index("shin_n") + 1, "holster_knife")
+
     for name in order:
         if name == "prop":
             which = pose.get("prop_part", "prop")
+            # A rig cut for the side view carries its own pistol art; the front
+            # rig only has the generic one, so fall back instead of dropping it.
+            if which not in rig.parts and which == "prop_gun" and "prop" in rig.parts:
+                which = "prop"
             if which in rig.parts and pose.get("prop"):
                 part = dict(rig.parts[which])
                 part["name"] = "prop"
                 part["base"] = BASE_ANGLE.get("prop", 0.0) + rig.art.get(which, 0.0)
                 _place(out, part, pose.get("prop_angle", 0.0), wri_n)
+            continue
+        # A holstered weapon is pinned to the body, not to a swinging joint: the
+        # gun leans with the waist, the knife only tips slightly with the shin.
+        if name in ("holster_gun", "holster_knife"):
+            part = dict(rig.parts[name])
+            part["name"] = name
+            part["base"] = 0.0
+            if name == "holster_gun":
+                _place(out, part, rig.art.get(name, 0.0) + torso_dir * 0.5, hip)
+            else:
+                _place(out, part, rig.art.get(name, 0.0) + leg_n[1] * 0.3, kn_n)
             continue
         # A cloak hangs from the shoulders, behind everything else, and only
         # partly follows the torso: it drapes, so it rides 35% of the lean.
@@ -457,17 +497,20 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
 POSES = {
     # Arms are single bent pieces: only the shoulder value does anything, and
     # it is a swing away from the drawn guard. Legs are absolute.
+    # Idle arms hang: the parts are cut in a raised guard, so an idle pose has
+    # to swing them back down by ~30 degrees. Held up at the drawn guard it read
+    # as a man holding an invisible tray, which is not a fighting stance.
     "stance": dict(lean=4, head=-2,
-                   arm_n=(6, 0, 0), arm_f=(-6, 0, 0),
+                   arm_n=(-30, 0, 0), arm_f=(-26, 0, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "breath": dict(lean=3, head=-3, lift=1,
-                   arm_n=(9, 0, 0), arm_f=(-5, 0, 0),
+                   arm_n=(-27, 0, 0), arm_f=(-29, 0, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "walk_a": dict(lean=7, head=-4, shift=1,
-                   arm_n=(13, 0, 0), arm_f=(-14, 0, 0),
+                   arm_n=(-22, 0, 0), arm_f=(-34, 0, 0),
                    leg_n=(26, -18, 92), leg_f=(-22, 4, 86)),
     "walk_b": dict(lean=6, head=-3, shift=-1,
-                   arm_n=(2, 0, 0), arm_f=(-4, 0, 0),
+                   arm_n=(-34, 0, 0), arm_f=(-22, 0, 0),
                    leg_n=(-16, 2, 84), leg_f=(24, -20, 96)),
     "crouch": dict(lean=16, head=8,
                    arm_n=(18, 0, 0), arm_f=(8, 0, 0),
