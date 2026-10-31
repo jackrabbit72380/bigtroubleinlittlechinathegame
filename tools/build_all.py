@@ -44,11 +44,13 @@ def main():
     # Lightning has no turnaround to cut: his parts are painted in code, so the
     # only inputs are the tools themselves and a clean checkout can build him.
     scripts += ["lightning_art.py", ("bake_char.py", "lightning")]
-    # The two gangs. gangs.py paints the twelve part sets (tan Chang Sing in
-    # black underclothes, black-and-red Wing Kong, staff or machete in the near
-    # fist) and each member is then baked like any other rig fighter.
+    # The two gangs are built from Kung Fu Man himself rather than from painted
+    # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
+    # and red Wing Kong), upscales the art to roster height, paints the staff or
+    # the machete into the lead fist of every frame and writes the matching AIR.
+    # gangs.py still supplies the names, stats and roster entries.
     scripts.append("gangs.py")
-    scripts += [("bake_char.py", cid) for cid in gangs.ids()]
+    scripts.append(("gang_kfm.py", "--build"))
     # Select-screen portraits: the pre-match screens read each fighter's 9000,0
     # and 9000,1 out of its own SFF, and a character baked from the rig has
     # neither, so they are rendered from its own art after the bake.
