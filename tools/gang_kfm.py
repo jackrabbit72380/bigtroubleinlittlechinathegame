@@ -87,9 +87,9 @@ WING = {
 
 STAFF = dict(wood=(0x6b, 0x4a, 0x2a), wood_hi=(0x8f, 0x66, 0x3b),
              cap=(0xc8, 0x95, 0x2f), edge=(0x2b, 0x1d, 0x10))
-BLADE = dict(steel=(0x9a, 0xa3, 0xb0), steel_hi=(0xdc, 0xe2, 0xea),
-             spine=(0x3a, 0x40, 0x4c), grip=(0x8c, 0x1c, 0x22),
-             edge=(0x51, 0x59, 0x66))
+BLADE = dict(steel=(0x74, 0x7e, 0x8f), steel_hi=(0xe6, 0xec, 0xf4),
+             spine=(0x24, 0x28, 0x30), grip=(0x8c, 0x1c, 0x22),
+             edge=(0x46, 0x4d, 0x5a))
 
 # id, gang, cloth tone, skin tone, headband tone, weapon, build scale, weapon length
 MEMBERS = [
@@ -229,16 +229,16 @@ def draw_machete(d, grip, length=120.0, angle=-0.12):
     # hilt end buried in the fist so there is never a gap to read as floating
     bx, by = gx + dx * 2, gy + dy * 2
     tipx, tipy = gx + dx * length, gy + dy * length
-    quad = [(bx - nx * 6, by - ny * 6), (tipx - nx * 3, tipy - ny * 3),
-            (tipx + nx * 24, tipy + ny * 24), (bx + nx * 17, by + ny * 17)]
+    quad = [(bx - nx * 6, by - ny * 6), (tipx - nx * 4, tipy - ny * 4),
+            (tipx + nx * 30, tipy + ny * 30), (bx + nx * 20, by + ny * 20)]
     d.polygon(quad, fill=BLADE["edge"])
-    inner = [(bx - nx * 4, by - ny * 4), (tipx - nx * 1, tipy - ny * 1),
-             (tipx + nx * 21, tipy + ny * 21), (bx + nx * 14, by + ny * 14)]
+    inner = [(bx - nx * 4, by - ny * 4), (tipx - nx * 2, tipy - ny * 2),
+             (tipx + nx * 27, tipy + ny * 27), (bx + nx * 17, by + ny * 17)]
     d.polygon(inner, fill=BLADE["steel"])
     d.line([(bx - nx * 4, by - ny * 4), (tipx - nx * 1, tipy - ny * 1)],
            fill=BLADE["spine"], width=4)
-    d.line([(bx + nx * 15, by + ny * 15), (tipx + nx * 22, tipy + ny * 22)],
-           fill=BLADE["steel_hi"], width=3)
+    d.line([(bx + nx * 18, by + ny * 18), (tipx + nx * 28, tipy + ny * 28)],
+           fill=BLADE["steel_hi"], width=4)
 
 
 def paint_weapon(img, gang, skin_rgb, kind, length=210.0):
