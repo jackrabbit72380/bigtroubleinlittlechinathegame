@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import math
+import random
 import os
 import sys
 
@@ -213,7 +214,7 @@ def pelvis():
 
 # ------------------------------------------------------------------------ head
 def head():
-    """The hat hides the face; only two blue eyes burn out of its shade.
+    """The hat hides the face; under it there is nothing but its own shade.
 
     The hat is not drawn here. It is cut from the HD render in
     ``concept_art/fighters/lightning`` by ``tools/hat_cut.py``, because the
@@ -251,8 +252,8 @@ def head():
     # brim's shade is the whole head, not a band across the eyes. Brow to
     # collar goes to near-black, so no nose, mouth or jawline survives at
     # sprite size - he is a hat with two coals under it.
-    sd.ellipse([cx - 44, 20, cx + 44, 98], fill=(8, 8, 12, 248))
-    sd.rectangle([cx - 44, 40, cx + 44, 98], fill=(8, 8, 12, 248))
+    sd.ellipse([cx - 44, 20, cx + 44, 98], fill=(7, 7, 11, 255))
+    sd.rectangle([cx - 44, 40, cx + 44, 98], fill=(7, 7, 11, 255))
     img.alpha_composite(shade_layer.filter(ImageFilter.GaussianBlur(2.2)))
     d = ImageDraw.Draw(img)
 
@@ -263,72 +264,71 @@ def head():
     img.alpha_composite(hat_img, (cx - hat_img.width // 2,
                                   72 - hat_img.height))
 
-    # --- the only lit thing under it ---------------------------------------
-    for ex in (cx - 17, cx + 17):
-        glow = _blank((W, H))
-        ImageDraw.Draw(glow).ellipse([ex - 9, 72, ex + 9, 82],
-                                     fill=BOLT + (52,))
-        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(3)))
-    d = ImageDraw.Draw(img)
-    # Two embers, not eyes: enough that the shadow has something burning in it,
-    # little enough that nothing of the face is legible.
-    for ex, sgn in ((cx - 17, -1), (cx + 17, 1)):
-        d.line([(ex - 5, 78), (ex + 5, 77)], fill=(3, 6, 14, 220), width=3)
-        d.line([(ex - 4, 78), (ex + 4, 77)], fill=BOLT + (150,), width=1)
-        d.point([(ex - 1, 77)], fill=BOLT_CORE + (200,))
+    # Nothing under the brim at all, not even eyes: the hat is wide enough
+    # that his face is simply not in view, so the shade is the end of him.
+    # The current he carries is drawn as its own effect, not painted in here.
     return img
 
 
-_ARC_PARTS = []
+def hand_crackle(step):
+    """The current around his hands, drawn as its own effect animation.
 
-
-def _arcs():
-    """The painted lightning, cut once and reused by every arm."""
-    if not _ARC_PARTS:
-        _ARC_PARTS.extend(hat_cut.arcs(8, 80))
-    return _ARC_PARTS
-
-
-def _arc_stroke(img, index, box_w, box_h, at):
-    """Composite one arc cut from the concept, fitted into a box at ``at``.
-
-    The strokes in the painting are thin, tapered and forked; fitted by size
-    and drawn twice, a soft copy under the stroke for the halo, because at hand
-    size a single thin line disappears against the dark robe.
+    Not painted into the arm. It is a wide overlay frame the character spawns
+    over himself, the way MKT HD lays Raiden's electricity over his sprite, so
+    the arms stay clean in every animation and the effect can be turned off.
+    The strokes are the ones painted in the concept, keyed out by
+    ``hat_cut.arcs`` and re-jagged every frame so nothing sits still.
     """
-    pieces = _arcs()
+    W, H = 70, 50
+    img = _blank((W, H))
+    pieces = hat_cut.arcs(8, 80)
     if not pieces:
-        return
-    piece = pieces[index % len(pieces)]
-    scale = min(box_w / piece.width, box_h / piece.height)
-    size = (max(1, round(piece.width * scale)), max(1, round(piece.height * scale)))
-    small = piece.resize(size, Image.LANCZOS)
-    if small.width < 3 or small.height < 3:
-        return
-    halo = small.filter(ImageFilter.GaussianBlur(1.7))
-    halo.putalpha(halo.getchannel("A").point(lambda v: int(v * 0.55)))
-    img.alpha_composite(halo, at)
-    img.alpha_composite(small, at)
+        return img
+    rnd = random.Random(step * 13 + 5)
+    # Short strokes only, packed tight to each hand: the long ones across his
+    # hat cross the whole body and read as a bolt, not as current.
+    shorts = [q for q in pieces if max(q.size) <= 60] or pieces
+    for cx, cy in ((18, 25), (52, 25)):
+        for k in range(3):
+            piece = shorts[(step * 4 + k) % len(shorts)]
+            scale = rnd.uniform(0.22, 0.40)
+            size = (max(2, int(piece.width * scale)),
+                    max(2, int(piece.height * scale)))
+            p = piece.resize(size, Image.LANCZOS)
+            p = p.rotate(rnd.uniform(-75, 75), resample=Image.BICUBIC, expand=True)
+            at = (cx - p.width // 2 + rnd.randint(-5, 5),
+                  cy - p.height // 2 + rnd.randint(-5, 5))
+            halo = p.filter(ImageFilter.GaussianBlur(2.4))
+            halo.putalpha(halo.getchannel("A").point(lambda v: int(v * 0.6)))
+            img.alpha_composite(halo, at)
+            img.alpha_composite(p, at)
+    return img
 
 
 # ------------------------------------------------------------------------ arms
 def arm(near=True):
-    """One bent arm: robe sleeve, cuff, and a hand with current crawling on it."""
+    """One bent arm: robe sleeve, cuff, and a bare hand."""
     W, H = 148, 132
     img = _blank((W, H))
     base, lit, dark = (ROBE, ROBE_LIT, ROBE_DK) if near else (
         (18, 18, 22), (36, 36, 44), (8, 8, 10))
     skin = (SKIN, SKIN_LIT, SKIN_DK) if near else (SKIN_DK, SKIN, SKIN_DEEP)
+    # The elbow sits below and slightly behind the shoulder and the forearm
+    # rises forward to the hand: that is an arm bent towards the enemy. It used
+    # to hang the hand at hip height with the elbow above and behind it, which
+    # reads as an arm bent backwards - and the far arm was that same arm
+    # mirrored, which turned its forearm round and pointed that hand behind
+    # him as well.
     sh = (54.0, 14.0)
-    elbow = (56.0, 62.0)
-    wrist = (98.0, 84.0)
+    elbow = (48.0, 58.0) if near else (50.0, 62.0)
+    wrist = (92.0, 54.0) if near else (88.0, 60.0)
 
     # upper sleeve, hanging from the shoulder
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(43, 14), (67, 14), (70, 54), (39, 57)], fill=255)
+    d.polygon([(41, 14), (65, 14), (64, 52), (36, 56)], fill=255)
     d.ellipse([sh[0] - 13, sh[1] - 8, sh[0] + 13, sh[1] + 13], fill=255)
-    d.ellipse([elbow[0] - 15, elbow[1] - 12, elbow[0] + 15, elbow[1] + 10], fill=255)
+    d.ellipse([elbow[0] - 12, elbow[1] - 9, elbow[0] + 12, elbow[1] + 9], fill=255)
     img.alpha_composite(char_rig._shade(mask, base, lit, dark))
 
     # forearm sleeve, angled out towards the enemy
@@ -341,11 +341,13 @@ def arm(near=True):
 
     d = ImageDraw.Draw(img)
     # flared cuff at the wrist
-    d.line([(93, 81), (103, 87)], fill=(104, 108, 120, 255), width=22)
-    d.line([(95, 82), (102, 87)], fill=dark + (210,), width=15)
+    d.line([(wrist[0] - 5, wrist[1] - 3), (wrist[0] + 5, wrist[1] + 3)],
+           fill=(104, 108, 120, 255), width=22)
+    d.line([(wrist[0] - 3, wrist[1] - 2), (wrist[0] + 4, wrist[1] + 3)],
+           fill=dark + (210,), width=15)
 
     # hand: wrist, palm, four fingers
-    hx, hy = 116, 96
+    hx, hy = (108, 50) if near else (104, 56)
     d.ellipse([hx - 11, hy - 10, hx + 11, hy + 10], fill=skin[0] + (255,))
     d.ellipse([hx - 8, hy - 8, hx + 6, hy + 3], fill=skin[1] + (205,))
     d.line([(hx - 4, hy + 5), (hx + 9, hy + 6)], fill=skin[2] + (185,), width=2)
@@ -355,19 +357,12 @@ def arm(near=True):
     d.line([(hx + 2, hy - 9), (hx + 9, hy - 9)], fill=skin[1] + (180,), width=2)
 
     # folds in the sleeve
-    d.line([(40, 28), (43, 54)], fill=dark + (130,), width=2)
-    d.line([(69, 26), (71, 52)], fill=lit + (80,), width=2)
-    d.line([(64, 66), (82, 74)], fill=dark + (100,), width=2)
+    d.line([(38, 28), (41, 52)], fill=dark + (130,), width=2)
+    d.line([(66, 24), (65, 50)], fill=lit + (80,), width=2)
+    d.line([(58, 60), (76, 60)], fill=dark + (100,), width=2)
 
-    # current: the arcs painted in the concept, cut out of the picture and
-    # recoloured to the palette. The short strokes are used, not the long ones
-    # across his hat: a 370px stroke squeezed into a 40px box smears into a flat
-    # streak, while a 25px stroke keeps the taper and the fork it was drawn with.
-    _arc_stroke(img, 5, 34, 30, (hx + 2, hy - 30))
-    _arc_stroke(img, 6, 30, 26, (hx - 30, hy + 2))
-    # The far arm was the near arm again, so its hand reached across his own
-    # chest and vanished behind the torso, leaving one floating glove. A
-    # mirrored part bends the other way and puts the hand on its own side.
+    # No lightning is painted into the arm. The current he carries is its own
+    # animation (group 7030) spawned over him, so the arms stay clean.
     if not near:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
@@ -472,7 +467,11 @@ RIG_JSON = {
         # 100-wide original used: a stale pivot drew the whole skirt 7px left.
         "pelvis": [43, 16],
         "arm_n": [56, 14],
-        "arm_f": [92, 14],          # mirrored art, pivot mirrored too
+        # The rig hangs the far arm from the far shoulder, so an arm drawn
+        # reaching sideways is swallowed by the torso there. Mirrored, the
+        # pair reads the way the painting does it: both palms out, one arm
+        # either side, elbows low and the forearms turned forward.
+        "arm_f": [92, 14],
         # ankle joint sits 14px above the ground, so the pivot is placed 14px
         # up from the sole (part height 36 - 14 = 20)
         "foot_n": [14, 25],

@@ -3796,3 +3796,22 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 ctrl = 1
+
+;---------------------------------------------------------------------------
+; The current is not part of him.
+; Raiden's electricity in MKT HD is laid over the sprite, not drawn into it,
+; and this is the same trick: a looping explod of the crackle frames around
+; his hands, so every body animation stays clean and the whole effect is one
+; block that can be switched off right here.
+;---------------------------------------------------------------------------
+[Statedef -2]
+type = Explod
+trigger1 = !(time % 10)
+anim = 7030
+id = 7300
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = 14
+trans = add
+ownpal = 1

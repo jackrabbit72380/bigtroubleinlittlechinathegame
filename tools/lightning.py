@@ -142,6 +142,7 @@ def bolt_column(step):
 
 def sprites():
     """Extra sprite records for Lightning's SFF."""
+    import lightning_art        # the hand crackle frames only
     out = [{"group": 7000, "number": 0, "image": bolt_orb(), "axis": (17, 17)}]
     for i in range(3):
         out.append({"group": 7001, "number": i,
@@ -155,6 +156,9 @@ def sprites():
     for i in range(3):
         out.append({"group": 7020, "number": i,
                     "image": bolt_column(i), "axis": (24, 208)})
+    for i in range(4):
+        out.append({"group": 7030, "number": i,
+                    "image": lightning_art.hand_crackle(i), "axis": (35, 25)})
     return out
 
 
@@ -204,6 +208,13 @@ Clsn1: 1
 7020,0, 0,0, 4, , A
 7020,1, 0,0, 4, , A
 7020,2, 0,0, -1, , A
+
+; Current around his hands - an effect laid over the body, never in it
+[Begin Action 7030]
+7030,0, 0,0, 3, , A
+7030,1, 0,0, 3, , A
+7030,2, 0,0, 3, , A
+7030,3, 0,0, -1, , A
 """
 
 
@@ -622,6 +633,25 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 ctrl = 1
+
+;---------------------------------------------------------------------------
+; The current is not part of him.
+; Raiden's electricity in MKT HD is laid over the sprite, not drawn into it,
+; and this is the same trick: a looping explod of the crackle frames around
+; his hands, so every body animation stays clean and the whole effect is one
+; block that can be switched off right here.
+;---------------------------------------------------------------------------
+[Statedef -2]
+type = Explod
+trigger1 = !(time % 10)
+anim = 7030
+id = 7300
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = 14
+trans = add
+ownpal = 1
 """
 
 EXTRA_SPECIALS = """Volt Volley\\t\\t\\t\\t\\t\\t\\t_QDB^K
