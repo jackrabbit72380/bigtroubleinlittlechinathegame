@@ -80,6 +80,11 @@ def matte(img, bg, soft=14, hard=42):
             else:
                 a = 255
             op[x, y] = (r, g, b, a)
+    # NOTE: no rim-strip here. This matte feeds the boxes the front parts are
+    # cut from, and swallowing the background-coloured ring also swallowed the
+    # pistol's light metal, which made the prop cut come out empty. The profile
+    # set, which is what the fight poses use, strips its own rim in
+    # side_parts.py where the parts are already isolated.
     return out
 
 
