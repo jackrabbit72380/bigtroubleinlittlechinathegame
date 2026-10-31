@@ -58,6 +58,8 @@ WEAPON_POSES = {
         1600: [("cast", 5), ("cast", 2), ("cast", 1),
                ("cast_release", 1), ("cast_release", 4),
                ("cast_release", 5)],
+        # 1702 Storm Step lands with the palm out and the current still on him.
+        1700: [("cast_release", 4), ("cast", 8)],
     },
 }
 
@@ -182,6 +184,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     clsn_k = target_height / BASE_HEIGHT
 
     poses = WEAPON_POSES.get(char_id, WEAPON_POSES["jackburton"])
+    pose_table = char_rig.poses_for(char_id)
     rig = char_rig.load_rig(char_id)
 
     # Fight poses are drawn from the profile part set so the two fighters face
@@ -242,7 +245,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                 side = side_rig is not None and pose_name != "win"
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
-                img = char_rig.render(use, char_rig.POSES[pose_name])
+                img = char_rig.render(use, pose_table[pose_name])
                 img = img.resize((max(1, round(img.width * kk)),
                                   max(1, round(img.height * kk))), Image.LANCZOS)
                 axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
@@ -273,7 +276,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                 side = side_rig is not None and pose != "win"
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
-                img = char_rig.render(use, char_rig.POSES[pose])
+                img = char_rig.render(use, pose_table[pose])
                 img = img.resize((max(1, round(img.width * kk)),
                                   max(1, round(img.height * kk))), Image.LANCZOS)
                 axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))

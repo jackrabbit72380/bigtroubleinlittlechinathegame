@@ -117,6 +117,29 @@ def arc_bolt(step):
     return Image.alpha_composite(_glow(img, 3), img)
 
 
+def bolt_column(step):
+    """The shaft of lightning he becomes on the way up.
+
+    The concept's teleport art is one hard white bolt standing on the floor;
+    this is that bolt with the same soft blue halo his orbs use, so it sits in
+    the same light as the rest of his effects.
+    """
+    w, h = 48, 210
+    img = _blank(w, h)
+    d = ImageDraw.Draw(img)
+    xs = [24 + math.sin(i * 1.7 + step * 2.1) * (9 if i % 2 else 4)
+          for i in range(15)]
+    pts = [(x, 2 + (h - 6) * i / 14) for i, x in enumerate(xs)]
+    d.line(pts, fill=BOLT + (170,), width=13, joint="curve")
+    d.line(pts, fill=BOLT_LIT + (215,), width=8, joint="curve")
+    d.line(pts, fill=CORE + (255,), width=4, joint="curve")
+    for i in (4, 8, 11):
+        x, y = pts[i]
+        d.line([(x, y), (x + (12 if i % 2 else -12), y + 10)],
+               fill=BOLT_LIT + (190,), width=2)
+    return Image.alpha_composite(_glow(img, 4), img)
+
+
 def sprites():
     """Extra sprite records for Lightning's SFF."""
     out = [{"group": 7000, "number": 0, "image": bolt_orb(), "axis": (17, 17)}]
@@ -129,6 +152,9 @@ def sprites():
     for i in range(4):
         out.append({"group": 7010, "number": i,
                     "image": arc_bolt(i), "axis": (39, 23)})
+    for i in range(3):
+        out.append({"group": 7020, "number": i,
+                    "image": bolt_column(i), "axis": (24, 208)})
     return out
 
 
@@ -172,6 +198,12 @@ Clsn1: 1
 7010,1, 0,0, 3, , A
 7010,2, 0,0, 3, , A
 7010,3, 0,0, 3, , A
+
+; Vertical bolt, left standing where the teleport started
+[Begin Action 7020]
+7020,0, 0,0, 4, , A
+7020,1, 0,0, 4, , A
+7020,2, 0,0, -1, , A
 """
 
 
@@ -193,6 +225,11 @@ command = ~F, DF, D, DB, B, a
 [Command]
 name = "thunder_b"
 command = ~F, DF, D, DB, B, b
+
+; Storm Step: down, then up, with no button - the teleport is a movement
+[Command]
+name = "storm_step"
+command = ~D, U
 
 """
 
@@ -219,6 +256,15 @@ triggerall = statetype != A
 trigger1 = ctrl
 trigger2 = movecontact
 trigger2 = stateno != [1500,1600)
+
+;Storm Step (teleport, down then up)
+[State -1, Storm Step]
+type = ChangeState
+value = 1700
+triggerall = command = "storm_step"
+triggerall = statetype != A
+triggerall = ctrl
+triggerall = stateno != [1700,1703)
 """
 
 
@@ -422,8 +468,163 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 ctrl = 1
+
+;---------------------------------------------------------------------------
+; Storm Step - the teleport.
+; Down, then up: he calls a bolt down on himself, goes up inside it, and drops
+; out of the sky on the far side of the opponent. Raiden's teleport, except he
+; arrives with the bolt still around him and it hits.
+;---------------------------------------------------------------------------
+[Statedef 1700]
+type    = S
+movetype= A
+physics = N
+anim = 40
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+[State 1700, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 3
+
+; the column he turns into, standing where he was
+[State 1700, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1720
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 30
+trans = add
+ownpal = 1
+
+[State 1700, handflash]
+type = Explod
+trigger1 = time = 2
+anim = 7001
+id = 1721
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = -2
+trans = add
+
+; he IS the bolt while he travels - nothing of the body shows
+[State 1700, gone]
+type = AssertSpecial
+trigger1 = time >= 4 && time < 26
+flag = invisible
+
+[State 1700, trail]
+type = AfterImage
+trigger1 = time = 4
+time = 20
+length = 8
+timegap = 1
+framegap = 1
+trans = add
+paladd = 12, 44, 86
+palmul = 1.0, 1.05, 1.22
+
+[State 1700, rise]
+type = VelSet
+trigger1 = time = 4
+y = -40
+
+; at the top, cross to the far side of the opponent
+[State 1700, cross]
+type = PosSet
+trigger1 = time = 20
+x = enemy, pos x + ifelse(facing = 1, 78, -78)
+
+[State 1700, apex]
+type = PosSet
+trigger1 = time = 20
+y = -540
+
+[State 1700, drop]
+type = VelSet
+trigger1 = time = 20
+y = 46
+
+[State 1700, land]
+type = ChangeState
+trigger1 = time > 20 && pos y >= 0
+value = 1702
+
+;---------------------------------------------------------------------------
+[Statedef 1702]
+type    = S
+movetype= A
+physics = N
+juggle  = 4
+anim = 1700
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+; he came down behind the opponent, so turn and hit him
+[State 1702, turn]
+type = Turn
+trigger1 = time = 0
+trigger1 = p2bodydist X < 0
+
+[State 1702, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1722
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 16
+trans = add
+ownpal = 1
+
+[State 1702, shake]
+type = EnvShake
+trigger1 = time = 0
+time = 8
+freq = 90
+ampl = -12
+
+[State 1702, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 4
+
+[State 1702, strike]
+type = HitDef
+trigger1 = time = 1
+attr = S, HA
+damage = 105
+guardflag = MA
+hitflag = MAF
+pausetime = 10, 14
+sparkno = 1
+sparkxy = -30,-174
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 18
+ground.velocity = -5,-5
+air.velocity = -4,-6
+fall = 1
+
+[State 1702, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
 """
 
 EXTRA_SPECIALS = """Volt Volley\\t\\t\\t\\t\\t\\t\\t_QDB^K
 Thunderbolt\\t\\t\\t\\t\\t\\t\\t_QDBF^K
+Storm Step\\t\\t\\t\\t\\t\\t\\t_D_U
 """

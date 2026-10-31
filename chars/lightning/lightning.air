@@ -2540,3 +2540,9 @@ Clsn1: 1
 7010,1, 0,0, 3, , A
 7010,2, 0,0, 3, , A
 7010,3, 0,0, 3, , A
+
+; Vertical bolt, left standing where the teleport started
+[Begin Action 7020]
+7020,0, 0,0, 4, , A
+7020,1, 0,0, 4, , A
+7020,2, 0,0, -1, , A
