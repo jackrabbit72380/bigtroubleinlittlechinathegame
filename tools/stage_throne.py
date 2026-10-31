@@ -505,6 +505,13 @@ def skull_layer():
               hs * 0.790, lean=sx * ws * 0.012)
         tooth(ws * 0.5 + sx * ws * 0.322, hs * 0.588, ws * 0.030,
               hs * 0.706, lean=sx * ws * 0.007)
+    # Lower corner teeth, standing up out of the floor of the mouth on either
+    # side. The middle stays clear on purpose: the mouth is the doorway, so
+    # these are its jambs - you should read a way in, not a closed jaw.
+    for sx in (-1, 1):
+        tooth(ws * 0.5 + sx * ws * 0.250, hs * 1.020, ws * 0.056,
+              hs * 0.845, lean=sx * ws * 0.010)
+
     # gum line shadow
     dc.line([(ws * 0.19, hs * 0.590), (ws * 0.81, hs * 0.590)],
             fill=(116, 92, 74), width=max(1, int(hs * 0.007)))
