@@ -35,8 +35,8 @@ wingkong_gou_rig/wingkong_gou.def, stages/wingkong_exchange.def, order=2
 wingkong_ma_rig/wingkong_ma.def, stages/wingkong_exchange.def, order=2
 wingkong_zhao_rig/wingkong_zhao.def, stages/chinatown_alley.def, order=2
 wingkong_lu_rig/wingkong_lu.def, stages/wingkong_exchange.def, order=2
-wingkong_shen_rig/wingkong_shen.def, stages/wingkong_exchange.def, order=2
-wingkong_bai_rig/wingkong_bai.def, stages/chinatown_alley.def, order=2
+wingkong_gerald_rig/wingkong_gerald.def, stages/wingkong_exchange.def, order=2
+wingkong_hatchet_rig/wingkong_hatchet.def, stages/chinatown_alley.def, order=2
 
 randomselect
 

@@ -1,0 +1,28 @@
+[Info]
+name = "Zhao the Butcher"
+displayname = "Zhao the Butcher"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 960, 720
+
+[Files]
+cmd      = wingkong_zhao.cmd
+cns      = wingkong_zhao.cns
+st       = wingkong_zhao.cns
+stcommon = common1.cns
+sprite   = wingkong_zhao.sff
+anim     = wingkong_zhao.air
+sound    = wingkong_zhao.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480

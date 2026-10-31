@@ -1,0 +1,28 @@
+[Info]
+name = "Han the Elder"
+displayname = "Han the Elder"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 960, 720
+
+[Files]
+cmd      = changsing_han.cmd
+cns      = changsing_han.cns
+st       = changsing_han.cns
+stcommon = common1.cns
+sprite   = changsing_han.sff
+anim     = changsing_han.air
+sound    = changsing_han.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480

@@ -538,6 +538,12 @@ def stage_highway():
             ("fg", 3, 0, fg, 1)]
 
 
+# Each stage may name its own fight music; the engine resolves the path
+# relative to the game root, so tracks live in sound/.
+MUSIC = {
+    "airport_terminal": "sound/Airport.ogg",
+}
+
 STAGES = {
     "lopans_throne": ("Lo Pan's Throne", stage_throne),
     "wingkong_exchange": ("Wing Kong Exchange", stage_wingkong),
@@ -606,7 +612,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic =
+bgmusic = {bgmusic}
 bgmvolume = 100
 
 [BGdef]
@@ -658,7 +664,8 @@ def build(sid):
         fh.write(data)
     with open(os.path.join(ROOT, "stages", f"{sid}.def"), "w", encoding="utf-8") as fh:
         fh.write(DEF_TEMPLATE.format(
-            sid=sid, name=name, scroll=SCROLL, playerbound=PLAYER_BOUND,
+            sid=sid, name=name,
+            bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerbound=PLAYER_BOUND,
             margin=SCREEN_MARGIN, zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
             boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
             startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,
