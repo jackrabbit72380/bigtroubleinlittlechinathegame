@@ -40,7 +40,12 @@ def main():
                            "jack_burton",
                            "bernardo-mercurio-jack-turnable.jpg")
     if os.path.isfile(concept):
-        scripts += ["jack_cut.py", ("bake_char.py", "jackburton")]
+        # side_parts cuts the profile set the fight poses are drawn from. It was
+        # never in this chain, so a clean build baked whatever parts_side copy
+        # happened to be on disk - including the one with the arm pivoted at a
+        # placeholder corner and a torso bone longer than the torso art.
+        scripts += ["jack_cut.py", "side_parts.py",
+                    ("bake_char.py", "jackburton")]
     # Lightning has no turnaround to cut: his parts are painted in code, so the
     # only inputs are the tools themselves and a clean checkout can build him.
     scripts += ["lightning_art.py", ("bake_char.py", "lightning")]

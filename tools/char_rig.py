@@ -907,6 +907,69 @@ if __name__ == "__main__":
 # concept has him in Raiden's wide, upright stance with both hands out, palms
 # open and current crawling between them, not in Jack's low boxer's guard.
 POSE_SETS = {
+    # Jack's profile parts are cut from a photo of him holding the pistol in
+    # front of his chest, and that pistol plus the forearm are baked into BOTH
+    # the arm part and the torso part. At zero the two coincide and read as one
+    # body; every degree of arm swing peels the arm off the torso and leaves the
+    # torso's own copy behind as a grey slab across the chest. So his arms move
+    # only as far as the art can hide: he fights with the pistol up and his
+    # weight on his legs, which is what the panels show anyway.
+    "jackburton": {
+        "stance": dict(lean=3, head=-1,
+                       arm_n=(-4, 0, 0), arm_f=(0, 0, 0),
+                       leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
+        "breath": dict(lean=2, head=-2, lift=1,
+                       arm_n=(-2, 0, 0), arm_f=(0, 0, 0),
+                       leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
+        "walk_a": dict(lean=6, head=-3, shift=1,
+                       arm_n=(6, 0, 0), arm_f=(0, 0, 0),
+                       leg_n=(26, -18, 92), leg_f=(-22, 4, 86)),
+        "walk_b": dict(lean=5, head=-2, shift=-1,
+                       arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                       leg_n=(-16, 2, 84), leg_f=(24, -20, 96)),
+        "jab": dict(lean=7, shift=2, head=-1,
+                    arm_n=(10, 0, 0), arm_f=(0, 0, 0),
+                    leg_n=(20, -14, 88), leg_f=(-18, 8, 92)),
+        "cross": dict(lean=12, shift=4, head=-3,
+                      arm_n=(14, 0, 0), arm_f=(0, 0, 0),
+                      leg_n=(30, -20, 88), leg_f=(-24, 10, 94)),
+        "upper": dict(lean=-6, lift=-12, shift=2, head=3,
+                      arm_n=(-10, 0, 0), arm_f=(0, 0, 0),
+                      leg_n=(38, -46, 90), leg_f=(-30, 24, 92)),
+        "crouch": dict(lean=14, head=6,
+                       arm_n=(4, 0, 0), arm_f=(0, 0, 0),
+                       leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
+        "jump": dict(lean=7, head=-3, lift=-20, ground=False,
+                     arm_n=(8, 0, 0), arm_f=(0, 0, 0),
+                     leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
+        "boot": dict(lean=-12, head=5, shift=-5,
+                     arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                     leg_n=(84, -6, 60), leg_f=(-16, 10, 92)),
+        "low_kick": dict(lean=-5, head=3, lift=-22,
+                         arm_n=(-6, 0, 0), arm_f=(0, 0, 0),
+                         leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
+        "gun_aim": dict(lean=4, head=-1,
+                        arm_n=(4, 0, 0), arm_f=(0, 0, 0),
+                        leg_n=(16, -14, 88), leg_f=(-16, 8, 92)),
+        "gun_fire": dict(lean=1, head=-2, shift=-2,
+                         arm_n=(2, 0, 0), arm_f=(0, 0, 0),
+                         leg_n=(18, -16, 88), leg_f=(-18, 10, 92)),
+        "knife": dict(lean=8, head=-2,
+                      arm_n=(-4, 0, 0), arm_f=(0, 0, 0),
+                      leg_n=(18, -14, 88), leg_f=(-18, 8, 92)),
+        "knife_throw": dict(lean=14, shift=3, head=-4,
+                            arm_n=(12, 0, 0), arm_f=(0, 0, 0),
+                            leg_n=(26, -18, 88), leg_f=(-22, 10, 92)),
+        "block": dict(lean=-3, lift=-3, head=4,
+                      arm_n=(8, 0, 0), arm_f=(0, 0, 0),
+                      leg_n=(6, -4, 88), leg_f=(-10, 6, 92)),
+        "hit": dict(lean=-13, head=11, shift=-4,
+                    arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                    leg_n=(-10, 12, 88), leg_f=(-26, 18, 92)),
+        "win": dict(lean=-3, head=-4,
+                    arm_n=(6, 0, 0), arm_f=(0, 0, 0),
+                    leg_n=(14, -10, 88), leg_f=(-18, 8, 92)),
+    },
     "lightning": {
         # Arms swung only part way down: the parts are cut in a guard, so
         # hanging them fully (-44) clasped the hands at his waist. Held here the

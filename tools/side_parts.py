@@ -61,10 +61,14 @@ PIVOT = {
 # segments, plus the profile skeleton: the near and far limbs share one line,
 # so shoulder_half / hip_half are zero and the far limb hides behind the near.
 SCALE = 0.86
+# hip_y / knee_y / ankle_y are the ground-relative joints; the bone lengths are
+# filled in from the cut art in build(), because they were typed in by hand and
+# the torso bone (180) was longer than the scaled torso art (172). The rig hangs
+# the head off shoulder + neck_len, so those 8 phantom pixels plus an 8px neck
+# put a visible gap under Jack's chin.
 METRICS = {
-    "hip_y": -315, "shoulder_y": -495.0, "neck_y": -503.0,
-    "knee_y": -171, "ankle_y": -35,
-    "torso_len": 180.0, "neck_len": 8.0,
+    "hip_y": -315, "knee_y": -171, "ankle_y": -35,
+    "torso_len": 0.0, "neck_len": -10.0,
     "uarm": 86.7, "farm": 55.2, "hand": 34.0,
     "thigh": 140.5, "shin": 136.1,
     "shoulder_half": 0.0, "hip_half": 0.0,
@@ -86,6 +90,58 @@ def _mask(crop, bg, box, thr=18):
     return m
 
 
+def _clean_edge(img, bg, floor=90):
+    """Pull the studio background out of the matte edge.
+
+    The knockout leaves a ramp of partially covered pixels, and each one still
+    carries the colour of the white studio background. Pasted on a dark stage
+    that ramp is a white halo around the head, the shoulders and the gun - the
+    glow that made the rig look pasted off the internet. Un-mix the background
+    out of every partially covered pixel, then drop what is left of the ramp.
+    """
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            if a < floor:
+                px[x, y] = (0, 0, 0, 0)
+                continue
+            if a < 255:
+                f = a / 255.0
+                r = max(0, min(255, int((r - bg[0] * (1 - f)) / f)))
+                g = max(0, min(255, int((g - bg[1] * (1 - f)) / f)))
+                b = max(0, min(255, int((b - bg[2] * (1 - f)) / f)))
+            px[x, y] = (r, g, b, a)
+    return img
+
+
+# NOTE: do not try to strip the pale rim off the silhouette here. The white
+# tank top IS the silhouette along his chest and shoulder, so a rim strip that
+# removes background-coloured edge pixels removes the vest with it - it ate the
+# strap and left black bites out of the chest. Decontaminating the alpha ramp in
+# _clean_edge is as far as this can safely go.
+
+
+def _trim_collar(img):
+    """Drop the tank top the head box clips in at the collar.
+
+    The profile head box runs down past the jaw, so the white vest shoulder
+    lands in its bottom-left corner. Pivoting the head with that patch on it
+    pasted a second vest corner under his chin - the white blob he had instead
+    of a throat. Only near-white pixels go, so the mullet at the back survives.
+    """
+    w, h = img.size
+    px = img.load()
+    for y in range(int(h * 0.70), h):
+        for x in range(0, int(w * 0.58)):
+            r, g, b, a = px[x, y]
+            if a and min(r, g, b) > 172 and max(r, g, b) - min(r, g, b) < 34:
+                px[x, y] = (0, 0, 0, 0)
+    return img
+
+
 def _build(crop, bg, box, subtract=()):
     m = _mask(crop, bg, box)
     for sbox in subtract:
@@ -98,7 +154,7 @@ def _build(crop, bg, box, subtract=()):
     col = crop.crop((box[0] + bb[0], box[1] + bb[1],
                      box[0] + bb[2], box[1] + bb[3])).convert("RGBA")
     col.putalpha(m)
-    return col
+    return _clean_edge(col, bg)
 
 
 def _darken(im, factor):
@@ -147,12 +203,19 @@ def build():
     for name, img in parts.items():
         img.save(os.path.join(OUT, name + ".png"))
 
+    # Bone lengths come from the art that was just cut, scaled the same way the
+    # rig scales it. Typed-in numbers only ever approximate this set.
+    METRICS["torso_len"] = round(parts["torso"].height * SCALE, 1)
+    METRICS["shoulder_y"] = round(METRICS["hip_y"] - METRICS["torso_len"], 1)
+    METRICS["neck_y"] = round(METRICS["shoulder_y"] + METRICS["neck_len"], 1)
+
     pivots = {}
     for name, (fx, fy) in PIVOT.items():
         pw, ph = parts[name].size
         pivots[name] = [round(pw * fx, 1), round(ph * fy, 1)]
     pivots["arm_f"] = [1, 1]
     pivots["prop"] = [1, 1]
+    _trim_collar(parts["head"]).save(os.path.join(OUT, "head.png"))
     for name in ("thigh_f", "shin_f"):
         pw, ph = parts[name].size
         px, py = PIVOT[name.replace("_f", "_n")]

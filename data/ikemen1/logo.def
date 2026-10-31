@@ -3,12 +3,14 @@ localcoord = 1280,720
 
 ;------------------------------------
 [Scene 0]
-; Fade
-bg.name = BG0          ;Name of BG to show (no spaces allowed)
+; Splash card: fades up from black, holds, then fades to the title.
+bg.name = Splash
 fadein.time = 30
-fadeout.time = 60
-end.time = 200
+fadeout.time = 45
+end.time = 240
 
-[BG0 Ikemen Logo]
-type = video
-path = ik_logo.webm
+[Splash Poster]
+type = normal
+spriteno = 220, 0
+start = 0, 0
+mask = 0

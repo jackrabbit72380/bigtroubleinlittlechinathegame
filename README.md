@@ -14,6 +14,7 @@ ship it bundled, so players just download and launch.
 ![Wing Kong Exchange](artifacts/wingkong_exchange_preview.png)
 ![Chinatown Back Alley](artifacts/chinatown_alley_preview.png)
 ![Pork Chop Express](artifacts/porkchop_express_preview.png)
+![The Upside Down](artifacts/upside_down_preview.png)
 
 ## Download and play
 
@@ -68,7 +69,7 @@ sibling libraries — keep the release folder intact and only replace its
 
 | Fighter | Role | Life | ATK | DEF | Notes |
 |---|---|---|---|---|---|
-| Jack Burton | hero | 1050 | 105 | 100 | balanced, "It's all in the reflexes" |
+| Jack Burton | hero | 1050 | 108 | 100 | balanced, pistol and knife specials |
 | Wang Chi | hero | 950 | 108 | 95 | faster, lower defence |
 | Gracie Law | hero | 880 | 94 | 92 | fastest, lowest damage |
 | Egg Shen | hero | 900 | 115 | 88 | glass cannon sorcerer |
@@ -82,6 +83,12 @@ Each fighter has their own folder with a `.def`, `.cmd`, `.cns`, `.air`, `.sff`,
 CNS `[Quotes]` section. Stats, scale and colours are listed once in
 `tools/build_chars.py` (`ROSTER`) and regenerated from there.
 
+Jack is the one fighter whose palette is hand-built rather than hue-shifted.
+`tools/jackburton.py` maps Kung Fu Man's colour ramps onto his costume — white
+tank top, denim jeans, brown hair, tanned skin, leather boots — and adds his
+weapon art, animations and states, so a rebuild cannot drift back to a
+recoloured base.
+
 ### Moves (shared command set)
 
 | Input | Move |
@@ -93,6 +100,8 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 | `QCB + P` | blow |
 | `QDF + K` | kick special |
 | `F, F + K` | dash kick |
+| `QCB + K` | Jack only: Six Shooter, a three-round pistol burst |
+| `QDBF + K` | Jack only: Knife Toss, a spinning thrown blade |
 | `QCF, QCF + P` | super (1000 power) |
 | `QCB, QCB + P` | super (1000 power) |
 
@@ -104,9 +113,10 @@ CNS `[Quotes]` section. Stats, scale and colours are listed once in
 | Wing Kong Exchange | `stages/wingkong_exchange.def` | loading bay, neon signage, rain |
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
+| The Upside Down | `stages/upside_down.def` | underground cavern, steel sump, dead tree, demon |
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
-All four BTILC stages are drawn procedurally (no bitmaps committed as source),
+All five BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1280×960** (`localcoord = 1280, 960`), which is arcade
 resolution times four — the engine no longer stretches a 240-line image across
