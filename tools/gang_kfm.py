@@ -93,6 +93,14 @@ HAIR = {
     "brown": ((0x2b, 0x1c, 0x12), (0x46, 0x30, 0x20)),
     "grey": ((0x5d, 0x5b, 0x57), (0x84, 0x82, 0x7c)),
     "shaved": (SKIN["skin_d"], SKIN["skin_2"]),
+    "bald": (SKIN["skin_2"], SKIN["skin_3"]),
+}
+
+# Belts. The sash in the base art is drawn in the hair colour, so the belt is
+# recoloured by taking those pixels back off the head and down to the waist.
+BELT = {
+    "red": dict(d=(0x6d, 0x16, 0x1b), m=(0xb2, 0x24, 0x2a), l=(0xdd, 0x42, 0x46)),
+    "yellow": dict(d=(0x8a, 0x64, 0x12), m=(0xd4, 0xa8, 0x2f), l=(0xf6, 0xdc, 0x7a)),
 }
 
 STAFF = dict(wood=(0x6b, 0x4a, 0x2a), wood_hi=(0x9c, 0x72, 0x44),
@@ -104,11 +112,15 @@ BLADE = dict(steel=(0x8d, 0x97, 0xa6), steel_mid=(0x6d, 0x77, 0x86),
 GOLD = dict(dark=(0x6b, 0x48, 0x12), mid=(0xc9, 0x96, 0x2f), lit=(0xf4, 0xd8, 0x78))
 LEATHER = dict(dark=(0x33, 0x24, 0x1a), mid=(0x5d, 0x43, 0x2e), lit=(0x8a, 0x66, 0x46))
 BRASS = GOLD
+PLANK = dict(wood=(0xc9, 0xa4, 0x6b), grain=(0x94, 0x6f, 0x42),
+             cut=(0xe8, 0xcd, 0x9c), edge=(0x2b, 0x1d, 0x10),
+             nail=(0x4c, 0x4c, 0x54))
 
 # One entry per fighter. Everything is the same height; no build scale.
 #   cloth / skin / band : tone multipliers on the gang palette
 #   hair   : preset name          face : "", "moustache", "beard", "full"
-#   gear   : "", "bandolier"      weapon: staff, machete, hatchet, pistols
+#   gear   : "", "bandolier"      weapon: staff, machete, hatchet, pistols, plank
+#   style  : "" | "bald" | "crew" | "turban"   headband: False to lose it
 MEMBERS = [
     dict(id="changsing_bo", gang="chang", cloth=1.02, skin=1.00, band=1.00,
          hair="black", face="moustache", gear="", weapon="staff", length=216),
@@ -123,9 +135,11 @@ MEMBERS = [
     dict(id="changsing_tam", gang="chang", cloth=0.95, skin=0.98, band=0.40,
          hair="black", face="moustache", gear="", weapon="staff", length=222),
     dict(id="wingkong_gou", gang="wing", cloth=1.00, skin=1.00, band=1.00,
-         hair="black", face="moustache", gear="", weapon="machete", length=124),
+         hair="black", face="moustache", gear="", weapon="plank", length=124,
+         style="crew", headband=False),
     dict(id="wingkong_ma", gang="wing", cloth=0.88, skin=1.06, band=1.15,
-         hair="black", face="", gear="", weapon="machete", length=116),
+         hair="black", face="", gear="", weapon="staff", length=216,
+         style="turban", headband=False),
     dict(id="wingkong_zhao", gang="wing", cloth=1.12, skin=0.92, band=0.70,
          hair="black", face="beard", gear="", weapon="machete", length=132),
     dict(id="wingkong_lu", gang="wing", cloth=0.80, skin=1.00, band=0.50,
@@ -133,7 +147,8 @@ MEMBERS = [
     # Gold Gun Gerald: bandoliers of brass bullets and a gold pistol in each
     # hand. No blade of any kind.
     dict(id="wingkong_gerald", gang="wing", cloth=0.94, skin=0.96, band=1.10,
-         hair="brown", face="full", gear="bandolier", weapon="pistols", length=44),
+         hair="black", face="full", gear="bandolier", weapon="pistols", length=44,
+         style="bald", headband=False),
     # Wing Kong Hatchet Man: bald with long hair down the back, heavy
     # moustache, hatchet in the lead fist.
     dict(id="wingkong_hatchet", gang="wing", cloth=1.06, skin=1.04, band=0.85,
@@ -287,6 +302,36 @@ def draw_staff(d, grip, length=216.0, angle=-0.14):
                   outline=STAFF["edge"])
 
 
+def draw_plank(d, grip, length=124.0, angle=-0.10):
+    """A length of 2x4 held like a club: sawn ends, grain, a nail each end.
+
+    Same reach as the machete it replaces, so the swing arcs still line up.
+    """
+    gx, gy = grip
+    dx, dy = math.cos(angle), math.sin(angle)
+    nx, ny = -dy, dx
+
+    def P(t, u):
+        return (gx + dx * t + nx * u, gy + dy * t + ny * u)
+
+    half = 13.0
+    t0, t1 = -length * 0.34, length * 0.66
+    d.polygon([P(t0, -half), P(t1, -half), P(t1, half), P(t0, half)],
+              fill=PLANK["edge"])
+    d.polygon([P(t0 + 2, -half + 2), P(t1 - 2, -half + 2),
+               P(t1 - 2, half - 2), P(t0 + 2, half - 2)], fill=PLANK["wood"])
+    for u in (-7, 0, 7):                      # grain running the length
+        pts = [P(t, u + math.sin(t * 0.11 + u) * 1.5)
+               for t in range(int(t0) + 4, int(t1) - 3, 5)]
+        if len(pts) > 1:
+            d.line(pts, fill=PLANK["grain"], width=1)
+    d.polygon([P(t0 + 2, -half + 2), P(t0 + 9, -half + 2),
+               P(t0 + 9, half - 2), P(t0 + 2, half - 2)], fill=PLANK["cut"])
+    d.line([P(t1 - 2, -half + 1), P(t1 - 2, half - 1)], fill=PLANK["cut"], width=2)
+    for t in (t1 - 12, t0 + 14):              # nail heads
+        d.ellipse([*P(t - 2, -4), *P(t + 2, 0)], fill=PLANK["nail"])
+
+
 def draw_machete(d, grip, length=120.0, angle=-0.10):
     """A long chopper: straight spine, deep belly, chamfered tip, wrapped grip.
 
@@ -381,6 +426,184 @@ def draw_pistol(d, grip, angle=-0.04, big=1.0):
           width=max(2, int(2 * s)))
 
 
+# ---------------------------------------------------------- head, belt, band
+BASE_HAIR = {(0x31, 0x31, 0x31), (0x5a, 0x5a, 0x63)}
+BASE_TRIM = {(0x42, 0x63, 0xa5), (0x80, 0x94, 0xc4), (0xa5, 0xb5, 0xde)}
+
+
+def _clusters(pts):
+    """Group points into 8-connected blobs."""
+    left = set(pts)
+    out = []
+    while left:
+        seed = left.pop()
+        stack, comp = [seed], [seed]
+        while stack:
+            x, y = stack.pop()
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if q in left:
+                        left.discard(q)
+                        stack.append(q)
+                        comp.append(q)
+        out.append(comp)
+    return out
+
+
+def head_geometry(img, m):
+    """The face in base pixels: centre x, top y, width, height.
+
+    Read off the 47x106 art, where the palette colours are still exact. The
+    face is the skin blob nearest the top of the silhouette - the raised fist
+    is skin too, and on its own it drags the box halfway across the sprite.
+    """
+    skin = set(SKIN.values())
+    box = _opaque(img).getbbox()
+    if not box:
+        return None
+    px = img.load()
+    top_x = None
+    for y in range(box[1], min(box[3], box[1] + 6)):
+        xs = [x for x in range(box[0], box[2]) if px[x, y][3]]
+        if xs:
+            top_x = (xs[0] + xs[-1]) / 2.0
+            break
+    if top_x is None:
+        return None
+    band = int((box[3] - box[1]) * 0.34)
+    pts = [(x, y) for y in range(box[1], box[1] + band)
+           for x in range(box[0], box[2])
+           if px[x, y][3] and (px[x, y][0], px[x, y][1], px[x, y][2]) in skin]
+    if len(pts) < 20:
+        return None
+    face = min(_clusters(pts),
+               key=lambda c: abs(sum(p[0] for p in c) / len(c) - top_x))
+    xs = [p[0] for p in face]
+    ys = [p[1] for p in face]
+    fy0, chin = float(min(ys)), float(max(ys))
+    fh = max(4.0, chin - fy0 + 1)
+    # the skull is as wide as the hair and band sitting on it, which is wider
+    # than the patch of face showing under the headband
+    span = [x for y in range(max(box[1], int(fy0 - fh)), int(fy0) + 1)
+            for x in range(box[0], box[2])
+            if px[x, y][3]
+            and (px[x, y][0], px[x, y][1], px[x, y][2]) in (BASE_HAIR | BASE_TRIM)]
+    if span:
+        cx, fw = (min(span) + max(span)) / 2.0, float(max(span) - min(span) + 1)
+    else:
+        cx, fw = sum(xs) / len(xs), float(max(xs) - min(xs) + 1)
+    return (cx, fy0, fw, fh)
+
+
+def scaled_geom(geom, k=SCALE):
+    """Base-pixel head geometry mapped onto the upscaled, padded sprite."""
+    if not geom:
+        return None
+    cx, y0, fw, fh = geom
+    return (cx * k + PAD_X, y0 * k + PAD_Y, fw * k, fh * k)
+
+
+def restyle_head(base, m):
+    """Redraw the head on the 47x106 art: bald, crew cut with a fade, turban.
+
+    At base size the head is 14 pixels wide, so the spikes, the headband and
+    its tails can be taken off exactly and a new skull drawn on top; the
+    upscale pass then blends it in with the rest of the art.
+    """
+    style = m.get("style", "")
+    if not style:
+        return base
+    g = head_geometry(base, m)
+    if not g:
+        return base
+    cx, fy0, fw, fh = g
+    # a few frames only show a sliver of face; keep the head plausible
+    fw, fh = max(fw, 8.0), max(fh, 6.0)
+    rx = fw * 0.50
+    top = fy0 - fh * 0.75
+    px = base.load()
+    # remember the eyes: the scalp fill would otherwise paint over them
+    eyes = [(x, y, px[x, y]) for y in range(int(fy0), int(fy0 + fh * 0.60))
+            for x in range(int(cx - fw * 0.60), min(base.width, int(cx + fw * 0.60)))
+            if px[x, y][3] and max(px[x, y][:3]) < 90]
+
+    # off with the spikes, the band and the band's tails: everything above the
+    # brow goes, then the hair still hanging at the sides of the face
+    for y in range(0, min(base.height, int(fy0 + fh * 0.55))):
+        for x in range(max(0, int(cx - rx) - 8), min(base.width, int(cx + rx) + 9)):
+            c = px[x, y]
+            if not c[3]:
+                continue
+            rgb = (c[0], c[1], c[2])
+            if y < fy0 + fh * 0.05 or rgb in BASE_HAIR or rgb in BASE_TRIM:
+                px[x, y] = (0, 0, 0, 0)
+
+    d = ImageDraw.Draw(base)
+    skull = [cx - rx, top, cx + rx, fy0 + fh * 0.26]
+    d.ellipse(skull, fill=SKIN["skin_3"] + (255,), outline=(0, 0, 0, 255))
+    d.ellipse([cx - rx + 1.2, top + 1.2, cx + rx - 1.2, fy0 + fh * 0.12],
+              fill=SKIN["skin_4"] + (255,))
+    d.arc([cx - rx + 1, top + 1, cx + rx - 1, (top + fy0) / 2.0],
+          200, 340, fill=SKIN["skin_h"] + (255,))
+    d.arc([cx - rx + 1, fy0 - fh * 0.30, cx + rx - 1, fy0 + fh * 0.26],
+          20, 160, fill=SKIN["skin_2"] + (255,))
+    for ex, ey, ec in eyes:                 # put his eyes back
+        base.putpixel((ex, ey), ec)
+
+    if style == "crew":
+        hair_d, hair_h = HAIR[m["hair"]]
+        cap = [cx - rx + 1, top + 1, cx + rx - 1, max(top + 3, fy0 - fh * 0.15)]
+        d.ellipse(cap, fill=hair_d + (255,))
+        d.arc([cap[0], cap[1], cap[2], cap[3] + 2], 195, 345, fill=hair_h + (255,))
+        for i in range(3):                      # the fade: sides shaved out
+            yy = int(fy0 - fh * 0.24) + i
+            d.point([(int(cx - rx) + 2 + i, yy), (int(cx + rx) - 2 - i, yy)],
+                    fill=SKIN["skin_2"] + (255,))
+        for i in range(3):                      # short strokes on top
+            xx = cx - rx * 0.50 + i * rx * 0.50
+            d.line([(xx, top + 2), (xx + 1, top + 4)], fill=hair_h + (255,))
+    elif style == "turban":
+        cols = BELT["red" if m["gang"] == "wing" else "yellow"]
+        span = (fy0 + fh * 0.10) - top
+        for i in range(3):                      # bands of wrapped cloth
+            yy = top + i * span * 0.30
+            d.ellipse([cx - rx - 1, yy, cx + rx + 1, yy + span * 0.50],
+                      fill=(cols["m"] if i % 2 == 0 else cols["d"]) + (255,))
+            d.line([(cx - rx - 1, yy + span * 0.42), (cx + rx + 1, yy + span * 0.42)],
+                   fill=cols["d"] + (255,))
+        d.line([(cx - rx * 0.75, top + 1), (cx + rx * 0.55, top + 1)],
+               fill=cols["l"] + (255,))
+        d.polygon([(cx - rx - 1, fy0 - fh * 0.15), (cx - rx + 3, fy0 - fh * 0.02),
+                   (cx - rx + 2, fy0 + fh * 0.55), (cx - rx - 4, fy0 + fh * 0.42)],
+                  fill=cols["d"] + (255,))       # tail down the side
+    return base
+
+
+def belt_colours(base, m):
+    """Repaint the sash. In the base art it is drawn in the hair colour, so it
+    is the dark pixels at the waist that turn into the gang's belt."""
+    g = head_geometry(base, m)
+    if not g:
+        return base
+    _, fy0, _, fh = g
+    fh = max(fh, 6.0)
+    belt = BELT["red" if m["gang"] == "wing" else "yellow"]
+    px = base.load()
+    for y in range(max(0, int(fy0 + fh * 1.85)),
+                   min(base.height, int(fy0 + fh * 4.60) + 1)):
+        for x in range(base.width):
+            c = px[x, y]
+            if not c[3]:
+                continue
+            rgb = (c[0], c[1], c[2])
+            if rgb == (0x31, 0x31, 0x31):
+                px[x, y] = belt["d"] + (255,)
+            elif rgb == (0x5a, 0x5a, 0x63):
+                px[x, y] = belt["m"] + (255,)
+    return base
+
+
 def paint_weapons(img, m):
     """Draw what the member carries out of his fist (or fists)."""
     skin_rgb = {_warm(SKIN[r], m["skin"]) for r in SKIN}
@@ -392,6 +615,8 @@ def paint_weapons(img, m):
     kind, length = m["weapon"], m["length"]
     if kind == "staff":
         draw_staff(d, fists[0], length)
+    elif kind == "plank":
+        draw_plank(d, fists[0], length)
     elif kind == "machete":
         draw_machete(d, fists[0], length)
     elif kind == "hatchet":
@@ -403,12 +628,17 @@ def paint_weapons(img, m):
 
 
 # ------------------------------------------------------------------- identity
-def paint_identity(img, m):
+def paint_identity(img, m, geom=None):
     """Long hair, moustache, beard and the bandolier of brass bullets."""
     head = head_anchor(img)
     hair_d, hair_h = HAIR[m["hair"]]
     if head:
         cx, cy, hw = head
+        if geom:
+            # a restyled head moves the silhouette top, so hang the moustache
+            # and beard off the measured face box instead
+            fx, fy, ffw, ffh = geom
+            cx, cy, hw = fx + ffw * 0.22, fy + ffh * 0.30, ffw * 0.42
         layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
         if m["id"] == "wingkong_hatchet":
@@ -469,11 +699,14 @@ def member_sprite(cid, group=0, number=0, weapon=True):
     m = member(cid)
     raw, sprites, pal = sff.read_sff(os.path.join(BASE, "kfm.sff"))
     sp = next(s for s in sprites if s["group"] == group and s["number"] == number)
-    img = sff.decode_sprite(raw, sp, pal, 0)
-    img = upscale(recolour(img, colour_map(m["gang"], m["cloth"], m["skin"],
+    base = sff.decode_sprite(raw, sp, pal, 0)
+    geom = scaled_geom(head_geometry(base, m))
+    base = restyle_head(base, m)
+    base = belt_colours(base, m)
+    img = upscale(recolour(base, colour_map(m["gang"], m["cloth"], m["skin"],
                                            m["band"], m["hair"])))
     img = ImageOps.expand(img, (PAD_X, PAD_Y, PAD_X, PAD_Y), fill=(0, 0, 0, 0))
-    img = paint_identity(img, m)
+    img = paint_identity(img, m, geom if m.get("style") else None)
     if weapon:
         img = paint_weapons(img, m)
     return img
@@ -482,7 +715,9 @@ def member_sprite(cid, group=0, number=0, weapon=True):
 # ----------------------------------------------------------------------- build
 def prop_colours():
     out = []
-    for group in (STAFF, BLADE, GOLD, LEATHER):
+    for group in (STAFF, BLADE, GOLD, LEATHER, PLANK):
+        out.extend(group.values())
+    for group in BELT.values():
         out.extend(group.values())
     return out
 
@@ -542,10 +777,13 @@ def build(cid):
     for sp in sprites:
         if sp["group"] >= 9000:
             continue          # portraits are rendered fresh by build_portraits
-        img = sff.decode_sprite(raw, sp, pal, 0)
-        img = upscale(recolour(img, cmap))
+        base = sff.decode_sprite(raw, sp, pal, 0)
+        geom = scaled_geom(head_geometry(base, m))
+        base = restyle_head(base, m)
+        base = belt_colours(base, m)
+        img = upscale(recolour(base, cmap))
         img = ImageOps.expand(img, (PAD_X, PAD_Y, PAD_X, PAD_Y), fill=(0, 0, 0, 0))
-        img = paint_identity(img, m)
+        img = paint_identity(img, m, geom if m.get("style") else None)
         img = paint_weapons(img, m)
 
         # 8-bit on the member's own palette: same art, a tenth of the bytes.
