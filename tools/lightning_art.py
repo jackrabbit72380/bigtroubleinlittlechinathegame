@@ -46,9 +46,9 @@ SKIN_LIT = (238, 198, 170)
 SKIN_DK = (156, 112, 84)
 SKIN_DEEP = (98, 68, 52)
 
-BEAD = (98, 114, 134)
-BEAD_LIT = (156, 174, 196)
-BEAD_DK = (52, 66, 84)
+BEAD = (86, 102, 122)
+BEAD_LIT = (128, 148, 172)
+BEAD_DK = (46, 58, 76)
 
 CAPE = (34, 30, 30)
 CAPE_LIT = (60, 52, 50)
@@ -61,8 +61,8 @@ STRAW_LIT = (238, 220, 180)
 STRAW_DK = (146, 120, 80)
 HATBAND = (58, 42, 28)
 
-TROUSER = (38, 38, 48)
-TROUSER_LIT = (58, 58, 70)
+TROUSER = (34, 34, 43)
+TROUSER_LIT = (47, 47, 57)
 TROUSER_DK = (22, 22, 30)
 
 BOOT = (34, 34, 42)
@@ -155,19 +155,21 @@ def torso():
     img.alpha_composite(beads)
 
     # --- the demon face worked into the bib --------------------------------
-    d.ellipse([48, 44, 86, 80], fill=(22, 22, 28, 235))
-    d.arc([48, 44, 86, 80], 200, 340, fill=BEAD_LIT + (200,), width=2)
-    for sx in (58, 72):
-        d.ellipse([sx - 5, 50, sx + 5, 59], fill=(214, 52, 46, 255))
-        d.ellipse([sx - 2.5, 52.5, sx + 2.5, 56.5], fill=(255, 176, 118, 255))
-    for x in range(52, 86, 6):
-        d.polygon([(x, 63), (x + 4, 63), (x + 2, 72)], fill=(238, 240, 246, 255))
-    for x in range(54, 84, 10):
-        d.polygon([(x, 79), (x + 4, 79), (x + 2, 72)], fill=(206, 212, 222, 255))
+    # A mask the size of the wearer's own face read as a second head stuck to
+    # his chest; on the concept it is a small motif stamped on the plate.
+    d.ellipse([55, 46, 77, 74], fill=(22, 22, 28, 235))
+    d.arc([55, 46, 77, 74], 200, 340, fill=BEAD_LIT + (200,), width=2)
+    for sx in (61, 71):
+        d.ellipse([sx - 3.5, 51, sx + 3.5, 58], fill=(214, 52, 46, 255))
+        d.ellipse([sx - 1.8, 53, sx + 1.8, 56], fill=(255, 176, 118, 255))
+    for x in range(58, 76, 4):
+        d.polygon([(x, 61), (x + 3, 61), (x + 1.5, 67)], fill=(238, 240, 246, 255))
+    for x in range(59, 75, 7):
+        d.polygon([(x, 73), (x + 3, 73), (x + 1.5, 67)], fill=(206, 212, 222, 255))
     # small horns curling off the mask
-    for sgn, x in ((-1, 50), (1, 84)):
-        d.line([(x, 50), (x + sgn * 7, 42), (x + sgn * 4, 35)],
-               fill=BEAD_LIT + (235,), width=3)
+    for sgn, x in ((-1, 57), (1, 75)):
+        d.line([(x, 52), (x + sgn * 5, 46), (x + sgn * 3, 41)],
+               fill=BEAD_LIT + (235,), width=2)
 
     # --- grey waist chevron and belt --------------------------------------
     d.polygon([(44, 90), (66, 103), (88, 90), (88, 99), (66, 113), (44, 99)],
@@ -238,9 +240,19 @@ def head():
     img.alpha_composite(char_rig._shade(face, (150, 110, 86),
                                       (196, 150, 118), SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    d.ellipse([cx - 41, 54, cx + 41, 94], fill=(10, 10, 15, 212))   # brim shadow
-    d.ellipse([cx - 35, 70, cx + 35, 92], fill=(6, 6, 9, 92))       # deepest, jaw
-    d.line([(cx - 12, 88), (cx + 12, 87)], fill=(96, 50, 44, 175), width=2)
+    # The brim shadow was opaque enough to erase the jaw, which left a black
+    # band with nothing in it but eyes; softened, its hard elliptical edge
+    # instead read as a white mask with slits painted on. A shadow layer of its
+    # own, blurred, lands between the two: dark under the brim, falling off
+    # towards the chin so the face still has a bottom.
+    shade_layer = _blank((W, H))
+    sd = ImageDraw.Draw(shade_layer)
+    sd.ellipse([cx - 40, 50, cx + 40, 96], fill=(10, 10, 15, 178))
+    sd.ellipse([cx - 34, 70, cx + 34, 94], fill=(6, 6, 9, 86))
+    img.alpha_composite(shade_layer.filter(ImageFilter.GaussianBlur(2.6)))
+    d = ImageDraw.Draw(img)
+    d.line([(cx - 12, 88), (cx + 12, 87)], fill=(120, 66, 58, 150), width=2)
+    d.line([(cx - 9, 93), (cx + 9, 92)], fill=(150, 104, 84, 90), width=2)  # chin
 
     # --- the hat, straight out of the render -------------------------------
     # The concept's brim is a little under half the figure's width; the body is
@@ -279,28 +291,28 @@ def arm(near=True):
     # upper sleeve, hanging from the shoulder
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(41, 14), (69, 14), (73, 54), (36, 58)], fill=255)
-    d.ellipse([sh[0] - 16, sh[1] - 9, sh[0] + 16, sh[1] + 16], fill=255)
-    d.ellipse([elbow[0] - 18, elbow[1] - 14, elbow[0] + 18, elbow[1] + 12], fill=255)
+    d.polygon([(43, 14), (67, 14), (70, 54), (39, 57)], fill=255)
+    d.ellipse([sh[0] - 13, sh[1] - 8, sh[0] + 13, sh[1] + 13], fill=255)
+    d.ellipse([elbow[0] - 15, elbow[1] - 12, elbow[0] + 15, elbow[1] + 10], fill=255)
     img.alpha_composite(char_rig._shade(mask, base, lit, dark))
 
     # forearm sleeve, angled out towards the enemy
     fmask = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(fmask)
-    fd.line([elbow, wrist], fill=255, width=20)
-    fd.ellipse([elbow[0] - 11, elbow[1] - 11, elbow[0] + 11, elbow[1] + 11], fill=255)
-    fd.ellipse([wrist[0] - 11, wrist[1] - 11, wrist[0] + 11, wrist[1] + 11], fill=255)
+    fd.line([elbow, wrist], fill=255, width=17)
+    fd.ellipse([elbow[0] - 9, elbow[1] - 9, elbow[0] + 9, elbow[1] + 9], fill=255)
+    fd.ellipse([wrist[0] - 9, wrist[1] - 9, wrist[0] + 9, wrist[1] + 9], fill=255)
     img.alpha_composite(char_rig._shade(fmask, base, lit, dark))
 
     d = ImageDraw.Draw(img)
     # flared cuff at the wrist
-    d.line([(92, 80), (104, 88)], fill=(132, 134, 144, 255), width=26)
-    d.line([(95, 82), (102, 87)], fill=dark + (210,), width=18)
+    d.line([(93, 81), (103, 87)], fill=(104, 108, 120, 255), width=22)
+    d.line([(95, 82), (102, 87)], fill=dark + (210,), width=15)
 
     # hand: wrist, palm, four fingers
     hx, hy = 116, 96
-    d.ellipse([hx - 14, hy - 13, hx + 14, hy + 13], fill=skin[0] + (255,))
-    d.ellipse([hx - 10, hy - 10, hx + 8, hy + 4], fill=skin[1] + (205,))
+    d.ellipse([hx - 11, hy - 10, hx + 11, hy + 10], fill=skin[0] + (255,))
+    d.ellipse([hx - 8, hy - 8, hx + 6, hy + 3], fill=skin[1] + (205,))
     d.line([(hx - 4, hy + 5), (hx + 9, hy + 6)], fill=skin[2] + (185,), width=2)
     for i in range(3):
         d.line([(hx + 3, hy - 6 + i * 5), (hx + 13, hy - 5 + i * 5)],
@@ -315,6 +327,11 @@ def arm(near=True):
     # current: short arcs off the hand, not a fork
     _stroke(img, _zig(hx + 6, hy - 8, hx + 20, hy - 20, 4, 4, 0.7), width=2)
     _stroke(img, _zig(hx - 8, hy + 6, hx - 18, hy + 17, 3, 3, 2.1), width=2)
+    # The far arm was the near arm again, so its hand reached across his own
+    # chest and vanished behind the torso, leaving one floating glove. A
+    # mirrored part bends the other way and puts the hand on its own side.
+    if not near:
+        img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
 
 
@@ -326,18 +343,24 @@ def thigh():
 
 
 def shin():
-    """Baggy trouser above, tall black boot below."""
-    W, H = 46, 86
-    leg = _limb((W, H), [(9, 2), (37, 2), (39, 38), (35, 84), (11, 84), (7, 38)],
+    """Baggy trouser above, tall black boot below.
+
+    The part is drawn only as long as the shin metric (77px), because the rig
+    hangs it from the knee and the ankle is exactly one shin-length below: art
+    longer than that pokes through the floor in every frame, and the foot is
+    what should be standing on it.
+    """
+    W, H = 46, 77
+    leg = _limb((W, H), [(9, 2), (37, 2), (39, 34), (35, 75), (11, 75), (7, 34)],
                 TROUSER, TROUSER_LIT, TROUSER_DK)
     bootmask = Image.new("L", (W, H), 0)
     bd = ImageDraw.Draw(bootmask)
-    bd.polygon([(7, 34), (39, 34), (35, 84), (11, 84)], fill=255)
+    bd.polygon([(7, 30), (39, 30), (35, 75), (11, 75)], fill=255)
     boot = char_rig._shade(bootmask, BOOT, BOOT_LIT, BOOT_DK)
     img = Image.alpha_composite(leg, boot)
     d = ImageDraw.Draw(img)
-    d.line([(5, 34), (41, 34)], fill=(140, 144, 154, 210), width=2)   # cuff
-    d.line([(10, 42), (34, 42)], fill=BOOT_LIT + (110,), width=2)
+    d.line([(5, 30), (41, 30)], fill=(104, 108, 118, 190), width=2)   # cuff
+    d.line([(10, 38), (34, 38)], fill=BOOT_LIT + (110,), width=2)
     return img
 
 
@@ -346,12 +369,15 @@ def foot():
     W, H = 52, 36
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(6, 8), (30, 5), (50, 18), (48, 30), (8, 30)], fill=255)
-    d.ellipse([2, 6, 22, 30], fill=255)
+    # The sole is the bottom of the part, because the pivot sits on the ankle
+    # and the ankle is 14px off the floor: a shoe that stopped short of its own
+    # canvas hung the whole character in the air.
+    d.polygon([(6, 8), (30, 5), (50, 17), (49, 33), (8, 34)], fill=255)
+    d.ellipse([2, 6, 22, 34], fill=255)
     img = char_rig._shade(mask, BOOT, BOOT_LIT, BOOT_DK)
     d = ImageDraw.Draw(img)
-    d.line([(7, 29), (49, 27)], fill=(138, 142, 152, 220), width=2)
-    d.line([(9, 12), (27, 9)], fill=BOOT_LIT + (150,), width=2)
+    d.line([(7, 32), (48, 31)], fill=(104, 108, 118, 205), width=2)
+    d.line([(9, 12), (27, 9)], fill=BOOT_LIT + (120,), width=2)
     return img
 
 
@@ -404,11 +430,15 @@ def cape():
 # ------------------------------------------------------------------------ main
 RIG_JSON = {
     "pivots": {
-        "pelvis": [50, 16],
+        # pelvis art is 86 wide now, so the centre is 43, not the 50 the
+        # 100-wide original used: a stale pivot drew the whole skirt 7px left.
+        "pelvis": [43, 16],
         "arm_n": [56, 14],
-        "arm_f": [56, 14],
-        "foot_n": [14, 32],
-        "foot_f": [14, 32],
+        "arm_f": [92, 14],          # mirrored art, pivot mirrored too
+        # ankle joint sits 14px above the ground, so the pivot is placed 14px
+        # up from the sole (part height 36 - 14 = 20)
+        "foot_n": [14, 25],
+        "foot_f": [14, 25],
         "cape": [95, 12],
     },
 }
