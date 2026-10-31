@@ -203,96 +203,85 @@ def pelvis():
 
 # ------------------------------------------------------------------------ head
 def head():
-    """Shadowed face under the big fringed straw hat, with lightning on the brim.
+    """The hat hides the face; only two blue eyes burn out of its shade.
 
-    The hat sits ABOVE the skull: the brim is drawn high enough that the jaw and
-    the shaded eyes read below it, which is what makes the silhouette
-    recognisable instead of a stack of shapes.
-
-    The art is 94px tall because that is all the room the skeleton leaves above
-    the neck - the body is 318px with the hip at -165 and 110px of torso and
-    neck on top, and a 400px canvas puts the ceiling 97px above the neck. The
-    first version was 154px tall with a 32px-wide face, so the hat overran the
-    canvas and the brim hung over empty air either side of the head; in game
-    that read as a hat floating above a body. The face is now 58px wide and the
-    neck fills the gap down to the collar.
+    Rewritten to the second concept sheet. The hat is no longer a shallow dish
+    sitting on his brow: it is a broad woven brim that comes down over the eyes,
+    with a truncated cone crown and a fan of straw out of the top. Underneath,
+    the face is sunk in the brim's shadow and the only lit things on it are the
+    eyes, which is the look in both the painted sheet and the film still.
     """
     W, H = 150, 94
     img = _blank((W, H))
 
     # --- neck, so the head meets the shoulders instead of hovering ----------
     neck = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(neck).rectangle([64, 74, 86, 94], fill=255)
+    ImageDraw.Draw(neck).rectangle([62, 72, 88, 94], fill=255)
     img.alpha_composite(char_rig._shade(neck, SKIN_DK, SKIN, SKIN_DEEP))
 
-    # --- face, in the shade of the brim ------------------------------------
+    # --- skull, then the brim's shadow laid over nearly all of it -----------
     face = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(face)
-    fd.ellipse([46, 32, 104, 92], fill=255)
-    fd.rectangle([56, 60, 94, 92], fill=255)
-    img.alpha_composite(char_rig._shade(face, (170, 126, 98), SKIN, SKIN_DEEP))
+    fd.ellipse([44, 26, 106, 92], fill=255)
+    fd.rectangle([56, 56, 94, 92], fill=255)
+    img.alpha_composite(char_rig._shade(face, (150, 110, 86),
+                                       (196, 150, 118), SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    # Only the brow sits in the brim's shade; the eyes are set low enough that
-    # the fringe cannot eat them, and the jaw stays lit so the face reads as a
-    # face rather than a dark bar under a hat.
-    d.ellipse([44, 34, 106, 62], fill=(18, 18, 24, 110))
-    d.rectangle([50, 34, 100, 56], fill=(92, 62, 46, 120))       # brow in shade
-    d.line([(70, 54), (80, 53)], fill=(58, 38, 30, 160), width=2)
-    for cx in (62, 88):                                          # narrow lit eyes
-        d.ellipse([cx - 10, 58, cx + 10, 73], fill=(56, 36, 30, 200))
-        d.line([(cx - 6, 66), (cx + 6, 65)], fill=(22, 14, 12, 235), width=4)
-        d.line([(cx - 5, 66), (cx + 5, 65)], fill=(178, 222, 252, 245), width=2)
-        d.point([(cx, 65)], fill=(255, 255, 255, 255))
-    d.line([(74, 68), (71, 79), (78, 81)], fill=SKIN_DEEP + (175,), width=2)
-    d.line([(62, 74), (56, 78)], fill=SKIN_DEEP + (95,), width=2)
-    d.line([(88, 74), (94, 78)], fill=SKIN_DEEP + (95,), width=2)
-    d.line([(64, 84), (86, 83)], fill=(108, 56, 48, 210), width=2)
-    d.line([(70, 88), (80, 88)], fill=SKIN_LIT + (110,), width=1)
+    d.ellipse([40, 22, 110, 78], fill=(12, 12, 18, 210))        # brim shadow
+    d.line([(60, 82), (90, 81)], fill=(104, 54, 46, 200), width=2)   # mouth
+    d.line([(70, 86), (80, 86)], fill=SKIN_LIT + (90,), width=1)     # chin
 
-    # --- brim: a broad disc of woven straw --------------------------------
-    # The concept hat is far wider and flatter than the tall crown he had: a
-    # shallow disc from ear to ear with the crown barely rising off it.
+    # --- the only lit thing under the hat ----------------------------------
+    for cx in (62, 88):
+        glow = _blank((W, H))
+        ImageDraw.Draw(glow).ellipse([cx - 17, 55, cx + 17, 77],
+                                     fill=BOLT + (120,))
+        img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(4)))
+    d = ImageDraw.Draw(img)
+    for cx, sgn in ((62, -1), (88, 1)):
+        d.line([(cx - 9, 71), (cx + 9, 68)], fill=(16, 28, 56, 255), width=5)
+        d.line([(cx - 8, 70), (cx + 8, 68)], fill=BOLT + (255,), width=3)
+        d.line([(cx - 4, 69), (cx + 5, 68)], fill=BOLT_CORE + (255,), width=1)
+        d.point([(cx + sgn * 7, 68)], fill=(255, 255, 255, 255))
+    # lashes drawn as little arcs, the way the sheet draws them
+    _stroke(img, _zig(50, 62, 68, 57, 4, 2, 0.6), width=2)
+    _stroke(img, _zig(100, 62, 82, 57, 4, 2, 1.6), width=2)
+
+    # --- brim: broad, shallow and woven, its front edge over the eyes ------
     brim = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(brim).ellipse([1, 26, 149, 50], fill=255)
+    ImageDraw.Draw(brim).ellipse([0, 32, 150, 60], fill=255)
     img.alpha_composite(char_rig._shade(brim, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    d.arc([1, 28, 149, 50], 198, 342, fill=STRAW_DK + (170,), width=2)
-    d.line([(5, 47), (145, 47)], fill=(96, 74, 46, 90), width=3)      # underside
+    d.arc([0, 34, 150, 60], 196, 344, fill=STRAW_DK + (205,), width=2)
+    d.line([(2, 59), (148, 59)], fill=(102, 78, 48, 140), width=2)
+    for i in range(17):                                          # radial weave
+        a = math.pi * (0.06 + 0.88 * i / 16)
+        x = 75 + math.cos(a) * 73
+        y = 48 - math.sin(a) * 12
+        d.line([(75 + (x - 75) * 0.34, 48 + (y - 48) * 0.34), (x, y)],
+               fill=STRAW_DK + (70,), width=1)
 
-    # --- fringe: shaggy straw hanging off the brim ------------------------
-    fringe = Image.new("L", (W, H), 0)
-    fd = ImageDraw.Draw(fringe)
-    for i in range(40):
-        t = i / 39.0
-        x = 5 + 140 * t
-        edge = 44 - abs(t - 0.5) * 6           # the brim curves up at the ends
-        drop = 2 + (i * 29 % 6)                # deterministic ragged lengths
-        fd.line([(x, edge), (x + ((i % 5) - 2) * 1.1, edge + drop)],
-                fill=255, width=2)
-    img.alpha_composite(char_rig._shade(fringe, STRAW_DK, STRAW, (108, 84, 52)))
-
-    # --- crown: woven cone with a bound top -------------------------------
+    # --- crown: truncated cone, bound, with straw fraying off the top ------
     crown = Image.new("L", (W, H), 0)
     cd = ImageDraw.Draw(crown)
-    cd.polygon([(58, 11), (92, 11), (104, 28), (46, 28)], fill=255)
-    cd.ellipse([56, 4, 94, 16], fill=255)
+    cd.polygon([(48, 40), (102, 40), (84, 10), (66, 10)], fill=255)
+    cd.ellipse([64, 4, 86, 16], fill=255)
     img.alpha_composite(char_rig._shade(crown, STRAW, STRAW_LIT, STRAW_DK))
     d = ImageDraw.Draw(img)
-    for i in range(3):
-        y = 13 + i * 5.0
-        half = 19 + i * 3.5
-        d.line([(75 - half, y), (75 + half, y)], fill=STRAW_DK + (110,), width=1)
-    d.line([(55, 15), (48, 27)], fill=STRAW_DK + (150,), width=2)
-    d.line([(95, 15), (102, 27)], fill=STRAW_DK + (150,), width=2)
-    # dark band lashed round the base of the crown
-    d.polygon([(48, 22), (102, 22), (103, 27), (47, 27)], fill=HATBAND + (255,))
-    d.line([(48, 22), (102, 22)], fill=(196, 166, 112, 200), width=1)
-    d.line([(75, 12), (75, 27)], fill=STRAW_LIT + (70,), width=2)
+    for i in range(6):                                           # vertical weave
+        t = i / 5.0
+        d.line([(50 + 50 * t, 39), (67 + 16 * t, 11)],
+               fill=STRAW_DK + (90,), width=1)
+    d.line([(48, 39), (102, 39)], fill=HATBAND + (255,), width=3)   # band
+    for i in range(7):                                           # frayed tuft
+        a = -0.9 + 1.8 * i / 6
+        d.line([(75, 8), (75 + math.sin(a) * 9, 8 - math.cos(a) * 8)],
+               fill=STRAW_DK + (230,), width=1)
 
-    # --- lightning crawling over the hat ----------------------------------
-    _stroke(img, _zig(16, 42, 34, 39, 4, 3, 0.4), width=2)
-    _stroke(img, _zig(116, 40, 134, 43, 4, 3, 1.9), width=2)
-    _stroke(img, _zig(88, 12, 100, 24, 4, 2, 2.6), width=2, glow=False)
+    # --- current crawling over the hat -------------------------------------
+    _stroke(img, _zig(18, 58, 40, 54, 4, 3, 0.4), width=2)
+    _stroke(img, _zig(112, 52, 136, 58, 4, 3, 1.9), width=2)
+    _stroke(img, _zig(70, 12, 88, 30, 4, 2, 2.6), width=2, glow=False)
     return img
 
 

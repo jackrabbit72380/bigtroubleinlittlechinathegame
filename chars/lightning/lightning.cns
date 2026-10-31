@@ -3642,3 +3642,157 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 ctrl = 1
+
+;---------------------------------------------------------------------------
+; Storm Step - the teleport.
+; Down, then up: he calls a bolt down on himself, goes up inside it, and drops
+; out of the sky on the far side of the opponent. Raiden's teleport, except he
+; arrives with the bolt still around him and it hits.
+;---------------------------------------------------------------------------
+[Statedef 1700]
+type    = S
+movetype= A
+physics = N
+anim = 40
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+[State 1700, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 3
+
+; the column he turns into, standing where he was
+[State 1700, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1720
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 30
+trans = add
+ownpal = 1
+
+[State 1700, handflash]
+type = Explod
+trigger1 = time = 2
+anim = 7001
+id = 1721
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = -2
+trans = add
+
+; he IS the bolt while he travels - nothing of the body shows
+[State 1700, gone]
+type = AssertSpecial
+trigger1 = time >= 4 && time < 26
+flag = invisible
+
+[State 1700, trail]
+type = AfterImage
+trigger1 = time = 4
+time = 20
+length = 8
+timegap = 1
+framegap = 1
+trans = add
+paladd = 12, 44, 86
+palmul = 1.0, 1.05, 1.22
+
+[State 1700, rise]
+type = VelSet
+trigger1 = time = 4
+y = -40
+
+; at the top, cross to the far side of the opponent
+[State 1700, cross]
+type = PosSet
+trigger1 = time = 20
+x = enemy, pos x + ifelse(facing = 1, 78, -78)
+
+[State 1700, apex]
+type = PosSet
+trigger1 = time = 20
+y = -540
+
+[State 1700, drop]
+type = VelSet
+trigger1 = time = 20
+y = 46
+
+[State 1700, land]
+type = ChangeState
+trigger1 = time > 20 && pos y >= 0
+value = 1702
+
+;---------------------------------------------------------------------------
+[Statedef 1702]
+type    = S
+movetype= A
+physics = N
+juggle  = 4
+anim = 1700
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+; he came down behind the opponent, so turn and hit him
+[State 1702, turn]
+type = Turn
+trigger1 = time = 0
+trigger1 = p2bodydist X < 0
+
+[State 1702, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1722
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 16
+trans = add
+ownpal = 1
+
+[State 1702, shake]
+type = EnvShake
+trigger1 = time = 0
+time = 8
+freq = 90
+ampl = -12
+
+[State 1702, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 4
+
+[State 1702, strike]
+type = HitDef
+trigger1 = time = 1
+attr = S, HA
+damage = 105
+guardflag = MA
+hitflag = MAF
+pausetime = 10, 14
+sparkno = 1
+sparkxy = -30,-174
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 18
+ground.velocity = -5,-5
+air.velocity = -4,-6
+fall = 1
+
+[State 1702, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1

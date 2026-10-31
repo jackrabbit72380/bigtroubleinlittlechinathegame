@@ -900,3 +900,30 @@ def main(argv):
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv[1:]))
+
+
+# ------------------------------------------------------------------ per fighter
+# A fighter may need a stance of his own. Lightning is the one who does: his
+# concept has him in Raiden's wide, upright stance with both hands out, palms
+# open and current crawling between them, not in Jack's low boxer's guard.
+POSE_SETS = {
+    "lightning": {
+        # Arms swung only part way down: the parts are cut in a guard, so
+        # hanging them fully (-44) clasped the hands at his waist. Held here the
+        # elbows stay wide and the palms sit forward, which is the stance the
+        # concept draws.
+        "stance": dict(lean=-2, head=1, cape=-4,
+                       arm_n=(-20, 0, 0), arm_f=(-16, 0, 0),
+                       leg_n=(26, -16, 82), leg_f=(-28, 16, 98)),
+        "breath": dict(lean=-3, head=0, lift=1, cape=-2,
+                       arm_n=(-24, 0, 0), arm_f=(-20, 0, 0),
+                       leg_n=(26, -16, 82), leg_f=(-28, 16, 98)),
+    },
+}
+
+
+def poses_for(char_id):
+    """The pose table a bake should use: the shared poses plus this id's own."""
+    table = dict(POSES)
+    table.update(POSE_SETS.get(char_id, {}))
+    return table

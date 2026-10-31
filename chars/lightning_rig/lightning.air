@@ -2453,6 +2453,12 @@ Clsn1: 1
 7010,2, 0,0, 3, , A
 7010,3, 0,0, 3, , A
 
+; weapon animation - art kept as drawn
+[Begin Action 7020]
+7020,0, 0,0, 4, , A
+7020,1, 0,0, 4, , A
+7020,2, 0,0, -1, , A
+
 ; weapon action for state 1500
 [Begin Action 1500]
 1500,0, 0,0, 5
@@ -2473,4 +2479,9 @@ Clsn1: 1
 1600,1, 0,0, 1
 1600,1, 0,0, 4
 1600,1, 0,0, 5
+
+; weapon action for state 1700
+[Begin Action 1700]
+1700,0, 0,0, 4
+1700,1, 0,0, 8
 

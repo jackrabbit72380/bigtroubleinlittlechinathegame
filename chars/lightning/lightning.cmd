@@ -388,6 +388,11 @@ command = ~F, DF, D, DB, B, a
 name = "thunder_b"
 command = ~F, DF, D, DB, B, b
 
+; Storm Step: down, then up, with no button - the teleport is a movement
+[Command]
+name = "storm_step"
+command = ~D, U
+
 [Statedef -1]
 
 ;===========================================================================
@@ -814,3 +819,12 @@ triggerall = statetype != A
 trigger1 = ctrl
 trigger2 = movecontact
 trigger2 = stateno != [1500,1600)
+
+;Storm Step (teleport, down then up)
+[State -1, Storm Step]
+type = ChangeState
+value = 1700
+triggerall = command = "storm_step"
+triggerall = statetype != A
+triggerall = ctrl
+triggerall = stateno != [1700,1703)
