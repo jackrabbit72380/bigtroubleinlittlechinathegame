@@ -59,7 +59,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic =
+bgmusic = 
 bgmvolume = 100
 
 [BGdef]
@@ -70,6 +70,16 @@ debugbg = 0
 [Begin Action 9000]
 9000,1, 0,0, -1
 
+; The fog is drawn first, so it runs behind every painted layer of the hall.
+; The backdrop is open at the skull's mouth, and that hole is the only place
+; the clip can be seen - see stages/video/README.txt.
+[BG fog]
+type = video
+path = video/fog.webm
+layerno = 0
+start = 0,0
+delta = 0,0
+
 [BG bg]
 type = normal
 spriteno = 0,0
@@ -77,7 +87,7 @@ layerno = 0
 start = -2800,0
 delta = 1,1
 trans = none
-mask = 0
+mask = 1
 tile = 0,0
 
 [BG fg]

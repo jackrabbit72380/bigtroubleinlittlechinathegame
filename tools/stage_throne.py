@@ -57,6 +57,17 @@ SKULL_TOP = px(6)             # whole dome stays in frame, like the reference
 MOUTH_LIP_Y = SKULL_TOP + int(0.612 * SKULL_H)     # where the mouth opens
 MOUTH_HALF = int(0.335 * SKULL_W)
 
+# The aperture, in skull-layer coordinates: wide under the brow, waisted at the
+# cheeks, and open at the bottom so the fog has somewhere to come from.
+MOUTH_PTS = [(0.176, 0.606), (0.500, 0.580), (0.824, 0.606), (0.856, 0.780),
+             (0.828, 1.02), (0.172, 1.02), (0.144, 0.780)]
+
+
+def mouth_canvas():
+    """The aperture mapped onto the stage canvas, where the skull is pasted."""
+    ox, oy = CX - int(SKULL_W / 2), int(SKULL_TOP)
+    return [(ox + u * SKULL_W, oy + v * SKULL_H) for u, v in MOUTH_PTS]
+
 STAIR_TOP = MOUTH_LIP_Y + 6   # first step, inside the mouth under the teeth
 STAIR_KNEE = SKULL_TOP + SKULL_H + 8               # flight meets the cheek walls
 STAIR_TOP_HALF = 36
@@ -472,12 +483,8 @@ def skull_layer():
     dc.line([(0.500 * ws, hs * 0.545), (0.500 * ws, hs * 0.600)],
             fill=(150, 142, 124), width=max(1, int(ws * 0.008)))
 
-    # --- mouth: transparent, the staircase shows through it -----------------
-    mouth = [(0.176 * ws, hs * 0.606), (0.500 * ws, hs * 0.580),
-             (0.824 * ws, hs * 0.606), (0.856 * ws, hs * 0.780),
-             (0.828 * ws, hs * 1.02), (0.172 * ws, hs * 1.02),
-             (0.144 * ws, hs * 0.780)]
-    poly(mouth, (0, 0, 0), 0)
+    # --- mouth: an open aperture, cleared out of the layer ------------------
+    poly([(u * ws, v * hs) for u, v in MOUTH_PTS], (0, 0, 0), 0)
 
     # --- teeth --------------------------------------------------------------
     def tooth(bx, y0, half, tip, lean=0.0):
@@ -731,14 +738,43 @@ def paint():
     painted = art.screen(painted, ring, glow_radius=px(4), gain=1.3)
 
     skull, rim = skull_layer()
+    # The mouth is a real hole in the hall. The fog video is the last background
+    # in the stack, so the only way it can be seen is if the backdrop is open
+    # where the mouth is. The teeth belong to the skull layer and stay opaque,
+    # so they are subtracted back out of the hole: they read as hanging in
+    # front of the fog, not painted on the wall.
+    mouth = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mouth).polygon(mouth_canvas(), fill=255)
+    teeth = skull.getchannel("A").point(lambda v: 255 if v > 110 else 0)
+    aperture = ImageChops.subtract(mouth, teeth)
+    # Feathered, so the fog fades out into the stair throat at the bottom
+    # of the jaw instead of stopping on a cut line.
+    aperture = aperture.filter(ImageFilter.GaussianBlur(px(2.2)))
     painted = Image.alpha_composite(painted, skull)
     painted = art.screen(painted, rim, glow_radius=px(1.5), gain=0.26, passes=2)
+    # art.screen() comes back with an opaque alpha channel, so the aperture is
+    # punched last: it has to survive every layer drawn after it.
+    painted.putalpha(ImageChops.subtract(painted.split()[3], aperture))
     return [("bg", 0, 0, painted, 0),
             ("fg", 3, 0, fg, 1)]
 
 
+FOG_BG = """; The fog is drawn first, so it runs behind every painted layer of the hall.
+; The backdrop is open at the skull's mouth, and that hole is the only place
+; the clip can be seen - see stages/video/README.txt.
+[BG fog]
+type = video
+path = video/fog.webm
+layerno = 0
+start = 0,0
+delta = 0,0
+
+"""
+
+
 def main():
     hd.STAGES["lopans_throne"] = ("Lo Pan's Throne", paint)
+    hd.EXTRA_BG["lopans_throne"] = FOG_BG
     hd.build("lopans_throne")
     return 0
 
