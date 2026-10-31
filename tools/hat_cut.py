@@ -120,6 +120,98 @@ def hat(max_w, max_h):
     return restyle(small)
 
 
+CONCEPT = os.path.join(ROOT, "concept_art", "fighters", "lightning",
+                       "juan-ruiz-03.jpg")
+ARC_CACHE = {}
+
+
+def blue_mask(im):
+    """Pixels that belong to the painted lightning: blue, and clearly bluer
+    than the paper, the straw and the charcoal cloth around it."""
+    w, h = im.size
+    src = im.load()
+    mask = bytearray(w * h)
+    for y in range(h):
+        row = y * w
+        for x in range(w):
+            r, g, b, a = src[x, y]
+            if a < 8:
+                continue
+            if b - r > 34 and b > 96 and b - g > 6:
+                mask[row + x] = 1
+    return mask, w, h
+
+
+def tint(piece):
+    """Luminance onto the bolt ramp, so a cut arc matches the drawn effects."""
+    w, h = piece.size
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    src, dst = piece.load(), out.load()
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = src[x, y]
+            if a < 12:
+                continue
+            lum = 0.299 * r + 0.587 * g + 0.114 * b
+            t = min(1.0, max(0.0, (lum - 60) / 150))
+            dst[x, y] = BOLT_RAMP[round(t * (len(BOLT_RAMP) - 1))] + (a,)
+    return out
+
+
+def arcs(count=4, min_pixels=90):
+    """The lightning as it is painted in the concept, cut out of the picture.
+
+    The arcs there are thin blue strokes over the figure; keying them by colour
+    and keeping the connected strokes preserves the hand-drawn taper and the
+    forked spurs that a redrawn polyline loses at sprite size. Each piece comes
+    back recoloured onto the same bolt ramp the hat's veins use, so it sits in
+    the same light as the rest of him.
+    """
+    key = (count, min_pixels)
+    if key in ARC_CACHE:
+        return ARC_CACHE[key]
+    im = Image.open(CONCEPT).convert("RGBA")
+    mask, w, h = blue_mask(im)
+    seen = bytearray(w * h)
+    comps = []
+    neighbours = ((1, 0), (-1, 0), (0, 1), (0, -1),
+                  (1, 1), (1, -1), (-1, 1), (-1, -1))
+    for start in range(w * h):
+        if not mask[start] or seen[start]:
+            continue
+        stack = [start]
+        seen[start] = 1
+        pts = []
+        while stack:
+            i = stack.pop()
+            pts.append(i)
+            x, y = i % w, i // w
+            for dx, dy in neighbours:
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < w and 0 <= ny < h:
+                    j = ny * w + nx
+                    if mask[j] and not seen[j]:
+                        seen[j] = 1
+                        stack.append(j)
+        if len(pts) >= min_pixels:
+            comps.append(pts)
+    comps.sort(key=len, reverse=True)
+    out = []
+    for pts in comps[:count]:
+        xs = [i % w for i in pts]
+        ys = [i // w for i in pts]
+        box = (min(xs), min(ys), max(xs) + 1, max(ys) + 1)
+        m = Image.new("L", (w, h), 0)
+        mp = m.load()
+        for i in pts:
+            mp[i % w, i // w] = 255
+        piece = im.copy()
+        piece.putalpha(m)
+        out.append(tint(piece.crop(box)))
+    ARC_CACHE[key] = out
+    return out
+
+
 if __name__ == "__main__":
     im = load_source()
     print("source", im.size, "alpha range",

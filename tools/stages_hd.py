@@ -623,14 +623,14 @@ debugbg = 0
 [Begin Action 9000]
 9000,1, 0,0, -1
 
-[BG bg]
+{extra_bg}[BG bg]
 type = normal
 spriteno = 0,0
 layerno = 0
 start = {start_x},0
 delta = 1,1
 trans = none
-mask = 0
+mask = 1
 tile = 0,0
 
 [BG fg]
@@ -645,6 +645,11 @@ tile = 0,0
 """
 
 
+# sid -> extra [BG] elements drawn before the painted hall, for the one stage
+# that paints an opening to something else (Lo Pan's gate).
+EXTRA_BG = {}
+
+
 def build(sid):
     name, fn = STAGES[sid]
     layers = fn()
@@ -653,8 +658,11 @@ def build(sid):
                for _key, g, n, img, _layerno in layers]
 
     # select preview: match-start view, downscaled to the motif's 320x240
-    comp = layers[0][3].copy()
-    for _key, _g, _n, img, _layerno in layers[1:]:
+    # Composited onto black rather than onto transparency: an HD backdrop can
+    # have a real hole in it (the fog in Lo Pan's gate), and the select card
+    # should show that as darkness instead of letting the menu show through.
+    comp = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    for _key, _g, _n, img, _layerno in layers:
         comp.alpha_composite(img, (0, 0))
     view = comp.crop((CX - LOCAL_W // 2, 0, CX + LOCAL_W // 2, H)) .resize((320, 240), Image.LANCZOS)
     sprites.append({"group": 9000, "number": 1, "image": view, "axis": (160, 120)})
@@ -669,6 +677,7 @@ def build(sid):
             margin=SCREEN_MARGIN, zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
             boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
             startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,
+            extra_bg=EXTRA_BG.get(sid, ""),
         ))
     # README preview: the 4:3 match-start view, same path build_stages.py uses so
     # the docs show what actually ships

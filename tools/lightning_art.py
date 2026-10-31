@@ -247,12 +247,14 @@ def head():
     # towards the chin so the face still has a bottom.
     shade_layer = _blank((W, H))
     sd = ImageDraw.Draw(shade_layer)
-    sd.ellipse([cx - 40, 50, cx + 40, 96], fill=(10, 10, 15, 178))
-    sd.ellipse([cx - 34, 70, cx + 34, 94], fill=(6, 6, 9, 86))
-    img.alpha_composite(shade_layer.filter(ImageFilter.GaussianBlur(2.6)))
+    # The hat is wide enough that the face is simply not there to see: the
+    # brim's shade is the whole head, not a band across the eyes. Brow to
+    # collar goes to near-black, so no nose, mouth or jawline survives at
+    # sprite size - he is a hat with two coals under it.
+    sd.ellipse([cx - 44, 20, cx + 44, 98], fill=(8, 8, 12, 248))
+    sd.rectangle([cx - 44, 40, cx + 44, 98], fill=(8, 8, 12, 248))
+    img.alpha_composite(shade_layer.filter(ImageFilter.GaussianBlur(2.2)))
     d = ImageDraw.Draw(img)
-    d.line([(cx - 12, 88), (cx + 12, 87)], fill=(120, 66, 58, 150), width=2)
-    d.line([(cx - 9, 93), (cx + 9, 92)], fill=(150, 104, 84, 90), width=2)  # chin
 
     # --- the hat, straight out of the render -------------------------------
     # The concept's brim is a little under half the figure's width; the body is
@@ -264,16 +266,49 @@ def head():
     # --- the only lit thing under it ---------------------------------------
     for ex in (cx - 17, cx + 17):
         glow = _blank((W, H))
-        ImageDraw.Draw(glow).ellipse([ex - 11, 71, ex + 11, 83],
-                                     fill=BOLT + (105,))
+        ImageDraw.Draw(glow).ellipse([ex - 9, 72, ex + 9, 82],
+                                     fill=BOLT + (52,))
         img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(3)))
     d = ImageDraw.Draw(img)
+    # Two embers, not eyes: enough that the shadow has something burning in it,
+    # little enough that nothing of the face is legible.
     for ex, sgn in ((cx - 17, -1), (cx + 17, 1)):
-        d.line([(ex - 7, 77), (ex + 7, 75)], fill=(12, 22, 46, 255), width=4)
-        d.line([(ex - 6, 76), (ex + 6, 75)], fill=BOLT + (255,), width=2)
-        d.point([(ex - 1, 76)], fill=BOLT_CORE + (255,))
-        d.point([(ex + sgn * 5, 75)], fill=(255, 255, 255, 255))
+        d.line([(ex - 5, 78), (ex + 5, 77)], fill=(3, 6, 14, 220), width=3)
+        d.line([(ex - 4, 78), (ex + 4, 77)], fill=BOLT + (150,), width=1)
+        d.point([(ex - 1, 77)], fill=BOLT_CORE + (200,))
     return img
+
+
+_ARC_PARTS = []
+
+
+def _arcs():
+    """The painted lightning, cut once and reused by every arm."""
+    if not _ARC_PARTS:
+        _ARC_PARTS.extend(hat_cut.arcs(8, 80))
+    return _ARC_PARTS
+
+
+def _arc_stroke(img, index, box_w, box_h, at):
+    """Composite one arc cut from the concept, fitted into a box at ``at``.
+
+    The strokes in the painting are thin, tapered and forked; fitted by size
+    and drawn twice, a soft copy under the stroke for the halo, because at hand
+    size a single thin line disappears against the dark robe.
+    """
+    pieces = _arcs()
+    if not pieces:
+        return
+    piece = pieces[index % len(pieces)]
+    scale = min(box_w / piece.width, box_h / piece.height)
+    size = (max(1, round(piece.width * scale)), max(1, round(piece.height * scale)))
+    small = piece.resize(size, Image.LANCZOS)
+    if small.width < 3 or small.height < 3:
+        return
+    halo = small.filter(ImageFilter.GaussianBlur(1.7))
+    halo.putalpha(halo.getchannel("A").point(lambda v: int(v * 0.55)))
+    img.alpha_composite(halo, at)
+    img.alpha_composite(small, at)
 
 
 # ------------------------------------------------------------------------ arms
@@ -324,9 +359,12 @@ def arm(near=True):
     d.line([(69, 26), (71, 52)], fill=lit + (80,), width=2)
     d.line([(64, 66), (82, 74)], fill=dark + (100,), width=2)
 
-    # current: short arcs off the hand, not a fork
-    _stroke(img, _zig(hx + 6, hy - 8, hx + 20, hy - 20, 4, 4, 0.7), width=2)
-    _stroke(img, _zig(hx - 8, hy + 6, hx - 18, hy + 17, 3, 3, 2.1), width=2)
+    # current: the arcs painted in the concept, cut out of the picture and
+    # recoloured to the palette. The short strokes are used, not the long ones
+    # across his hat: a 370px stroke squeezed into a 40px box smears into a flat
+    # streak, while a 25px stroke keeps the taper and the fork it was drawn with.
+    _arc_stroke(img, 5, 34, 30, (hx + 2, hy - 30))
+    _arc_stroke(img, 6, 30, 26, (hx - 30, hy + 2))
     # The far arm was the near arm again, so its hand reached across his own
     # chest and vanished behind the torso, leaving one floating glove. A
     # mirrored part bends the other way and puts the hand on its own side.
