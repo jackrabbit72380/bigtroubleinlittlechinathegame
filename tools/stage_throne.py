@@ -487,12 +487,14 @@ def skull_layer():
     poly([(u * ws, v * hs) for u, v in MOUTH_PTS], (0, 0, 0), 0)
 
     # --- teeth --------------------------------------------------------------
-    def tooth(bx, y0, half, tip, lean=0.0):
+    teeth_all = []
+    def tooth(bx, y0, half, tip, lean=0.0, sink=None):
         pts = [(bx - half, y0), (bx + half, y0),
                (bx + half * 0.72 + lean, y0 + (tip - y0) * 0.5),
                (bx + lean, tip),
                (bx - half * 0.62 + lean, y0 + (tip - y0) * 0.58)]
         poly(pts, (232, 226, 206), 250)
+        (teeth_all if sink is None else sink).append(pts)
         dc.line([(bx - half * 0.30, y0 + px(1)), (bx + lean * 0.7, tip - px(2))],
                 fill=(196, 188, 166), width=max(1, int(ws * 0.005)))
 
@@ -508,9 +510,10 @@ def skull_layer():
     # Lower corner teeth, standing up out of the floor of the mouth on either
     # side. The middle stays clear on purpose: the mouth is the doorway, so
     # these are its jambs - you should read a way in, not a closed jaw.
+    lower_teeth = []
     for sx in (-1, 1):
         tooth(ws * 0.5 + sx * ws * 0.250, hs * 1.060, ws * 0.056,
-              hs * 0.845, lean=sx * ws * 0.010)
+              hs * 0.845, lean=sx * ws * 0.010, sink=lower_teeth)
 
     # gum line shadow
     dc.line([(ws * 0.19, hs * 0.590), (ws * 0.81, hs * 0.590)],
@@ -590,6 +593,15 @@ def skull_layer():
                           SKULL_H * (1.0 - (i + 1) / 40 * 0.50)),
                      fill=(34, 176, 108, a))
     under.putalpha(ImageChops.multiply(under.split()[3], alpha))
+    # Bone in front of the light stays bone. The underlight was tinting the
+    # lower teeth mint, because they stand in the brightest part of it.
+    k = SKULL_W / float(ws)
+    tb = Image.new("L", (SKULL_W, SKULL_H), 0)
+    td = ImageDraw.Draw(tb)
+    for pts in teeth_all + lower_teeth:
+        td.polygon([(x * k, y * k) for x, y in pts], fill=255)
+    under.putalpha(ImageChops.multiply(under.split()[3],
+                                       ImageChops.invert(tb)))
     layer = art.screen(layer, under, glow_radius=SKULL_W * 0.02, gain=1.0)
     layer.putalpha(alpha)          # screen() returns an opaque alpha channel
 
@@ -605,20 +617,25 @@ def skull_layer():
                       expand=2)
     neon = Image.alpha_composite(rim, hot)
 
-    # The mouth's own edge, and the lower teeth standing in it, get the same
-    # neon. The rim above is traced from the outer silhouette, so it only ran
-    # round the dome and the jaw: the lower teeth sat in the fog as bare bone.
-    band = Image.new("L", (SKULL_W, SKULL_H), 0)
-    ImageDraw.Draw(band).rectangle(
-        [int(SKULL_W * 0.19), int(SKULL_H * 0.78),
-         int(SKULL_W * 0.81), SKULL_H], fill=255)
-    jaw = ImageChops.multiply(alpha.point(lambda v: 255 if v > 90 else 0), band)
-    jaw_rim = art.outline(jaw, (46, 208, 128),
-                          thickness=max(2, int(SKULL_W * 0.008)), expand=1)
-    jaw_hot = art.outline(jaw, (150, 246, 196),
-                          thickness=max(1, int(SKULL_W * 0.003)), expand=2)
-    neon = Image.alpha_composite(neon, jaw_rim)
-    neon = Image.alpha_composite(neon, jaw_hot)
+    # The lower teeth get the gate's neon as a line round the bone. It is
+    # drawn straight onto the skull, not into the neon layer: that layer is
+    # screen-blended with a blurred halo and two passes, and on a tooth this
+    # narrow the glow swallowed the whole face of it and the bone came out
+    # mint. Drawn opaque it is a green edge on white bone, like the row above.
+    k = SKULL_W / float(ws)
+    tmask = Image.new("L", (SKULL_W, SKULL_H), 0)
+    md = ImageDraw.Draw(tmask)
+    tn = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
+    nd = ImageDraw.Draw(tn)
+    for pts in lower_teeth:
+        ring = [(x * k, y * k) for x, y in pts]
+        md.polygon(ring, fill=255)
+        nd.line(ring + [ring[0]], fill=(46, 208, 128, 255),
+                width=max(3, int(SKULL_W * 0.005)), joint="curve")
+        nd.line(ring + [ring[0]], fill=(150, 246, 196, 255),
+                width=max(1, int(SKULL_W * 0.002)), joint="curve")
+    tn.putalpha(ImageChops.multiply(tn.getchannel("A"), tmask))
+    layer = Image.alpha_composite(layer, tn)
 
     def full(img):
         out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
