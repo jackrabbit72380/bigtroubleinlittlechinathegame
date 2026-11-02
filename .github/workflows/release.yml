@@ -116,9 +116,13 @@ jobs:
           # stages/ folder is exactly what this catches.
           for s in $ours; do
             scroll=$(grep -oE '^boundleft[[:space:]]*=[[:space:]]*-?[0-9]+' "$out/stages/$s.def" | grep -oE '[0-9]+$')
-            startx=$(grep -m1 -oE '^start[[:space:]]*=[[:space:]]*-?[0-9]+' "$out/stages/$s.def" | grep -oE '[-0-9]+$')
+            # The widest backdrop layer, not the first one: a stage legitimately
+            # draws narrow overlays at a smaller start (the fog film in the gate,
+            # the sky band), so reading the first start line measured an overlay
+            # and failed stages whose backdrop does cover the pan.
+            startx=$(grep -oE '^start[[:space:]]*=[[:space:]]*-[0-9]+' "$out/stages/$s.def" | grep -oE '[0-9]+$' | sort -n | tail -1)
             test -n "$scroll" && test -n "$startx" || { echo "$s: no [Camera] boundleft or layer start"; exit 1; }
-            art=$(( -startx ))
+            art=$startx
             need=$(( scroll + 160 ))
             if [ "$art" -lt "$need" ]; then
               echo "$s: art reaches -$art but the camera pans +/-$scroll, so it needs -$need or wider"; exit 1
