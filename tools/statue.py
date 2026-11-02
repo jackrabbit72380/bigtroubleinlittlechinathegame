@@ -1,7 +1,6 @@
 """The six-armed guardian of Lo Pan's ceremony hall, painted from the still.
 
 In the film this is a stone statue: warm grey-brown, lit from below by the hall,
-with a green neon tube running over its contours. It is one heavy seated figure -
 small snarling head under a tiara of skulls, a chest and belly carrying most of
 the mass, six thick arms ending in hands with real fingers, a necklace and
 pendant of skulls, gold bangles, a cloth sash across the lap, crossed legs.
@@ -119,40 +118,41 @@ def _capsule(d, a, b, w0, w1, fill):
 
 
 def _fist(d, c, r, ang, fill, seam, lit):
-    """A big clenched fist, seen knuckle-on as in the still.
+    """A clenched fist whose knuckles break the outline.
 
-    The fists are the biggest things on the statue after the belly: the knuckle
-    ridge faces out along the arm, four finger rolls cross the palm under it, and
-    the thumb lies diagonally over the bottom. Drawn as rolls rather than a ball,
-    so the contour steps and the neon steps with it.
+    The tube in the still runs round the fingers, so a fist cannot be a ball:
+    four finger rolls are drawn proud of the palm mass with dark seams between
+    them, the knuckle row sits on the far edge, and every crest catches the key
+    light, so the hand reads as a hand at stage size.
     """
     ax, ay = math.cos(ang), math.sin(ang)      # along the forearm, out to the tips
-    nx, ny = -ay, ax                           # across the back of the hand
+    nx, ny = -ay, ax
 
     def at(fx, fy):
         return (c[0] + ax * fx * r + nx * fy * r, c[1] + ay * fx * r + ny * fy * r)
 
-    d.ellipse([c[0] - r * 1.02, c[1] - r * 1.02,
-               c[0] + r * 1.02, c[1] + r * 1.02], fill=fill)
-
-    # four finger rolls across the back of the hand, stacked toward the wrist
-    for k in (-0.48, -0.16, 0.16, 0.48):
-        a1 = at(k, -0.80)
-        b1 = at(k, 0.74)
-        _capsule(d, a1, b1, r * 0.165, r * 0.150, fill)
-        d.line([at(k + 0.20, -0.74), at(k + 0.20, 0.68)],
-               fill=seam, width=max(1, int(r * 0.085)))
-    # knuckle ridge at the far edge, catching the key from above
-    for j in (-0.56, -0.19, 0.19, 0.56):
-        p = at(0.80, j)
-        d.ellipse([p[0] - r * 0.21, p[1] - r * 0.21,
-                   p[0] + r * 0.21, p[1] + r * 0.21], fill=lit)
-    # thumb over the near side, with its own seam
-    t1, t2 = at(-0.52, -0.86), at(0.34, 0.58)
-    d.line([t1, t2], fill=seam, width=max(1, int(r * 0.26)))
-    _capsule(d, t1, t2, r * 0.19, r * 0.15, fill)
-    d.ellipse([t1[0] - r * 0.19, t1[1] - r * 0.19,
-               t1[0] + r * 0.19, t1[1] + r * 0.19], fill=lit)
+    d.ellipse([c[0] - r * 0.84, c[1] - r * 0.84,
+               c[0] + r * 0.84, c[1] + r * 0.84], fill=fill)
+    d.line([at(-0.94, -0.82), at(-0.94, 0.82)], fill=seam,
+           width=max(2, int(r * 0.30)))                    # wrist shadow
+    for k in (-0.58, -0.20, 0.20, 0.58):
+        _capsule(d, at(k, -1.00), at(k, 0.98), r * 0.215, r * 0.195, fill)
+        d.line([at(k + 0.215, -0.94), at(k + 0.215, 0.92)], fill=seam,
+               width=max(1, int(r * 0.105)))
+        d.line([at(k - 0.19, -0.92), at(k - 0.19, 0.90)], fill=lit,
+               width=max(1, int(r * 0.055)))
+    for j in (-0.64, -0.21, 0.21, 0.64):
+        q = at(0.98, j)
+        d.ellipse([q[0] - r * 0.24, q[1] - r * 0.24,
+                   q[0] + r * 0.24, q[1] + r * 0.24], fill=lit)
+        d.arc([q[0] - r * 0.24, q[1] - r * 0.24,
+               q[0] + r * 0.24, q[1] + r * 0.24], 25, 155, fill=fill,
+              width=max(1, int(r * 0.07)))
+    t1, t2 = at(-0.64, -0.94), at(0.44, 0.62)
+    d.line([t1, t2], fill=seam, width=max(2, int(r * 0.32)))
+    _capsule(d, t1, t2, r * 0.215, r * 0.175, fill)
+    d.ellipse([t1[0] - r * 0.215, t1[1] - r * 0.215,
+               t1[0] + r * 0.215, t1[1] + r * 0.215], fill=lit)
 
 
 def _open_hand(d, c, r, ang, fill, seam, lit):
@@ -165,13 +165,13 @@ def _open_hand(d, c, r, ang, fill, seam, lit):
     nx, ny = -ay, ax
     d.ellipse([c[0] - r * 0.78, c[1] - r * 0.90,
                c[0] + r * 0.78, c[1] + r * 0.90], fill=fill)
-    for k, drop, length in ((-0.60, 0.10, 1.15), (-0.20, 0.03, 1.32),
-                            (0.20, 0.03, 1.26), (0.60, 0.12, 1.02)):
+    for k, drop, length in ((-0.60, 0.12, 1.30), (-0.20, 0.04, 1.52),
+                            (0.20, 0.04, 1.44), (0.60, 0.14, 1.16)):
         base = (c[0] + ax * r * 0.52 + nx * k * r * 0.46,
                 c[1] + ay * r * 0.52 + ny * k * r * 0.46)
         tip = (base[0] + ax * r * length + nx * k * drop * r,
                base[1] + ay * r * length + ny * k * drop * r)
-        _capsule(d, base, tip, r * 0.155, r * 0.105, fill)
+        _capsule(d, base, tip, r * 0.185, r * 0.125, fill)
         d.line([(base[0] - ax * r * 0.05 - nx * r * 0.04,
                  base[1] - ay * r * 0.05 - ny * r * 0.04), tip],
                fill=seam, width=max(1, int(r * 0.07)))
@@ -232,13 +232,10 @@ def build(S, cx, top, w_full, h_full):
     def P(pts):
         return [(X(x), Y(y)) for x, y in pts]
 
-    contours = []           # visible outlines the neon tube also follows
 
-    def blob(d, pts, fill=STONE, outline=True, smooth=14):
-        sm = _catmull(pts, True, smooth)
-        d.polygon(P(sm), fill=fill)
+    def blob(d, pts, fill=STONE, smooth=14):
+        d.polygon(P(_catmull(pts, True, smooth)), fill=fill)
         if outline:
-            contours.append(sm)
 
     body = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(body)
@@ -251,11 +248,11 @@ def build(S, cx, top, w_full, h_full):
         blob(d, [(sx * 20, 84), (sx * 34, 82.5), (sx * 44, 86), (sx * 47, 91),
                  (sx * 38, 92.5), (sx * 24, 90.5)])
         blob(d, [(sx * 25, 84.5), (sx * 33, 84), (sx * 35, 87), (sx * 27, 88)],
-             STONE_LT if sx > 0 else STONE, outline=False)   # knee cap catches light
+             STONE_LT if sx > 0 else STONE)   # knee cap catches light
     blob(d, [(-12, 90), (0, 87.5), (12, 90), (10, 94.5), (-10, 94.5)])  # shins
     for sx in (-1, 1):                       # feet crossed at the centre
         blob(d, [(sx * 2, 93), (sx * 13, 92), (sx * 15, 95.5), (sx * 3, 96)],
-             STONE, outline=False)
+             STONE)
         for k in range(3):
             d.line(P([(sx * (5 + k * 3), 94.2), (sx * (6 + k * 3), 95.8)]),
                    fill=STONE_DK, width=max(1, int(0.18 * S * SS)))
@@ -270,7 +267,7 @@ def build(S, cx, top, w_full, h_full):
              (12, 91), (-12, 91), (-26, 86)])                     # belly
     for sx in (-1, 1):                                            # pectorals
         blob(d, [(sx * 2, 45), (sx * 12, 43.5), (sx * 23, 47), (sx * 21, 56),
-                 (sx * 10, 58.5), (sx * 2, 54)], outline=False)
+                 (sx * 10, 58.5), (sx * 2, 54)])
     d.line(P([(0, 44), (0, 58)]), fill=STONE_DK, width=seam)      # sternum
     for vy in (66, 73, 80):                                       # belly folds
         d.arc([X(-16), Y(vy - 3), X(16), Y(vy + 3)], 20, 160, fill=STONE_DK,
@@ -297,9 +294,9 @@ def build(S, cx, top, w_full, h_full):
     # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
     arms = [
         # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((22, 58), (46, 67), (50, 82), 9.8, 8.2, 7.4, 6.2, 7.8, "open"),
-        ((22, 50), (48, 45), (55, 26), 10.6, 8.8, 8.0, 6.4, 9.4, "fist"),
-        ((16, 44), (34, 41), (31, 18), 10.2, 8.6, 7.8, 6.2, 9.6, "fist"),
+        ((22, 58), (46, 67), (50, 82), 9.8, 8.2, 7.4, 6.2, 8.8, "open"),
+        ((22, 50), (48, 45), (55, 25), 10.6, 8.8, 8.0, 6.4, 11.0, "fist"),
+        ((16, 44), (34, 41), (31, 17), 10.2, 8.6, 7.8, 6.2, 11.4, "fist"),
     ]
 
     def ring(p, tx, ty, half, thick, fill=GOLD):
@@ -324,13 +321,11 @@ def build(S, cx, top, w_full, h_full):
                                   (sh_p[1] + el_p[1]) / 2 + 1.4),
                            el_p, w0, w1)
             d.polygon(P(upper), fill=STONE)
-            contours.append(upper)
             d.ellipse([X(el_p[0] - w1), Y(el_p[1] - w1),
                        X(el_p[0] + w1), Y(el_p[1] + w1)], fill=STONE)
             fore_ctrl = ((el_p[0] + wr_p[0]) / 2, (el_p[1] + wr_p[1]) / 2)
             fore = _taper(el_p, fore_ctrl, wr_p, w2 * 0.94, w3)
             d.polygon(P(fore), fill=STONE)
-            contours.append(fore)
             ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
             hc = (wr_p[0] + math.cos(ang) * hr * 0.40,
                   wr_p[1] + math.sin(ang) * hr * 0.40)
@@ -351,17 +346,14 @@ def build(S, cx, top, w_full, h_full):
 
     # ---- head ------------------------------------------------------------
     hx, hy = HEAD
-    blob(d, [(-9.5, 40), (-6.5, 32), (6.5, 32), (9.5, 40), (0, 43)], STONE_DK,
-         outline=False)
+    blob(d, [(-9.5, 40), (-6.5, 32), (6.5, 32), (9.5, 40), (0, 43)], STONE_DK)
     for sx in (-1, 1):
-        blob(d, [(sx * 10, 41), (sx * 24, 44), (sx * 26, 49), (sx * 12, 46)],
-             outline=False)                                     # trapezius
+        blob(d, [(sx * 10, 41), (sx * 24, 44), (sx * 26, 49), (sx * 12, 46)])                                     # trapezius
         blob(d, [(sx * (HEAD_RX - 1.0), hy - 6.5), (sx * (HEAD_RX + 2.2), hy - 5.0),
                  (sx * (HEAD_RX + 1.8), hy + 8.0), (sx * (HEAD_RX - 2.4), hy + 6.5)])
     d.ellipse([X(hx - HEAD_RX), Y(hy - HEAD_RY), X(hx + HEAD_RX), Y(hy + HEAD_RY)],
               fill=FACE)
-    blob(d, [(-10, hy + 5), (0, hy + 9.5), (10, hy + 5), (0, hy + 14.5)], FACE,
-         outline=False)                                         # jaw
+    blob(d, [(-10, hy + 5), (0, hy + 9.5), (10, hy + 5), (0, hy + 14.5)], FACE)                                         # jaw
     # cheek planes and the shadow under the brow
     for sx in (-1, 1):
         d.ellipse([X(sx * 7.2 - 3.4), Y(hy + 0.5), X(sx * 7.2 + 3.4), Y(hy + 5.5)],
@@ -369,7 +361,7 @@ def build(S, cx, top, w_full, h_full):
     # brows: heavy bars angled down into the nose bridge
     for sx in (-1, 1):
         blob(d, [(sx * 1.0, hy - 5.6), (sx * 10.0, hy - 7.2), (sx * 10.4, hy - 4.2),
-                 (sx * 1.4, hy - 2.2)], (52, 46, 42), outline=False)
+                 (sx * 1.4, hy - 2.2)], (52, 46, 42))
     # eye sockets, deep and wide
     for sx in (-1, 1):
         ex = hx + sx * 5.1
@@ -380,7 +372,7 @@ def build(S, cx, top, w_full, h_full):
     # nose: bridge, bulb, flared nostrils
     blob(d, [(0, hy - 3.6), (2.8, hy - 0.2), (2.7, hy + 2.6), (1.4, hy + 3.6),
              (-1.4, hy + 3.6), (-2.7, hy + 2.6), (-2.8, hy - 0.2)],
-         (162, 152, 138), outline=False)
+         (162, 152, 138))
     for sx in (-1, 1):
         d.ellipse([X(sx * 2.9 - 1.0), Y(hy + 2.9), X(sx * 2.9 + 1.0), Y(hy + 4.2)],
                   fill=(44, 38, 34))
@@ -410,8 +402,6 @@ def build(S, cx, top, w_full, h_full):
     # ---- crown: a band of skulls with horns ------------------------------
     d.polygon(P([(-HEAD_RX, hy - 13.0), (HEAD_RX, hy - 13.0),
                  (HEAD_RX, hy - 9.0), (-HEAD_RX, hy - 9.0)]), fill=GOLD)
-    contours.append([(-HEAD_RX, hy - 13.0), (HEAD_RX, hy - 13.0),
-                     (HEAD_RX, hy - 9.0), (-HEAD_RX, hy - 9.0)])
     for k in range(-2, 3):
         skx = k * 5.0
         sky = hy - 11.6
@@ -480,23 +470,10 @@ def build(S, cx, top, w_full, h_full):
     outer = ImageChops.subtract(solid, solid.filter(ImageFilter.MinFilter(3)))
     outer = outer.filter(ImageFilter.MaxFilter(3))
 
-    # per-part traces, clipped to the part still visible: the torso's own
-    # outline must not be drawn across the belly painted over it
-    lw = max(1, int(0.32 * S * SS))
-    inner = Image.new("L", (w, h), 0)
-    covered = Image.new("L", (w, h), 0)
-    for pts in reversed(contours):
-        poly = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(poly).polygon(P(pts), fill=255)
-        scratch = Image.new("L", (w, h), 0)
-        ImageDraw.Draw(scratch).line(P(pts) + [P(pts)[0]], fill=255,
-                                     width=lw, joint="curve")
-        near = covered.filter(ImageFilter.MaxFilter(3))
-        inner = ImageChops.lighter(inner, ImageChops.subtract(scratch, near))
-        covered = ImageChops.lighter(covered, poly)
-    inner = inner.resize(small.size, Image.LANCZOS).point(lambda v: int(v * 0.92))
-    mask = ImageChops.lighter(outer, inner)
-    mask = mask.filter(ImageFilter.GaussianBlur(max(0.32, 0.13 * S)))
+    # The tube in the still is one line round the outside of the statue: no
+    # lines across the belly, the arms or the cloth. So the neon is the
+    # silhouette and nothing else.
+    mask = outer.filter(ImageFilter.GaussianBlur(max(0.32, 0.13 * S)))
 
     # the tube bleeds a little green onto the stone right beside it, which is
     # what keeps the figure from looking like a cut-out
