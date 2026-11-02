@@ -74,6 +74,9 @@ def main():
     # Eddie Lee, the roster's counter-fighter: an open jacket over rolled
     # sleeves, fingerless gloves and the Chang Sing colours, painted in code.
     scripts += ["eddilee_art.py", ("bake_char.py", "eddilee")]
+    # The sewer monster: the half-mummified wild man from the drains, authored
+    # taller than the roster so his crouch still stands over the fighters.
+    scripts += ["sewermonster_art.py", ("bake_char.py", "sewermonster")]
     # The two gangs are built from Kung Fu Man himself rather than from painted
     # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
     # and red Wing Kong), upscales the art to roster height, paints the staff or

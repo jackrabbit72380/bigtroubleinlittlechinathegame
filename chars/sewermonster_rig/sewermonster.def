@@ -1,0 +1,28 @@
+[Info]
+name = "Sewer Monster (rig)"
+displayname = "Sewer Monster"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 1062, 796
+
+[Files]
+cmd      = sewermonster.cmd
+cns      = sewermonster.cns
+st       = sewermonster.cns
+stcommon = common1.cns
+sprite   = sewermonster.sff
+anim     = sewermonster.air
+sound    = sewermonster.snd
+movelist = movelist.dat
+
+[Size]
+height   = 218
+mid.pos  = 0,-168
+head.pos = 0,-323
+ground.back  = 92
+ground.front = 79
+air.back     = -79
+air.front    = 79
+attack.dist  = 531

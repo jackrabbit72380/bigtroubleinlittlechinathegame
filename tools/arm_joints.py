@@ -33,6 +33,9 @@ ARM_JOINTS = {
     # Eddie's arm is cut on Wang Chi's numbers: the sleeve ends and the bare
     # forearm starts at the same place, so the joints land identically.
     "eddilee": (((62, 60), (82, 82)), ((84, 62), (68, 84))),
+    # The monster's arm is cut long: the elbow sits lower and the wrist further
+    # out than the fighters', because the art is authored on a 168x150 canvas.
+    "sewermonster": (((66, 78), (92, 108)), ((98, 80), (76, 110))),
     "gracielaw": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jade": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jackburton": (((27, 74), (33, 126)), ((22, 74), (16, 126))),
