@@ -293,7 +293,7 @@ def build(S, cx, top, w_full, h_full):
     # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
     arms = [
         # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((22, 58), (46, 67), (50, 82), 9.8, 8.2, 7.4, 6.2, 8.8, "open"),
+        ((22, 58), (45, 55), (57, 59), 9.8, 8.2, 7.4, 6.2, 8.8, "open"),
         ((22, 50), (48, 45), (55, 25), 10.6, 8.8, 8.0, 6.4, 11.0, "fist"),
         ((16, 44), (34, 41), (31, 17), 10.2, 8.6, 7.8, 6.2, 11.4, "fist"),
     ]
