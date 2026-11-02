@@ -172,8 +172,10 @@ def paint():
         throne.brazier(d, CX + sx * px(112), FLOOR_Y, px(24))
         LIGHTS.append((CX + sx * px(112), FLOOR_Y - px(14), px(46),
                        (255, 168, 88), 130))
-    LIGHTS.append((CX, PLINTH_TOP + px(10), px(112), (40, 200, 126), 96))
-    LIGHTS.append((CX, STATUE_TOP + px(33), px(76), (52, 200, 132), 70))
+    # warm light on the stone, not green: the green in this room is the tube,
+    # and the figure is grey stone with the neon laid over it
+    LIGHTS.append((CX, PLINTH_TOP + px(10), px(112), (255, 184, 112), 84))
+    LIGHTS.append((CX, STATUE_TOP + px(33), px(76), (255, 212, 158), 52))
     throne.plaza(d, FLOOR_Y)
 
     base = hd.shade(base, [(hd.light(cx, cy, r, col, peak), px(8), 1.2)
