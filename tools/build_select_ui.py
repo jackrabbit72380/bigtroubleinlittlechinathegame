@@ -118,39 +118,50 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 
 
 
-# The title menu asks for 6 visible rows at 54px spacing from y=330, which puts
-# its window bottom at 724 on a 720-high screen: the last row is clipped and the
-# menu scrolls, so EXIT and OPTIONS sat below the screen edge. The tree has 9
-# top-level items, so give all 9 a row that fits: 34+9*40+24 = 418 tall from
-# y=260, ending at 678, clear of the footer at 700.
-TITLE_LAYOUT = [
-    ("menu.pos", "1240, 260"),
-    ("menu.item.spacing", "0, 40"),
-    ("menu.window.visibleitems", "9"),
-    ("menu.window.margins.y", "34, 24"),
-]
+# The stage preview is the one screenpack slot left switched off: [Select Info]
+# ships stage.portrait.spr commented out, so the window draws its empty frame
+# (bg anim 110) and the engine fills the gap with its grey "?" placeholder.
+# A 320x240 preview at scale 0.4 is 128x96; the window is 238x98 at
+# x 521..759, y 567..665, centred on (640,616), and the sprite's axis sits at
+# its centre, so an offset of 0,-44 from stage.pos 640,660 centres it there.
+STAGE_PORTRAIT = (
+    ("stage.portrait.spr", "9000,1"),
+    ("stage.portrait.offset", "-1, -91"),
+    ("stage.portrait.scale", "0.4, 0.4"),
+    # the frame plate drawn by [Begin Action 110] sits at 477,516..801,622, so
+    # clip to exactly that instead of the motif's 521,567..759,665 box, which
+    # cut the top off the preview
+    ("stage.portrait.window", "477, 516, 801, 622"),
+)
+
+
+def _apply_section(text, section, pairs):
+    """Set keys inside one [section] block only."""
+    start = text.find(section)
+    if start < 0:
+        return text, []
+    nxt = re.compile(r"^\[", re.M).search(text, start + len(section))
+    end = nxt.start() if nxt else len(text)
+    head, body, tail = text[:start], text[start:end], text[end:]
+    changed = []
+    for key, value in pairs:
+        pat = re.compile(rf"^;?[ \t]*{re.escape(key)}[ \t]*=[^\r\n]*$", re.M)
+        if pat.search(body):
+            new = pat.sub(f"{key} = {value}", body, count=1)
+        else:
+            new = body.rstrip("\r\n") + f"\n{key} = {value}\n"
+        if new != body:
+            changed.append(f"{section} {key}")
+        body = new
+    return head + body + tail, changed
 
 
 def layout(text):
-    """Fit the whole title menu on screen and turn the stage preview on."""
+    """Switch the stage preview on in both screens that draw it."""
     changed = []
-    for key, value in TITLE_LAYOUT:
-        pat = re.compile(rf"^{re.escape(key)}\s*=.*$", re.M)
-        if pat.search(text):
-            new_text = pat.sub(f"{key} = {value}", text, count=1)
-            if new_text != text:
-                changed.append(key)
-            text = new_text
-        else:
-            text = text.replace("[Title Info]\n",
-                                f"[Title Info]\n{key} = {value}\n", 1)
-            changed.append(key)
-    # [Select Info] ships with the stage portrait commented out, so the select
-    # screen drew only the empty frame that stage.portrait.bg.spr paints.
-    if ";stage.portrait.spr = 9000,1" in text:
-        text = text.replace(";stage.portrait.spr = 9000,1",
-                            "stage.portrait.spr = 9000,1", 1)
-        changed.append("stage.portrait.spr")
+    for section in ("[Select Info]", "[VS Screen]"):
+        text, done = _apply_section(text, section, STAGE_PORTRAIT)
+        changed += done
     return text, changed
 
 def layer_block():
@@ -166,23 +177,73 @@ def layer_block():
     )
 
 
+# The stock plate behind the stage preview ([Begin Action 110], group 110) is a
+# grey panel with a large question mark printed on it. The engine draws the
+# preview over it, so any uncovered pixel of that art reads as an error - and
+# the motif shipped with the preview switched off, which made the "?" the whole
+# box. Repainting the plate removes the question mark entirely: the slot then
+# reads as an empty picture frame until a preview is drawn in it.
+FRAME_GROUP = 110
+FRAME_NUMBERS = (0, 1, 2)
+
+
+def frame_plate(w, h):
+    """A dark plate with the same gold rule as the rest of the screenpack."""
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w - 1, h - 1], fill=(16, 13, 20, 205),
+                outline=GOLD_DEEP + (255,), width=2)
+    d.rectangle([2, 2, w - 3, h - 3], outline=GOLD + (140,), width=1)
+    return img
+
+
+def clean_frames():
+    """Repaint the stage-preview frame without its question mark."""
+    _d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    out, replaced = [], 0
+    for sp in sprites:
+        if sp["group"] == FRAME_GROUP and sp["number"] in FRAME_NUMBERS:
+            out.append({"group": sp["group"], "number": sp["number"],
+                        "image": frame_plate(sp["w"], sp["h"]),
+                        "axis": sp["axis"]})
+            replaced += 1
+        else:
+            out.append({"group": sp["group"], "number": sp["number"],
+                        "raw": sp["raw"], "format": sp["format"],
+                        "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
+                        "axis": sp["axis"], "pal": sp["pal"],
+                        "link": sp["link"]})
+    blob = sff.write_sff(out, [p["rgba"] for p in palettes])
+    if blob[:12] != sff.SIG:
+        raise SystemExit("refusing to write: built file has no SFF signature")
+    with open(SYSTEM_SFF + ".tmp", "wb") as f:
+        f.write(blob)
+    os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
+    return replaced
+
+
 def patch_def():
-    """Add the hint layer to [SelectBGdef] once."""
+    """Fix the stage preview, then add the hint layer to [SelectBGdef] once.
+
+    The layout pass runs on every build: it used to sit behind the "hint not
+    added yet" check below, so after the first run the stage preview was never
+    switched back on when data/ was reset from the engine copy.
+    """
     with open(SYSTEM_DEF, encoding="utf-8", errors="replace") as f:
         text = f.read()
-    if f"spriteno = {SPRITE[0]}, {SPRITE[1]}" in text:
-        return False
-
-    marker = "\n[VS Screen]"
-    if marker not in text:
-        raise SystemExit("system.def has no [VS Screen]; cannot place the hint")
     text, changed = layout(text)
     print("  system.def layout: " + (", ".join(changed) or "already set"))
-    text = text.replace(marker, layer_block() + marker, 1)
+    added = False
+    if f"spriteno = {SPRITE[0]}, {SPRITE[1]}" not in text:
+        marker = "\n[VS Screen]"
+        if marker not in text:
+            raise SystemExit("system.def has no [VS Screen]; cannot place the hint")
+        text = text.replace(marker, layer_block() + marker, 1)
+        added = True
     with open(SYSTEM_DEF + ".tmp", "w", encoding="utf-8") as f:
         f.write(text)
     os.replace(SYSTEM_DEF + ".tmp", SYSTEM_DEF)
-    return True
+    return added
 
 
 def build():
@@ -191,6 +252,7 @@ def build():
 
     strip = hint_strip()
     total = write_sprite(strip)
+    frames = clean_frames()
     added = patch_def()
 
     # Read back: the hint is worth nothing if the layer points at nothing.
@@ -206,8 +268,8 @@ def build():
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
     print(f"stage-select hint: sprite {SPRITE[0]},{SPRITE[1]} "
-          f"({'added' if total else 'kept'}), SelectBG layer "
-          f"{'added' if added else 'already present'}")
+          f"({'added' if total else 'kept'}), frame repaints {frames}, "
+          f"SelectBG layer {'added' if added else 'already present'}")
 
 
 if __name__ == "__main__":

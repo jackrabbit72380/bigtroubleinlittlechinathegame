@@ -214,7 +214,7 @@ def pelvis():
 
 # ------------------------------------------------------------------------ head
 def head():
-    """The hat hides the face; under it there is nothing but its own shade.
+    """The hat shades the face; under it the eyes still catch the light.
 
     The hat is not drawn here. It is cut from the HD render in
     ``concept_art/fighters/lightning`` by ``tools/hat_cut.py``, because the
@@ -238,35 +238,61 @@ def head():
     fd = ImageDraw.Draw(face)
     fd.ellipse([cx - 31, 32, cx + 31, 94], fill=255)
     fd.rectangle([cx - 19, 60, cx + 19, 94], fill=255)
-    img.alpha_composite(char_rig._shade(face, (150, 110, 86),
-                                      (196, 150, 118), SKIN_DEEP))
+    img.alpha_composite(char_rig._shade(face, SKIN, SKIN_LIT, SKIN_DEEP))
     d = ImageDraw.Draw(img)
-    # The brim shadow was opaque enough to erase the jaw, which left a black
-    # band with nothing in it but eyes; softened, its hard elliptical edge
-    # instead read as a white mask with slits painted on. A shadow layer of its
-    # own, blurred, lands between the two: dark under the brim, falling off
-    # towards the chin so the face still has a bottom.
+
+    # --- brow, nose and mouth, painted before the shade --------------------
+    # These are painted first so the brim's shadow falls over them. A face
+    # drawn after the shadow sits on top of it like a decal.
+    for sx in (-1, 1):
+        ex = cx + sx * 12
+        d.line([(ex - 7, 72), (ex + 6, 70)], fill=(48, 32, 24, 235), width=3)
+    d.line([(cx - 1, 80), (cx - 5, 88), (cx + 3, 89)],
+           fill=SKIN_DEEP + (165,), width=2)
+    d.line([(cx - 7, 92), (cx + 7, 92)], fill=(104, 56, 50, 215), width=2)
+    d.line([(cx - 5, 94), (cx + 5, 94)], fill=(62, 32, 30, 150), width=1)
+
+    # --- the brim's shade: dense at the brow, thinning towards the chin ----
+    # This used to be one opaque near-black shape over the whole head, which
+    # is exactly what made him a black faceless lump. A gradient keeps the
+    # brim dark while the cheeks, nose and jaw stay in view underneath it.
+    grad = Image.new("L", (W, H), 0)
+    gp = grad.load()
+    for y in range(H):
+        t = (y - 66) / 28.0
+        t = 0.0 if t < 0.0 else (1.0 if t > 1.0 else t)
+        v = int(190 - 120 * t)
+        for x in range(W):
+            gp[x, y] = v
     shade_layer = _blank((W, H))
-    sd = ImageDraw.Draw(shade_layer)
-    # The hat is wide enough that the face is simply not there to see: the
-    # brim's shade is the whole head, not a band across the eyes. Brow to
-    # collar goes to near-black, so no nose, mouth or jawline survives at
-    # sprite size - he is a hat with two coals under it.
-    sd.ellipse([cx - 44, 20, cx + 44, 98], fill=(7, 7, 11, 255))
-    sd.rectangle([cx - 44, 40, cx + 44, 98], fill=(7, 7, 11, 255))
-    img.alpha_composite(shade_layer.filter(ImageFilter.GaussianBlur(2.2)))
+    shade_layer.putalpha(
+        ImageChops.multiply(grad, face).filter(ImageFilter.GaussianBlur(2.6)))
+    # a touch of blue in the shade, since the current he carries lights him
+    shade = Image.new("RGBA", (W, H), (16, 14, 30, 0))
+    shade.putalpha(shade_layer.getchannel("A"))
+    img.alpha_composite(shade)
     d = ImageDraw.Draw(img)
+
+    # --- eyes, drawn last so they still burn under the brim ----------------
+    for sx in (-1, 1):
+        ex = cx + sx * 12
+        d.polygon([(ex - 7, 77), (ex, 73), (ex + 7, 77), (ex, 80)],
+                  fill=(222, 226, 236, 255))
+        d.ellipse([ex - 3, 74, ex + 3, 81], fill=(44, 52, 74, 255))
+        d.ellipse([ex - 1, 75, ex + 1, 77], fill=(250, 253, 255, 255))
+        d.line([(ex - 8, 77), (ex, 72), (ex + 8, 77)],
+               fill=(26, 18, 16, 240), width=2)
 
     # --- the hat, straight out of the render -------------------------------
     # The concept's brim is a little under half the figure's width; the body is
     # slimmed to suit it rather than the hat shrunk to fit the body.
     hat_img = hat_cut.hat(140, 74)
     img.alpha_composite(hat_img, (cx - hat_img.width // 2,
-                                  72 - hat_img.height))
+                                  66 - hat_img.height))
 
-    # Nothing under the brim at all, not even eyes: the hat is wide enough
-    # that his face is simply not in view, so the shade is the end of him.
-    # The current he carries is drawn as its own effect, not painted in here.
+    # The brim shades the brow but stops short of the eyes, which are drawn
+    # after the shade so they hold their light the way the concept has them.
+    # The current he carries is its own effect, not painted into the head.
     return img
 
 
@@ -307,66 +333,70 @@ def hand_crackle(step):
 
 # ------------------------------------------------------------------------ arms
 def arm(near=True):
-    """One bent arm: robe sleeve, cuff, and a bare hand."""
+    """One bent arm: sleeve, forearm and hand, drawn HANGING from the shoulder.
+
+    This part used to be painted as a raised "L": elbow level with the shoulder,
+    forearm horizontal. But every idle pose swings an arm 30 degrees clockwise
+    about the shoulder to bring it down out of the guard the art is cut in, and
+    rotating that L drove the elbow into the ribs with the forearm poking
+    straight out sideways - which is why his elbows pointed at his body. Drawn
+    hanging, with the elbow just outboard of the pivot, the same swing lifts the
+    forearm forward into a guard.
+    """
     W, H = 148, 132
     img = _blank((W, H))
     base, lit, dark = (ROBE, ROBE_LIT, ROBE_DK) if near else (
         (18, 18, 22), (36, 36, 44), (8, 8, 10))
     skin = (SKIN, SKIN_LIT, SKIN_DK) if near else (SKIN_DK, SKIN, SKIN_DEEP)
-    # The elbow sits below and slightly behind the shoulder and the forearm
-    # rises forward to the hand: that is an arm bent towards the enemy. It used
-    # to hang the hand at hip height with the elbow above and behind it, which
-    # reads as an arm bent backwards - and the far arm was that same arm
-    # mirrored, which turned its forearm round and pointed that hand behind
-    # him as well.
-    sh = (54.0, 14.0)
-    elbow = (48.0, 58.0) if near else (50.0, 62.0)
-    wrist = (92.0, 54.0) if near else (88.0, 60.0)
 
-    # upper sleeve, hanging from the shoulder
+    sh = (56.0, 16.0)
+    elbow = (62.0, 62.0)
+    wrist = (84.0, 84.0)
+
+    # sleeve: wide at the shoulder so it meets the torso, tapering to the elbow
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
-    d.polygon([(41, 14), (65, 14), (64, 52), (36, 56)], fill=255)
-    d.ellipse([sh[0] - 13, sh[1] - 8, sh[0] + 13, sh[1] + 13], fill=255)
-    d.ellipse([elbow[0] - 12, elbow[1] - 9, elbow[0] + 12, elbow[1] + 9], fill=255)
+    d.polygon([(sh[0] - 18, sh[1] - 10), (sh[0] + 17, sh[1] - 10),
+               (elbow[0] + 11, elbow[1]), (elbow[0] - 11, elbow[1])], fill=255)
+    d.ellipse([sh[0] - 18, sh[1] - 14, sh[0] + 18, sh[1] + 14], fill=255)
+    d.ellipse([elbow[0] - 11, elbow[1] - 10, elbow[0] + 11, elbow[1] + 10], fill=255)
     img.alpha_composite(char_rig._shade(mask, base, lit, dark))
 
-    # forearm sleeve, angled out towards the enemy
     fmask = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(fmask)
     fd.line([elbow, wrist], fill=255, width=17)
-    fd.ellipse([elbow[0] - 9, elbow[1] - 9, elbow[0] + 9, elbow[1] + 9], fill=255)
     fd.ellipse([wrist[0] - 9, wrist[1] - 9, wrist[0] + 9, wrist[1] + 9], fill=255)
     img.alpha_composite(char_rig._shade(fmask, base, lit, dark))
 
     d = ImageDraw.Draw(img)
-    # flared cuff at the wrist
-    d.line([(wrist[0] - 5, wrist[1] - 3), (wrist[0] + 5, wrist[1] + 3)],
-           fill=(104, 108, 120, 255), width=22)
-    d.line([(wrist[0] - 3, wrist[1] - 2), (wrist[0] + 4, wrist[1] + 3)],
-           fill=dark + (210,), width=15)
+    # flared cuff, square to the forearm
+    d.line([(wrist[0] - 9, wrist[1] + 3), (wrist[0] + 3, wrist[1] - 9)],
+           fill=(104, 108, 120, 255), width=20)
+    d.line([(wrist[0] - 6, wrist[1] + 2), (wrist[0] + 2, wrist[1] - 6)],
+           fill=dark + (210,), width=13)
 
-    # hand: wrist, palm, four fingers
-    hx, hy = (108, 50) if near else (104, 56)
-    d.ellipse([hx - 11, hy - 10, hx + 11, hy + 10], fill=skin[0] + (255,))
-    d.ellipse([hx - 8, hy - 8, hx + 6, hy + 3], fill=skin[1] + (205,))
-    d.line([(hx - 4, hy + 5), (hx + 9, hy + 6)], fill=skin[2] + (185,), width=2)
+    # hand below the cuff, fingers open towards the enemy
+    hx, hy = 94, 94
+    d.ellipse([hx - 11, hy - 8, hx + 11, hy + 10], fill=skin[0] + (255,))
+    d.ellipse([hx - 8, hy - 6, hx + 5, hy + 3], fill=skin[1] + (205,))
     for i in range(3):
-        d.line([(hx + 3, hy - 6 + i * 5), (hx + 13, hy - 5 + i * 5)],
+        d.line([(hx + 2, hy + 1 + i * 4), (hx + 12, hy + 4 + i * 4)],
                fill=skin[2] + (150,), width=2)
-    d.line([(hx + 2, hy - 9), (hx + 9, hy - 9)], fill=skin[1] + (180,), width=2)
+    d.line([(hx - 7, hy + 1), (hx + 5, hy + 3)], fill=skin[1] + (170,), width=2)
 
-    # folds in the sleeve
-    d.line([(38, 28), (41, 52)], fill=dark + (130,), width=2)
-    d.line([(66, 24), (65, 50)], fill=lit + (80,), width=2)
-    d.line([(58, 60), (76, 60)], fill=dark + (100,), width=2)
+    # folds down the sleeve, then the elbow crease
+    d.line([(sh[0] - 6, sh[1] + 10), (sh[0] - 3, elbow[1] - 8)],
+           fill=dark + (130,), width=2)
+    d.line([(sh[0] + 8, sh[1] + 10), (elbow[0] + 6, elbow[1] - 6)],
+           fill=lit + (80,), width=2)
+    d.line([(elbow[0] - 2, elbow[1] + 2), (wrist[0] - 2, wrist[1] - 6)],
+           fill=dark + (100,), width=2)
 
     # No lightning is painted into the arm. The current he carries is its own
     # animation (group 7030) spawned over him, so the arms stay clean.
     if not near:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return img
-
 
 # ------------------------------------------------------------------------ legs
 def thigh():
@@ -471,7 +501,7 @@ RIG_JSON = {
         # reaching sideways is swallowed by the torso there. Mirrored, the
         # pair reads the way the painting does it: both palms out, one arm
         # either side, elbows low and the forearms turned forward.
-        "arm_f": [92, 14],
+        "arm_f": [91, 14],
         # ankle joint sits 14px above the ground, so the pivot is placed 14px
         # up from the sole (part height 36 - 14 = 20)
         "foot_n": [14, 25],

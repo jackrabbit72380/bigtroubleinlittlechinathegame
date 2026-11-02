@@ -163,47 +163,6 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 
-; You can delete the following two controllers if you're building your own
-; character using KFM. These are the wood pieces that KFM kicks.
-[State 191, Wood 1]
-type = Explod
-trigger1 = RoundState != 0
-persistent = 0
-anim = 191
-postype = p1
-pos = 260, -90
-velocity = -4.2, -7
-accel = 0, .32
-removetime = 48
-
-[State 191, Wood 2]
-type = Explod
-trigger1 = AnimElemTime(7) = 1
-anim = 192
-postype = p1
-pos = 60, -70
-velocity = 2, -4
-accel = 0, .32
-removetime = 35
-
-; You can delete the following two controllers if you're building your own
-; character using KFM. These play back the sounds of the wood block being
-; broken.
-[State 191, Snd 1]
-type = PlaySnd
-trigger1 = AnimElem = 7
-value = F5,2
-volume = -40
-
-[State 191, Snd 2]
-type = PlaySnd
-trigger1 = AnimElemTime(7) = 3
-value = F5,3
-volume = -80
-
-;---------------------------------------------------------------------------
-; Taunt
-; CNS difficulty: easy
 [Statedef 195]
 type = S
 ctrl = 0
@@ -3443,3 +3402,225 @@ triggerall = Time = 1
 trigger1 = stateno = 52 ;Jump land
 trigger2 = stateno = 106 ;Run-back land
 value = 40, 0
+
+;---------------------------------------------------------------------------
+; Thunder - pressure specials
+; The clap is three rings on consecutive beats, each lighter than the last, so
+; the volley lands about as hard as one solid strike. The Earthshaker is a
+; single rolling wall of compressed air that carries across the screen and
+; brings the floor up with it.
+;---------------------------------------------------------------------------
+[Statedef 1500]
+type    = S
+movetype= A
+physics = S
+juggle  = 4
+poweradd= 45
+velset = 0,0
+anim = 1210
+ctrl = 0
+sprpriority = 2
+
+[State 1500, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 12
+length = 12
+timegap = 1
+framegap = 2
+trans = add
+paladd = 26, 20, 4
+palmul = 1.06, 1.03, 0.98
+
+[State 1500, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1500, burst 1]
+type = Explod
+trigger1 = AnimElem = 4
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, burst 2]
+type = Explod
+trigger1 = AnimElem = 6
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, burst 3]
+type = Explod
+trigger1 = AnimElem = 8
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, ring 1]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 37
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -4
+air.velocity = -3,-2.5
+
+[State 1500, ring 2]
+type = Projectile
+trigger1 = AnimElem = 6
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 33
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -4
+air.velocity = -3,-2.5
+
+[State 1500, ring 3]
+type = Projectile
+trigger1 = AnimElem = 8
+projanim = 7000
+projhitanim = 7002
+velocity = 13, 0
+removetime = -1
+projshadow = -1
+damage = 30
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+[Statedef 1600]
+type    = S
+movetype= A
+physics = S
+juggle  = 5
+poweradd= 55
+velset = 0,0
+anim = 1400
+ctrl = 0
+sprpriority = 2
+
+[State 1600, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 16
+length = 14
+timegap = 1
+framegap = 2
+trans = add
+paladd = 26, 20, 4
+palmul = 1.06, 1.03, 0.98
+
+[State 1600, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1600, shake]
+type = EnvShake
+trigger1 = AnimElem = 4
+time = 10
+freq = 70
+ampl = -8
+
+[State 1600, earthshaker]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7010
+projhitanim = 7002
+velocity = 9, 0
+removetime = -1
+projshadow = -1
+damage = 92
+attr = S, SP
+guardflag = MA
+pausetime = 8, 14
+sparkno = 1
+sparkxy = -10,-62
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 16
+ground.velocity = -4
+air.velocity = -3.5,-3
+fall = 0
+
+[State 1600, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+; The pressure is not part of him: it is laid over the sprite, so the blades
+; and the cloak stay clean in every frame.
+;---------------------------------------------------------------------------
+[Statedef -2]
+type = Explod
+trigger1 = !(time % 10)
+anim = 7030
+id = 7300
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = 14
+trans = add

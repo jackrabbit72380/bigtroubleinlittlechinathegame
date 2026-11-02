@@ -3896,9 +3896,9 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	menu.itemname.menuvideo.renderer.back = Back
 	menu.itemname.menuvideo.resolution = Resolution ;reserved submenu
 	; Resolution is assigned based on values used in itemname suffix (e.g. 320x240)
-	menu.itemname.menuvideo.resolution.320x240 = 320x240    (4:3 QVGA)
-	menu.itemname.menuvideo.resolution.640x480 = 640x480    (4:3 VGA)
-	menu.itemname.menuvideo.resolution.960x720 = 960x720    (4:3 HD)
+	;menu.itemname.menuvideo.resolution.320x240 = 320x240    (4:3 QVGA)  ; 4:3 pillarboxes
+	;menu.itemname.menuvideo.resolution.640x480 = 640x480    (4:3 VGA)  ; 4:3 pillarboxes
+	;menu.itemname.menuvideo.resolution.960x720 = 960x720    (4:3 HD)  ; 4:3 pillarboxes
 	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD)
 	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+)
 	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080  (16:9 FHD)

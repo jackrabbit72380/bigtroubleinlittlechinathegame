@@ -65,8 +65,34 @@ WEAPON_POSES = {
 
 # Parts drawn at target scale need no rescale. Jack's are cut from a 607px
 # turnaround and scaled down; Lightning's painter already works at 318px.
-ART_HEIGHT = {"lightning": TARGET_HEIGHT}
-DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning"}
+ART_HEIGHT = {"lightning": TARGET_HEIGHT,
+              "gracielaw": TARGET_HEIGHT, "jade": TARGET_HEIGHT,
+              "eggshen": TARGET_HEIGHT, "wangchi": TARGET_HEIGHT,
+              "rain": TARGET_HEIGHT, "thunder": TARGET_HEIGHT,
+              "lopan": TARGET_HEIGHT}
+DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning",
+           "gracielaw": "Gracie Law", "jade": "Maio Yin",
+           "eggshen": "Egg Shen",
+           "wangchi": "Wang Chi",
+           "rain": "Rain", "thunder": "Thunder", "lopan": "Lo Pan"}
+# The women carry no weapon, so they get no weapon actions: an empty table
+# keeps the bake from appending Jack's pistol and knife actions (and their
+# sprites) to a fighter whose states never call them.
+# Rain throws water off the same element numbers as Lightning - sound on 3, a
+# dart on 4, 6 and 8 - because his specials are the same plumbing, so his pose
+# table is Lightning's: charged, then hurled forward, then the landing.
+WEAPON_POSES["rain"] = dict(WEAPON_POSES["lightning"])
+# Thunder claps on the same element numbers: sound on 3, a ring on 4, 6 and 8.
+# No 1700 entry - he has no step, so the bake must not add that action.
+WEAPON_POSES["thunder"] = {1500: WEAPON_POSES["lightning"][1500],
+                            1600: WEAPON_POSES["lightning"][1600]}
+# Lo Pan conjures on the same element numbers: sound on 3, a sigil on 4, 6, 8.
+WEAPON_POSES["lopan"] = {1500: WEAPON_POSES["lightning"][1500],
+                          1600: WEAPON_POSES["lightning"][1600]}
+WEAPON_POSES["gracielaw"] = {}
+WEAPON_POSES["jade"] = {}
+WEAPON_POSES["eggshen"] = {}
+WEAPON_POSES["wangchi"] = {}
 
 # Every fighter painted by tools/gangs.py is named in its own roster entry, so
 # the baked .def keeps the gang member's name instead of a title-cased id.

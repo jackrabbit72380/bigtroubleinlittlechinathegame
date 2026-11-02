@@ -12,8 +12,8 @@ art_src/
     stage.txt             optional, one line: name = Lo Pan's Throne
 ```
 
-The five stage ids are `lopans_throne`, `wingkong_exchange`, `chinatown_alley`,
-`porkchop_express` and `stage0` (the training room).
+The stage ids are `lopans_throne`, `wingkong_exchange`, `chinatown_alley`,
+`porkchop_express`, `upside_down` and `stage0` (the training room).
 
 ## How the art is placed
 

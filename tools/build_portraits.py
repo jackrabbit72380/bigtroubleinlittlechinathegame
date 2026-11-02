@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 import sys
 
 from PIL import Image
@@ -30,11 +31,44 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The cell art is painted at the grid cell size so it can be drawn at scale 1
 # with the axis at the sprite corner, which is how the engine lays out its own
 # 25x25 portraits in a 24px cell.
-CELL = (120, 120)
-BUST = 100                 # the bust sits inside the cell bevel
+CELL = (100, 100)
+BUST = 84                  # the bust sits inside the cell bevel
 SIDE = (300, 520)          # the tall art shown beside the grid
 BIG = (120, 140)
 AXIS = (0, 0)
+
+# [Info] localcoord of the screenpack these portraits are drawn in.
+MOTIF_LOCALCOORD = 1280
+
+
+def char_localcoord(def_path):
+    """The character's own coordinate space; MUGEN's default is 320x240."""
+    try:
+        body = open(def_path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return 320
+    found = re.search(r"^\s*localcoord\s*=\s*(\d+)", body, re.M | re.I)
+    return int(found.group(1)) if found else 320
+
+
+def portrait_sizes(sff_path):
+    """Sprite sizes that land on the intended on-screen size.
+
+    The engine multiplies a portrait's scale by motif.localcoord / the
+    character's localcoord (src/motif.go: Scale = cfg.Scale * portraitscale *
+    motif.Localcoord[0] / char.localcoord[0]). Painting every fighter at 120px
+    therefore drew the 320x240 base roster at 4x - 480px cells and 1200px side
+    art, blowing far outside their boxes - while the 960x720 rigs only reached
+    1.33x. The art has to be painted at target / factor so both end up the same
+    size on screen.
+    """
+    factor = MOTIF_LOCALCOORD / float(char_localcoord(sff_path[:-4] + ".def"))
+
+    def scaled(size):
+        return (max(1, int(round(size[0] / factor))),
+                max(1, int(round(size[1] / factor))))
+
+    return scaled(CELL), scaled(BIG), scaled(SIDE)
 
 
 def standing_frame(d, sprites, palettes):
@@ -53,28 +87,46 @@ def standing_frame(d, sprites, palettes):
 
 
 def fit(img, size, head=False):
-    """Contain ``img`` in ``size``, bottom-aligned, on a transparent canvas."""
+    """Scale by height, crop width: every fighter ends up the same size.
+
+    Containing the figure in the box (the old behaviour) made the apparent size
+    depend on how wide the fighter happened to be: Lo Pan's cape and the
+    Chings' shoulder props are much wider than Jack, so ``min(w/W, h/H)``
+    shrank them and the grid showed a row of characters at different sizes.
+    Scaling to the box height and cropping the surplus width keeps the heads
+    and bodies identical from fighter to fighter, which is what a roster grid
+    is for. Only the sides are ever cropped, and the figure is centred first.
+    """
     out = Image.new("RGBA", size, (0, 0, 0, 0))
     if head:
         # the cell is a bust shot: take the top of the figure
         keep = max(1, int(img.height * 0.45))
         img = img.crop((0, 0, img.width, keep))
-    k = min(size[0] / float(img.width), size[1] / float(img.height))
-    img = img.resize((max(1, int(round(img.width * k))),
-                      max(1, int(round(img.height * k)))), Image.LANCZOS)
-    out.alpha_composite(img, ((size[0] - img.width) // 2, size[1] - img.height))
+    if img.width < 1 or img.height < 1:
+        return out
+    k = size[1] / float(img.height)
+    keep = min(img.width, max(1, int(round(size[0] / k))))
+    left = (img.width - keep) // 2
+    img = img.crop((left, 0, left + keep, img.height))
+    img = img.resize((max(1, int(round(img.width * k))), size[1]), Image.LANCZOS)
+    out.alpha_composite(img, ((size[0] - img.width) // 2, 0))
     return out
 
 
-def cell_art(img):
-    """The roster cell: a head-and-shoulders crop centred on the cell plate."""
-    out = Image.new("RGBA", CELL, (0, 0, 0, 0))
+def cell_art(img, cell=CELL):
+    """The roster cell: a head-and-shoulders crop centred on the cell plate.
+
+    Same height rule as fit(): the bust fills the plate vertically so no head
+    in the grid is smaller than its neighbour.
+    """
+    bust_target = max(1, int(round(cell[0] * BUST / float(CELL[0]))))
     bust = img.crop((0, 0, img.width, max(1, int(img.height * 0.52))))
-    k = min(BUST / float(bust.width), BUST / float(bust.height))
-    bust = bust.resize((max(1, int(round(bust.width * k))),
-                        max(1, int(round(bust.height * k)))), Image.LANCZOS)
-    out.alpha_composite(bust, ((CELL[0] - bust.width) // 2,
-                               (CELL[1] - bust.height) // 2))
+    art = fit(bust, (bust_target, bust_target))
+    # the sprite itself stays the size of the grid cell: the engine draws it at
+    # scale 1, so a 63px canvas would land 84px on screen instead of 100
+    out = Image.new("RGBA", cell, (0, 0, 0, 0))
+    out.alpha_composite(art, ((cell[0] - art.width) // 2,
+                              (cell[1] - art.height) // 2))
     return out
 
 
@@ -118,16 +170,17 @@ def patch_character(path):
     if box:
         source = source.crop(box)
 
-    cell = cell_art(source)
-    side = fit(source, SIDE)
+    cell_size, big_size, side_size = portrait_sizes(path)
+    cell = cell_art(source, cell_size)
+    side = fit(source, side_size)
     out = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
             "format": sp["format"], "depth": sp["depth"], "w": sp["w"],
             "h": sp["h"], "axis": sp["axis"], "pal": sp["pal"],
             "link": sp["link"]}
            for sp in sprites
-           if (sp["group"], sp["number"]) not in ((9000, 0), (9000, 1))]
+           if (sp["group"], sp["number"]) not in ((9000, 0), (9000, 1), (9000, 2))]
     out.append({"group": 9000, "number": 0, "image": cell, "axis": AXIS})
-    out.append({"group": 9000, "number": 1, "image": fit(source, BIG),
+    out.append({"group": 9000, "number": 1, "image": fit(source, big_size),
                 "axis": AXIS})
     out.append({"group": 9000, "number": 2, "image": side, "axis": AXIS})
 

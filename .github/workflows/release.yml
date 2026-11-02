@@ -81,12 +81,28 @@ jobs:
         run: |
           set -euo pipefail
           out="out/${{ matrix.folder }}"
-          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express"
+          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express upside_down"
           exe=$(find "$out" -maxdepth 4 -iname 'Ikemen_GO*' -type f | head -1)
           echo "engine: ${exe:-MISSING}"
           test -n "$exe" || { echo "engine executable missing"; exit 1; }
           grep -q '^jackburton' "$out/data/select.def" \
             || { echo "the roster in data/select.def is not ours"; exit 1; }
+          # Jack must be the project's own rig, not the base character wearing his
+          # palette: selecting the wrong folder is exactly how a release quietly
+          # ships Kung Fu Man instead of Jack.
+          grep -qE '^jackburton_rig/jackburton\.def' "$out/data/select.def" \
+            || { echo "select.def does not select the rigged Jack Burton"; exit 1; }
+          for f in jackburton.def jackburton.air jackburton.cns jackburton.sff \
+                   jackburton.snd jackburton.cmd movelist.dat; do
+            test -f "$out/chars/jackburton_rig/$f" \
+              || { echo "rigged Jack is missing $f"; exit 1; }
+          done
+          # A palette-swapped Kung Fu Man is ~200 KB; the rig's baked sprite set is
+          # megabytes. A small file here means the rig was never baked in.
+          rig_bytes=$(wc -c < "$out/chars/jackburton_rig/jackburton.sff")
+          test "$rig_bytes" -gt 1000000 \
+            || { echo "chars/jackburton_rig/jackburton.sff is only $rig_bytes bytes - that is a placeholder, not the rig"; exit 1; }
+          echo "rigged Jack: $rig_bytes bytes of sprites"
           for id in jackburton wangchi gracielaw eggshen rain lightning thunder lopan; do
             test -f "$out/chars/$id/$id.sff" || { echo "missing fighter $id"; exit 1; }
             test -f "$out/chars/$id/$id.cns" || { echo "missing $id.cns"; exit 1; }
@@ -181,13 +197,16 @@ jobs:
             `D` heavy, `Enter` to start, `Esc` to pause. Full move list per fighter is on the
             in-game pause menu.
 
-            Roster: Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning, Thunder, Lo Pan.
-            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express.
+            Roster: Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning, Thunder, Lo Pan,
+            plus twelve Wing Kong and Chang Sing gang fighters.
+            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express,
+            The Upside Down, Airport Terminal.
 
-            Fighter sprites are recoloured Kung Fu Man placeholders (see `docs/DESIGN.md`);
-            the four stages are original to this project. Fan project, not affiliated with the
-            film's rights holders. The Ikemen GO engine is MIT licensed and redistributed
-            unmodified — its `LICENCE.txt` is inside each zip.
+            Jack Burton and Lightning are drawn and animated by the project's own puppet rigs
+            (`chars/jackburton_rig`, `chars/lightning_rig`); the other fighters use recoloured
+            Kung Fu Man sprites (see `docs/DESIGN.md`). The stages are original to this project. Fan project, not affiliated with the film's rights
+            holders. The Ikemen GO engine is MIT licensed and redistributed unmodified — its
+            `LICENCE.txt` is inside each zip.
           files: dist/*.zip
           fail_on_unmatched_files: true
           draft: false

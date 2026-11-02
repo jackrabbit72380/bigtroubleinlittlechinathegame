@@ -59,8 +59,56 @@ MOUTH_HALF = int(0.335 * SKULL_W)
 
 # The aperture, in skull-layer coordinates: wide under the brow, waisted at the
 # cheeks, and open at the bottom so the fog has somewhere to come from.
-MOUTH_PTS = [(0.176, 0.606), (0.500, 0.580), (0.824, 0.606), (0.856, 0.780),
-             (0.828, 1.005), (0.172, 1.005), (0.144, 0.780)]
+# The aperture runs off the bottom of the layer on purpose: the staircase comes
+# up through the floor of the mouth and the fog plays in the gap, so there is
+# bone only on the sides of it, never across it.
+MOUTH_PTS = [(0.176, 0.606), (0.500, 0.580), (0.824, 0.606), (0.800, 0.780),
+             (0.706, 1.005), (0.294, 1.005), (0.200, 0.780)]
+
+# The jaw, as the gate is built in the reference: two curved tusks either side
+# of the doorway. Each one is thick at the angle of the jaw below the cheek,
+# sweeps up along the edge of the mouth and hooks inward to a point level with
+# the fangs - which is why a pair of straight struts never looked right. They
+# stand in the opening; nothing crosses its floor.
+JAW_SPINE = [(0.238, 1.060), (0.186, 0.960), (0.206, 0.866), (0.330, 0.784)]
+
+
+def _bezier(p0, p1, p2, p3, t):
+    """A point on a cubic, for the spine the tusk is swept along."""
+    mt = 1.0 - t
+    a, b, c, d = mt ** 3, 3 * mt * mt * t, 3 * mt * t * t, t ** 3
+    return (a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0],
+            a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1])
+
+
+def jaw_side_pts(mirror=False, n=24):
+    """One jaw tusk: a blade swept along the spine, tapering into the hook."""
+    p0, p1, p2, p3 = JAW_SPINE
+    spine = [_bezier(p0, p1, p2, p3, i / float(n - 1)) for i in range(n)]
+    edge_a, edge_b = [], []
+    for i, (x, y) in enumerate(spine):
+        xa, ya = spine[max(0, i - 1)]
+        xb, yb = spine[min(n - 1, i + 1)]
+        dx, dy = xb - xa, yb - ya
+        ln = max(1e-6, (dx * dx + dy * dy) ** 0.5)
+        nx, ny = -dy / ln, dx / ln
+        t = i / float(n - 1)
+        # thick at the angle of the jaw, thinning into the point
+        w = 0.074 * (1.0 - t) ** 0.85 + 0.002
+        edge_a.append((x + nx * w, y + ny * w))
+        edge_b.append((x - nx * w, y - ny * w))
+    pts = edge_a + edge_b[::-1]
+    return [((1.0 - u) if mirror else u, v) for u, v in pts]
+
+
+def jaw_mask(blur=None):
+    """Silhouette of both jaw bones, for passes that must not tint them."""
+    m = Image.new("L", (SKULL_W, SKULL_H), 0)
+    d = ImageDraw.Draw(m)
+    for mirror in (False, True):
+        d.polygon([(u * SKULL_W, v * SKULL_H) for u, v in jaw_side_pts(mirror)],
+                  fill=255)
+    return m.filter(ImageFilter.GaussianBlur(SKULL_W * 0.008 if blur is None else blur))
 
 
 def mouth_canvas():
@@ -432,9 +480,10 @@ def skull_layer():
               (ws * 0.5 + sx * ws * 0.492, hs * 0.384),
               (ws * 0.5 + sx * ws * 0.486, hs * 0.470),
               (ws * 0.5 + sx * ws * 0.292, hs * 0.492)], (196, 188, 168), 224)
-        # cheek: a soft fossa under the orbit
-        ell(rbox(ws * 0.5 + sx * ws * 0.120, hs * 0.500,
-                 ws * 0.5 + sx * ws * 0.310, hs * 0.590), bone, 190)
+        # cheek: the zygomatic mass is the widest part of the face below the
+        # dome, so it has to flare past the muzzle rather than sit flush
+        ell(rbox(ws * 0.5 + sx * ws * 0.104, hs * 0.488,
+                 ws * 0.5 + sx * ws * 0.322, hs * 0.600), bone, 196)
     # glabella
     ell([0.462 * ws, hs * 0.296, 0.538 * ws, hs * 0.372], (212, 204, 184), 232)
     # maxilla, and the alveolar ridge the teeth hang from
@@ -486,18 +535,33 @@ def skull_layer():
     # --- mouth: an open aperture, cleared out of the layer ------------------
     poly([(u * ws, v * hs) for u, v in MOUTH_PTS], (0, 0, 0), 0)
 
+    # --- jaw tusks, standing in the opening ---------------------------------
+    # Painted after the aperture is cut. Drawn before it, the cut ate the hook
+    # and left a stub standing at the edge, which is why it never matched.
+    for mirror in (False, True):
+        poly([(u * ws, v * hs) for u, v in jaw_side_pts(mirror)], (198, 190, 170), 208)
+
     # --- teeth --------------------------------------------------------------
     teeth_all = []
-    def tooth(bx, y0, half, tip, lean=0.0, sink=None):
-        pts = [(bx - half, y0), (bx + half, y0),
-               (bx + half * 0.72 + lean, y0 + (tip - y0) * 0.5),
+    def tooth(bx, y0, half, tip, lean=0.0):
+        # The base is a shallow cup rather than a flat slab: the corners tuck
+        # up under the gum, so a tooth that is painted brighter than the jaw
+        # does not sit on it like a paper tab.
+        pts = [(bx - half, y0 - half * 0.30),
+               (bx - half * 0.55, y0),
+               (bx + half * 0.58, y0),
+               (bx + half, y0 - half * 0.30),
+               (bx + half * 0.70 + lean * 0.55, y0 + (tip - y0) * 0.46),
                (bx + lean, tip),
-               (bx - half * 0.62 + lean, y0 + (tip - y0) * 0.58)]
+               (bx - half * 0.62 + lean * 0.72, y0 + (tip - y0) * 0.52)]
         poly(pts, (232, 226, 206), 250)
-        (teeth_all if sink is None else sink).append(pts)
+        teeth_all.append(pts)
         dc.line([(bx - half * 0.30, y0 + px(1)), (bx + lean * 0.7, tip - px(2))],
                 fill=(196, 188, 166), width=max(1, int(ws * 0.005)))
 
+    # Upper jaw: the row across the lip, then the two corner fangs a side.
+    # This is the layout the gate has always had; the bottom of the mouth is
+    # where the extra teeth belong, not here.
     row_y = hs * 0.586
     for k in range(-2, 3):
         bx = ws * 0.5 + k * ws * 0.066
@@ -507,13 +571,17 @@ def skull_layer():
               hs * 0.790, lean=sx * ws * 0.012)
         tooth(ws * 0.5 + sx * ws * 0.322, hs * 0.588, ws * 0.030,
               hs * 0.706, lean=sx * ws * 0.007)
-    # Lower corner teeth, standing up out of the floor of the mouth on either
-    # side. The middle stays clear on purpose: the mouth is the doorway, so
-    # these are its jambs - you should read a way in, not a closed jaw.
-    lower_teeth = []
+    # Lower jaw: three teeth a side standing up out of the floor of the mouth,
+    # one behind the other - the corner tooth the gate always had, plus two
+    # more stepped back into the throat. Each one behind is shorter, narrower
+    # and set higher, because the floor of the mouth recedes upward.
+    lower = [(0.163, 0.952, 0.029, 0.874),     # deepest in the throat
+             (0.207, 0.956, 0.042, 0.858),     # middle
+             (0.250, 0.964, 0.056, 0.840)]     # nearest, out at the corner
     for sx in (-1, 1):
-        tooth(ws * 0.5 + sx * ws * 0.250, hs * 1.060, ws * 0.056,
-              hs * 0.845, lean=sx * ws * 0.010, sink=lower_teeth)
+        for u, y0, half, tip in lower:
+            tooth(ws * 0.5 + sx * ws * u, hs * y0, ws * half, hs * tip,
+                  lean=sx * ws * 0.010)
 
     # gum line shadow
     dc.line([(ws * 0.19, hs * 0.590), (ws * 0.81, hs * 0.590)],
@@ -583,6 +651,56 @@ def skull_layer():
     layer = Image.alpha_composite(layer, overlay(shadows, SKULL_W * 0.016))
     layer = Image.alpha_composite(layer, overlay(highlights, SKULL_W * 0.010))
 
+    # --- teeth are bone, not shadowed stone --------------------------------
+    # The vertical falloff that darkens the jaw toward the floor of the mouth
+    # darkened the teeth with it: measured on the layer they came out around
+    # (120, 112, 92), which reads as a void against the black of the open
+    # mouth. The reference has them bright white, so each tooth is repainted
+    # here, after the shading, as its own little vertical gradient - a shadow
+    # under the gum, bone through the body, brightest at the tip.
+    kt = SKULL_W / float(ws)
+    for pts in teeth_all:
+        sp = [(x * kt, y * kt) for x, y in pts]
+        x0, x1 = min(p[0] for p in sp), max(p[0] for p in sp)
+        y0, y1 = min(p[1] for p in sp), max(p[1] for p in sp)
+        tw, th = max(1, int(x1 - x0) + 2), max(1, int(y1 - y0) + 2)
+        tile = art.vgrad((tw, th), [(0, (148, 140, 122)),
+                                    (int(th * 0.22), (226, 220, 202)),
+                                    (int(th * 0.70), (246, 242, 228)),
+                                    (th, (255, 254, 246))]).convert("RGBA")
+        cut = Image.new("L", (tw, th), 0)
+        ImageDraw.Draw(cut).polygon([(px - x0 + 1, py - y0 + 1) for px, py in sp],
+                                    fill=255)
+        cut = cut.filter(ImageFilter.GaussianBlur(0.5))
+        sheet = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
+        sheet.paste(tile, (int(x0) - 1, int(y0) - 1), cut)
+        # A soft dark rim, so two fangs that overlap still read as two: without
+        # it the nearer blade and the one behind it merge into one bright slab,
+        # because they are painted the same bone.
+        edge = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
+        ImageDraw.Draw(edge).line(sp + [sp[0]], fill=(112, 100, 82, 200),
+                                  width=max(1, int(SKULL_W * 0.005)),
+                                  joint="curve")
+        edge = edge.filter(ImageFilter.GaussianBlur(0.6))
+        sheet = Image.alpha_composite(sheet, edge)
+        layer = Image.alpha_composite(layer, sheet)
+
+    # Gum: a soft maroon band over the roots. The teeth are brighter than the
+    # jaw, so without it every one of them ends on a visible cut edge and the
+    # fangs sit proud of the bone like tabs.
+    # It stops at the ridge line: carried any lower it covered the shadowed
+    # roots of the top row and flattened every one of those teeth into a tab,
+    # which is the layer effect the bottom row kept and the top row lost.
+    gum = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
+    ImageDraw.Draw(gum).polygon([(SKULL_W * 0.150, SKULL_H * 0.546),
+                                 (SKULL_W * 0.850, SKULL_H * 0.546),
+                                 (SKULL_W * 0.836, SKULL_H * 0.600),
+                                 (SKULL_W * 0.164, SKULL_H * 0.600)],
+                                fill=(70, 40, 34, 186))
+    gum = gum.filter(ImageFilter.GaussianBlur(SKULL_W * 0.012))
+    gum.putalpha(ImageChops.multiply(gum.split()[3], alpha))
+    layer = Image.alpha_composite(layer, gum)
+
     # green underlight spilling up out of the mouth
     under = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
     ud = ImageDraw.Draw(under)
@@ -598,44 +716,84 @@ def skull_layer():
     k = SKULL_W / float(ws)
     tb = Image.new("L", (SKULL_W, SKULL_H), 0)
     td = ImageDraw.Draw(tb)
-    for pts in teeth_all + lower_teeth:
+    for pts in teeth_all:
         td.polygon([(x * k, y * k) for x, y in pts], fill=255)
     under.putalpha(ImageChops.multiply(under.split()[3],
                                        ImageChops.invert(tb)))
+    # The jaw is bone, not mouth: without this the green spill that lights the
+    # inside of the mouth screened the whole mandible sage green.
+    jaw = jaw_mask()
+    under.putalpha(ImageChops.multiply(under.split()[3], ImageChops.invert(jaw)))
     layer = art.screen(layer, under, glow_radius=SKULL_W * 0.02, gain=1.0)
     layer.putalpha(alpha)          # screen() returns an opaque alpha channel
 
+    # --- the jaw is bone, and it goes on last -------------------------------
+    # The mouthlight kept screening the mandible sage through its mask, so the
+    # bone is laid back over the top the way the teeth are, keeping most of the
+    # modelling underneath it.
+    jmask = jaw_mask(0.9)
+    jbone = art.vgrad((SKULL_W, SKULL_H), [(int(SKULL_H * 0.90), (228, 220, 200)),
+                                           (int(SKULL_H * 0.96), (200, 192, 172)),
+                                           (SKULL_H, (154, 146, 130))]).convert("RGBA")
+    jlit = Image.blend(layer.convert("RGB"), jbone.convert("RGB"), 0.62).convert("RGBA")
+    jlit.putalpha(layer.getchannel("A"))
+    layer = Image.composite(jlit, layer, jmask)
+
+    # --- the tusks are the brightest bone on the gate ----------------------
+    # The mouthlight throws up onto them, so they stay pale while the rest of
+    # the jaw falls away. Left to the shading above they came out dark and the
+    # pair read as two thin shadows of a jaw rather than bone standing in the
+    # opening.
+    tusk = Image.new("L", (SKULL_W, SKULL_H), 0)
+    tdraw = ImageDraw.Draw(tusk)
+    for mirror in (False, True):
+        tdraw.polygon([(u * SKULL_W, v * SKULL_H) for u, v in jaw_side_pts(mirror)],
+                      fill=255)
+    tgrad = art.vgrad((SKULL_W, SKULL_H), [(int(SKULL_H * 0.68), (252, 248, 236)),
+                                           (int(SKULL_H * 0.84), (236, 230, 212)),
+                                           (SKULL_H, (198, 190, 170))]).convert("RGBA")
+    tbright = Image.blend(layer.convert("RGB"), tgrad.convert("RGB"), 0.86).convert("RGBA")
+    tbright.putalpha(layer.getchannel("A"))
+    layer = Image.composite(tbright, layer, tusk.filter(ImageFilter.GaussianBlur(0.9)))
+
+    # a crease down each blade, so the tusk has a grain instead of a flat fill
+    crease = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
+    cdw = ImageDraw.Draw(crease)
+    jp0, jp1, jp2, jp3 = JAW_SPINE
+    for mirror in (False, True):
+        pts = []
+        for i in range(10):
+            t = 0.18 + 0.66 * i / 9.0
+            u, v = _bezier(jp0, jp1, jp2, jp3, t)
+            u = u + (0.074 * (1.0 - t) ** 0.85 + 0.002) * 0.34
+            pts.append(((1.0 - u) if mirror else u, v))
+        cdw.line([(u * SKULL_W, v * SKULL_H) for u, v in pts],
+                 fill=(160, 152, 132, 130), width=max(1, int(SKULL_W * 0.006)),
+                 joint="curve")
+    crease = crease.filter(ImageFilter.GaussianBlur(0.7))
+    crease.putalpha(ImageChops.multiply(crease.split()[3], tusk))
+    layer = Image.alpha_composite(layer, crease)
+
     # --- neon rim -----------------------------------------------------------
+    # The silhouette is the alpha on its own. It used to need a filled block
+    # over the jaw, because the mouth ran off the bottom of the layer and there
+    # was no jaw there to trace - and that block is what drew the straight green
+    # lines down either side of the mouth, through open air.
     sil = alpha.copy()
-    sd = ImageDraw.Draw(sil)
-    sd.polygon([(0.150 * SKULL_W, 0.604 * SKULL_H), (0.500 * SKULL_W, 0.578 * SKULL_H),
-                (0.850 * SKULL_W, 0.604 * SKULL_H), (0.870 * SKULL_W, 1.0 * SKULL_H),
-                (0.130 * SKULL_W, 1.0 * SKULL_H)], fill=255)
     rim = art.outline(sil, (46, 208, 128), thickness=max(2, int(SKULL_W * 0.009)),
                       expand=1)
     hot = art.outline(sil, (150, 246, 196), thickness=max(1, int(SKULL_W * 0.003)),
                       expand=2)
     neon = Image.alpha_composite(rim, hot)
 
-    # The lower teeth get the gate's neon as a line round the bone. It is
-    # drawn straight onto the skull, not into the neon layer: that layer is
-    # screen-blended with a blurred halo and two passes, and on a tooth this
-    # narrow the glow swallowed the whole face of it and the bone came out
-    # mint. Drawn opaque it is a green edge on white bone, like the row above.
-    k = SKULL_W / float(ws)
-    tmask = Image.new("L", (SKULL_W, SKULL_H), 0)
-    md = ImageDraw.Draw(tmask)
-    tn = Image.new("RGBA", (SKULL_W, SKULL_H), (0, 0, 0, 0))
-    nd = ImageDraw.Draw(tn)
-    for pts in lower_teeth:
-        ring = [(x * k, y * k) for x, y in pts]
-        md.polygon(ring, fill=255)
-        nd.line(ring + [ring[0]], fill=(46, 208, 128, 255),
-                width=max(3, int(SKULL_W * 0.005)), joint="curve")
-        nd.line(ring + [ring[0]], fill=(150, 246, 196, 255),
-                width=max(1, int(SKULL_W * 0.002)), joint="curve")
-    tn.putalpha(ImageChops.multiply(tn.getchannel("A"), tmask))
-    layer = Image.alpha_composite(layer, tn)
+    # The bottom row gets no pass of its own. It used to have one - a green
+    # ring drawn round every lower tooth - and that is what tinted the row mint
+    # and what bled its lines across the teeth standing in front: the rings
+    # were painted per tooth, in the same order the teeth were drawn, so a
+    # nearer tooth never covered the edge of the one behind it. The rim above is
+    # traced once, round the finished aperture, so every tooth - top row and
+    # bottom row alike - gets the same neon edge, and overlapping bone simply
+    # covers the edge underneath it.
 
     def full(img):
         out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -794,26 +952,43 @@ def paint():
     # art.screen() comes back with an opaque alpha channel, so the aperture is
     # punched last: it has to survive every layer drawn after it.
     painted.putalpha(ImageChops.subtract(painted.split()[3], aperture))
+    # The fog is the fog.webm clip itself, drawn behind the hall, so the
+    # aperture is the only place it can be seen. Its layer is FOG_BG below.
+    hd.EXTRA_BG["lopans_throne"] = FOG_BG
     return [("bg", 0, 0, painted, 0),
             ("fg", 3, 0, fg, 1)]
 
 
-FOG_BG = """; The fog is drawn first, so it runs behind every painted layer of the hall.
-; The backdrop is open at the skull's mouth, and that hole is the only place
-; the clip can be seen - see stages/video/README.txt.
+# ------------------------------------------------------------------ fog
+# The mouth is a hole into the throat, and the fog in it is the fog.webm film,
+# drawn as a video background. Two things about that layer are not obvious, and
+# both were wrong in the first version:
+#
+#   * start = 0,0 puts the clip's left edge in the MIDDLE of the screen. Ikemen
+#     draws a stage video with a render origin of gameWidth/2 to the right of
+#     start (src/stage.go: "Choose render origin: top-left for motif/storyboard
+#     videos, center for everything else"), which is why only the right half of
+#     the mouth ever had fog in it. The clip is 3840x2160 for a 1920x1080 stage,
+#     so start = -1920,0 centres it and covers the view twice over.
+#   * video does not repeat unless `loop = 1` is set (is.ReadBool("loop", ...)
+#     in the video branch of BG parsing). Without it the clip ran its fifteen
+#     seconds and the mouth went dark for good.
+FOG_BG = """
+; the mouth is a hole into the throat: the fog film sits at the bottom of the
+; stack, so the aperture is the only place it can be seen. It covers the whole
+; view, so the fog keeps running in the mouth as the camera pans.
 [BG fog]
 type = video
 path = video/fog.webm
+loop = 1
 layerno = 0
-start = 0,0
+start = -%d,0
 delta = 0,0
-
-"""
+""" % (hd.LOCAL_W,)
 
 
 def main():
     hd.STAGES["lopans_throne"] = ("Lo Pan's Throne", paint)
-    hd.EXTRA_BG["lopans_throne"] = FOG_BG
     hd.build("lopans_throne")
     return 0
 

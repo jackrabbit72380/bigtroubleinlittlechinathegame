@@ -1,22 +1,28 @@
-fog.webm lives in this folder.
-
-Lo Pan's throne draws its fog with:
+fog.webm is the fog that plays inside the skull's mouth on Lo Pan's Throne.
+It is a real clip, drawn by a video background layer - not baked frames.
 
     [BG fog]
     type = video
     path = video/fog.webm
+    loop = 1
+    layerno = 0
+    start = -1920,0
+    delta = 0,0
 
-Background paths in a stage def resolve from the stage file's own folder, so
-`video/fog.webm` means stages/video/fog.webm.
+Two details from Ikemen GO's src/stage.go decide how it has to be written:
 
-The clip is 15 seconds of VP9 at 3840x2160, 25 fps. The stage's coordinate space
-is 1920x1080 and the layer sits at start = 0,0 with delta = 0,0, so it is pinned
-to the screen and covers it about twice over - the mouth sees the middle of the
-plate rather than its top-left corner. Fog does not need to be 1:1, so it reads
-as intended; re-time or rescale the plate if you ever swap it for another clip.
+1. A stage video is drawn with a render origin of gameWidth/2 to the RIGHT of
+   start ("Choose render origin: top-left for motif/storyboard videos, center
+   for everything else"). So at start = 0,0 the clip's left edge lands on the
+   middle of the screen and only the right half of the view has any fog in it -
+   which is exactly the "fog in half of the mouth" bug. The clip is 3840x2160
+   for a 1920x1080 stage, so start = -1920,0 centres it on the view and covers
+   the screen twice over.
 
-The video is the last background in the stack, so it sits behind every painted
-layer of the hall. The only opening in the backdrop is the skull's mouth, which
-tools/stage_throne.py punches out of the artwork, so that is the one place the
-fog can be seen. Without the file the mouth reads as a dark aperture instead of
-a lit one.
+2. Video plays ONCE unless loop = 1 is set (`is.ReadBool("loop", &loop)` in the
+   video branch of BG parsing). Without it the clip runs for 15 seconds and the
+   mouth goes dark permanently - "the fog just stops".
+
+delta = 0,0 keeps the layer screen-pinned: the plate covers the whole view, and
+the wall is opaque except for the mouth aperture, so the fog is only ever seen
+in the mouth. The aperture itself is punched in tools/stage_throne.py.

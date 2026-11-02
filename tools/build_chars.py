@@ -23,7 +23,10 @@ import art
 import gangs
 import jackburton
 import lightning
+import lopan
+import rain
 import sff
+import thunder
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE = os.path.join(ROOT, "chars", "kfm")
@@ -108,10 +111,30 @@ ROSTER = [
         ],
     ),
     dict(
+        id="jade", name="Maio Yin", display="Maio Yin",
+        pal=(350, 1.2, 1.05), life=900, attack=101, defence=94,
+        xscale=1.0, yscale=1.0, order=1,
+        blurb="Lo Pan's bride-to-be, and nobody's sacrifice.",
+        moves=dict(throw="Bridal Toss", palm="Jade Palm", upper="Veil Upper",
+                   blow="Wedding Crash", zankou="Silk Cut",
+                   knee="Lotus Kick", super1="Red Silk Storm",
+                   super2="Two Thousand Years"),
+        quotes=[
+            "I am not marrying anyone tonight.",
+            "The red is for luck. Mine.",
+            "You picked the wrong bride.",
+            "Two thousand years and still no manners.",
+            "Silk cuts deeper than steel.",
+            "Gracie, run!",
+            "Lo Pan will not have me.",
+        ],
+    ),
+    dict(
         id="thunder", name="Thunder", display="Thunder",
         pal=(14, 0.8, 0.9), life=1200, attack=115, defence=112,
+        extra=thunder,
         xscale=1.12, yscale=1.12, order=2,
-        blurb="One of the Three Storms. Speaks in thunder, hits like a truck.",
+        blurb="The big one of the Three Storms. A crescent blade in each fist.",
         moves=dict(throw="Storm Slam", palm="Thunder Palm", upper="Warrior Upper",
                    blow="Storm Blow", zankou="Axe Hand", knee="Earthshaker",
                    super1="Thunder Roar", super2="Three Storms"),
@@ -128,6 +151,7 @@ ROSTER = [
     dict(
         id="rain", name="Rain", display="Rain",
         pal=(175, 1.1, 1.05), life=950, attack=100, defence=96,
+        extra=rain,
         xscale=0.99, yscale=1.0, order=1,
         blurb="The quiet one of the Three Storms, quick as falling water.",
         moves=dict(throw="Rain Drop", palm="Storm Palm", upper="Downpour Upper",
@@ -166,6 +190,7 @@ ROSTER = [
     dict(
         id="lopan", name="David Lo Pan", display="Lo Pan",
         pal=(105, 1.15, 0.95), life=1300, attack=125, defence=112,
+        extra=lopan,
         xscale=1.1, yscale=1.08, order=4,
         blurb="Ghost emperor, sorcerer, and very bad wedding planner.",
         moves=dict(throw="Thousand Year Grip", palm="Fire of Lo Pan",
@@ -350,6 +375,31 @@ def override_sprites(cid, sprites):
     return swapped
 
 
+def strip_kfm_intro(cns):
+    """Drop KFM's intro wood-piece explods and their hit sounds.
+
+    [State 191, Wood 1/2] spawn anims 191/192, which in these characters are
+    full-body poses rather than wood, so the intro threw copies of the
+    fighter across the screen and played fight-fx hit sounds over it.
+    """
+    out, skip, drop_comment = [], False, False
+    for line in cns.split("\n"):
+        if drop_comment:
+            drop_comment = False
+            continue
+        if line.startswith("; You can delete the following two controllers"):
+            drop_comment = True
+            continue
+        if line.startswith("[State 191, ") and ("Wood" in line or "Snd" in line):
+            skip = True
+            continue
+        if line.startswith("["):
+            skip = False
+        if not skip:
+            out.append(line)
+    return "\n".join(out)
+
+
 def build(spec, base_sprites, base_palettes):
     cid = spec["id"]
     dest = os.path.join(ROOT, "chars", cid)
@@ -373,6 +423,7 @@ def build(spec, base_sprites, base_palettes):
         f.write(cmd)
 
     cns = open(os.path.join(BASE, "kfm.cns"), encoding="utf-8-sig").read()
+    cns = strip_kfm_intro(cns)
     for old, new in (("Kung Fu Palm", spec["moves"]["palm"]),
                      ("Kung Fu Throw", spec["moves"]["throw"]),
                      ("Kung Fu Knee", spec["moves"]["knee"]),

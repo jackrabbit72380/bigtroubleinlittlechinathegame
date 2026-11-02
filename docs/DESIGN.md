@@ -24,7 +24,84 @@ Grading avoids recolouring outlines (very dark colours are left alone) and fades
 the hue shift out for low-saturation pixels, which keeps skin highlights and
 whites from turning neon.
 
+## Jack Burton: a real costume instead of a hue shift
+
+Hue-rotating the whole table gives Jack a teal body, not Jack. His palette is
+therefore written out by hand in `tools/jackburton.py` (`COSTUME`), using the fact
+that Kung Fu Man's 32-colour table is laid out in ramps that map onto body
+regions consistently in every frame:
+
+| Indices | Base art region | Jack |
+|---|---|---|
+| 16-20 | trousers | denim jeans |
+| 21-24 | vest and headband | white tank top |
+| 25-29 | skin | tanned skin |
+| 30 | hair | brown |
+| 31 | outline / shadow | warm dark |
+
+Rebuilding those ramps (rather than rotating them) is what produces white,
+denim and brown instead of a single shifted hue. Palette 1 is the costume; the
+other fifteen slots are grades of it, so alternate colours stay available.
+
+## Jack Burton: the pistol and the knife
+
+Jack is the only fighter with weapon moves, so his `.air`, `.cmd` and `.cns`
+carry extra sections that the other seven do not. `tools/build_chars.py` appends
+them from `tools/jackburton.py` during a build, which keeps them out of the
+shared base files:
+
+* **Sprites** 7000 (pistol round), 7001 (three-frame muzzle flash), 7002
+  (three-frame impact spark), 7010 (four-frame spinning knife), written as PNG32
+  into `jackburton.sff` alongside the indexed base art.
+* **Animations** 7000-7010 in the AIR, each with the Clsn1 box the projectile
+  needs.
+* **States** 1500 (Six Shooter: three `Projectile` controllers on successive
+  animation elements, with an `Explod` flash and a sound at each shot) and 1600
+  (Knife Toss: one heavier projectile).
+* **Commands** `QCB + K` and `QDBF + K`, wired in the CMD ahead of the shared
+  specials.
+
+Because the projectiles are engine objects rather than helpers, they inherit the
+own damage, pausetime and spark settings from their own state, and they disappear
+on hit or at the end of the round without cleanup code.
+
+## Lightning: the second fighter cut from parts
+
+Jack's parts come from a photographic turnaround. Lightning has none, so
+`tools/lightning_art.py` paints his parts from the concept sheet instead: the
+huge fringed straw hat, the slate robe with its beaded demon-face chest and grey
+waist chevron, the crimson cloak, the black boots, and the blue current that
+crawls over his hands and his hat brim. It writes the same
+`art_src/chars/lightning/parts/` a hand-drawn turnaround would, so the rig,
+the baker and the validator do not care where the pixels came from.
+
+The rig grew one part for him: `cape`. It is drawn first, behind everything
+else, hangs from the shoulder joint and rides only 35% of the torso's lean, so
+it drapes instead of swinging with the arms. Its pose angle is `cape` in
+`POSES`, which is why the two storm poses (`cast`, `cast_release`) also set it.
+
+His specials are electricity, not weapons, but they occupy the same slots Jack's
+pistol and knife do - states 1500 and 1600, animations 7000/7001/7002/7010,
+commands on kicks - with the same three-thrust-then-single-heavy shape. That is
+the contract `bake_char.py` already had: it swaps the art for rig poses, scales
+collision boxes with the figure and keeps the projectile art. It now carries a
+small table instead of a hardcoded pair, `WEAPON_POSE`, so each fighter gets its
+own pose for those two states.
+
 ## Replacing the art
+
+For a partial or full repaint there is a drop-in path that needs no code
+changes: put `art_src/chars/<id>/<group>_<number>.png` files next to the fighter
+and rebuild. Each file replaces exactly that sprite slot, keeps the base
+sprite's axis (so the pose lands where it should on screen), and is written as
+true-colour PNG32 — no palette, no 32-colour limit. Slots you do not supply keep
+the generated art, so a fighter can be repainted one animation at a time.
+
+`python3 tools/build_chars.py --dump <id>` writes a template for every slot the
+fighter references into `art_src/chars/<id>/templates/`: one transparent PNG at
+the exact size the slot needs, a crosshair at the sprite axis, and a manifest
+listing the size, axis and the actions that use it. For Jack that is 251 frames.
+Templates stay in that subfolder and are ignored by the build.
 
 Each fighter folder is a normal MUGEN/Ikemen character folder. To swap in real
 art for one fighter and leave the rest alone:
@@ -50,9 +127,11 @@ art for one fighter and leave the rest alone:
 
 ## HD stage pipeline (shipped)
 
-The four arenas are painted twice: `tools/build_stages.py` keeps the arcade
-version (1000×240 art, `localcoord = 320, 240`), and `tools/stages_hd.py` paints
-the shipped one at arcade resolution ×4. Same layout, real pixels at 1080p.
+The arenas are painted twice: `tools/build_stages.py` keeps the arcade version
+(1000×240 art, `localcoord = 320, 240`) for the four film locations, and
+`tools/stages_hd.py` paints the shipped one at arcade resolution ×4. Same layout,
+real pixels at 1080p. The Upside Down ships from the HD pass only — it has no
+arcade-resolution counterpart.
 
 | | arcade (`build_stages.py`) | HD (`stages_hd.py`) |
 |---|---|---|
@@ -85,7 +164,8 @@ The 16:9 row is the useful one: the engine scales a stage by height, so a
 Precedence, in `tools/build_all.py` order:
 
 1. `build_stages.py` — arcade stages
-2. `stages_hd.py` — overwrites the same four ids at 1280×960
+2. `stages_hd.py` — overwrites the same four ids at 1280×960, and paints
+The Upside Down
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
 
 The HD painters use one `SCALE = 4` and read coordinates through `px(n)`, so
@@ -143,3 +223,29 @@ The shared command set exists because all fighters share one animation set —
 character-specific specials only make sense once art differs. Stats, throw
 range, walk/jump scaling and health already differ, so the roster plays
 differently even before the art is replaced.
+
+## The puppet rig (`tools/char_rig.py`)
+
+Drawing 250 hand-painted frames per fighter does not scale, and the roster's
+current art is Kung Fu Man recoloured. The rig draws nothing: it poses art.
+
+Each fighter is authored **once** as parts in `art_src/chars/<id>/parts/` —
+torso, head, upper and lower arm, hand, thigh, shin, foot, prop — and every
+animation frame is those parts rotated about their joints, at 3x the base
+character's height (318px instead of 106px).
+
+* Pivots sit on the joints. `rig.json` can override any pivot, the whole metric
+  set, or apply a `scale` (draw at 2x and let the build downsample).
+* Rotated parts leave a seam, so each limb also paints a socket disc sampled
+  from its own average colour, which closes the joint.
+* `POSES` holds stance, breath, walk, crouch, jump, all four strikes, the boot
+  and low kick, guard, hit, victory and the gun/knife poses as joint angles, so
+  a new frame is a few numbers rather than a drawing.
+* `--template <id>` writes the part list and sizes, `--sheet <id>` renders real
+  parts into a contact sheet, `--demo` renders the same sheet from flat stand-in
+  parts to check the machinery alone.
+
+The quality of a fighter is the quality of its parts; the rig only articulates
+them. It is deliberately **not** in `build_all.py` — nothing in the game reads
+it until a fighter has real part art, and the roster keeps shipping on the
+existing sprites until then.

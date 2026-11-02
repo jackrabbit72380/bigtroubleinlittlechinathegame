@@ -269,13 +269,17 @@ trigger2 = movecontact
 trigger2 = stateno != [1500,1600)
 
 ;Storm Step (teleport, down then up)
+; Numbered triggers are OR'ed, so every condition that must hold belongs in
+; triggerall. Written as trigger1..trigger4 the stateno test alone was enough
+; to fire the teleport on the first frame of the round - which is why he went
+; bolt-shaped and froze the instant a match began.
 [State -1, Storm Step]
 type = ChangeState
 value = 1700
 triggerall = command = "storm_step"
 triggerall = statetype != A
 triggerall = ctrl
-triggerall = stateno != [1700,1703)
+trigger1 = stateno != [1700,1703)
 """
 
 

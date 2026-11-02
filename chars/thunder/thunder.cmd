@@ -370,6 +370,24 @@ time = 1
 
 
 ; Don't remove the following line. It's required by the CMD standard.
+
+;-| Thunder - storm motions |---------------------------------------------
+[Command]
+name = "clap_a"
+command = ~D, DB, B, a
+
+[Command]
+name = "clap_b"
+command = ~D, DB, B, b
+
+[Command]
+name = "quake_a"
+command = ~F, DF, D, DB, B, a
+
+[Command]
+name = "quake_b"
+command = ~F, DF, D, DB, B, b
+
 [Statedef -1]
 
 ;===========================================================================
@@ -773,3 +791,26 @@ trigger1 = ctrl
 trigger2 = stateno = 600 || stateno = 630 ;jump_x or jump_a
 trigger2 = movecontact
 trigger3 = stateno = 1350 ;Air blocking
+
+;---------------------------------------------------------------------------
+; Thunder - pressure specials
+;---------------------------------------------------------------------------
+;Thunder Clap (three rings)
+[State -1, Thunder Clap]
+type = ChangeState
+value = 1500
+triggerall = command = "clap_a" || command = "clap_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Earthshaker (single heavy wall)
+[State -1, Earthshaker]
+type = ChangeState
+value = 1600
+triggerall = command = "quake_a" || command = "quake_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)

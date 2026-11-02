@@ -10,17 +10,18 @@
 [Characters]
  ; --- playable roster -------------------------------------------------------
 jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
-wangchi, stages/wingkong_exchange.def, order=2
-gracielaw, stages/chinatown_alley.def, order=1
-eggshen, stages/wingkong_exchange.def, order=3
+wangchi_rig/wangchi.def, stages/wingkong_exchange.def, order=2
+gracielaw_rig/gracielaw.def, stages/chinatown_alley.def, order=1
+jade_rig/jade.def, stages/lopans_throne.def, order=1
+eggshen_rig/eggshen.def, stages/wingkong_exchange.def, order=3
 
  ; --- the Three Storms ------------------------------------------------------
-rain, stages/porkchop_express.def, order=1
+rain_rig/rain.def, stages/porkchop_express.def, order=1
 lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
-thunder, stages/lopans_throne.def, order=2
+thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
 
  ; --- final boss ------------------------------------------------------------
-lopan, stages/lopans_throne.def, order=4
+lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
  ; --- the Chang Sing: tan gi over black, staff in hand ----------------------
 changsing_bo_rig/changsing_bo.def, stages/chinatown_alley.def, order=1
@@ -47,13 +48,13 @@ stages/chinatown_alley.def
 stages/wingkong_exchange.def
 stages/porkchop_express.def
 stages/lopans_throne.def
-stages/upside_down.def
+stages/the_upside_down.def
 stages/stage0.def        ; training room
 
 ;-------------------------------------------------------------------------------
 [Options]
  ; Fights per ladder tier (order=1, order=2, ...)
 arcade.maxmatches = 3,2,1,1,0,0,0,0,0,0
-team.maxmatches = 2,1,1,0,0,0,0,0,0,0
-timeattack.maxmatches = 4,2,1,0,0,0,0,0,0,0
+team.maxmatches = 2,1,1,1,0,0,0,0,0,0
+timeattack.maxmatches = 4,2,1,1,0,0,0,0,0,0
 survival.maxmatches = -1,0,0,0,0,0,0,0,0,0
