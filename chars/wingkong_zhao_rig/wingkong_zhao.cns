@@ -34,8 +34,8 @@ IntPersistIndex = 60
 FloatPersistIndex = 40
 
 [Size]
-xscale = 1.09
-yscale = 1.09
+xscale = 1.0
+yscale = 1.0
 ground.back = 15     ;Player width (back, ground)
 ground.front = 16    ;Player width (front, ground)
 air.back = 12        ;Player width (back, air)

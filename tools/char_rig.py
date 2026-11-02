@@ -97,7 +97,8 @@ RELATIVE = ("arm_n", "arm_f")
 # here: its shoulder is already covered by the torso's own shoulder cap and
 # the disc sat on top of that as a grey ball, which made the fighters read as
 # mannequins with ball joints.
-SOCKETED = ("uarm_", "farm_", "hand_", "thigh_", "shin_", "foot_")
+SOCKETED = ("uarm_", "arm_", "farm_", "hand_", "thigh_", "shin_", "foot_",
+            "head")
 
 LIMB_LEN = {
     "uarm_n": M["uarm"], "uarm_f": M["uarm"],
@@ -384,6 +385,11 @@ def load_rig(char_id, view=None):
                     min(metrics.get("shoulder_half", M["shoulder_half"]),
                         drawn), 1)
 
+    # Last pass on the art itself: a part painted as two islands has a hole the
+    # joints cannot close, so bridge it here before anything is posed.
+    for name in list(parts):
+        parts[name]["image"] = _join_pieces(parts[name]["image"])
+
     rig = Rig(parts, metrics or None, show,
               cfg.get("canvas"), cfg.get("axis"))
     return rig
@@ -518,6 +524,118 @@ def _socket(dst, part, joint, scale=0.08, ss=1.0):
     img = part["image"]
     r = max(3, int(round(_joint_radius(part, ss) * 0.85)))
     _disc(dst, joint, r, _near_rgb(img, *part["pivot"]), feather=1.0 * ss)
+
+
+def _islands(mask, minpx=40):
+    """Connected components of a mask, largest first: [(size, [(x,y), ...])]."""
+    w, h = mask.size
+    px = mask.load()
+    seen = [[False] * w for _ in range(h)]
+    out = []
+    for y in range(h):
+        for x in range(w):
+            if px[x, y] and not seen[y][x]:
+                stack = [(x, y)]
+                seen[y][x] = True
+                pts = []
+                while stack:
+                    cx, cy = stack.pop()
+                    pts.append((cx, cy))
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        nx, ny = cx + dx, cy + dy
+                        if (0 <= nx < w and 0 <= ny < h and px[nx, ny]
+                                and not seen[ny][nx]):
+                            seen[ny][nx] = True
+                            stack.append((nx, ny))
+                if len(pts) >= minpx:
+                    out.append((len(pts), pts))
+    out.sort(key=lambda b: -b[0])
+    return out
+
+
+def _join_pieces(img, minpx=40):
+    """Bridge separate islands drawn inside one part's own art.
+
+    Some part sets were painted with a limb in two pieces - Rain's upper arm
+    carries the sleeve and the arm as two islands that never touch - so the rig
+    can place the part perfectly on its joint and still show a piece floating in
+    space, because the gap is in the PNG, not at a joint. Welding every joint
+    cannot close that; this does, by drawing a patch in the part's own colour
+    between the nearest pixels of each island.
+    """
+    alpha = img.getchannel("A").point(lambda v: 255 if v > 40 else 0)
+    pieces = _islands(alpha, minpx)
+    if len(pieces) < 2:
+        return img
+    out = img.copy()
+    base, base_pts = pieces[0]
+    for _size, pts in pieces[1:]:
+        # nearest pixel of the big island to this one, and of this one to that
+        cx = sum(p[0] for p in pts) // len(pts)
+        cy = sum(p[1] for p in pts) // len(pts)
+        pa = min(base_pts, key=lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2)
+        pb = min(pts, key=lambda p: (p[0] - pa[0]) ** 2 + (p[1] - pa[1]) ** 2)
+        col = _near_rgb(img, pa[0], pa[1], rad=4)
+        gap = math.hypot(pb[0] - pa[0], pb[1] - pa[1])
+        width = max(3, min(14, int(round(gap * 0.6))))
+        patch = Image.new("L", img.size, 0)
+        pen = ImageDraw.Draw(patch)
+        pen.line([pa, pb], fill=255, width=width)
+        for point in (pa, pb):
+            r = width * 0.5
+            pen.ellipse([point[0] - r, point[1] - r,
+                         point[0] + r, point[1] + r], fill=255)
+        lit = tuple(min(255, c + 24) for c in col)
+        dark = tuple(int(c * 0.76) for c in col)
+        out = Image.alpha_composite(out, _shade(patch, col, lit, dark))
+    return out
+
+
+def _fill_air(dst, mask, col, feather=1.0):
+    """Paint ``mask`` only where the canvas is still empty."""
+    air_alpha = dst.getchannel("A")
+    air = ImageChops.invert(air_alpha).filter(
+        ImageFilter.GaussianBlur(feather))
+    mask = ImageChops.multiply(mask, air)
+    if not mask.getbbox():
+        return
+    lit = tuple(min(255, c + 24) for c in col)
+    dark = tuple(int(c * 0.76) for c in col)
+    dst.alpha_composite(_shade(mask, col, lit, dark))
+
+
+def _weld(dst, joint, parent, child, r, col, feather=1.0):
+    """A capsule through a joint, reaching a radius along BOTH segments.
+
+    A socket disc is centred on the joint and sized from the limb's width, so it
+    only closes a gap narrower than that radius. When a limb's art is pinned a
+    little off its pivot - which is what a cut piece does, because the cut line
+    laps past the joint - the two segments miss each other by more than a disc
+    covers, and the child hangs in the air with a visible seam. A capsule that
+    runs from inside the parent segment to inside the child cannot miss: it is
+    drawn under the limb, clipped to the air it is there to fill, so the art
+    still defines the silhouette and only the hole is closed.
+    """
+    r = max(3, int(r))
+    # Reach a fraction of the way into each neighbouring segment rather than a
+    # fixed radius. A cut piece's pivot can sit 20-30px inside its own art, so a
+    # capsule that only reaches ``r`` past the joint stops in the air the weld
+    # exists to close; half a bone always lands inside real pixels.
+    a = joint
+    b = joint
+    if parent is not None:
+        a = (joint[0] + (parent[0] - joint[0]) * 0.55,
+             joint[1] + (parent[1] - joint[1]) * 0.55)
+    if child is not None:
+        b = (joint[0] + (child[0] - joint[0]) * 0.50,
+             joint[1] + (child[1] - joint[1]) * 0.50)
+    mask = Image.new("L", dst.size, 0)
+    pen = ImageDraw.Draw(mask)
+    pen.line([a, b], fill=255, width=max(1, int(2 * r)))
+    for point in (a, b):
+        pen.ellipse([point[0] - r, point[1] - r,
+                     point[0] + r, point[1] + r], fill=255)
+    _fill_air(dst, mask, col, feather)
 
 
 def _shoulder_bridge(dst, part, joint, axis_x, ss=1.0):
@@ -657,6 +775,17 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     kn_n, ank_n, fa_n = leg(hip_n, leg_n)
     elb_n, wri_n, tip_n = arm(sh_n, arm_n)
 
+    # Each socketed part's parent and child joints, so a weld can run through
+    # the joint in both directions instead of guessing its size.
+    links = {
+        "farm_n": (sh_n, wri_n), "hand_n": (elb_n, tip_n),
+        "farm_f": (sh_f, wri_f), "hand_f": (elb_f, tip_f),
+        "thigh_n": (hip_n, kn_n), "shin_n": (kn_n, ank_n),
+        "thigh_f": (hip_f, kn_f), "shin_f": (kn_f, ank_f),
+        "foot_n": (ank_n, (ank_n[0] + 48 * ss, ank_n[1])),
+        "foot_f": (ank_f, (ank_f[0] + 48 * ss, ank_f[1])),
+    }
+
     joints = {
         "hip": hip, "hip_n": hip_n, "hip_f": hip_f,
         "torso": hip, "head": neck, "pelvis": hip,
@@ -682,8 +811,8 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     }
 
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    # The far arm is drawn BEHIND the torso, so its shoulder bridge has to wait
-    # for the torso, or it would test a canvas that has no body in it yet.
+    # The far arm is drawn BEHIND the torso, so its shoulder weld has to wait
+    # for the torso, or it would fill the air where the body is about to go.
     pending_bridge = []
     order = []
     for nm in ORDER:
@@ -748,17 +877,44 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         if name.startswith(SOCKETED):
             turned = abs((angles.get(name, 0.0) - part["base"]) % 360.0)
             turned = min(turned, 360.0 - turned)
-            if name.startswith("uarm_"):
+            if name.startswith(("uarm_", "arm_")):
+                # The shoulder is welded for BOTH arm styles. A rig cut as one
+                # bent piece per arm (arm_n / arm_f) never matched this branch
+                # before, so those fighters had no shoulder weld at all and the
+                # whole arm floated when it swung away from the torso.
+                elbow = elb_f if name.endswith("_f") else elb_n
                 if name.endswith("_f"):
-                    pending_bridge.append((part, joints[name]))
+                    pending_bridge.append((part, joints[name], elbow))
                 else:
-                    _shoulder_bridge(out, part, joints[name], axis[0] * ss, ss)
-            elif turned > 12.0:
-                _socket(out, part, joints[name], ss=ss)
+                    _weld(out, joints[name], shoulder, elbow,
+                          _joint_radius(part, ss),
+                          _near_rgb(part["image"], *part["pivot"]),
+                          feather=1.0 * ss)
+            elif name == "head":
+                # The neck: the head is a separate piece and a lean opens a gap
+                # above the collar, which read as a head floating over the
+                # shoulders. Weld it up the neck into the skull.
+                up = (neck[0] + (neck[0] - shoulder[0]) * 0.5,
+                      neck[1] + (neck[1] - shoulder[1]) * 0.5)
+                _weld(out, joints["head"], shoulder, up,
+                      _joint_radius(part, ss) + 2,
+                      _near_rgb(part["image"], *part["pivot"]),
+                      feather=1.0 * ss)
+            elif name in links:
+                par, ch = links[name]
+                # Always weld, not just when the joint is turned: the capsule
+                # only fills AIR, so in the rest pose it lands behind the art
+                # and changes nothing, and in a swing it closes the seam the
+                # limb's own cut edges leave no matter how far they miss.
+                _weld(out, joints[name], par, ch,
+                      _joint_radius(part, ss), _near_rgb(part["image"],
+                                                         *part["pivot"]),
+                      feather=1.0 * ss)
         _place(out, part, angles.get(name, 0.0), joints[name])
         if name == "torso" and pending_bridge:
-            for p, j in pending_bridge:
-                _shoulder_bridge(out, p, j, axis[0] * ss, ss)
+            for p, j, elbow in pending_bridge:
+                _weld(out, j, shoulder, elbow, _joint_radius(p, ss),
+                      _near_rgb(p["image"], *p["pivot"]), feather=1.0 * ss)
             pending_bridge.clear()
 
     if ss != 1:
