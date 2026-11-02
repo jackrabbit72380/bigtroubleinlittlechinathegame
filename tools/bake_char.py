@@ -25,6 +25,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TARGET_HEIGHT = 318.0     # 3x the 106px base fighter
 BASE_HEIGHT = 106.0
 
+# The sewer monster is authored taller than the fighters so that his hunch and
+# his long arms still leave a body that stands over the roster: 352 is roughly
+# a head above everyone else once the crouch is taken out.
+TARGET_BY_CHAR = {"sewermonster": 352.0}
+
 # Weapon actions ship their own art - a bullet, a muzzle flash, an impact and a
 # spinning knife. Baking those as rig poses would draw JACK as the bullet, so
 # these keep the art they were drawn with and are only scaled with the figure.
@@ -69,13 +74,14 @@ ART_HEIGHT = {"lightning": TARGET_HEIGHT,
               "gracielaw": TARGET_HEIGHT, "jade": TARGET_HEIGHT,
               "eggshen": TARGET_HEIGHT, "wangchi": TARGET_HEIGHT,
               "rain": TARGET_HEIGHT, "thunder": TARGET_HEIGHT,
-              "lopan": TARGET_HEIGHT, "eddilee": TARGET_HEIGHT}
+              "lopan": TARGET_HEIGHT, "eddilee": TARGET_HEIGHT,
+              "sewermonster": TARGET_HEIGHT}
 DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning",
            "gracielaw": "Gracie Law", "jade": "Maio Yin",
            "eggshen": "Egg Shen",
            "wangchi": "Wang Chi",
            "rain": "Rain", "thunder": "Thunder", "lopan": "Lo Pan",
-           "eddilee": "Eddie Lee"}
+           "eddilee": "Eddie Lee", "sewermonster": "Sewer Monster"}
 # The women carry no weapon, so they get no weapon actions: an empty table
 # keeps the bake from appending Jack's pistol and knife actions (and their
 # sprites) to a fighter whose states never call them.
@@ -98,6 +104,8 @@ WEAPON_POSES["wangchi"] = {}
 # spawned object, so an empty table keeps Jack's pistol and knife actions (and
 # their sprites) out of his SFF.
 WEAPON_POSES["eddilee"] = {}
+# The monster fights with claws and bites, not projectiles: no weapon actions.
+WEAPON_POSES["sewermonster"] = {}
 
 # Every fighter painted by tools/gangs.py is named in its own roster entry, so
 # the baked .def keeps the gang member's name instead of a title-cased id.
@@ -203,6 +211,7 @@ def scale_clsn(line, k):
 
 
 def bake(char_id, target_height=TARGET_HEIGHT):
+    target_height = TARGET_BY_CHAR.get(char_id, target_height)
     src = os.path.join(ROOT, "chars", char_id)
     out = os.path.join(ROOT, "chars", char_id + "_rig")
     os.makedirs(out, exist_ok=True)

@@ -1321,6 +1321,18 @@ POSE_SETS = {
                        arm_n=(-11, 22, 0), arm_f=(11, 22, 0),
                        leg_n=(18, -12, 82), leg_f=(-20, 14, 98)),
     },
+    # The sewer monster is the only rig on the roster that is genuinely hunched:
+    # the torso is pitched forward over a wide, bent-legged base, which is what
+    # the sculpture's crouch is. His arms are cut long and heavy, so they hang
+    # further forward than anyone else's and swing less.
+    "sewermonster": {
+        "stance": dict(lean=-7, head=5,
+                       arm_n=(-16, 30, 0), arm_f=(16, 30, 0),
+                       leg_n=(24, -18, 78), leg_f=(-26, 20, 102)),
+        "breath": dict(lean=-8, head=4, lift=2,
+                       arm_n=(-19, 28, 0), arm_f=(19, 28, 0),
+                       leg_n=(24, -18, 78), leg_f=(-26, 20, 102)),
+    },
 }
 
 
