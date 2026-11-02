@@ -3902,6 +3902,8 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD)
 	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+)
 	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080  (16:9 FHD)
+	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440  (16:9 QHD)
+	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160  (16:9 4K)
 	menu.itemname.menuvideo.resolution.spacer1 = -
 	menu.itemname.menuvideo.resolution.customres = Custom
 	menu.itemname.menuvideo.resolution.back = Back

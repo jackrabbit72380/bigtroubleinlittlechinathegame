@@ -193,12 +193,32 @@ SECTION_LAYOUT = {
         ("menu.window.visibleitems", "10"),
     ),
     "Option Info": (
-        # thirteen rows at the stock 42px pitch overlapped by 3px under the 45px
+        # Thirteen rows at the stock 42px pitch overlapped by 3px under the 45px
         # bitmap face; 46 is the smallest pitch that separates them and still
-        # ends the last row at y=696, inside the 21..718 item window
+        # ends the last row at y=696, inside the 21..718 item window.
         ("menu.item.spacing", "0, 46"),
-        # Same cursor defect as the pause menu: the stock band sat above its row.
-        ("menu.boxcursor.coords", "-15, 0, 462, 44"),
+        # Alignment -1 is RIGHT in this engine (the default motif's left-hand
+        # title menu uses 1, and our own [Title Info] sits at x=1240 with -1),
+        # so the stock x=414 made every row end at 414 and grow leftwards. The
+        # shipped Display face sets "RETURN WITHOUT SAVING" 492px wide, which
+        # put its first pixel at -78: off the left edge of a 1280-wide screen.
+        # 784 leaves 292px of margin for that worst case, and the values start
+        # 30px later and end at 987 with the longest one measured (173px).
+        ("menu.pos", "784, 99"),
+        ("menu.item.font", f"{D},0,-1, {GOLD}"),
+        ("menu.item.active.font", f"{D},0,-1, {BRIGHT}"),
+        # The highlighted row used to switch to 1 (left), so it jumped to the
+        # right and overlapped the value column. Same alignment as the rest now.
+        ("menu.item.selected.font", f"{D},0,-1, {BRIGHT}"),
+        ("menu.item.selected.active.font", f"{D},0,-1, {BRIGHT}"),
+        ("menu.item.value.offset", "30, 0"),
+        ("menu.item.value.active.offset", "30, 0"),
+        ("menu.item.value.conflict.offset", "30, 0"),
+        ("menu.item.info.offset", "30, 0"),
+        ("menu.item.info.active.offset", "30, 0"),
+        # The band spans the whole row rather than just the value column: it
+        # runs from 280 to 999 instead of 399 to 876.
+        ("menu.boxcursor.coords", "-504, 0, 215, 44"),
     ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
@@ -554,7 +574,15 @@ FOUR_THREE = ("menu.itemname.menuvideo.resolution.320x240",
 
 
 def ensure_widescreen_resolutions():
-    """Comment out the 4:3 sizes in the engine's base text table."""
+    """Fix the engine's base text table for 16:9 displays.
+
+    The engine builds the Options > Video > Resolution submenu out of the
+    ``menu.itemname.menuvideo.resolution.*`` keys it finds, and this table is
+    what it ships with. Two things were wrong for a widescreen build: the 4:3
+    sizes it lists (320x240, 640x480, 960x720) pillarbox the game behind black
+    bars, and the list stopped at 1920x1080, so a 1440p or 4K display had
+    nothing to pick - naming them in the motif alone was not enough.
+    """
     if not os.path.isfile(BASE_DEF):
         return 0
     with open(BASE_DEF, "r", encoding="utf-8", errors="surrogateescape",
@@ -568,6 +596,22 @@ def ensure_widescreen_resolutions():
             lambda m: f"{m.group(1)};{m.group(2)}{m.group(3)}  ; 4:3 pillarboxes",
             text)
         changed += n
+
+    # The submenu is whatever keys exist, in file order, so the widescreen sizes
+    # go straight after 1920x1080 and before the spacer/custom/back rows.
+    anchor = re.search(
+        r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\.1920x1080[ \t]*=[^\r\n]*",
+        text, re.MULTILINE)
+    if anchor:
+        indent = anchor.group(1)
+        add = [f"{indent}menu.itemname.menuvideo.resolution.{size} = {size}  {label}"
+               for size, label in (("2560x1440", "(16:9 QHD)"),
+                                   ("3840x2160", "(16:9 4K)"))
+               if f"resolution.{size}" not in text]
+        if add:
+            text = text[:anchor.end()] + "\n" + "\n".join(add) + text[anchor.end():]
+            changed += len(add)
+
     if changed:
         with open(BASE_DEF, "w", encoding="utf-8", errors="surrogateescape",
                   newline="") as fh:
