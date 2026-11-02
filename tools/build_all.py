@@ -71,6 +71,9 @@ def main():
     # Wang Chi, from the warehouse drawing and the film still: brown fedora,
     # blue-and-tan striped scarf, light shirt, charcoal trousers.
     scripts += ["wangchi_art.py", ("bake_char.py", "wangchi")]
+    # Eddie Lee, the roster's counter-fighter: an open jacket over rolled
+    # sleeves, fingerless gloves and the Chang Sing colours, painted in code.
+    scripts += ["eddilee_art.py", ("bake_char.py", "eddilee")]
     # The two gangs are built from Kung Fu Man himself rather than from painted
     # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
     # and red Wing Kong), upscales the art to roster height, paints the staff or
