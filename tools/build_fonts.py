@@ -218,11 +218,24 @@ SECTION_LAYOUT = {
         # row read "RendererOpenGL 3.3"). Left-aligned (1) at +40 starts the
         # column at 824, past the end of every label, and the longest value in
         # the video menu ends before 1080.
-        ("menu.item.value.font", f"{B},0,1, {DEEP}"),
-        ("menu.item.value.active.font", f"{B},0,1, {BRIGHT}"),
-        ("menu.item.value.conflict.font", f"{B},0,1, {RED}"),
-        ("menu.item.info.font", f"{B},0,1, {GOLD}"),
-        ("menu.item.info.active.font", f"{B},0,1, {BRIGHT}"),
+        #
+        # The face was Body (a 13px cell) beside 45px labels, so "OpenGL 3.3"
+        # and "1920x1080" were a third of the height of the word they belonged
+        # to and could not be read across a room. Display is the menu's own
+        # face, so a row now reads as one line of text. The column starts at
+        # 824 and runs to the 1280 edge, which at 34px is room for 22 glyphs -
+        # every value in this menu is 16 or fewer.
+        ("menu.item.value.font", f"{D},0,1, {DEEP}"),
+        ("menu.item.value.active.font", f"{DA},0,1, {BRIGHT}"),
+        ("menu.item.value.conflict.font", f"{D},0,1, {RED}"),
+        ("menu.item.info.font", f"{D},0,1, {GOLD}"),
+        ("menu.item.info.active.font", f"{DA},0,1, {BRIGHT}"),
+        # The key config rows inherit menu.item.value.font above, and they sit
+        # on a 36px pitch with their values 303px in from the label - a 34px
+        # face there would stack on the row below. They keep Body.
+        ("keymenu.item.value.font", f"{B},0,1, {GOLD}"),
+        ("keymenu.item.value.active.font", f"{B},1,1, {BRIGHT}"),
+        ("keymenu.item.value.conflict.font", f"{B},0,1, {RED}"),
         ("menu.item.value.offset", "40, 0"),
         ("menu.item.value.active.offset", "40, 0"),
         ("menu.item.value.conflict.offset", "40, 0"),
@@ -459,6 +472,12 @@ def find_ttf():
         hits = glob.glob(os.path.join("/usr", "**", name), recursive=True)
         if hits:
             return hits[0], name
+    # Last resort: the copy this generator already vendored. It is the same
+    # face, so rebuilding on a box with no DejaVu installed is a no-op instead
+    # of a hard failure.
+    vendored = os.path.join(FONT_DIR, "Display.ttf")
+    if os.path.isfile(vendored):
+        return vendored, TTF_NAMES[0]
     return None, None
 
 
@@ -573,6 +592,7 @@ suffix, so this block IS the list.
 """
     "menu.itemname.menuvideo.resolution = RESOLUTION\n"
     "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)\n"
+    "menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)\n"
     "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)\n"
     "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)\n"
     "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)\n"
@@ -618,6 +638,19 @@ def ensure_widescreen_resolutions():
 
     # The submenu is whatever keys exist, in file order, so the widescreen sizes
     # go straight after 1920x1080 and before the spacer/custom/back rows.
+    # 1366x768 is the most common laptop panel there is, and it was the one
+    # 16:9 size missing from the ladder; it goes after 1280x720, keeping the
+    # list in ascending order.
+    anchor = re.search(
+        r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\.1280x720[ \t]*=[^\r\n]*",
+        text, re.MULTILINE)
+    if anchor and "resolution.1366x768" not in text:
+        indent = anchor.group(1)
+        text = (text[:anchor.end()]
+                + f"\n{indent}menu.itemname.menuvideo.resolution.1366x768 = 1366x768  (768p)"
+                + text[anchor.end():])
+        changed += 1
+
     anchor = re.search(
         r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\.1920x1080[ \t]*=[^\r\n]*",
         text, re.MULTILINE)
@@ -634,9 +667,9 @@ def ensure_widescreen_resolutions():
     # Same short labels here as in the motif, so the submenu reads the same
     # whichever table the engine resolves last: the size, then its everyday
     # name. A list of "(16:9 QHD window, 1.33x)" was accurate and unreadable.
-    for size, label in (("1280x720", "(720p)"), ("1600x900", "(900p)"),
-                        ("1920x1080", "(1080p)"), ("2560x1440", "(2K)"),
-                        ("3840x2160", "(4K)")):
+    for size, label in (("1280x720", "(720p)"), ("1366x768", "(768p)"),
+                        ("1600x900", "(900p)"), ("1920x1080", "(1080p)"),
+                        ("2560x1440", "(2K)"), ("3840x2160", "(4K)")):
         pattern = re.compile(
             r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\." + re.escape(size)
             + r"[ \t]*=[ \t]*" + re.escape(size) + r"([ \t]*[^\r\n;]*)",
@@ -686,6 +719,36 @@ def ensure_resolution_menu(text):
             if new != text:
                 changed += 1
                 text = new
+
+    # A motif that already carries the list keeps exactly the rows it has, so a
+    # size added to RESOLUTION_MENU later never reached it - which is how the
+    # engine's own screen still showed a 1920x1080 ceiling. Any size in the
+    # block above that is missing goes in after the row before it, keeping the
+    # list ascending.
+    header = re.compile(r"^[ \t]*menu\.itemname\.menuvideo\.resolution[ \t]*=[^\r\n]*",
+                        re.MULTILINE)
+    prev = None
+    for line in RESOLUTION_MENU.splitlines():
+        line = line.strip()
+        if not line or line.startswith(";"):
+            continue
+        key, _sep, value = line.partition(" = ")
+        key, value = key.strip(), value.strip()
+        if not re.fullmatch(r"menu\.itemname\.menuvideo\.resolution\.\d+x\d+", key):
+            continue
+        if re.search(r"^[ \t]*" + re.escape(key) + r"[ \t]*=", text, re.MULTILINE):
+            prev = key
+            continue
+        anchor = None
+        if prev:
+            anchor = re.search(r"^[ \t]*" + re.escape(prev) + r"[ \t]*=[^\r\n]*",
+                               text, re.MULTILINE)
+        anchor = anchor or header.search(text)
+        if not anchor:
+            continue
+        text = text[:anchor.end()] + nl + "\t%s = %s" % (key, value) + text[anchor.end():]
+        prev = key
+        changed += 1
     return text, changed
 
 
