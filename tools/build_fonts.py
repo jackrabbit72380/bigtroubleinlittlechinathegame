@@ -206,11 +206,11 @@ SECTION_LAYOUT = {
         # 30px later and end at 987 with the longest one measured (173px).
         ("menu.pos", "784, 99"),
         ("menu.item.font", f"{D},0,-1, {GOLD}"),
-        ("menu.item.active.font", f"{D},0,-1, {BRIGHT}"),
+        ("menu.item.active.font", f"{DA},0,-1, {BRIGHT}"),
         # The highlighted row used to switch to 1 (left), so it jumped to the
         # right and overlapped the value column. Same alignment as the rest now.
         ("menu.item.selected.font", f"{D},0,-1, {BRIGHT}"),
-        ("menu.item.selected.active.font", f"{D},0,-1, {BRIGHT}"),
+        ("menu.item.selected.active.font", f"{DA},0,-1, {BRIGHT}"),
         ("menu.item.value.offset", "30, 0"),
         ("menu.item.value.active.offset", "30, 0"),
         ("menu.item.value.conflict.offset", "30, 0"),
