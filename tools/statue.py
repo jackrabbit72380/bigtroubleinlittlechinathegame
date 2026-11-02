@@ -35,6 +35,12 @@ FACE = (150, 140, 127)
 GOLD = (204, 164, 82)
 GOLD_DK = (88, 58, 24)
 CLOTH = (104, 98, 88)
+ROBE = (96, 70, 46)                     # brown silk, as in the still
+ROBE_DK = (56, 38, 24)
+ROBE_LT = (150, 116, 78)
+PEARL = (122, 84, 54)                   # the big brown pearls on the neck
+PEARL_LT = (198, 154, 108)
+DISC = (146, 104, 58)                   # the three disks on the chest
 NEON = (78, 252, 166)
 EYE = (255, 78, 34)
 
@@ -136,9 +142,9 @@ def _fist(d, c, r, ang, fill, seam, lit, dark):
     segment along the outer side, then the distal segment hooking across the
     front of the fingers with the tip tucked between them.
     """
-    ax, ay = math.cos(ang), math.sin(ang)      # out along the arm, to the knuckles
-    nx, ny = -ay, ax                           # across the back of the hand
-    ew = max(2, int(r * 0.15))
+    ax, ay = math.cos(ang), math.sin(ang)      # out along the arm, past the knuckles
+    nx, ny = -ay, ax                           # across the hand
+    ew = max(2, int(r * 0.14))
 
     def at(fx, fy):
         return (c[0] + (ax * fx + nx * fy) * r, c[1] + (ay * fx + ny * fy) * r)
@@ -151,49 +157,42 @@ def _fist(d, c, r, ang, fill, seam, lit, dark):
             d.line(pts + [pts[0]], fill=outline, width=ow)
         return pts
 
-    # the mass: a ball, widest at the knuckles, tapering back into the wrist, so
-    # the silhouette curves instead of running as a slab to the cuff
-    ell(0.08, 0.0, 0.88, 0.98, fill)
-    ell(-0.34, 0.0, 0.62, 0.78, fill)
+    # the palm: a broad pad whose heel stops well short of the cuff, so the
+    # bangle still shows behind the hand
+    ell(0.02, 0.0, 0.80, 0.92, fill)
+    ell(-0.30, 0.0, 0.54, 0.68, fill)
 
-    # four short finger backs over the front of the ball, dark grooves between
-    # them - the fingers do not carry on to the wrist, which is what made the
-    # old fist look like a wrapped barrel
-    for fy, ln in ((-0.60, 0.66), (-0.20, 0.74), (0.20, 0.72), (0.60, 0.62)):
-        _capsule(d, at(ln, fy * 0.84), at(-ln * 0.34, fy * 0.96),
-                 r * 0.235, r * 0.205, fill, seam, ew)
-        d.line([at(ln * 0.86, fy * 0.86 - 0.085),
-                at(-ln * 0.24, fy * 0.96 - 0.075)],
-               fill=lit, width=max(1, int(r * 0.055)))
+    # four fingers curled over the palm: the knuckle on the far edge, the two
+    # visible phalanges folding back toward the viewer, and the pad of each
+    # fingertip resting on the palm - none of them reaching the wrist
+    for fy, bend in ((-0.60, 0.28), (-0.20, 0.34), (0.20, 0.34), (0.60, 0.28)):
+        ell(0.74, fy * 0.96, 0.235, 0.205, fill, seam, ew)        # the knuckle
+        _capsule(d, at(0.64, fy * 0.96), at(bend + 0.06, fy * 0.94),
+                 r * 0.205, r * 0.215, fill, seam, ew)             # proximal
+        _capsule(d, at(bend, fy * 0.92), at(bend - 0.26, fy * 0.86),
+                 r * 0.215, r * 0.185, fill, seam, ew)             # middle, folding
+        ell(bend - 0.28, fy * 0.84, 0.125, 0.115, fill, seam,
+            max(1, int(r * 0.05)))                                 # the fingertip pad
+        d.line([at(0.66, fy * 0.94 - 0.075), at(bend + 0.06, fy * 0.92 - 0.075)],
+               fill=lit, width=max(1, int(r * 0.045)))
 
-    # the flexed joint crease, bowed with the ball rather than ruled straight
-    d.line([at(0.50, -0.84), at(0.56, -0.42), at(0.57, 0.0),
-            at(0.56, 0.42), at(0.50, 0.84)], fill=seam,
-           width=max(2, int(r * 0.09)))
-
-    # the knuckle row, domed: the middle knuckles stand furthest forward and the
-    # outer two sit back, so the far edge of the fist is round, not square
-    ell(0.93, 0.0, 0.13, 0.84, dark)
-    for fy, fx in ((-0.60, 0.74), (-0.20, 0.83), (0.20, 0.83), (0.60, 0.74)):
-        ell(fx, fy, 0.225, 0.20, fill, seam, max(1, int(r * 0.06)))
-        ell(fx - 0.03, fy - 0.045, 0.14, 0.12, lit)
+    # the crease across the palm below the fingertips
+    d.line([at(-0.08, -0.50), at(-0.04, 0.0), at(-0.08, 0.50)],
+           fill=dark, width=max(1, int(r * 0.07)))
 
     # the wrist, curving back into the forearm
-    d.line([at(-0.70, -0.66), at(-0.80, -0.34), at(-0.82, 0.0),
-            at(-0.80, 0.34), at(-0.70, 0.66)], fill=seam,
-           width=max(2, int(r * 0.11)))
+    d.line([at(-0.60, -0.60), at(-0.68, -0.30), at(-0.70, 0.0),
+            at(-0.68, 0.30), at(-0.60, 0.60)], fill=seam,
+           width=max(2, int(r * 0.10)))
 
-    # the thumb curled over: a proximal segment along the outer side, then the
-    # distal segment hooking across the front of the fingers, tip tucked in
-    _capsule(d, at(-0.32, -0.94), at(0.26, -0.80),
-             r * 0.275, r * 0.235, fill, seam, ew)
-    d.line([at(-0.30, -0.98), at(0.22, -0.84)], fill=lit,
-           width=max(1, int(r * 0.05)))
-    ell(0.26, -0.80, 0.145, 0.135, lit)                    # the thumb's knuckle
-    _capsule(d, at(0.26, -0.80), at(0.54, -0.34),
-             r * 0.225, r * 0.175, fill, seam, ew)
-    ell(0.54, -0.32, 0.155, 0.14, fill, seam, max(1, int(r * 0.055)))
-    ell(0.50, -0.36, 0.09, 0.08, lit)                      # the tip, catching light
+    # the thumb over the outer side, curling across the fingers
+    _capsule(d, at(-0.16, -0.96), at(0.34, -0.82),
+             r * 0.265, r * 0.225, fill, seam, ew)
+    ell(0.34, -0.82, 0.15, 0.14, lit)                        # the thumb's knuckle
+    _capsule(d, at(0.34, -0.82), at(0.52, -0.40),
+             r * 0.215, r * 0.17, fill, seam, ew)
+    ell(0.52, -0.36, 0.15, 0.135, fill, seam, max(1, int(r * 0.05)))
+    ell(0.48, -0.40, 0.085, 0.075, lit)                      # the tip, catching light
 
 
 def _vgrad(w, h, stops):
@@ -252,6 +251,61 @@ def build(S, cx, top, w_full, h_full):
     d = ImageDraw.Draw(body)
     seam = max(1, int(0.26 * S * SS))
 
+    def ring(p, tx, ty, half, thick, fill=GOLD):
+        nx_, ny_ = -ty, tx
+        quad = [(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
+                (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick),
+                (p[0] - nx_ * half + tx * thick, p[1] - ny_ * half + ty * thick),
+                (p[0] + nx_ * half + tx * thick, p[1] + ny_ * half + ty * thick)]
+        d.polygon(P(quad), fill=fill)
+        d.line(P([(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
+                  (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick)]),
+               fill=(248, 222, 152), width=max(1, int(0.14 * S * SS)))
+
+    def arm(sx, sh, el, wr, w0, w1, w2, w3, hr):
+        """One arm: deltoid, upper arm, elbow, forearm, cuff, fist."""
+        sh_p = (sx * sh[0], sh[1])
+        el_p = (sx * el[0], el[1])
+        wr_p = (sx * wr[0], wr[1])
+        d.ellipse([X(sh_p[0] - w0 * 1.08), Y(sh_p[1] - w0 * 1.08),
+                   X(sh_p[0] + w0 * 1.08), Y(sh_p[1] + w0 * 1.08)], fill=STONE)
+        upper = _taper(sh_p, ((sh_p[0] + el_p[0]) / 2, (sh_p[1] + el_p[1]) / 2 + 1.4),
+                       el_p, w0, w1)
+        d.line(P(upper) + [P(upper)[0]], fill=STONE_DK,
+               width=max(2, int(1.1 * S * SS)), joint="curve")
+        d.polygon(P(upper), fill=STONE)
+        d.ellipse([X(el_p[0] - w1), Y(el_p[1] - w1),
+                   X(el_p[0] + w1), Y(el_p[1] + w1)],
+                  fill=STONE, outline=STONE_DK, width=max(1, int(0.6 * S * SS)))
+        fore_ctrl = ((el_p[0] + wr_p[0]) / 2, (el_p[1] + wr_p[1]) / 2)
+        fore = _taper(el_p, fore_ctrl, wr_p, w2 * 0.94, w3)
+        d.line(P(fore) + [P(fore)[0]], fill=STONE_DK,
+               width=max(2, int(1.1 * S * SS)), joint="curve")
+        d.polygon(P(fore), fill=STONE)
+        ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
+        hc = (wr_p[0] + math.cos(ang) * hr * 0.86,
+              wr_p[1] + math.sin(ang) * hr * 0.86)
+        # hands are drawn straight into canvas pixels, so the centre and the
+        # radius have to be transformed. Passing unit-space values put every
+        # fist a fifth of its size in the corner of the canvas, which is why no
+        # hand ever appeared on the figure.
+        _fist(d, (X(hc[0]), Y(hc[1])), hr * S * SS, ang,
+              STONE, STONE_DK, STONE_LT, (96, 88, 80))
+        # bangles: the still's cuffs sit right at the wrist and inboard of it,
+        # and their width follows the forearm they wrap
+        sp = _spine(el_p, fore_ctrl, wr_p)
+        for idx in (len(sp) - 1, len(sp) - 4):
+            bx_, by_, tx, ty = sp[max(0, idx)]
+            t = max(0, idx) / (len(sp) - 1)
+            s_ = t * t * (3.0 - 2.0 * t)
+            half_w = (w2 * 0.94 + (w3 - w2 * 0.94) * s_) * 1.10
+            ring((bx_, by_), tx, ty, half_w, 1.05)
+
+    # The lowest pair hangs behind the body: painted first, so the belly and the
+    # robe cover the shoulder and the arm only emerges at the flank.
+    for sx in (-1, 1):
+        arm(sx, (30, 62), (48, 66), (60, 62), 9.6, 8.0, 7.2, 6.0, 9.6)
+
     # ---- crossed legs on the drum: thighs, knees, shins, feet -------------
     blob(d, [(-55, 93), (-45, 86), (-30, 83.5), (-14, 87.5), (0, 92),
              (14, 87.5), (30, 83.5), (45, 86), (55, 93), (51, 96.5), (-51, 96.5)])
@@ -283,85 +337,72 @@ def build(S, cx, top, w_full, h_full):
     for vy in (66, 73, 80):                                       # belly folds
         d.arc([X(-16), Y(vy - 3), X(16), Y(vy + 3)], 20, 160, fill=STONE_DK,
               width=max(1, int(0.20 * S * SS)))
-    d.ellipse([X(-1.8), Y(84.5), X(1.8), Y(88)], fill=STONE_DK)   # navel
 
-    # ---- sash: cloth slung across the lap, with folds that hang ----------
-    sash = [(-29, 75), (-17, 79), (-2, 81), (13, 82.5), (28, 86), (30, 95),
-            (12, 92.5), (-8, 90.5), (-24, 87.5), (-30, 81)]
-    blob(d, sash, CLOTH)
+    # ---- the robe across the lap, and the belly above it ------------------
+    lap = [(-32, 80), (-18, 84), (-2, 86), (14, 87), (30, 89), (33, 97.5),
+           (12, 96), (-8, 94.5), (-26, 92), (-33, 85)]
+    blob(d, lap, ROBE)
     for k in range(3):
-        d.line(P([(-28 + k * 3, 78 + k * 2.0), (-6, 84 + k * 2.0),
-                  (16, 86.5 + k * 2.0), (28, 90 + k * 2.0)]),
-               fill=(58, 54, 48), width=seam)
-        d.line(P([(-28 + k * 3, 78.6 + k * 2.0), (-6, 84.6 + k * 2.0),
-                  (16, 87.1 + k * 2.0), (28, 90.6 + k * 2.0)]),
-               fill=(150, 142, 126), width=max(1, int(0.16 * S * SS)))
-    d.line(P([(-29, 75.4), (-17, 79.4), (-2, 81.4), (13, 82.9), (28, 86.4)]),
-           fill=(168, 158, 140), width=max(1, int(0.24 * S * SS)))
+        d.line(P([(-31 + k * 3, 83 + k * 1.6), (-8, 88 + k * 1.8),
+                  (15, 90.5 + k * 1.8), (31, 93 + k * 1.8)]),
+               fill=ROBE_DK, width=seam)
+        d.line(P([(-31 + k * 3, 83.6 + k * 1.6), (-8, 88.6 + k * 1.8),
+                  (15, 91.1 + k * 1.8), (31, 93.6 + k * 1.8)]),
+               fill=ROBE_LT, width=max(1, int(0.16 * S * SS)))
+    d.line(P([(-32, 80.4), (-18, 84.4), (-2, 86.4), (14, 87.4), (30, 89.4)]),
+           fill=(196, 158, 108), width=max(1, int(0.28 * S * SS)))
 
-    # ---- six arms: three pairs, every one bent hard at the elbow ---------
-    # In the still the arms are not spokes off the shoulders: each turns a
-    # corner, the upper pairs throwing the fists up above the head and the
-    # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
-    arms = [
-        # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((24, 56), (46, 62), (60, 59), 9.8, 8.2, 7.4, 6.2, 9.9),
-        ((22, 48), (45, 37), (54, 24), 10.6, 8.8, 8.0, 6.4, 10.6),
-        ((14, 43), (30, 29), (24, 15), 10.2, 8.6, 7.8, 6.2, 10.8),
-    ]
+    # the navel, on the bare belly above the robe - a deep pit with a lip
+    d.ellipse([X(-2.2), Y(74.2), X(2.2), Y(79.0)], fill=(44, 38, 32))
+    d.ellipse([X(-1.5), Y(74.9), X(1.5), Y(78.3)], fill=(28, 24, 20))
+    d.arc([X(-2.4), Y(73.4), X(2.4), Y(79.6)], 190, 350, fill=(176, 166, 148),
+          width=max(1, int(0.26 * S * SS)))
 
-    def ring(p, tx, ty, half, thick, fill=GOLD):
-        nx_, ny_ = -ty, tx
-        quad = [(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
-                (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick),
-                (p[0] - nx_ * half + tx * thick, p[1] - ny_ * half + ty * thick),
-                (p[0] + nx_ * half + tx * thick, p[1] + ny_ * half + ty * thick)]
-        d.polygon(P(quad), fill=fill)
-        d.line(P([(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
-                  (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick)]),
-               fill=(248, 222, 152), width=max(1, int(0.14 * S * SS)))
-
+    # ---- robe: brown silk over the shoulders, open down the chest ---------
+    blob(d, [(-12, 41), (-6, 36.5), (0, 35.5), (6, 36.5), (12, 41),
+             (7, 46), (0, 48), (-7, 46)], ROBE)                     # collar
     for sx in (-1, 1):
-        for sh, el, wr, w0, w1, w2, w3, hr in arms:
-            sh_p = (sx * sh[0], sh[1])
-            el_p = (sx * el[0], el[1])
-            wr_p = (sx * wr[0], wr[1])
-            d.ellipse([X(sh_p[0] - w0 * 1.08), Y(sh_p[1] - w0 * 1.08),
-                       X(sh_p[0] + w0 * 1.08), Y(sh_p[1] + w0 * 1.08)], fill=STONE)
-            upper = _taper(sh_p, ((sh_p[0] + el_p[0]) / 2,
-                                  (sh_p[1] + el_p[1]) / 2 + 1.4),
-                           el_p, w0, w1)
-            d.line(P(upper) + [P(upper)[0]], fill=STONE_DK,
-                   width=max(2, int(1.1 * S * SS)), joint="curve")
-            d.polygon(P(upper), fill=STONE)
-            d.ellipse([X(el_p[0] - w1), Y(el_p[1] - w1),
-                       X(el_p[0] + w1), Y(el_p[1] + w1)],
-                      fill=STONE, outline=STONE_DK, width=max(1, int(0.6 * S * SS)))
-            fore_ctrl = ((el_p[0] + wr_p[0]) / 2, (el_p[1] + wr_p[1]) / 2)
-            fore = _taper(el_p, fore_ctrl, wr_p, w2 * 0.94, w3)
-            d.line(P(fore) + [P(fore)[0]], fill=STONE_DK,
-                   width=max(2, int(1.1 * S * SS)), joint="curve")
-            d.polygon(P(fore), fill=STONE)
-            ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
-            hc = (wr_p[0] + math.cos(ang) * hr * 0.86,
-                  wr_p[1] + math.sin(ang) * hr * 0.86)
-            # hands are drawn straight into canvas pixels, so the centre and the
-            # radius have to be transformed. Passing unit-space values put every
-            # fist a fifth of its size in the corner of the canvas, which is why no
-            # hand ever appeared on the figure.
-            hc_px = (X(hc[0]), Y(hc[1]))
-            hr_px = hr * S * SS
-            _fist(d, hc_px, hr_px, ang, STONE, STONE_DK, STONE_LT, (96, 88, 80))
-            # bangles: the still's cuffs sit right at the wrist and inboard of
-            # it, and their width follows the forearm they wrap - a ring cut to
-            # the arm's width at the elbow floats off it
-            sp = _spine(el_p, fore_ctrl, wr_p)
-            for idx in (len(sp) - 1, len(sp) - 4):
-                bx_, by_, tx, ty = sp[max(0, idx)]
-                t = max(0, idx) / (len(sp) - 1)
-                s_ = t * t * (3.0 - 2.0 * t)
-                half_w = (w2 * 0.94 + (w3 - w2 * 0.94) * s_) * 1.10
-                ring((bx_, by_), tx, ty, half_w, 1.05)
+        # one drape from the collar out over the shoulder and down the flank,
+        # so the robe is a single piece of cloth and not a pair of straps
+        blob(d, [(sx * 5, 38), (sx * 15, 39), (sx * 25, 43), (sx * 30, 49),
+                 (sx * 31, 58), (sx * 34, 67), (sx * 33, 81), (sx * 27, 86),
+                 (sx * 21, 80), (sx * 20, 64), (sx * 9, 47)], ROBE)
+        # the fold that edges the opening, with a lit piping
+        d.line(P([(sx * 9.6, 46), (sx * 20.6, 64), (sx * 21.6, 76),
+                  (sx * 26, 84)]), fill=ROBE_DK, width=max(2, int(0.55 * S * SS)))
+        d.line(P([(sx * 10.4, 47), (sx * 21.4, 64), (sx * 22.4, 76),
+                  (sx * 26.8, 84)]), fill=ROBE_LT, width=max(1, int(0.24 * S * SS)))
+        # a shoulder seam, so the cloth reads as hanging from the shoulder
+        d.line(P([(sx * 15, 39.4), (sx * 24, 43.6), (sx * 29.6, 49.6)]),
+               fill=ROBE_DK, width=max(1, int(0.3 * S * SS)))
+
+    # ---- jewellery: a strand of big brown pearls and three disks ----------
+    n_p = 13
+    for k in range(n_p):
+        t = k / (n_p - 1) * 2 - 1
+        px_, py_ = t * 14.2, 44.5 + (1.0 - t * t) * 9.5
+        rr = 1.55 + (1.0 - abs(t)) * 0.25
+        d.ellipse([X(px_ - rr), Y(py_ - rr), X(px_ + rr), Y(py_ + rr)], fill=PEARL,
+                  outline=(58, 38, 22), width=max(1, int(0.16 * S * SS)))
+        d.ellipse([X(px_ - rr * 0.5), Y(py_ - rr * 0.66),
+                   X(px_ + rr * 0.14), Y(py_ - rr * 0.14)], fill=PEARL_LT)
+    for dx, dy, rr in ((0.0, 66.0, 5.4), (-10.0, 61.0, 4.3), (10.0, 61.0, 4.3)):
+        d.line(P([(dx * 0.35, 55.5), (dx * 0.8, dy - rr * 0.7)]),
+               fill=(64, 44, 26), width=max(1, int(0.22 * S * SS)))
+        d.ellipse([X(dx - rr), Y(dy - rr), X(dx + rr), Y(dy + rr)], fill=DISC,
+                  outline=(54, 34, 18), width=max(2, int(0.26 * S * SS)))
+        d.ellipse([X(dx - rr * 0.68), Y(dy - rr * 0.68),
+                   X(dx + rr * 0.68), Y(dy + rr * 0.68)], fill=(178, 134, 80))
+        d.ellipse([X(dx - rr * 0.26), Y(dy - rr * 0.26),
+                   X(dx + rr * 0.26), Y(dy + rr * 0.26)], fill=(68, 44, 24))
+        d.arc([X(dx - rr), Y(dy - rr), X(dx + rr), Y(dy + rr)], 200, 340,
+              fill=(216, 178, 118), width=max(1, int(0.3 * S * SS)))
+
+    # ---- the middle and top pairs of arms, in front of the body ----------
+    # Both reach the shoulder; the top pair throws its fists up above the head.
+    for sx in (-1, 1):
+        arm(sx, (24, 48), (44, 36), (54, 22), 10.4, 8.6, 7.8, 6.2, 10.4)
+        arm(sx, (19, 46), (30, 28), (23, 12), 10.4, 8.8, 7.8, 6.2, 10.6)
 
     # ---- head ------------------------------------------------------------
     hx, hy = HEAD
@@ -395,65 +436,49 @@ def build(S, cx, top, w_full, h_full):
     for sx in (-1, 1):
         d.ellipse([X(sx * 2.9 - 1.0), Y(hy + 2.9), X(sx * 2.9 + 1.0), Y(hy + 4.2)],
                   fill=(44, 38, 34))
-    # mouth: wide open snarl, upper row seen, four fangs standing off the jaw
-    my = hy + 8.4
-    d.polygon(P([(-7.2, my - 1.9), (-3.8, my - 0.4), (0, my + 0.3),
-                 (3.8, my - 0.4), (7.2, my - 1.9),
-                 (6.0, my + 2.5), (0, my + 3.4), (-6.0, my + 2.5)]),
-              fill=(16, 12, 12))
-    d.line(P([(-7.2, my - 1.9), (-3.8, my - 0.4), (0, my + 0.3),
-              (3.8, my - 0.4), (7.2, my - 1.9)]),
-           fill=(178, 166, 148), width=max(1, int(0.30 * S * SS)))
-    for k in (-0.75, -0.45, -0.15, 0.15, 0.45, 0.75):
-        tx = k * 6.2
-        d.polygon(P([(tx - 0.60, my - 1.2), (tx + 0.60, my - 1.2), (tx, my + 0.6)]),
-                  fill=(228, 222, 202))
-    for k, size in ((-0.55, 1.0), (-0.19, 0.64), (0.19, 0.64), (0.55, 1.0)):
-        tx = k * 8.8
-        wdt, hgt = 0.82 * size, 2.8 * size
-        d.polygon(P([(tx - wdt, my + 2.4), (tx + wdt, my + 2.4), (tx, my + 2.4 - hgt)]),
-                  fill=(238, 232, 212))
-    d.line(P([(-6.0, my + 2.5), (0, my + 3.5), (6.0, my + 2.5)]),
-           fill=(70, 62, 56), width=max(1, int(0.38 * S * SS)))
-    d.arc([X(-5.8), Y(my + 2.8), X(5.8), Y(hy + 14.2)], 15, 165,
+    # mouth: a heavy frown - the corners dragged down, the lower lip pushed up
+    # in the middle, two tusks rising from the jaw. He does not smile.
+    my = hy + 8.6
+    d.polygon(P([(-8.2, my - 0.4), (-4.0, my + 1.0), (0, my + 1.6),
+                 (4.0, my + 1.0), (8.2, my - 0.4),
+                 (7.0, my + 3.4), (0, my + 4.6), (-7.0, my + 3.4)]),
+              fill=(18, 13, 13))
+    d.line(P([(-8.2, my - 0.4), (-4.0, my + 1.0), (0, my + 1.6),
+              (4.0, my + 1.0), (8.2, my - 0.4)]),
+           fill=(186, 172, 152), width=max(1, int(0.34 * S * SS)))
+    d.line(P([(-7.0, my + 3.4), (-3.4, my + 2.2), (0, my + 2.0),
+              (3.4, my + 2.2), (7.0, my + 3.4)]),
+           fill=(150, 138, 122), width=max(1, int(0.30 * S * SS)))
+    for sx in (-1, 1):
+        d.polygon(P([(sx * 3.4 - 0.95, my + 2.6), (sx * 3.4 + 0.95, my + 2.6),
+                     (sx * 3.0, my - 1.4)]), fill=(240, 234, 214))
+    for sx in (-1, 1):
+        d.line(P([(sx * 8.6, my - 1.0), (sx * 9.6, my + 2.6), (sx * 8.4, my + 5.2)]),
+               fill=(96, 86, 78), width=max(1, int(0.26 * S * SS)))
+    d.arc([X(-6.4), Y(my + 4.0), X(6.4), Y(hy + 15.4)], 15, 165,
           fill=(128, 118, 104), width=max(1, int(0.30 * S * SS)))   # chin
 
     # ---- crown: a band of skulls with horns ------------------------------
-    d.polygon(P([(-HEAD_RX, hy - 13.0), (HEAD_RX, hy - 13.0),
-                 (HEAD_RX, hy - 9.0), (-HEAD_RX, hy - 9.0)]), fill=GOLD)
+    d.polygon(P([(-HEAD_RX, hy - 13.4), (HEAD_RX, hy - 13.4),
+                 (HEAD_RX, hy - 8.6), (-HEAD_RX, hy - 8.6)]), fill=(120, 88, 48))
     for k in range(-2, 3):
-        skx = k * 5.0
-        sky = hy - 11.6
-        d.ellipse([X(skx - 3.0), Y(sky - 3.1), X(skx + 3.0), Y(sky + 2.0)],
-                  fill=(228, 220, 200))
-        d.polygon(P([(skx - 2.3, sky + 1.2), (skx + 2.3, sky + 1.2),
-                     (skx + 1.8, sky + 3.6), (skx - 1.8, sky + 3.6)]),
-                  fill=(228, 220, 200))
+        skx = k * 5.2
+        sky = hy - 11.8
+        d.ellipse([X(skx - 2.4), Y(sky - 2.5), X(skx + 2.4), Y(sky + 1.5)],
+                  fill=(198, 190, 170))
+        d.polygon(P([(skx - 1.8, sky + 1.0), (skx + 1.8, sky + 1.0),
+                     (skx + 1.4, sky + 2.9), (skx - 1.4, sky + 2.9)]),
+                  fill=(198, 190, 170))
         for sx in (-1, 1):
-            d.ellipse([X(skx + sx * 1.5 - 0.7), Y(sky - 1.0),
-                       X(skx + sx * 1.5 + 0.7), Y(sky + 0.8)], fill=(28, 26, 24))
-        d.line(P([(skx, sky + 1.0), (skx, sky + 2.8)]), fill=(120, 112, 96),
-               width=max(1, int(0.16 * S * SS)))
+            d.ellipse([X(skx + sx * 1.15 - 0.62), Y(sky - 0.9),
+                       X(skx + sx * 1.15 + 0.62), Y(sky + 0.6)], fill=(30, 26, 24))
+        d.line(P([(skx, sky + 0.8), (skx, sky + 2.3)]), fill=(120, 112, 96),
+               width=max(1, int(0.14 * S * SS)))
     for sx in (-1, 1):
         d.polygon(P([(sx * 9.8, hy - 12.4), (sx * 14.6, hy - 18.6),
                      (sx * 13.0, hy - 10.0)]), fill=(186, 176, 156))
 
-    # ---- necklace: a strand of skulls and a pendant ----------------------
-    for k in range(-5, 6):
-        t = k / 5.0
-        bx, by = t * 14.5, 44.5 + (1.0 - t * t) * 9.0
-        d.ellipse([X(bx - 1.2), Y(by - 1.2), X(bx + 1.2), Y(by + 1.2)], fill=GOLD)
-        if k % 2 == 0:
-            d.ellipse([X(bx - 0.85), Y(by - 0.8), X(bx + 0.85), Y(by + 1.5)],
-                      fill=(230, 224, 202))
-            for sx in (-1, 1):
-                d.ellipse([X(bx + sx * 0.47 - 0.36), Y(by - 0.2),
-                           X(bx + sx * 0.47 + 0.36), Y(by + 0.45)],
-                          fill=(24, 22, 20))
-    d.ellipse([X(-3.0), Y(55.6), X(3.0), Y(61.0)], fill=(228, 222, 200))
-    for sx in (-1, 1):
-        d.ellipse([X(sx * 1.5 - 0.85), Y(57.5), X(sx * 1.5 - 0.1), Y(58.8)],
-                  fill=(22, 20, 18))
+
 
     # ---- stone mottling, then one light over the whole body --------------
     rgb = body.convert("RGB")
@@ -516,10 +541,18 @@ def build(S, cx, top, w_full, h_full):
     for sx in (-1, 1):
         ex = cx + sx * 5.1 * S
         ey = top + (HEAD[1] - 1.0) * S
-        for rad, a in ((2.8, 22), (1.9, 52), (1.2, 104), (0.70, 168)):
+        # a small warm iris, fading fast into the socket
+        for rad, a in ((1.30, 22), (0.95, 46), (0.66, 80), (0.44, 118)):
             r = rad * S
-            ed.ellipse([ex - r, ey - r * 0.82, ex + r, ey + r * 0.82],
+            ed.ellipse([ex - r, ey - r * 0.80, ex + r, ey + r * 0.80],
                        fill=EYE + (a,))
-    eyes = eyes.filter(ImageFilter.GaussianBlur(max(0.6, 0.15 * S)))
+        # the spark: a yellow-white glare in the centre, a few pixels across
+        r = 0.52 * S
+        ed.ellipse([ex - r, ey - r * 0.82, ex + r, ey + r * 0.82],
+                   fill=(255, 236, 130, 210))
+        r = 0.30 * S
+        ed.ellipse([ex - r, ey - r * 0.82, ex + r, ey + r * 0.82],
+                   fill=(255, 252, 224, 245))
+    eyes = eyes.filter(ImageFilter.GaussianBlur(max(0.25, 0.05 * S)))
 
     return layer, rim, eyes
