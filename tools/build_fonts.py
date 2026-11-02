@@ -559,17 +559,24 @@ def ensure_font_files(text):
 
 RESOLUTION_MENU = (
     """; Options > Video > Resolution. The engine takes the size straight from the
-suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
-had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
-the motif's own 1280x720, so the art, the framing and the netplay handshake are
-all unaffected.
+suffix, so this block IS the list.
+;
+; This is the WINDOW size, not the render size. Ikemen's render resolution is
+; Video.GameWidth/GameHeight in config.ini and it has no option-menu item at
+; all, so nothing in this list can add detail to the art - picking 4K here
+; draws the same sprites, scaled up, into a 4K window. The labels say so
+; rather than implying the picture gets sharper.
+;
+; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
+; the one window where every sprite lands on whole pixels; 2560x1440 and
+; 3840x2160 are clean 1.33x and 2x scales of that same art.
 """
-    "menu.itemname.menuvideo.resolution = RESOLUTION\n"
-    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (HD)\n"
-    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (HD+)\n"
-    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (FULL HD)\n"
-    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (QHD)\n"
-    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K ULTRA HD)\n"
+    "menu.itemname.menuvideo.resolution = RESOLUTION (WINDOW)\n"
+    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD window)\n"
+    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+ window)\n"
+    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (16:9 FHD window, native art)\n"
+    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (16:9 2K window, 1.33x)\n"
+    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (16:9 4K window, 2x)\n"
     "menu.itemname.menuvideo.resolution.back = BACK\n"
 )
 
@@ -617,8 +624,8 @@ def ensure_widescreen_resolutions():
     if anchor:
         indent = anchor.group(1)
         add = [f"{indent}menu.itemname.menuvideo.resolution.{size} = {size}  {label}"
-               for size, label in (("2560x1440", "(16:9 QHD)"),
-                                   ("3840x2160", "(16:9 4K)"))
+               for size, label in (("2560x1440", "(16:9 2K window)"),
+                                   ("3840x2160", "(16:9 4K window)"))
                if f"resolution.{size}" not in text]
         if add:
             text = text[:anchor.end()] + "\n" + "\n".join(add) + text[anchor.end():]
@@ -632,15 +639,39 @@ def ensure_widescreen_resolutions():
 
 
 def ensure_resolution_menu(text):
-    """Add 1440p and 4K to the in-game video resolution list."""
-    if "menu.itemname.menuvideo.resolution.3840x2160" in text:
-        return text, 0
-    head = RESOLUTION_ANCHOR.search(text)
-    if not head:
-        return text, 0
+    """Write the video resolution list, and keep its labels current.
+
+    It used to bail out as soon as the 4K key existed, so a motif that already
+    had the list kept the old labels for ever - which is how "(QHD)" and "(4K
+    ULTRA HD)" survived a change that had stopped calling them right.
+    """
     nl = "\r\n" if "\r\n" in text else "\n"
-    block = nl + nl + RESOLUTION_MENU.replace("\n", nl).rstrip("\r\n")
-    return text[:head.end()] + block + text[head.end():], 1
+    wanted = {}
+    for line in RESOLUTION_MENU.splitlines():
+        line = line.strip()
+        if not line or line.startswith(";"):
+            continue
+        key, _sep, value = line.partition(" = ")
+        wanted[key.strip()] = value.strip()
+
+    changed = 0
+    if "menu.itemname.menuvideo.resolution.3840x2160" not in text:
+        head = RESOLUTION_ANCHOR.search(text)
+        if not head:
+            return text, 0
+        block = nl + nl + RESOLUTION_MENU.replace("\n", nl).rstrip("\r\n")
+        text = text[:head.end()] + block + text[head.end():]
+        changed += 1
+
+    for key, value in wanted.items():
+        pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=[^;\r\n]*",
+                             re.MULTILINE)
+        if pattern.search(text):
+            new = pattern.sub("\t%s = %s" % (key, value), text, count=1)
+            if new != text:
+                changed += 1
+                text = new
+    return text, changed
 
 
 def main():
@@ -658,9 +689,8 @@ def main():
         print(f"  registered font10/font11 in {os.path.basename(MOTIF)}")
 
     text, res_added = ensure_resolution_menu(text)
-    if res_added:
-        print(f"  added 1440p and 4K to the video resolution list in "
-              f"{os.path.basename(MOTIF)}")
+    if res_added:            print(f"  rewrote the video resolution list in "
+                  f"{os.path.basename(MOTIF)}")
 
     dropped = ensure_widescreen_resolutions()
     if dropped:
