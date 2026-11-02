@@ -797,6 +797,28 @@ options.t_itemname = {
 		end
 		return true
 	end,
+	--Window size (submenu): Video.WindowWidth/WindowHeight, i.e. the size of the
+	--window the render is drawn in. The stock menu only exposes the render size.
+	['window'] = function(t, item, cursorPosY, moveTxt)
+		if getInput(-1, motif.option_info.menu.done.key) then
+			sndPlay(motif.Snd, motif.option_info.cursor.move.snd[1], motif.option_info.cursor.move.snd[2])
+			local width, height = gameOption('Video.WindowWidth'), gameOption('Video.WindowHeight')
+			local auto = (width == 0 or height == 0)
+			for k, v in ipairs(t.submenu[t.items[item].itemname].items) do
+				local w, h = v.itemname:match('^([0-9]+)x([0-9]+)w$')
+				if auto then
+					v.selected = (v.itemname == 'windowauto')
+				elseif w ~= nil then
+					v.selected = (tonumber(w) == width and tonumber(h) == height)
+				else
+					v.selected = false
+				end
+			end
+			t.submenu[t.items[item].itemname].loop()
+			t.items[item].vardisplay = options.t_vardisplay['window']()
+		end
+		return true
+	end,
 	--Custom resolution
 	['customres'] = function(t, item, cursorPosY, moveTxt)
 		if getInput(-1, motif.option_info.menu.done.key) then
@@ -1572,6 +1594,13 @@ options.t_vardisplay = {
 	['resolution'] = function()
 		return gameOption('Video.GameWidth') .. 'x' .. gameOption('Video.GameHeight')
 	end,
+	['window'] = function()
+		local width, height = gameOption('Video.WindowWidth'), gameOption('Video.WindowHeight')
+		if width == 0 or height == 0 then
+			return gameOption('Video.GameWidth') .. 'x' .. gameOption('Video.GameHeight')
+		end
+		return width .. 'x' .. height
+	end,
 	['rollbackport'] = function()
 		return gameOption('Netplay.Rollback.Port')
 	end,
@@ -1703,6 +1732,33 @@ function options.f_start()
 					sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 					modifyGameOption('Video.GameWidth', tonumber(width))
 					modifyGameOption('Video.GameHeight', tonumber(height))
+					options.modified = true
+					options.needReload = true
+					return false
+				end
+				return true
+			end
+		-- window size
+		elseif v:match('_window_[0-9]+x[0-9]+w$') then
+			local width, height = v:match('_window_([0-9]+)x([0-9]+)w$')
+			options.t_itemname[width .. 'x' .. height .. 'w'] = function(t, item, cursorPosY, moveTxt)
+				if getInput(-1, motif.option_info.menu.done.key) then
+					sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
+					modifyGameOption('Video.WindowWidth', tonumber(width))
+					modifyGameOption('Video.WindowHeight', tonumber(height))
+					options.modified = true
+					options.needReload = true
+					return false
+				end
+				return true
+			end
+		-- window size that follows the render size
+		elseif v:match('_window_windowauto$') then
+			options.t_itemname['windowauto'] = function(t, item, cursorPosY, moveTxt)
+				if getInput(-1, motif.option_info.menu.done.key) then
+					sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
+					modifyGameOption('Video.WindowWidth', 0)
+					modifyGameOption('Video.WindowHeight', 0)
 					options.modified = true
 					options.needReload = true
 					return false
