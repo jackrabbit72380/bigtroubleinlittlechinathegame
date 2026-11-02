@@ -72,6 +72,24 @@ jobs:
           cp README.md "$out/README.md"
           cp docs/DESIGN.md "$out/docs/DESIGN.md"
           if [ ! -f "$out/LICENCE.txt" ]; then cp dl/LICENCE.txt "$out/LICENCE.txt"; fi
+          # Render resolution is a CONFIG value, not an option-menu item: Ikemen
+          # draws at Video.GameWidth x GameHeight and shows that in a window of
+          # Video.WindowWidth x WindowHeight, and Options > Video > Resolution
+          # only ever changes the window. Every sprite here is painted for a
+          # 1920x1080 canvas, so pin the render size to that - one art pixel to
+          # one render pixel - and let the window go to 2K or 4K on top of it.
+          # Raising GameWidth past 1920 could not add detail; it would only
+          # upscale the same art and cost frames.
+          cat > "$out/config.ini" <<'INI'
+[Video]
+GameWidth = 1920
+GameHeight = 1080
+WindowWidth = 1920
+WindowHeight = 1080
+KeepAspect = true
+Fullscreen = false
+INI
+
           # A stamp in the game folder, so a stale extracted copy is obvious.
           printf 'Big Trouble in Little China: The Game\nversion: %s\ncommit: %s\nbuilt: %s\n' \
             "${{ github.event.inputs.tag || github.ref_name }}" \
@@ -92,6 +110,12 @@ jobs:
           # ships Kung Fu Man instead of Jack.
           grep -qE '^jackburton_rig/jackburton\.def' "$out/data/select.def" \
             || { echo "select.def does not select the rigged Jack Burton"; exit 1; }
+          # the render size pinned in config.ini is what makes 2K/4K windows
+          # clean upscales instead of asking the engine to redraw at 4K
+          grep -qiE '^GameWidth[[:space:]]*=[[:space:]]*1920' "$out/config.ini" \
+            || { echo "config.ini does not pin GameWidth to 1920"; exit 1; }
+          grep -qiE '^GameHeight[[:space:]]*=[[:space:]]*1080' "$out/config.ini" \
+            || { echo "config.ini does not pin GameHeight to 1080"; exit 1; }
           for f in jackburton.def jackburton.air jackburton.cns jackburton.sff \
                    jackburton.snd jackburton.cmd movelist.dat; do
             test -f "$out/chars/jackburton_rig/$f" \
