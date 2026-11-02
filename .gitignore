@@ -26,3 +26,7 @@ artifacts/release/
 .r3/
 build/
 dist/
+
+# deploy key for pushing from this sandbox (never commit the private half)
+.deploy_key
+.deploy_key.pub
