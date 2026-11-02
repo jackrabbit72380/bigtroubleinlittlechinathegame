@@ -597,7 +597,39 @@ suffix, so this block IS the list.
     "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)\n"
     "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)\n"
     "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)\n"
+    "menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)\n"
+    "menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)\n"
+    "menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)\n"
+    "menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)\n"
+    "menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)\n"
+    "menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)\n"
     "menu.itemname.menuvideo.resolution.back = BACK\n"
+)
+
+# Video.GameWidth/GameHeight is the engine's RENDER size; the window it is drawn
+# in is Video.WindowWidth/WindowHeight, and the stock menu exposes only the
+# first. Both are offered here so a 4K render can sit in a 1080p window (or a
+# 3-monitor window can hold a 1080p render).
+#
+# The item names carry a trailing "w": the engine keys each submenu row's
+# handler by the bare last segment of the itemname, so "3840x2160" would
+# overwrite the resolution row's handler. The labels still show the real size.
+WINDOW_MENU = (
+    "menu.itemname.menuvideo.window = WINDOW SIZE\n"
+    "menu.itemname.menuvideo.window.windowauto = Match Render Size\n"
+    "menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)\n"
+    "menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)\n"
+    "menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)\n"
+    "menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)\n"
+    "menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)\n"
+    "menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)\n"
+    "menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)\n"
+    "menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)\n"
+    "menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)\n"
+    "menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)\n"
+    "menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)\n"
+    "menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)\n"
+    "menu.itemname.menuvideo.window.back = BACK\n"
 )
 
 RESOLUTION_ANCHOR = re.compile(r"^menu\.itemname\.options\s*=.*$", re.MULTILINE)
@@ -669,7 +701,11 @@ def ensure_widescreen_resolutions():
     # name. A list of "(16:9 QHD window, 1.33x)" was accurate and unreadable.
     for size, label in (("1280x720", "(720p)"), ("1366x768", "(768p)"),
                         ("1600x900", "(900p)"), ("1920x1080", "(1080p)"),
-                        ("2560x1440", "(2K)"), ("3840x2160", "(4K)")):
+                        ("2560x1440", "(2K)"), ("3840x2160", "(4K)"),
+                        ("5120x2880", "(5K)"), ("6016x3384", "(6K)"),
+                        ("7168x4032", "(7K)"), ("7680x4320", "(8K)"),
+                        ("7680x2160", "(2x 4K)"),
+                        ("11520x2160", "(3x 4K)")):
         pattern = re.compile(
             r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\." + re.escape(size)
             + r"[ \t]*=[ \t]*" + re.escape(size) + r"([ \t]*[^\r\n;]*)",
@@ -752,6 +788,47 @@ def ensure_resolution_menu(text):
     return text, changed
 
 
+def ensure_window_menu(text):
+    """Add the Window Size submenu right after the resolution list.
+
+    The engine builds the submenu from the itemname keys it finds, so the keys
+    are the menu. The row handlers live in external/script/options.lua; without
+    them these rows would open and do nothing, so both are written together.
+    """
+    nl = "\r\n" if "\r\n" in text else "\n"
+    rows = [line for line in WINDOW_MENU.splitlines() if line.strip()]
+    header = "menu.itemname.menuvideo.window"
+    if not re.search(r"^[ \t]*" + re.escape(header) + r"[ \t]*=", text, re.MULTILINE):
+        anchor = re.search(
+            r"^[ \t]*menu\.itemname\.menuvideo\.resolution\.back[ \t]*=[^\r\n]*",
+            text, re.MULTILINE)
+        if not anchor:
+            return text, 0
+        block = nl + nl.join("\t" + row for row in rows)
+        return text[:anchor.end()] + nl + block + text[anchor.end():], 1
+
+    # An existing block keeps whatever sizes it has, so new ones go in after
+    # the row before them, the same way the resolution list is kept current.
+    changed = 0
+    prev = None
+    for row in rows:
+        key = row.partition(" = ")[0].strip()
+        value = row.partition(" = ")[2].strip()
+        if re.search(r"^[ \t]*" + re.escape(key) + r"[ \t]*=", text, re.MULTILINE):
+            prev = key
+            continue
+        anchor = None
+        if prev:
+            anchor = re.search(r"^[ \t]*" + re.escape(prev) + r"[ \t]*=[^\r\n]*",
+                               text, re.MULTILINE)
+        if not anchor:
+            continue
+        text = text[:anchor.end()] + nl + "\t%s = %s" % (key, value) + text[anchor.end():]
+        prev = key
+        changed += 1
+    return text, changed
+
+
 def main():
     if not os.path.isfile(MOTIF):
         print(f"missing motif: {MOTIF}", file=sys.stderr)
@@ -769,6 +846,10 @@ def main():
     text, res_added = ensure_resolution_menu(text)
     if res_added:            print(f"  rewrote the video resolution list in "
                   f"{os.path.basename(MOTIF)}")
+
+    text, win_added = ensure_window_menu(text)
+    if win_added:
+        print(f"  wrote the window-size submenu in {os.path.basename(MOTIF)}")
 
     dropped = ensure_widescreen_resolutions()
     if dropped:
