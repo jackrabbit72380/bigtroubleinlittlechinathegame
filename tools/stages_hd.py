@@ -1,27 +1,27 @@
-"""HD (1280x960) procedural stages for Big Trouble in Little China.
+"""HD (1920x1080) procedural stages for Big Trouble in Little China.
 
 tools/build_stages.py paints at arcade resolution (localcoord 320x240), so a
 1080p window shows a 240-line image stretched across 1080 rows. This module
-paints the same four arenas at four times that resolution and writes the same
-stages/<id>.def + .sff pair with localcoord 1280x960.
+paints the same four arenas at 4.5 times that resolution and writes the same
+stages/<id>.def + .sff pair with localcoord 1920x1080.
 
-Why 1280x960 and not 1280x720: Ikemen derives the vertical framing from the
+Why 1920x1080 and not 1920x720: Ikemen derives the vertical framing from the
 stage's localcoord height. src/camera.go does
 
     cutlow = (localcoord[1] - zoffset) - localcoord[1] * 0.05
 
-so a 960-row canvas with zoffset 800 only resolves when localcoord[1] is 960
+so a 1080-row canvas with zoffset 900 only resolves when localcoord[1] is 1080
 (arcade: 240 with zoffset 200). With localcoord 720 the floor sits past the
 bottom of the coordinate space and the whole backdrop is framed wrong.
 
 Everything derives from one SCALE constant, so arena geometry matches the
 arcade stages exactly:
 
-    canvas       4000 x 960   (camera travel 2080 + 960 overpaint each side)
-    camera       boundleft/right +/-1040
-    players      leftbound/rightbound +/-1620, 60 px inside the painted edge
-    floor        zoffset 800; art row 800 of 960 is the ground line
-    localcoord   1280, 960
+    canvas       8192 x 1080  (two 4096-wide halves, camera travel 6272)
+    camera       boundleft/right +/-3136
+    players      leftbound/rightbound +/-4028, 68 px inside the painted edge
+    floor        zoffset 900; art row 900 of 1080 is the ground line
+    localcoord   1920, 1080
 
 A stage with real art in art_src/<id>/backdrop.png still wins, because
 tools/build_hd_stage.py runs after this and overwrites the same files.

@@ -1,36 +1,36 @@
-"""Turn high-resolution backdrop art into native 1280x960 (HD) Ikemen stages.
+"""Turn high-resolution backdrop art into native 1920x1080 (HD) Ikemen stages.
 
 The procedural painters in tools/build_stages.py draw at arcade resolution
 (localcoord 320x240), which the engine has to stretch to fill a 1080p window.
 This script is the HD path: give it real backdrop art and it writes a stage that
-is authored at 1280x960, so a 1080p display shows real pixels instead of an
+is authored at 1920x1080, so a 1080p display shows real pixels instead of an
 upscaled 240-line image.
 
 Layout — one folder per stage under art_src/:
 
     art_src/
       lopans_throne/
-        backdrop.png      required, anything from 1280x960 up (4096x1200 is ideal)
+        backdrop.png      required, anything from 1920x1080 up (5600x1080 is ideal)
         foreground.png    optional, same size, drawn in front of the fighters
 
 The backdrop is cover-fitted to the stage canvas: scaled to fill without
 distorting, then centre-cropped, so 16:9 art drops in untouched and taller art
 loses a little top and bottom.
 
-Geometry is the same model as the arcade stages, multiplied by four:
+Geometry is the same model as the arcade stages, multiplied by 4.5:
 
-    stage canvas      4000 x 960   (camera travel 2080 + 960 overpaint each side)
-    camera            boundleft/right +/-1040
-    players           leftbound/rightbound +/-1620, 60 px inside the painted edge
-    floor             zoffset 800  (the art's floor line sits at row 800)
-    localcoord        1280, 960
+    stage canvas      5600 x 1080  (camera travel 3576 + 1012 overpaint each side)
+    camera            boundleft/right +/-1788
+    players           leftbound/rightbound +/-2368, inside the painted edge
+    floor             zoffset 900  (the art's floor line sits at row 900)
+    localcoord        1920, 1080
 
 The localcoord height has to equal the canvas height. Ikemen derives the
 vertical framing from it (src/camera.go):
 
     cutlow = (localcoord[1] - zoffset) - localcoord[1] * 0.05
 
-With localcoord 720 and zoffset 800 that resolves negative, the floor lands
+With localcoord 720 and zoffset 900 that resolves negative, the floor lands
 past the bottom of the coordinate space and the backdrop is framed wrong.
 
 tools/build_stages.py skips any stage that has an art_src/ folder, so an HD

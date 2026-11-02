@@ -129,46 +129,48 @@ art for one fighter and leave the rest alone:
 
 The arenas are painted twice: `tools/build_stages.py` keeps the arcade version
 (1000×240 art, `localcoord = 320, 240`) for the four film locations, and
-`tools/stages_hd.py` paints the shipped one at arcade resolution ×4. Same layout,
-real pixels at 1080p. The Upside Down ships from the HD pass only — it has no
+`tools/stages_hd.py` paints the shipped one at arcade resolution ×4.5 (1920×1080).
+Same layout, real pixels at 1080p. The Upside Down ships from the HD pass only — it has no
 arcade-resolution counterpart.
 
 | | arcade (`build_stages.py`) | HD (`stages_hd.py`) |
 |---|---|---|
-| localcoord | 320, 240 | **1280, 960** |
-| canvas | 1000 × 240 | **4000 × 960** |
-| camera travel | ±260 | ±1040 |
-| player bounds | ±405 | ±1620 |
-| ground (`zoffset`) | 200 | 800 |
-| screen at 4:3 | 320 × 240 units | 1280 × 960 units |
-| screen at 16:9 | ~427 × 240 units | **1707 × 960 units** |
+| localcoord | 320, 240 | **1920, 1080** |
+| canvas | 1000 × 240 | **8192 × 1080** (two 4096-wide halves) |
+| camera travel | ±260 | ±3136 |
+| player bounds | ±405 | ±4028 |
+| ground (`zoffset`) | 200 | 900 |
+| screen at 4:3 | 320 × 240 units | 1440 × 1080 units |
+| screen at 16:9 | ~427 × 240 units | **1920 × 1080 units** |
 
-**Why `localcoord` height is 960 and not 720.** Ikemen derives the vertical
+**Why `localcoord` height is 1080 and not 720.** Ikemen derives the vertical
 framing from it. `src/camera.go` does:
 
 ```go
 cutlow = (localcoord[1] - zoffset) - localcoord[1] * 0.05
 ```
 
-With a 960-row canvas, `zoffset = 800` and `localcoord[1] = 960`, that resolves to
-`100` — consistent, and the same relationship as the arcade stages
-(`(240-200) - 12 = 28`). With `localcoord = 1280, 720` it resolves *negative*: the
+With a 1080-row canvas, `zoffset = 900` and `localcoord[1] = 1080`, that resolves
+to `126` — consistent, and the same relationship as the arcade stages
+(`(240-200) - 12 = 28`). With `localcoord = 1920, 720` it resolves *negative*: the
 floor sits past the bottom of the coordinate space and the backdrop is framed
 wrong no matter how the art is drawn. Any future stage must keep
 `localcoord[1] == canvas height`.
 
 The 16:9 row is the useful one: the engine scales a stage by height, so a
-16:9 window shows `960 × 16/9 ≈ 1707` units of width. That is why the canvas is
-4000 wide — it covers the full camera travel and both ends of a wide window.
+16:9 window shows `1080 × 16/9 = 1920` units of width — exactly the localcoord
+width, which is what makes 1080p a 1:1 pixel match. That is why the canvas is
+8192 wide: the camera travels ±3136, half a screen adds 960, and each 4096-wide
+half ends where the screen edge does.
 
 Precedence, in `tools/build_all.py` order:
 
 1. `build_stages.py` — arcade stages
-2. `stages_hd.py` — overwrites the same four ids at 1280×960, and paints
+2. `stages_hd.py` — overwrites the same four ids at 1920×1080, and paints
 The Upside Down
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
 
-The HD painters use one `SCALE = 4` and read coordinates through `px(n)`, so
+The HD painters use one `SCALE = 4.5` and read coordinates through `px(n)`, so
 `px(150)` means "150 arcade pixels", which keeps the HD compositions honest
 against the arcade ones. Post-processing is what stops the art reading as flat
 vector shapes: `texture()` multiplies a soft noise so masonry has surface,

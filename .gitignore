@@ -20,6 +20,7 @@ Thumbs.db
 # Each is ~100-190 MB, over GitHub's 100 MB per-file limit.
 artifacts/*.zip
 artifacts/release/
+artifacts/stage_art/
 
 # Scratch copies of older revisions and build output, not source.
 .r2/
