@@ -120,76 +120,66 @@ def _capsule(d, a, b, w0, w1, fill, edge=None, ew=0.0):
     return pts
 
 
-def _fist(d, c, r, ang, fill, seam, lit):
-    """A fist turned knuckle-out, as in the still.
+def _fist(d, c, r, ang, fill, seam, lit, dark):
+    """A closed fist, the way the still's six hands are: all knuckles forward.
 
-    The still's fists are wider than the forearms and you see the back of the
-    hand: four thick fingers lying ACROSS it, dark grooves between them, the
-    knuckle band along the far edge, the fingertips curling under at the near
-    edge and the thumb over the side. Rolls across the hand, not fingers along
-    the arm - that was why the last version read as a mitten.
+    Seen from the back of the hand - which is what faces the hall - the four
+    fingers lie SIDE BY SIDE pointing away from the wrist, so the fingers and the
+    grooves between them run along the arm, from the knuckle row at the far end
+    back to the wrist. Rolling them across the hand instead (the old version)
+    turned every fist into a bandaged barrel with the fingers pointing the wrong
+    way. The knuckle row sits on the far edge, the fingertips curl out of sight
+    over it, and the thumb lies across the outer side, its tip just short of the
+    knuckles.
     """
-    ax, ay = math.cos(ang), math.sin(ang)      # along the forearm, out to the tips
+    ax, ay = math.cos(ang), math.sin(ang)      # out along the arm, to the knuckles
     nx, ny = -ay, ax                           # across the back of the hand
-    ew = max(2, int(r * 0.14))
+    ew = max(2, int(r * 0.15))
 
     def at(fx, fy):
-        return (c[0] + ax * fx * r + nx * fy * r, c[1] + ay * fx * r + ny * fy * r)
+        return (c[0] + (ax * fx + nx * fy) * r, c[1] + (ay * fx + ny * fy) * r)
 
-    # the hand: a broad block, clearly wider than the wrist behind it
-    d.ellipse([c[0] - r * 1.00, c[1] - r * 1.02,
-               c[0] + r * 1.00, c[1] + r * 1.02], fill=fill)
+    def ell(fx, fy, rx, ry, col, outline=None, ow=0):
+        pts = [at(fx + rx * math.cos(2 * math.pi * k / 30),
+                  fy + ry * math.sin(2 * math.pi * k / 30)) for k in range(30)]
+        d.polygon(pts, fill=col)
+        if outline:
+            d.line(pts + [pts[0]], fill=outline, width=ow)
+        return pts
 
-    # four finger rolls across the back of the hand, each with a dark groove
-    for k in (-0.57, -0.19, 0.19, 0.57):
-        _capsule(d, at(k - 0.17, -0.94), at(k - 0.17, 0.94),
-                 r * 0.185, r * 0.175, fill, seam, ew)
-        d.line([at(k - 0.335, -0.86), at(k - 0.335, 0.86)], fill=lit,
-               width=max(1, int(r * 0.075)))
-    # knuckle band along the far edge, and the four knuckles on it
-    d.line([at(0.88, -0.78), at(0.88, 0.78)], fill=seam,
-           width=max(2, int(r * 0.13)))
-    for j in (-0.60, -0.20, 0.20, 0.60):
-        q = at(0.90, j)
-        d.ellipse([q[0] - r * 0.19, q[1] - r * 0.19,
-                   q[0] + r * 0.19, q[1] + r * 0.19], fill=lit)
-    # fingertips curling under at the near edge
-    for j in (-0.60, -0.20, 0.20, 0.60):
-        q = at(-0.82, j)
-        d.ellipse([q[0] - r * 0.23, q[1] - r * 0.23,
-                   q[0] + r * 0.23, q[1] + r * 0.23],
-                  fill=fill, outline=seam, width=max(1, int(r * 0.07)))
-    # thumb over the near side
-    _capsule(d, at(-0.34, -1.00), at(0.52, -0.52),
-             r * 0.24, r * 0.19, fill, seam, ew)
+    # the hand: a block broader across than along the arm, clearly wider than
+    # the wrist behind it
+    ell(0.0, 0.0, 0.95, 1.02, fill)
 
+    # four fingers abreast, running along the arm, dark grooves between them
+    for fy in (-0.645, -0.215, 0.215, 0.645):
+        _capsule(d, at(0.86, fy * 0.98), at(-0.66, fy),
+                 r * 0.205, r * 0.215, fill, seam, ew)
+        # the lit crown of each finger, so they read one at a time
+        d.line([at(0.80, fy * 0.98 - 0.085), at(-0.56, fy - 0.085)],
+               fill=lit, width=max(1, int(r * 0.055)))
 
-def _open_hand(d, c, r, ang, fill, seam, lit):
-    """An open hand: fingers reaching out with clear gaps between them.
+    # the flexed joint crease across the fingers, just behind the knuckles
+    d.line([at(0.56, -0.86), at(0.56, 0.86)], fill=seam,
+           width=max(2, int(r * 0.095)))
 
-    The bottom pair in the still hang open and reach outward, so the fingers are
-    long capsules with dark rims - at stage size the gaps do the work.
-    """
-    ax, ay = math.cos(ang), math.sin(ang)
-    nx, ny = -ay, ax
-    ew = max(2, int(r * 0.16))
+    # the knuckle row on the far edge, and the shadow of the fingertips curling
+    # out of sight past it
+    ell(1.00, 0.0, 0.16, 0.92, dark)
+    for fy in (-0.645, -0.215, 0.215, 0.645):
+        ell(0.92, fy, 0.205, 0.19, fill, seam, max(1, int(r * 0.06)))
+        ell(0.90, fy - 0.045, 0.135, 0.115, lit)
 
-    d.ellipse([c[0] - r * 0.74, c[1] - r * 0.80,
-               c[0] + r * 0.74, c[1] + r * 0.80], fill=fill)
-    for k, length, spread in ((-0.62, 1.36, 0.36), (-0.21, 1.62, 0.12),
-                              (0.21, 1.54, 0.10), (0.62, 1.26, 0.32)):
-        base = (c[0] + ax * r * 0.34 + nx * k * r * 0.40,
-                c[1] + ay * r * 0.34 + ny * k * r * 0.40)
-        tip = (base[0] + ax * r * length + nx * k * r * spread,
-               base[1] + ay * r * length + ny * k * r * spread)
-        _capsule(d, base, tip, r * 0.215, r * 0.165, fill, seam, ew)
-        d.ellipse([tip[0] - r * 0.15, tip[1] - r * 0.15,
-                   tip[0] + r * 0.15, tip[1] + r * 0.15], fill=lit)
-    t1 = (c[0] - ax * r * 0.34 - nx * r * 0.64,
-          c[1] - ay * r * 0.34 - ny * r * 0.64)
-    t2 = (t1[0] - ax * r * 0.42 - nx * r * 0.92,
-          t1[1] - ay * r * 0.42 - ny * r * 0.92)
-    _capsule(d, t1, t2, r * 0.175, r * 0.135, fill, seam, ew)
+    # the wrist shadow, so the fist sits on the forearm rather than merging
+    d.line([at(-0.84, -0.74), at(-0.84, 0.74)], fill=seam,
+           width=max(2, int(r * 0.12)))
+
+    # thumb across the outer side, tip short of the knuckles
+    _capsule(d, at(-0.18, -0.98), at(0.58, -0.58),
+             r * 0.255, r * 0.195, fill, seam, ew)
+    ell(0.60, -0.56, 0.17, 0.155, fill, seam, max(1, int(r * 0.06)))
+    d.line([at(0.10, -1.06), at(0.34, -0.80)], fill=lit,
+           width=max(1, int(r * 0.05)))
 
 
 def _vgrad(w, h, stops):
@@ -301,9 +291,9 @@ def build(S, cx, top, w_full, h_full):
     # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
     arms = [
         # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((24, 56), (46, 62), (60, 59), 9.8, 8.2, 7.4, 6.2, 8.6, "open"),
-        ((22, 48), (45, 37), (54, 24), 10.6, 8.8, 8.0, 6.4, 10.6, "fist"),
-        ((14, 43), (30, 29), (24, 15), 10.2, 8.6, 7.8, 6.2, 10.8, "fist"),
+        ((24, 56), (46, 62), (60, 59), 9.8, 8.2, 7.4, 6.2, 9.9),
+        ((22, 48), (45, 37), (54, 24), 10.6, 8.8, 8.0, 6.4, 10.6),
+        ((14, 43), (30, 29), (24, 15), 10.2, 8.6, 7.8, 6.2, 10.8),
     ]
 
     def ring(p, tx, ty, half, thick, fill=GOLD):
@@ -318,7 +308,7 @@ def build(S, cx, top, w_full, h_full):
                fill=(248, 222, 152), width=max(1, int(0.14 * S * SS)))
 
     for sx in (-1, 1):
-        for sh, el, wr, w0, w1, w2, w3, hr, kind in arms:
+        for sh, el, wr, w0, w1, w2, w3, hr in arms:
             sh_p = (sx * sh[0], sh[1])
             el_p = (sx * el[0], el[1])
             wr_p = (sx * wr[0], wr[1])
@@ -339,18 +329,15 @@ def build(S, cx, top, w_full, h_full):
                    width=max(2, int(1.1 * S * SS)), joint="curve")
             d.polygon(P(fore), fill=STONE)
             ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
-            hc = (wr_p[0] + math.cos(ang) * hr * 0.80,
-                  wr_p[1] + math.sin(ang) * hr * 0.80)
+            hc = (wr_p[0] + math.cos(ang) * hr * 0.86,
+                  wr_p[1] + math.sin(ang) * hr * 0.86)
             # hands are drawn straight into canvas pixels, so the centre and the
             # radius have to be transformed. Passing unit-space values put every
             # fist a fifth of its size in the corner of the canvas, which is why no
             # hand ever appeared on the figure.
             hc_px = (X(hc[0]), Y(hc[1]))
             hr_px = hr * S * SS
-            if kind == "fist":
-                _fist(d, hc_px, hr_px, ang, STONE, STONE_DK, STONE_LT)
-            else:
-                _open_hand(d, hc_px, hr_px, ang, STONE, STONE_DK, STONE_LT)
+            _fist(d, hc_px, hr_px, ang, STONE, STONE_DK, STONE_LT, (96, 88, 80))
             # bangles: the still's cuffs sit right at the wrist and inboard of
             # it, and their width follows the forearm they wrap - a ring cut to
             # the arm's width at the elbow floats off it
