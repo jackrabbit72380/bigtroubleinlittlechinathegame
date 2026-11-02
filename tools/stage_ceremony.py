@@ -203,16 +203,68 @@ def statue_layer():
     d.ellipse([CX - head_r, head_cy - head_r, CX + head_r, head_cy + head_r],
               outline=JADE_LIT, width=max(1, px(1.3)))
     for sx in (-1, 1):
-        # long ears of a bodhisattva
+        # long ears of a bodhisattva, the guardian's not the Buddha's
         d.rectangle([CX + sx * head_r - px(2.4), head_cy - px(6),
                      CX + sx * head_r + px(2.4), head_cy + px(9)], fill=JADE_DK)
-        # closed eyes and brows
-        d.arc([CX + sx * px(6) - px(6), head_cy - px(3), CX + sx * px(6) + px(6),
-               head_cy + px(4)], 200, 340, fill=JADE_DK, width=max(1, px(1.3)))
-        d.arc([CX + sx * px(6) - px(7), head_cy - px(9), CX + sx * px(6) + px(7),
-               head_cy - px(2)], 200, 340, fill=(66, 84, 72), width=max(1, px(1.0)))
-    d.line([(CX - px(3), head_cy + px(8)), (CX, head_cy + px(9.6)),
-            (CX + px(3), head_cy + px(8))], fill=JADE_DK, width=max(1, px(1.2)))
+
+    # The face is a demon's, as on the statue in the film: heavy brows over open
+    # eyes lit from within, and a snarling jaw whose fangs come up off the lower
+    # lip. The eye light is drawn on its own layer (see ``glow``) so the stage
+    # lighting cannot dim it.
+    eye_y = head_cy - px(2)
+    for sx in (-1, 1):
+        ex = CX + sx * px(6.5)
+        d.polygon([(ex - sx * px(6.5), eye_y - px(7.5)),
+                   (ex + sx * px(6.0), eye_y - px(5.0)),
+                   (ex + sx * px(5.0), eye_y - px(2.2)),
+                   (ex - sx * px(6.5), eye_y - px(2.6))], fill=JADE_DK)
+        d.line([(ex - sx * px(6.5), eye_y - px(2.6)),
+                (ex + sx * px(5.2), eye_y - px(2.2))], fill=JADE_LIT,
+               width=max(1, px(0.9)))
+        # socket, then the eye
+        d.ellipse([ex - px(4.2), eye_y - px(2.0), ex + px(4.2), eye_y + px(2.6)],
+                  fill=(18, 12, 12), outline=JADE_DK, width=max(1, px(0.9)))
+        d.ellipse([ex - px(2.6), eye_y - px(0.6), ex + px(2.6), eye_y + px(2.2)],
+                  fill=(226, 66, 34))
+        d.ellipse([ex - px(1.5), eye_y + px(0.1), ex + px(1.5), eye_y + px(1.9)],
+                  fill=(255, 128, 56))
+        d.ellipse([ex - px(0.55), eye_y + px(0.5), ex + px(0.55), eye_y + px(1.5)],
+                  fill=(255, 232, 176))
+
+    # nose: a broad wedge between the eyes and the jaw
+    d.polygon([(CX - px(2.6), head_cy - px(1.0)), (CX + px(2.6), head_cy - px(1.0)),
+               (CX + px(3.4), head_cy + px(3.6)), (CX - px(3.4), head_cy + px(3.6))],
+              fill=(92, 118, 100))
+    d.line([(CX - px(3.4), head_cy + px(3.6)), (CX + px(3.4), head_cy + px(3.6))],
+           fill=JADE_DK, width=max(1, px(0.9)))
+
+    # jaw: the mouth opening, teeth along the top of it, fangs off the bottom
+    mouth_y = head_cy + px(7.6)
+    d.polygon([(CX - px(10.5), mouth_y - px(3.4)),
+               (CX - px(6.0), mouth_y - px(0.6)),
+               (CX, mouth_y + px(1.2)),
+               (CX + px(6.0), mouth_y - px(0.6)),
+               (CX + px(10.5), mouth_y - px(3.4)),
+               (CX + px(7.4), mouth_y + px(0.4)),
+               (CX - px(7.4), mouth_y + px(0.4))], fill=(20, 14, 14))
+    d.line([(CX - px(10.5), mouth_y - px(3.4)), (CX - px(6.0), mouth_y - px(0.6)),
+            (CX, mouth_y + px(1.2)), (CX + px(6.0), mouth_y - px(0.6)),
+            (CX + px(10.5), mouth_y - px(3.4))], fill=(120, 146, 124),
+           width=max(1, px(1.0)))                        # upper lip
+    for k in (-0.62, -0.36, -0.12, 0.12, 0.36, 0.62):    # small upper teeth
+        tx = CX + k * px(9.0)
+        d.polygon([(tx - px(0.85), mouth_y - px(2.2)), (tx + px(0.85), mouth_y - px(2.2)),
+                   (tx, mouth_y - px(0.2))], fill=(226, 222, 200))
+    for k, size in ((-0.50, 1.0), (-0.17, 0.62), (0.17, 0.62), (0.50, 1.0)):
+        tx = CX + k * px(13.0)                            # fangs, pointing up
+        w, h = px(1.5) * size, px(4.4) * size
+        d.polygon([(tx - w, mouth_y + px(3.0)), (tx + w, mouth_y + px(3.0)),
+                   (tx, mouth_y + px(3.0) - h)], fill=(240, 236, 214))
+        d.line([(tx, mouth_y + px(3.0) - h), (tx + w, mouth_y + px(3.0))],
+               fill=(146, 140, 118), width=max(1, px(0.7)))
+    d.line([(CX - px(7.4), mouth_y + px(3.2)), (CX, mouth_y + px(3.9)),
+            (CX + px(7.4), mouth_y + px(3.2))], fill=JADE_DK,
+           width=max(1, px(1.1)))                          # lower lip
     # crown: band plus five points, with a jade cabochon
     d.rectangle([CX - head_r, head_cy - px(17), CX + head_r, head_cy - px(11)],
                 fill=GOLD)
@@ -230,8 +282,21 @@ def statue_layer():
     rim.paste(Image.new("RGBA", (W, H), NEON + (255,)), (0, 0),
               ImageChops.subtract(glow, solid))
 
+    # Eye light, on its own layer: concentric falloff so it blooms over the face
+    # and the wall behind it whatever the stage lighting is doing.
+    eyes = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ed = ImageDraw.Draw(eyes)
+    for sx in (-1, 1):
+        ex = CX + sx * px(6.5)
+        ey = head_cy - px(1.6)
+        for step, (rad, alpha) in enumerate(((px(6.0), 30), (px(4.4), 54),
+                                             (px(3.2), 86), (px(2.0), 130))):
+            ed.ellipse([ex - rad, ey - rad * 0.86, ex + rad, ey + rad * 0.86],
+                       fill=(255, 74, 32, alpha))
+    eyes = eyes.filter(ImageFilter.GaussianBlur(px(0.9)))
+
     layer = Image.alpha_composite(halo, body)
-    return layer, rim
+    return layer, rim, eyes
 
 
 def dais():
@@ -333,7 +398,7 @@ def paint():
             throne.torch(d, x + BAY * 0.33, base_y - px(52))
 
     base = Image.alpha_composite(base, dais())
-    statue, rim = statue_layer()
+    statue, rim, eyes = statue_layer()
     base = Image.alpha_composite(base, statue)
 
     for sx in (-1, 1):
@@ -352,6 +417,7 @@ def paint():
     base = hd.finish(base, 5, 3, 0.32, FLOOR_Y)
     base = art.screen(base, neon, glow_radius=px(3), gain=1.5, passes=2)
     base = art.screen(base, rim, glow_radius=px(1.6), gain=0.5, passes=2)
+    base = art.screen(base, eyes, glow_radius=px(2.2), gain=1.35, passes=2)
     base.putalpha(Image.new("L", (W, H), 255))
 
     ring = Image.new("RGBA", (W, H), (0, 0, 0, 0))
