@@ -22,7 +22,7 @@ def run(script, *args):
 
 
 def main():
-    # stages_hd paints the same arenas at 1280x960; stage_throne then repaints
+    # stages_hd paints the same arenas at 1920x1080; stage_throne then repaints
     # Lo Pan's Throne from the concept art, stage_upside_down adds the cavern,
     # and build_hd_stage overlays any stage that has real art in art_src/, so
     # the order matters.
