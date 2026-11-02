@@ -1309,6 +1309,18 @@ POSE_SETS = {
                        arm_n=(-8, 20, 0), arm_f=(8, 20, 0),
                        leg_n=(8, -4, 86), leg_f=(-10, 6, 94)),
     },
+    # Eddie is the counter-fighter: he stands low and wide with his hands
+    # already up, weight on the back leg. His arm art is cut hanging like Wang
+    # Chi's, so the swing stays shallow - the width of his stance is in the
+    # legs, not a raised guard that would fold the forearm across his chest.
+    "eddilee": {
+        "stance": dict(lean=2, head=-1,
+                       arm_n=(-8, 24, 0), arm_f=(8, 24, 0),
+                       leg_n=(18, -12, 82), leg_f=(-20, 14, 98)),
+        "breath": dict(lean=1, head=-2, lift=1,
+                       arm_n=(-11, 22, 0), arm_f=(11, 22, 0),
+                       leg_n=(18, -12, 82), leg_f=(-20, 14, 98)),
+    },
 }
 
 

@@ -69,12 +69,13 @@ ART_HEIGHT = {"lightning": TARGET_HEIGHT,
               "gracielaw": TARGET_HEIGHT, "jade": TARGET_HEIGHT,
               "eggshen": TARGET_HEIGHT, "wangchi": TARGET_HEIGHT,
               "rain": TARGET_HEIGHT, "thunder": TARGET_HEIGHT,
-              "lopan": TARGET_HEIGHT}
+              "lopan": TARGET_HEIGHT, "eddilee": TARGET_HEIGHT}
 DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning",
            "gracielaw": "Gracie Law", "jade": "Maio Yin",
            "eggshen": "Egg Shen",
            "wangchi": "Wang Chi",
-           "rain": "Rain", "thunder": "Thunder", "lopan": "Lo Pan"}
+           "rain": "Rain", "thunder": "Thunder", "lopan": "Lo Pan",
+           "eddilee": "Eddie Lee"}
 # The women carry no weapon, so they get no weapon actions: an empty table
 # keeps the bake from appending Jack's pistol and knife actions (and their
 # sprites) to a fighter whose states never call them.
@@ -93,6 +94,10 @@ WEAPON_POSES["gracielaw"] = {}
 WEAPON_POSES["jade"] = {}
 WEAPON_POSES["eggshen"] = {}
 WEAPON_POSES["wangchi"] = {}
+# Eddie carries no weapon and no projectile: his coin flick is a hit, not a
+# spawned object, so an empty table keeps Jack's pistol and knife actions (and
+# their sprites) out of his SFF.
+WEAPON_POSES["eddilee"] = {}
 
 # Every fighter painted by tools/gangs.py is named in its own roster entry, so
 # the baked .def keeps the gang member's name instead of a title-cased id.

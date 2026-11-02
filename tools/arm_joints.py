@@ -30,6 +30,9 @@ ARM_JOINTS = {
     "lopan": (((56, 150), (84, 176)), ((132, 150), (104, 176))),
     "eggshen": (((60, 60), (80, 82)), ((86, 62), (70, 84))),
     "wangchi": (((62, 60), (82, 82)), ((84, 62), (68, 84))),
+    # Eddie's arm is cut on Wang Chi's numbers: the sleeve ends and the bare
+    # forearm starts at the same place, so the joints land identically.
+    "eddilee": (((62, 60), (82, 82)), ((84, 62), (68, 84))),
     "gracielaw": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jade": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jackburton": (((27, 74), (33, 126)), ((22, 74), (16, 126))),
