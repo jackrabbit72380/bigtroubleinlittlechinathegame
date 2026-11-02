@@ -36,6 +36,7 @@ ARM_JOINTS = {
     # The monster's arm is cut long: the elbow sits lower and the wrist further
     # out than the fighters', because the art is authored on a 168x150 canvas.
     "sewermonster": (((66, 78), (92, 108)), ((98, 80), (76, 110))),
+    "margo": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "gracielaw": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jade": (((60, 60), (80, 82)), ((88, 60), (68, 82))),
     "jackburton": (((27, 74), (33, 126)), ((22, 74), (16, 126))),

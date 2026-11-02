@@ -77,6 +77,9 @@ def main():
     # The sewer monster: the half-mummified wild man from the drains, authored
     # taller than the roster so his crouch still stands over the fighters.
     scripts += ["sewermonster_art.py", ("bake_char.py", "sewermonster")]
+    # Margo, the reporter: denim jacket, press badge, satchel and wrist
+    # recorder, painted in code like the rest of the roster.
+    scripts += ["margo_art.py", ("bake_char.py", "margo")]
     # The two gangs are built from Kung Fu Man himself rather than from painted
     # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
     # and red Wing Kong), upscales the art to roster height, paints the staff or

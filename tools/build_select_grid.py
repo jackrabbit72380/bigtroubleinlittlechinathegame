@@ -35,11 +35,17 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-# 6x4 = 24 cells for a 21-line roster (20 fighters + the random box), so every
-# character has a home on one screen. Five columns showed only ten of them.
-CELL = 100
+# 7x4 = 28 cells, one per roster line plus the random box.
+#
+# It was 6x4 at a 100px cell for a 21-line roster; the roster has grown past
+# that, and the validator refuses a roster line with no cell, which is exactly
+# the case it exists for. A seventh 100px column would run under the side
+# portrait panels (they start at x=320 and x=962), so the cell is 84px: the
+# grid is then 636 wide and centres at x=322..958, clear of both panels, and
+# the four rows end at y=460, clear of the stage preview at y=516.
+CELL = 84
 GAP = 8
-COLS, ROWS = 6, 4
+COLS, ROWS = 7, 4
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 100)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
@@ -218,7 +224,9 @@ KEYS = (
     ("cell.random.spr", "151,0"),
     ("cell.random.scale", "1.6,1.6"),
     ("portrait.spr", "9000,0"),
-    ("portrait.offset", "0,0"),
+    # the portrait art is 75px inside an 84px cell, so it is nudged in to sit
+    # centred rather than hard against the frame's top-left corner
+    ("portrait.offset", "4,4"),
     ("portrait.scale", "1,1"),
     ("stage.pos", "640,%d" % STAGE_Y),
     # The engine fills the stage name in itself; only the face needs setting,

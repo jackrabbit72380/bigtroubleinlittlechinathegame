@@ -1333,6 +1333,17 @@ POSE_SETS = {
                        arm_n=(-19, 28, 0), arm_f=(19, 28, 0),
                        leg_n=(24, -18, 78), leg_f=(-26, 20, 102)),
     },
+    # Margo reads her opponent: she stands almost square and still, weight a
+    # little back, hands low and open. Her arm art is cut hanging, so the swing
+    # stays shallow like the other hanging-arm rigs.
+    "margo": {
+        "stance": dict(lean=-1, head=0,
+                       arm_n=(-6, 24, 0), arm_f=(6, 24, 0),
+                       leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
+        "breath": dict(lean=-2, head=-1, lift=1,
+                       arm_n=(-9, 22, 0), arm_f=(9, 22, 0),
+                       leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
+    },
 }
 
 
