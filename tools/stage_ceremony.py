@@ -32,13 +32,13 @@ W, H = hd.W, hd.H
 CX, FLOOR_Y, px = hd.CX, hd.FLOOR_Y, hd.px
 BAY = throne.BAY
 
-STATUE_W = px(120)                    # arms flare past the torso, as in the still
+STATUE_W = px(132)                    # arms flare past the torso, as in the still
 STATUE_H = px(104)                    # 468
 STATUE_TOP = px(16)                   # 72: whole crown stays in frame
 HALO_R = px(44)
 
 PLINTH_TOP = STATUE_TOP + px(96)      # 504: under the crossed legs
-PLINTH_HALF = px(54)
+PLINTH_HALF = px(58)
 STEPS = [(px(67), px(19)), (px(84), px(22)), (px(102), px(22)), (px(120), px(18))]
 
 JADE = (108, 138, 116)
@@ -120,9 +120,9 @@ def statue_layer():
     hd_ = ImageDraw.Draw(halo)
     hy = STATUE_TOP + px(50)
     hd_.ellipse([CX - HALO_R, hy - HALO_R, CX + HALO_R, hy + HALO_R],
-                fill=(40, 52, 46))
+                fill=(30, 39, 35))
     hd_.ellipse([CX - HALO_R, hy - HALO_R, CX + HALO_R, hy + HALO_R],
-                outline=(88, 112, 94), width=max(2, px(2.0)))
+                outline=(70, 90, 76), width=max(2, px(2.0)))
     for k in range(24):
         a = k * (math.tau / 24)
         x0 = CX + math.cos(a) * (HALO_R - px(11))
@@ -142,9 +142,9 @@ def statue_layer():
     hip_y = STATUE_TOP + px(72)
 
     # crossed legs, a low wide mass with the knees breaking the silhouette
-    d.ellipse([CX - px(42), leg_cy - px(12), CX + px(42), leg_cy + px(12)],
+    d.ellipse([CX - px(46), leg_cy - px(13), CX + px(46), leg_cy + px(14)],
               fill=JADE_DK)
-    d.arc([CX - px(42), leg_cy - px(12), CX + px(42), leg_cy + px(12)],
+    d.arc([CX - px(46), leg_cy - px(13), CX + px(46), leg_cy + px(14)],
           196, 344, fill=JADE_LIT, width=max(1, px(1.6)))
     for k in (-0.66, -0.33, 0.33, 0.66):
         d.line([(CX + k * px(34), leg_cy + px(2)), (CX + k * px(24), leg_cy + px(10))],
@@ -153,19 +153,25 @@ def statue_layer():
     d.ellipse([CX - px(10), leg_cy + px(2), CX + px(10), leg_cy + px(10)],
               fill=JADE)
 
-    # torso: broad chest tapering to the waist, with the chest and belly shaded
-    d.polygon([(CX - px(26), shoulder_y), (CX + px(26), shoulder_y),
-               (CX + px(24), hip_y), (CX - px(24), hip_y)], JADE)
-    d.polygon([(CX - px(26), shoulder_y), (CX - px(13), shoulder_y),
-               (CX - px(15), hip_y), (CX - px(24), hip_y)], JADE_LIT)
-    d.ellipse([CX - px(20), shoulder_y + px(2), CX - px(1), shoulder_y + px(22)],
-              outline=(86, 112, 94), width=max(1, px(1.0)))      # chest
-    d.ellipse([CX + px(1), shoulder_y + px(2), CX + px(20), shoulder_y + px(22)],
-              outline=(86, 112, 94), width=max(1, px(1.0)))
-    for k in (18, 28, 38):                                     # belly folds
-        d.arc([CX - px(17), shoulder_y + px(k), CX + px(17),
-               shoulder_y + px(k + 14)], 200, 340, fill=(86, 112, 94),
-              width=max(1, px(0.9)))
+    # The still's body is massively heavier than the head: wide traps sloping
+    # into a small head, a thick chest, and a big smooth belly over the lap.
+    d.polygon([(CX - px(33), shoulder_y), (CX + px(33), shoulder_y),
+               (CX + px(28), hip_y), (CX - px(28), hip_y)], JADE)
+    d.polygon([(CX - px(33), shoulder_y), (CX - px(16), shoulder_y),
+               (CX - px(18), hip_y), (CX - px(28), hip_y)], JADE_LIT)
+    for sx in (-1, 1):                                        # trapezius
+        d.polygon([(CX + sx * px(31), shoulder_y - px(2)),
+                   (CX + sx * px(9), head_cy + px(11)),
+                   (CX + sx * px(13), shoulder_y + px(7)),
+                   (CX + sx * px(31), shoulder_y + px(7))], JADE)
+    d.ellipse([CX - px(27), hip_y - px(20), CX + px(27), hip_y + px(7)],
+              fill=JADE, outline=(84, 108, 92), width=max(1, px(1.0)))
+    d.arc([CX - px(24), hip_y - px(18), CX + px(24), hip_y + px(2)], 200, 340,
+          fill=JADE_LIT, width=max(1, px(1.4)))               # belly highlight
+    for sx in (-1, 1):                                        # pecs
+        xa, xb = sorted((CX + sx * px(1), CX + sx * px(21)))
+        d.ellipse([xa, shoulder_y + px(2), xb, shoulder_y + px(19)],
+                  outline=(84, 108, 92), width=max(1, px(1.0)))
     # sash and belt
     d.line([(CX - px(24), hip_y - px(2)), (CX + px(24), hip_y - px(2))],
            fill=GOLD, width=max(2, px(3.0)))
@@ -179,24 +185,27 @@ def statue_layer():
     # the silhouette is a body rather than sticks off the shoulders.
     for sx in (-1, 1):
         tiers = [
-            # (shoulder, elbow, hand, fist?) - elbows thrown wide of the torso,
-            # forearms coming back in, so the silhouette flares like the still.
-            ((px(23), shoulder_y + px(1)), (px(46), shoulder_y - px(6)),
-             (px(48), shoulder_y - px(20)), True),
-            ((px(23), shoulder_y + px(3)), (px(54), shoulder_y + px(6)),
-             (px(50), shoulder_y + px(17)), True),
-            ((px(22), shoulder_y + px(5)), (px(44), shoulder_y + px(20)),
-             (px(40), shoulder_y + px(30)), False),
+            # (shoulder, elbow, hand, fist?) - in the still the arms are nearly
+            # as heavy as the torso: elbows thrown wide, thick upper arms with a
+            # bicep swell, forearms coming back in, and big fists.
+            ((px(29), shoulder_y + px(1)), (px(49), shoulder_y - px(3)),
+             (px(50), shoulder_y - px(16)), True),
+            ((px(29), shoulder_y + px(3)), (px(57), shoulder_y + px(9)),
+             (px(47), shoulder_y + px(21)), True),
+            ((px(27), shoulder_y + px(6)), (px(45), shoulder_y + px(22)),
+             (px(38), shoulder_y + px(32)), False),
         ]
         for (sx0, sy0), (ex, ey), (hx, hy), fist in tiers:
             sh = (CX + sx * sx0, sy0)
             el = (CX + sx * ex, ey)
             wr = (CX + sx * hx, hy)
-            _segment(d, sh, el, px(9.0), px(6.8))
-            _segment(d, el, wr, px(6.6), px(4.8))
-            _joint(d, *sh, px(10.0), edge=JADE_DK)  # deltoid, outlined: it is a
-            _joint(d, *el, px(6.8))                 # shoulder; elbow is soft
-            _hand(d, wr[0], wr[1], px(7.4), fist)
+            _segment(d, sh, el, px(11.5), px(8.4))
+            _segment(d, el, wr, px(8.0), px(5.8))
+            # bicep, swelling just inside the upper arm's own contour
+            _joint(d, (sh[0] + el[0]) / 2, (sh[1] + el[1]) / 2, px(10.4))
+            _joint(d, *sh, px(12.2), edge=JADE_DK)  # deltoid, outlined: it is a
+            _joint(d, *el, px(8.2))                 # shoulder; elbow is soft
+            _hand(d, wr[0], wr[1], px(9.0), fist)
 
     # head
     d.ellipse([CX - head_r, head_cy - head_r, CX + head_r, head_cy + head_r],
