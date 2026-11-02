@@ -128,9 +128,13 @@ def _fist(d, c, r, ang, fill, seam, lit, dark):
     grooves between them run along the arm, from the knuckle row at the far end
     back to the wrist. Rolling them across the hand instead (the old version)
     turned every fist into a bandaged barrel with the fingers pointing the wrong
-    way. The knuckle row sits on the far edge, the fingertips curl out of sight
-    over it, and the thumb lies across the outer side, its tip just short of the
-    knuckles.
+    way.
+
+    The mass is a ball, not a slab: it is widest at the knuckles and tapers back
+    into the wrist, the finger backs only cover the front of it, and the knuckle
+    row is domed rather than square. The thumb is curled right over: proximal
+    segment along the outer side, then the distal segment hooking across the
+    front of the fingers with the tip tucked between them.
     """
     ax, ay = math.cos(ang), math.sin(ang)      # out along the arm, to the knuckles
     nx, ny = -ay, ax                           # across the back of the hand
@@ -147,39 +151,49 @@ def _fist(d, c, r, ang, fill, seam, lit, dark):
             d.line(pts + [pts[0]], fill=outline, width=ow)
         return pts
 
-    # the hand: a block broader across than along the arm, clearly wider than
-    # the wrist behind it
-    ell(0.0, 0.0, 0.95, 1.02, fill)
+    # the mass: a ball, widest at the knuckles, tapering back into the wrist, so
+    # the silhouette curves instead of running as a slab to the cuff
+    ell(0.08, 0.0, 0.88, 0.98, fill)
+    ell(-0.34, 0.0, 0.62, 0.78, fill)
 
-    # four fingers abreast, running along the arm, dark grooves between them
-    for fy in (-0.645, -0.215, 0.215, 0.645):
-        _capsule(d, at(0.86, fy * 0.98), at(-0.66, fy),
-                 r * 0.205, r * 0.215, fill, seam, ew)
-        # the lit crown of each finger, so they read one at a time
-        d.line([at(0.80, fy * 0.98 - 0.085), at(-0.56, fy - 0.085)],
+    # four short finger backs over the front of the ball, dark grooves between
+    # them - the fingers do not carry on to the wrist, which is what made the
+    # old fist look like a wrapped barrel
+    for fy, ln in ((-0.60, 0.66), (-0.20, 0.74), (0.20, 0.72), (0.60, 0.62)):
+        _capsule(d, at(ln, fy * 0.84), at(-ln * 0.34, fy * 0.96),
+                 r * 0.235, r * 0.205, fill, seam, ew)
+        d.line([at(ln * 0.86, fy * 0.86 - 0.085),
+                at(-ln * 0.24, fy * 0.96 - 0.075)],
                fill=lit, width=max(1, int(r * 0.055)))
 
-    # the flexed joint crease across the fingers, just behind the knuckles
-    d.line([at(0.56, -0.86), at(0.56, 0.86)], fill=seam,
-           width=max(2, int(r * 0.095)))
+    # the flexed joint crease, bowed with the ball rather than ruled straight
+    d.line([at(0.50, -0.84), at(0.56, -0.42), at(0.57, 0.0),
+            at(0.56, 0.42), at(0.50, 0.84)], fill=seam,
+           width=max(2, int(r * 0.09)))
 
-    # the knuckle row on the far edge, and the shadow of the fingertips curling
-    # out of sight past it
-    ell(1.00, 0.0, 0.16, 0.92, dark)
-    for fy in (-0.645, -0.215, 0.215, 0.645):
-        ell(0.92, fy, 0.205, 0.19, fill, seam, max(1, int(r * 0.06)))
-        ell(0.90, fy - 0.045, 0.135, 0.115, lit)
+    # the knuckle row, domed: the middle knuckles stand furthest forward and the
+    # outer two sit back, so the far edge of the fist is round, not square
+    ell(0.93, 0.0, 0.13, 0.84, dark)
+    for fy, fx in ((-0.60, 0.74), (-0.20, 0.83), (0.20, 0.83), (0.60, 0.74)):
+        ell(fx, fy, 0.225, 0.20, fill, seam, max(1, int(r * 0.06)))
+        ell(fx - 0.03, fy - 0.045, 0.14, 0.12, lit)
 
-    # the wrist shadow, so the fist sits on the forearm rather than merging
-    d.line([at(-0.84, -0.74), at(-0.84, 0.74)], fill=seam,
-           width=max(2, int(r * 0.12)))
+    # the wrist, curving back into the forearm
+    d.line([at(-0.70, -0.66), at(-0.80, -0.34), at(-0.82, 0.0),
+            at(-0.80, 0.34), at(-0.70, 0.66)], fill=seam,
+           width=max(2, int(r * 0.11)))
 
-    # thumb across the outer side, tip short of the knuckles
-    _capsule(d, at(-0.18, -0.98), at(0.58, -0.58),
-             r * 0.255, r * 0.195, fill, seam, ew)
-    ell(0.60, -0.56, 0.17, 0.155, fill, seam, max(1, int(r * 0.06)))
-    d.line([at(0.10, -1.06), at(0.34, -0.80)], fill=lit,
+    # the thumb curled over: a proximal segment along the outer side, then the
+    # distal segment hooking across the front of the fingers, tip tucked in
+    _capsule(d, at(-0.32, -0.94), at(0.26, -0.80),
+             r * 0.275, r * 0.235, fill, seam, ew)
+    d.line([at(-0.30, -0.98), at(0.22, -0.84)], fill=lit,
            width=max(1, int(r * 0.05)))
+    ell(0.26, -0.80, 0.145, 0.135, lit)                    # the thumb's knuckle
+    _capsule(d, at(0.26, -0.80), at(0.54, -0.34),
+             r * 0.225, r * 0.175, fill, seam, ew)
+    ell(0.54, -0.32, 0.155, 0.14, fill, seam, max(1, int(r * 0.055)))
+    ell(0.50, -0.36, 0.09, 0.08, lit)                      # the tip, catching light
 
 
 def _vgrad(w, h, stops):
