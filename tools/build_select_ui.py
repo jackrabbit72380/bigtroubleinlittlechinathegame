@@ -148,13 +148,26 @@ def _card(centre_y, stage_y):
     )
 
 
+# The stage name under the preview on the select screen. It was Body, a 13px
+# cell, on a 1280-wide screen, which read as a caption rather than as the name
+# of the stage you were about to fight on. Display at .9 is 40px, and still
+# clears the hint strip at y=685 and the card above it, which ends at 625.
+SELECT_TEXT = (
+    ("stage.font", "10, 0, 0, 176, 126, 44"),
+    ("stage.active.font", "12, 0, 0, 255, 228, 140"),
+    ("stage.active2.font", "10, 0, 0, 176, 126, 44"),
+    ("stage.done.font", "10, 0, 0, 176, 126, 44"),
+    ("stage.scale", "0.9, 0.9"),
+)
+
+
 STAGE_PORTRAIT = _card(500, 660)      # [Select Info]: clear of the stage name
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the scaled plate
     ("stage.portrait.bg.anim", "-1"),
     ("stage.portrait.bg.spr", "110,0"),
-)
+) + SELECT_TEXT
 VS_PLATE = _card(540, 707) + (
     ("stage.portrait.bg.spr", "112,0"),
 )
@@ -167,7 +180,11 @@ VS_PLATE = _card(540, 707) + (
 VS_TEXT = (
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
-    ("stage.font", "11, 0, 0, 255, 228, 140"),
+    # The caption was Body (a 13px cell) at .6, i.e. about 8px tall under the
+    # card. Display at .75 is the menu's own face at 34px, which is legible in
+    # the band between the card (ends at 665) and the bottom of the screen.
+    ("stage.font", "10, 0, 0, 255, 228, 140"),
+    ("stage.scale", "0.75, 0.75"),
 )
 
 
@@ -214,14 +231,15 @@ def layer_block():
     )
 
 
-# The stock plate behind the stage preview ([Begin Action 110], group 110) is a
-# grey panel with a large question mark printed on it. The engine draws the
-# preview over it, so any uncovered pixel of that art reads as an error - and
-# the motif shipped with the preview switched off, which made the "?" the whole
-# box. Repainting the plate removes the question mark entirely: the slot then
-# reads as an empty picture frame until a preview is drawn in it.
-FRAME_GROUP = 110
-FRAME_NUMBERS = (0, 1, 2)
+# The stock plates behind the stage preview are grey panels with a large
+# question mark printed on them: group 110 (select), 112 (VS) and 111/113 (the
+# random and loading slots). The picture is drawn over the plate, so every
+# pixel of the preview art that is transparent shows the question mark through
+# it - which is why the VS card looked framed by one. Only group 110 was
+# repainted, so the VS screen still had the "?" around its preview. All four
+# groups are repainted now: each slot reads as an empty gold picture frame
+# until a preview is drawn in it.
+FRAME_GROUPS = (110, 111, 112, 113)
 
 
 def frame_plate(w, h):
@@ -239,7 +257,7 @@ def clean_frames():
     _d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
     out, replaced = [], 0
     for sp in sprites:
-        if sp["group"] == FRAME_GROUP and sp["number"] in FRAME_NUMBERS:
+        if sp["group"] in FRAME_GROUPS:
             out.append({"group": sp["group"], "number": sp["number"],
                         "image": frame_plate(sp["w"], sp["h"]),
                         "axis": sp["axis"]})

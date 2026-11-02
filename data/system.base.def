@@ -3900,6 +3900,7 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	;menu.itemname.menuvideo.resolution.640x480 = 640x480    (4:3 VGA)  ; 4:3 pillarboxes
 	;menu.itemname.menuvideo.resolution.960x720 = 960x720    (4:3 HD)  ; 4:3 pillarboxes
 	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
+	menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
 	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
 	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
 	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
