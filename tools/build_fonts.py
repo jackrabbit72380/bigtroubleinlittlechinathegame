@@ -571,12 +571,12 @@ suffix, so this block IS the list.
 ; the one window where every sprite lands on whole pixels; 2560x1440 and
 ; 3840x2160 are clean 1.33x and 2x scales of that same art.
 """
-    "menu.itemname.menuvideo.resolution = RESOLUTION (WINDOW)\n"
-    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD window)\n"
-    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+ window)\n"
-    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (16:9 FHD window, native art)\n"
-    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (16:9 2K window, 1.33x)\n"
-    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (16:9 4K window, 2x)\n"
+    "menu.itemname.menuvideo.resolution = RESOLUTION\n"
+    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)\n"
+    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)\n"
+    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)\n"
+    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)\n"
+    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)\n"
     "menu.itemname.menuvideo.resolution.back = BACK\n"
 )
 
@@ -624,12 +624,27 @@ def ensure_widescreen_resolutions():
     if anchor:
         indent = anchor.group(1)
         add = [f"{indent}menu.itemname.menuvideo.resolution.{size} = {size}  {label}"
-               for size, label in (("2560x1440", "(16:9 2K window)"),
-                                   ("3840x2160", "(16:9 4K window)"))
+               for size, label in (("2560x1440", "(2K)"),
+                                   ("3840x2160", "(4K)"))
                if f"resolution.{size}" not in text]
         if add:
             text = text[:anchor.end()] + "\n" + "\n".join(add) + text[anchor.end():]
             changed += len(add)
+
+    # Same short labels here as in the motif, so the submenu reads the same
+    # whichever table the engine resolves last: the size, then its everyday
+    # name. A list of "(16:9 QHD window, 1.33x)" was accurate and unreadable.
+    for size, label in (("1280x720", "(720p)"), ("1600x900", "(900p)"),
+                        ("1920x1080", "(1080p)"), ("2560x1440", "(2K)"),
+                        ("3840x2160", "(4K)")):
+        pattern = re.compile(
+            r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\." + re.escape(size)
+            + r"[ \t]*=[ \t]*" + re.escape(size) + r"([ \t]*[^\r\n;]*)",
+            re.MULTILINE)
+        text, n = pattern.subn(
+            lambda m, s=size, l=label: "%smenu.itemname.menuvideo.resolution.%s = %s   %s"
+            % (m.group(1), s, s, l), text)
+        changed += n
 
     if changed:
         with open(BASE_DEF, "w", encoding="utf-8", errors="surrogateescape",
