@@ -1371,7 +1371,7 @@ triggerall = Pos y < -15
 trigger1 = BackEdgeBodyDist < 65
 trigger2 = FrontEdgeBodyDist < 65
 value = 1
-movecamera = 0,1
+movecamera = 1,1
 
 [State 1026, Hit wall]
 type = ChangeState
@@ -1412,7 +1412,7 @@ y = 1
 type = ScreenBound
 trigger1 = 1
 value = 1
-movecamera = 0,1
+movecamera = 1,1
 
 [State 1027, Spark]
 type = Explod
