@@ -163,3 +163,94 @@ scale = 1,1
 trans = add
 mask = 1
 tile = 0,0
+
+; column 2 of the bg plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG bg 1]
+type = normal
+spriteno = 0,1
+layerno = 0
+start = 0,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the truck plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG truck 1]
+type = normal
+spriteno = 14,1
+layerno = 0
+start = 0,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the fg plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG fg 1]
+type = normal
+spriteno = 3,1
+layerno = 1
+start = 0,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the floor plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG floor 1]
+type = normal
+spriteno = 15,1
+layerno = 0
+start = 0,900
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the sky plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG sky 1]
+type = normal
+spriteno = 10,1
+layerno = 0
+start = 2039,0
+delta = 0.35,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the lip plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG lip 1]
+type = normal
+spriteno = 11,1
+layerno = 1
+start = 0,860
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the fx plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG fx 1]
+type = normal
+spriteno = 12,1
+layerno = 1
+start = 0,0
+delta = 1.02,1
+trans = add
+mask = 1
+tile = 0,0

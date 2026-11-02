@@ -1380,6 +1380,69 @@ def lip_layer(comp, fade=LIP_FADE, top=LIP_TOP):
     return lip
 
 
+# A stage 8192 px wide is a texture at the hardware maximum, and the engine
+# holds four of them open at once (wall, foreground, floor, lip). On some GPUs
+# that allocation is refused and the device is dropped - the "vk.QueueSubmit
+# failed with vulkan error: device lost" seen in play. Every wide layer is cut
+# into columns of at most this many pixels, each its own sprite, with a [BG]
+# block per column so the stage still reads as one uninterrupted picture.
+MAX_TEX = 4096
+
+
+def split_wide(img):
+    """Cut a layer into abutting column textures no wider than MAX_TEX."""
+    w, h = img.size
+    if w <= MAX_TEX:
+        return [(0, img)]
+    parts = []
+    x = 0
+    while x < w:
+        parts.append((x, img.crop((x, 0, min(w, x + MAX_TEX), h))))
+        x += MAX_TEX
+    return parts
+
+
+# Where each split layer's extra columns go: label, start y, delta, layerno,
+# trans, tile, velocity. "FLOOR"/"LIP" resolve to this stage's ground line.
+WIDE_META = {
+    0: ("bg", 0, "1", 0, "none", 0, None),
+    3: ("fg", 0, "1", 1, "none", 0, None),
+    10: ("sky", 0, "SKY", 0, "none", 0, None),
+    11: ("lip", "LIP", "1", 1, "none", 0, None),
+    12: ("fx", 0, "1.02", 1, "add", 0, None),
+    13: ("road", 0, "ROAD", 0, "none", 1, "ROAD"),
+    14: ("truck", 0, "1", 0, "none", 0, None),
+    15: ("floor", "FLOOR", "1", 0, "none", 0, None),
+}
+
+
+def wide_blocks(splits, lip_top):
+    """[BG] blocks for the second and later column of every split layer."""
+    out = []
+    for group, offsets in splits.items():
+        meta = WIDE_META.get(group)
+        if not meta or len(offsets) < 2:
+            continue
+        label, sy, delta, layerno, trans, tile, vel = meta
+        y = {"FLOOR": FLOOR_Y, "LIP": lip_top}.get(sy, sy)
+        step = {"SKY": repr(SKY_DELTA), "ROAD": repr(ROAD_DELTA)}.get(delta, delta)
+        speed = {"ROAD": repr(ROAD_VEL)}.get(vel)
+        base = -(SKY_W // 2) if group == 10 else START_X
+        for i, off in enumerate(offsets[1:], start=1):
+            out.append(
+                "\n; column %d of the %s plate: %d px wide, past the %d px a\n"
+                "; single texture may be on some GPUs, so it ships in abutting\n"
+                "; columns that line up with the first one\n[BG %s %d]\n"
+                "type = normal\nspriteno = %d,%d\nlayerno = %d\n"
+                "start = %d,%s\ndelta = %s,1\n%s"
+                "trans = %s\nmask = 1\ntile = %d,0\n"
+                % (i + 1, label, W, MAX_TEX, label, i, group, i, layerno,
+                   base + off, y, step,
+                   ("velocity = %s,0\n" % speed) if speed else "",
+                   trans, tile))
+    return "".join(out)
+
+
 DEF_TEMPLATE = """;---------------------------------------------------------------------------
 ; {name}
 ; Part of Big Trouble in Little China: The Game (Ikemen GO)
@@ -1508,7 +1571,7 @@ scale = 1,1
 trans = add
 mask = 1
 tile = 0,0
-"""
+{wide}"""
 
 
 # sid -> extra [BG] elements drawn before the painted hall, for the one stage
@@ -1594,16 +1657,24 @@ def build(sid):
     layers = fn()
 
     sprites = []
+    splits = {}              # group -> x offset of each column texture
     floor = None
+
+    def add(group, img):
+        parts = split_wide(img)
+        splits[group] = [off for off, _piece in parts]
+        for i, (_off, piece) in enumerate(parts):
+            sprites.append({"group": group, "number": i, "image": piece,
+                            "axis": (0, 0)})
+
     for _key, g, n, img, _layerno in layers:
         if g == 0:
             img, floor = _split_floor(img)
-        sprites.append({"group": g, "number": n, "image": img, "axis": (0, 0)})
+        add(g, img)
     if floor is not None:
-        sprites.append({"group": 15, "number": 0, "image": floor,
-                        "axis": (0, 0)})
+        add(15, floor)
     for g, n, img in EXTRA_SPRITES.get(sid, ()):
-        sprites.append({"group": g, "number": n, "image": img, "axis": (0, 0)})
+        add(g, img)
 
     # select preview: match-start view, downscaled to the motif's 320x240
     # Composited onto black rather than onto transparency: an HD backdrop can
@@ -1616,18 +1687,28 @@ def build(sid):
     lip = lip_layer(comp, LIP_FADE_BY_STAGE.get(sid, LIP_FADE), lip_top)
     shown = comp
     pcx = PREVIEW_CX.get(sid, CX)
-    # It used to be squashed to a 320x240 thumbnail, so the card sat small and
-    # letterboxed in the middle of a 3:1 band instead of filling it.
-    py0 = max(0, min(H - PREVIEW_H, FLOOR_Y - int(PREVIEW_H * 0.72)))
-    view = shown.crop((pcx - PREVIEW_W // 2, py0,
-                       pcx + PREVIEW_W // 2, py0 + PREVIEW_H))
-    sprites.append({"group": 9000, "number": 1, "image": view,
+    # The card shows the whole level, not a bite of floor. It used to crop
+    # 1215x398 straight out of the art at the ground line, so it was a close-up
+    # of the bottom third with the sky cut off - which is why the preview read
+    # as too small and as the wrong part of the stage.
+    #
+    # The card is 3.05:1 and the level is 1080 tall, so covering its full height
+    # means 3297 px of stage across: an establishing shot at exactly the card's
+    # aspect, downscaled uniformly (0.369 both ways) - no letterbox, no
+    # distortion, whole height, and more than twice the width the card used to
+    # show. It is also the match-start camera position, so the card shows the
+    # stage the way the fight opens on it.
+    span = int(round(PREVIEW_W * H / float(PREVIEW_H)))
+    x0 = max(0, min(W - span, pcx - span // 2))
+    card = shown.crop((x0, 0, x0 + span, H))
+    card = card.resize((PREVIEW_W, PREVIEW_H), Image.LANCZOS).convert("RGBA")
+    sprites.append({"group": 9000, "number": 1, "image": card,
                     "axis": (PREVIEW_W // 2, PREVIEW_H // 2)})
-    sprites.append({"group": 10, "number": 0, "image": sky_layer(sid), "axis": (0, 0)})
-    sprites.append({"group": 11, "number": 0, "image": lip, "axis": (0, 0)})
-    sprites.append({"group": 12, "number": 0, "image": fx_layer(sid), "axis": (0, 0)})
+    add(10, sky_layer(sid))
+    add(11, lip)
+    add(12, fx_layer(sid))
     if sid in EXTRA_AFTER_BG:            # the strip and the rig it drives past
-        sprites.append({"group": 13, "number": 0, "image": road_layer(), "axis": (0, 0)})
+        add(13, road_layer())
 
     data = sff.write_sff(sprites)
     with open(os.path.join(ROOT, "stages", f"{sid}.sff"), "wb") as fh:
@@ -1644,7 +1725,7 @@ def build(sid):
                              if floor is not None else "")
                             + EXTRA_AFTER_BG.get(sid, "")),
             sky_start=-(SKY_W // 2), sky_delta=SKY_DELTA,
-            lip_y=lip_top, half=HALF,
+            lip_y=lip_top, half=HALF, wide=wide_blocks(splits, lip_top),
         ))
     # README preview: the 4:3 match-start view, same path build_stages.py uses so
     # the docs show what actually ships

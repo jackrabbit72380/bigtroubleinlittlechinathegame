@@ -435,8 +435,8 @@ portrait.scale = 1,1
 portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
-title.offset = 640,30
-title.font = 10,0,0, 255, 228, 140 ;Font of title (-1 for none)
+title.offset = 640, 2
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -630,12 +630,12 @@ stage.layerno = 2
 ;Stage portraits
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = -1, -120
-stage.portrait.scale = 0.4, 0.4
+stage.portrait.offset = 0, -103
+stage.portrait.scale = 0.4774, 0.4774
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -244, -200
-stage.portrait.bg.scale = 1.505, 1.505
+stage.portrait.bg.offset = -290, -198
+stage.portrait.bg.scale = 1.79, 1.79
 stage.portrait.bg.layerno = 2
 ;stage.portrait.random.anim = 113
 stage.portrait.random.spr = 111,0
@@ -647,7 +647,7 @@ stage.portrait.loading.anim = 113
 stage.portrait.loading.offset = -163, -144
 stage.portrait.loading.scale = 1.0, 1.0
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 396, 460, 884, 620
+stage.portrait.window = 350, 462, 930, 652
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator
@@ -830,6 +830,7 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
+title.scale = 1,1
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
@@ -1259,13 +1260,13 @@ stage.font = 11, 0, 0, 255, 228, 140
 stage.scale = 0.6, 0.6
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = -1, -120
-stage.portrait.scale = 0.4, 0.4
+stage.portrait.offset = 0, -103
+stage.portrait.scale = 0.4774, 0.4774
 stage.portrait.bg.spr = 112,0
 ;stage.portrait.bg.spr = 
-stage.portrait.bg.offset = -244, -200
-stage.portrait.bg.scale = 1.505, 1.505
-stage.portrait.window = 396, 460, 884, 620
+stage.portrait.bg.offset = -290, -198
+stage.portrait.bg.scale = 1.79, 1.79
+stage.portrait.window = 350, 462, 930, 652
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
@@ -1996,26 +1997,26 @@ menu.item.selected.scale = 1.0, 1.0
 menu.item.selected.active.offset = 0, 0            
 menu.item.selected.active.font = 12,0,-1, 255, 228, 140
 menu.item.selected.active.scale = 1.0, 1.0
-menu.item.value.offset = 30, 0
-menu.item.value.font = 11,0,-1, 176, 126, 44
+menu.item.value.offset = 40, 0
+menu.item.value.font = 11,0,1, 176, 126, 44
 menu.item.value.scale = 1.0, 1.0
-menu.item.value.active.offset = 30, 0
-menu.item.value.active.font = 11,0,-1, 255, 228, 140
+menu.item.value.active.offset = 40, 0
+menu.item.value.active.font = 11,0,1, 255, 228, 140
 menu.item.value.active.scale = 1.0, 1.0
-menu.item.value.conflict.offset = 30, 0
-menu.item.value.conflict.font = 11,0,-1, 214, 58, 48
+menu.item.value.conflict.offset = 40, 0
+menu.item.value.conflict.font = 11,0,1, 214, 58, 48
 menu.item.value.conflict.scale = 1.0, 1.0
-menu.item.info.offset = 30, 0
-menu.item.info.font = 11,0,-1, 240, 196, 88
+menu.item.info.offset = 40, 0
+menu.item.info.font = 11,0,1, 240, 196, 88
 menu.item.info.scale = 1.0, 1.0
-menu.item.info.active.offset = 30, 0
-menu.item.info.active.font = 11,0,-1, 255, 228, 140
+menu.item.info.active.offset = 40, 0
+menu.item.info.active.font = 11,0,1, 255, 228, 140
 menu.item.info.active.scale = 1.0, 1.0
 menu.item.spacing = 0, 46
 menu.window.margins.y = 21, 2
 menu.window.visibleitems = 13
 menu.boxcursor.visible = 1
-menu.boxcursor.coords = -504, 0, 215, 44
+menu.boxcursor.coords = -512, 0, 280, 44
 menu.boxcursor.col = 255, 228, 140
 menu.boxcursor.pulse = 30, 20, 30
 menu.boxbg.visible = 1
