@@ -109,79 +109,73 @@ def _taper(a, ctrl, b, w0, w1, n=30, swell=0.16, seed=0.0):
             + right[::-1] + cap(a, (-t0[0], -t0[1]), (t0[1], -t0[0]), w0))
 
 
-def _capsule(d, a, b, w0, w1, fill):
-    """Straight tapered capsule: a finger, a toe, a fold of cloth."""
-    d.polygon((lambda pts: pts)(_taper(a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2),
-                                       b, w0, w1, n=10, swell=0.0)), fill=fill)
-    return _taper(a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), b, w0, w1,
-                  n=10, swell=0.0)
+def _capsule(d, a, b, w0, w1, fill, edge=None, ew=0.0):
+    """Straight tapered capsule - a finger, a toe, a fold - with an optional
+    dark rim, so fingers separate from the palm behind them."""
+    pts = _taper(a, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), b, w0, w1,
+                 n=10, swell=0.0)
+    if edge:
+        d.line(pts + [pts[0]], fill=edge, width=max(1, ew), joint="curve")
+    d.polygon(pts, fill=fill)
+    return pts
 
 
 def _fist(d, c, r, ang, fill, seam, lit):
-    """A clenched fist whose knuckles break the outline.
+    """A fist of four long fingers, seen from the back of the hand.
 
-    The tube in the still runs round the fingers, so a fist cannot be a ball:
-    four finger rolls are drawn proud of the palm mass with dark seams between
-    them, the knuckle row sits on the far edge, and every crest catches the key
-    light, so the hand reads as a hand at stage size.
+    The still's hands read because the fingers are separate objects ending in
+    rounded tips: four of them lie along the arm with dark gaps between, the
+    knuckle row crosses their base, and the thumb folds over the near edge. The
+    fingers reach beyond the palm, which is what puts them on the silhouette.
     """
     ax, ay = math.cos(ang), math.sin(ang)      # along the forearm, out to the tips
-    nx, ny = -ay, ax
+    nx, ny = -ay, ax                           # across the back of the hand
+    ew = max(2, int(r * 0.17))
 
     def at(fx, fy):
         return (c[0] + ax * fx * r + nx * fy * r, c[1] + ay * fx * r + ny * fy * r)
 
-    d.ellipse([c[0] - r * 0.84, c[1] - r * 0.84,
-               c[0] + r * 0.84, c[1] + r * 0.84], fill=fill)
-    d.line([at(-0.94, -0.82), at(-0.94, 0.82)], fill=seam,
-           width=max(2, int(r * 0.30)))                    # wrist shadow
-    for k in (-0.58, -0.20, 0.20, 0.58):
-        _capsule(d, at(k, -1.00), at(k, 0.98), r * 0.215, r * 0.195, fill)
-        d.line([at(k + 0.215, -0.94), at(k + 0.215, 0.92)], fill=seam,
-               width=max(1, int(r * 0.105)))
-        d.line([at(k - 0.19, -0.92), at(k - 0.19, 0.90)], fill=lit,
-               width=max(1, int(r * 0.055)))
-    for j in (-0.64, -0.21, 0.21, 0.64):
-        q = at(0.98, j)
-        d.ellipse([q[0] - r * 0.24, q[1] - r * 0.24,
-                   q[0] + r * 0.24, q[1] + r * 0.24], fill=lit)
-        d.arc([q[0] - r * 0.24, q[1] - r * 0.24,
-               q[0] + r * 0.24, q[1] + r * 0.24], 25, 155, fill=fill,
-              width=max(1, int(r * 0.07)))
-    t1, t2 = at(-0.64, -0.94), at(0.44, 0.62)
-    d.line([t1, t2], fill=seam, width=max(2, int(r * 0.32)))
-    _capsule(d, t1, t2, r * 0.215, r * 0.175, fill)
-    d.ellipse([t1[0] - r * 0.215, t1[1] - r * 0.215,
-               t1[0] + r * 0.215, t1[1] + r * 0.215], fill=lit)
+    # back of the hand, flush with the wrist so no ring shows there
+    d.ellipse([c[0] - r * 0.92, c[1] - r * 0.92,
+               c[0] + r * 0.92, c[1] + r * 0.92], fill=fill)
+    for j, ln in ((-0.66, 1.42), (-0.22, 1.58), (0.22, 1.52), (0.66, 1.30)):
+        _capsule(d, at(-0.05, j * 0.78), at(ln, j * 0.94),
+                 r * 0.235, r * 0.205, fill, seam, ew)
+        tip = at(ln, j * 0.94)
+        d.ellipse([tip[0] - r * 0.20, tip[1] - r * 0.20,
+                   tip[0] + r * 0.20, tip[1] + r * 0.20], fill=lit)
+    d.line([at(0.14, -0.80), at(0.14, 0.80)], fill=seam,
+           width=max(2, int(r * 0.16)))                     # knuckle row
+    _capsule(d, at(-0.30, -0.94), at(0.80, -0.32),
+             r * 0.205, r * 0.165, fill, seam, ew)          # thumb
 
 
 def _open_hand(d, c, r, ang, fill, seam, lit):
-    """An open hand: palm, four fingers hanging loose, thumb out to the side.
+    """An open hand: fingers reaching out with clear gaps between them.
 
-    The lowest pair do not clench - in the wide shot they hang open beside the
-    knees - so the fingers are separate capsules with seams between them.
+    The bottom pair in the still hang open and reach outward, so the fingers are
+    long capsules with dark rims - at stage size the gaps do the work.
     """
     ax, ay = math.cos(ang), math.sin(ang)
     nx, ny = -ay, ax
-    d.ellipse([c[0] - r * 0.78, c[1] - r * 0.90,
-               c[0] + r * 0.78, c[1] + r * 0.90], fill=fill)
-    for k, drop, length in ((-0.60, 0.12, 1.30), (-0.20, 0.04, 1.52),
-                            (0.20, 0.04, 1.44), (0.60, 0.14, 1.16)):
-        base = (c[0] + ax * r * 0.52 + nx * k * r * 0.46,
-                c[1] + ay * r * 0.52 + ny * k * r * 0.46)
-        tip = (base[0] + ax * r * length + nx * k * drop * r,
-               base[1] + ay * r * length + ny * k * drop * r)
-        _capsule(d, base, tip, r * 0.185, r * 0.125, fill)
-        d.line([(base[0] - ax * r * 0.05 - nx * r * 0.04,
-                 base[1] - ay * r * 0.05 - ny * r * 0.04), tip],
-               fill=seam, width=max(1, int(r * 0.07)))
-        d.ellipse([tip[0] - r * 0.12, tip[1] - r * 0.12,
-                   tip[0] + r * 0.12, tip[1] + r * 0.12], fill=lit)
-    t1 = (c[0] - ax * r * 0.30 - nx * r * 0.72,
-          c[1] - ay * r * 0.30 - ny * r * 0.72)
-    t2 = (t1[0] - ax * r * 0.55 - nx * r * 0.35,
-          t1[1] - ay * r * 0.55 - ny * r * 0.35)
-    _capsule(d, t1, t2, r * 0.16, r * 0.12, fill)
+    ew = max(2, int(r * 0.16))
+
+    d.ellipse([c[0] - r * 0.74, c[1] - r * 0.80,
+               c[0] + r * 0.74, c[1] + r * 0.80], fill=fill)
+    for k, length, spread in ((-0.62, 1.36, 0.36), (-0.21, 1.62, 0.12),
+                              (0.21, 1.54, 0.10), (0.62, 1.26, 0.32)):
+        base = (c[0] + ax * r * 0.34 + nx * k * r * 0.40,
+                c[1] + ay * r * 0.34 + ny * k * r * 0.40)
+        tip = (base[0] + ax * r * length + nx * k * r * spread,
+               base[1] + ay * r * length + ny * k * r * spread)
+        _capsule(d, base, tip, r * 0.215, r * 0.165, fill, seam, ew)
+        d.ellipse([tip[0] - r * 0.15, tip[1] - r * 0.15,
+                   tip[0] + r * 0.15, tip[1] + r * 0.15], fill=lit)
+    t1 = (c[0] - ax * r * 0.34 - nx * r * 0.64,
+          c[1] - ay * r * 0.34 - ny * r * 0.64)
+    t2 = (t1[0] - ax * r * 0.42 - nx * r * 0.92,
+          t1[1] - ay * r * 0.42 - ny * r * 0.92)
+    _capsule(d, t1, t2, r * 0.175, r * 0.135, fill, seam, ew)
 
 
 def _vgrad(w, h, stops):
@@ -293,9 +287,9 @@ def build(S, cx, top, w_full, h_full):
     # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
     arms = [
         # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((22, 58), (45, 55), (57, 59), 9.8, 8.2, 7.4, 6.2, 8.8, "open"),
-        ((22, 50), (48, 45), (55, 25), 10.6, 8.8, 8.0, 6.4, 11.0, "fist"),
-        ((16, 44), (34, 41), (31, 17), 10.2, 8.6, 7.8, 6.2, 11.4, "fist"),
+        ((24, 56), (46, 62), (59, 60), 9.8, 8.2, 7.4, 6.2, 9.6, "open"),
+        ((22, 48), (45, 37), (52, 21), 10.6, 8.8, 8.0, 6.4, 11.4, "fist"),
+        ((14, 43), (30, 30), (24, 14), 10.2, 8.6, 7.8, 6.2, 11.6, "fist"),
     ]
 
     def ring(p, tx, ty, half, thick, fill=GOLD):
@@ -319,11 +313,16 @@ def build(S, cx, top, w_full, h_full):
             upper = _taper(sh_p, ((sh_p[0] + el_p[0]) / 2,
                                   (sh_p[1] + el_p[1]) / 2 + 1.4),
                            el_p, w0, w1)
+            d.line(P(upper) + [P(upper)[0]], fill=STONE_DK,
+                   width=max(2, int(1.1 * S * SS)), joint="curve")
             d.polygon(P(upper), fill=STONE)
             d.ellipse([X(el_p[0] - w1), Y(el_p[1] - w1),
-                       X(el_p[0] + w1), Y(el_p[1] + w1)], fill=STONE)
+                       X(el_p[0] + w1), Y(el_p[1] + w1)],
+                      fill=STONE, outline=STONE_DK, width=max(1, int(0.6 * S * SS)))
             fore_ctrl = ((el_p[0] + wr_p[0]) / 2, (el_p[1] + wr_p[1]) / 2)
             fore = _taper(el_p, fore_ctrl, wr_p, w2 * 0.94, w3)
+            d.line(P(fore) + [P(fore)[0]], fill=STONE_DK,
+                   width=max(2, int(1.1 * S * SS)), joint="curve")
             d.polygon(P(fore), fill=STONE)
             ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
             hc = (wr_p[0] + math.cos(ang) * hr * 0.40,
