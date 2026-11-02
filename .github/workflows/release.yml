@@ -69,6 +69,13 @@ jobs:
             if [ -d "$d" ]; then cp -rT "$d" "$out/$d"; fi
           done
 
+          # The stage-art dumper ships with the game so it can be used from the
+          # installed folder: double-click "Dump Stage Art.bat" and the stage
+          # sprites are unpacked next to the game as PNGs.
+          if [ -f "Dump Stage Art.bat" ]; then cp "Dump Stage Art.bat" "$out"; fi
+          mkdir -p "$out/tools"
+          cp tools/dump_stage_art.py tools/sff.py "$out/tools/"
+
           # The binary carries the game's name, not the engine's. On macOS only
           # the .app folder is renamed: the Mach-O inside it has to keep the name
           # Info.plist's CFBundleExecutable points at, or the bundle won't launch.

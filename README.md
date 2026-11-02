@@ -126,17 +126,18 @@ recoloured base.
 
 All five BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
-paints them natively at **1280×960** (`localcoord = 1280, 960`), which is arcade
-resolution times four — the engine no longer stretches a 240-line image across
-a 1080p window, and a 16:9 display shows 1707 units of art instead of running to
-black. Each stage canvas is **4000×960**: the camera travels ±1040 and the art
-paints 960 past each end, with players clamped to ±1620. The ground line is row
-800 (`zoffset = 800`). Each stage ships a `9000,1` select-screen preview sprite.
+paints them natively at **1920×1080** (`localcoord = 1920, 1080`), which is the
+arcade layout at 4.5× — the engine no longer stretches a 240-line image across
+a 1080p window, so a 16:9 display shows all 1920 units at 1:1. Each stage canvas
+is **8192×1080**, painted as two 4096-wide halves: the camera travels ±3136 and
+the art paints a full screen past each end, with players clamped to ±4028. The
+ground line is row 900 (`zoffset = 900`). Each stage ships a `9000,1`
+select-screen preview sprite.
 
 To put real art in a stage, drop `backdrop.png` (and optionally
 `foreground.png`) into `art_src/<stage id>/` and rebuild —
 `tools/build_hd_stage.py` replaces that stage with your image cover-fitted to the
-same 4000×960 canvas and the same geometry, no code changes. That is the same HD
+its own canvas and layer layout (`localcoord = 1920, 1080`), no code changes. That is the same HD
 stage model a high-resolution commercial fan remake uses, applied to art you own.
 
 ## Music
@@ -183,8 +184,10 @@ Or one at a time:
 
 ```sh
 python3 tools/build_stages.py     # arcade-resolution stages (320-space)
-python3 tools/stages_hd.py        # the same four arenas at 1280x960 (shipped)
+python3 tools/stages_hd.py        # the same four arenas at 1920x1080 (shipped)
 python3 tools/build_hd_stage.py   # replaces any stage that has art_src/ art
+python3 tools/dump_stage_art.py   # unpack stage sprites to PNG (or double-click
+                                 # "Dump Stage Art.bat" on Windows)
 python3 tools/build_chars.py      # regenerate the roster folders
 python3 tools/build_music.py      # menu music paths in data/ikemen1/system.def
 python3 tools/validate.py         # offline checks (no engine needed)
