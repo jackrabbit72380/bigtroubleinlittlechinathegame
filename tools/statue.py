@@ -235,7 +235,6 @@ def build(S, cx, top, w_full, h_full):
 
     def blob(d, pts, fill=STONE, smooth=14):
         d.polygon(P(_catmull(pts, True, smooth)), fill=fill)
-        if outline:
 
     body = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(body)
