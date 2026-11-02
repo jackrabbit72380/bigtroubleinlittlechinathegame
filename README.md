@@ -23,8 +23,8 @@ this game's fighters, stages and screenpack in place.
 
 | Platform | File | Launch |
 |---|---|---|
-| Windows | `BigTroubleInLittleChina-Windows.zip` | unzip, double-click `Ikemen_GO.exe` |
-| Linux | `BigTroubleInLittleChina-Linux.zip` | unzip, `chmod +x Ikemen_GO_Linux && ./Ikemen_GO_Linux` |
+| Windows | `BigTroubleInLittleChina-Windows.zip` | unzip, double-click `BigTroubleInLittleChinaTheGame.exe` |
+| Linux | `BigTroubleInLittleChina-Linux.zip` | unzip, `chmod +x BigTroubleInLittleChinaTheGame && ./BigTroubleInLittleChinaTheGame` |
 | macOS | `BigTroubleInLittleChina-macOS.zip` | unzip, right-click the app → **Open** the first time |
 
 Grab them from the
