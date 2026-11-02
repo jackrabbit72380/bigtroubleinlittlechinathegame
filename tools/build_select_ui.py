@@ -22,7 +22,7 @@ import os
 import re
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -128,17 +128,20 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # "Next Stage" caption and below the VS logo.
 STAGE_PORTRAIT = (
     ("stage.portrait.spr", "9000,1"),
-    ("stage.portrait.offset", "-1, -120"),
-    ("stage.portrait.scale", "0.4, 0.4"),
-    ("stage.portrait.window", "396, 460, 884, 620"),
+    # the window is 580x190 and the art is 1215x398, so .4774 lands it exactly;
+    # the axis is the art's centre, put at 640,557 (stage.pos 640,660 + 0,-103)
+    ("stage.portrait.offset", "0, -103"),
+    ("stage.portrait.scale", "0.4774, 0.4774"),
+    ("stage.portrait.window", "350, 462, 930, 652"),
 )
 
 # The plate behind the preview is a 324x106 sprite with its axis at 0,0, so it
 # is scaled up to the window instead of repainted: 324 * 1.505 = 488 and
 # 106 * 1.505 = 160, drawn from 640-244, 660-200 = 396,460.
 PLATE = (
-    ("stage.portrait.bg.offset", "-244, -200"),
-    ("stage.portrait.bg.scale", "1.505, 1.505"),
+    # 324x106 at 1.79 is the 580x190 window, drawn from 350,462
+    ("stage.portrait.bg.offset", "-290, -198"),
+    ("stage.portrait.bg.scale", "1.79, 1.79"),
 )
 
 # The select screen draws the plate as [Begin Action 110]; pin it to its first
@@ -251,6 +254,97 @@ def clean_frames():
     return replaced
 
 
+# The VS screen's logo and "NEXT MATCH" banner are the engine's own silver
+# chrome art (groups 200 and 202), which reads as a different game beside the
+# gold-and-red wordmark used everywhere else. A .def cannot tint a sprite, so
+# the colour is baked instead: each sprite's luminance is pushed through the
+# logo's own ramp, which keeps its shading and hard outline, and the alpha is
+# left alone. Pixels that are already coloured are kept as they are, so a
+# second build does not shift the art again.
+RAMP = ((0.00, (255, 246, 206)), (0.30, (255, 204, 96)),
+        (0.62, (238, 122, 44)), (1.00, (146, 24, 30)))
+VS_ART_GROUPS = (200, 202)
+
+
+def _ramp_colour(t):
+    for i in range(len(RAMP) - 1):
+        t0, c0 = RAMP[i]
+        t1, c1 = RAMP[i + 1]
+        if t0 <= t <= t1:
+            k = (t - t0) / max(1e-6, t1 - t0)
+            return tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
+    return RAMP[-1][1]
+
+
+def _is_warm(img):
+    """True when the art already carries this ramp, so a rebuild is a no-op.
+
+    Without it every build would multiply the shading in again and the logo
+    would creep darker each time data/ was rebuilt.
+    """
+    stat = ImageStat.Stat(img.convert("RGB"), img.getchannel("A"))
+    r, _g, b = stat.mean
+    return (r - b) > 45 and r > 90
+
+
+def goldify(img):
+    """Repaint a silver sprite as the wordmark's gold, shaded down to red.
+
+    The colour comes from a vertical gradient over the sprite rather than from
+    its own luminance. The engine's VS art is chrome with a hard light/dark
+    split down the middle; ramping *that* printed a band straight across the
+    logo. Here the gradient runs cream -> gold -> red from top to bottom, the
+    source's shading only multiplies it, and the near-black outline is kept
+    exactly as it was so the silhouette still reads against the sky.
+    """
+    img = img.convert("RGBA")
+    w, h = img.size
+    if _is_warm(img):
+        return img
+    strip = Image.new("RGB", (1, max(1, h)))
+    put = strip.load()
+    for y in range(max(1, h)):
+        put[0, y] = _ramp_colour(y / float(max(1, h - 1)))
+    body = strip.resize((w, h)).convert("RGB")
+    lum = img.convert("L")
+    # Blur the source shading before it multiplies the gradient. The chrome art
+    # has one hard light/dark split down its middle, and multiplying that
+    # unblurred printed a seam across the logo; softened, it only models the
+    # face, and the gradient carries the colour.
+    smooth = lum.filter(ImageFilter.GaussianBlur(max(2, h // 22)))
+    shade = smooth.point(lambda v: 96 + int(v * 0.66))
+    body = ImageChops.multiply(body, Image.merge("RGB", (shade, shade, shade)))
+    outline = lum.point(lambda v: 255 if v < 44 else 0)
+    out = Image.composite(img.convert("RGB"), body, outline).convert("RGBA")
+    out.putalpha(img.getchannel("A"))
+    return out
+
+
+def retint_vs_art():
+    """Bake the game's colours into the engine's silver VS-screen art."""
+    raw, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    out, done = [], 0
+    for sp in sprites:
+        if sp["group"] in VS_ART_GROUPS:
+            img = sff.decode_sprite(raw, sp, palettes)
+            out.append({"group": sp["group"], "number": sp["number"],
+                        "image": goldify(img), "axis": sp["axis"]})
+            done += 1
+        else:
+            out.append({"group": sp["group"], "number": sp["number"],
+                        "raw": sp["raw"], "format": sp["format"],
+                        "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
+                        "axis": sp["axis"], "pal": sp["pal"],
+                        "link": sp["link"]})
+    blob = sff.write_sff(out, [p["rgba"] for p in palettes])
+    if blob[:12] != sff.SIG:
+        raise SystemExit("refusing to write: retinted system.sff has no signature")
+    with open(SYSTEM_SFF + ".tmp", "wb") as f:
+        f.write(blob)
+    os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
+    return done
+
+
 def patch_def():
     """Fix the stage preview, then add the hint layer to [SelectBGdef] once.
 
@@ -282,6 +376,7 @@ def build():
     strip = hint_strip()
     total = write_sprite(strip)
     frames = clean_frames()
+    tinted = retint_vs_art()
     added = patch_def()
 
     # Read back: the hint is worth nothing if the layer points at nothing.
@@ -298,6 +393,7 @@ def build():
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
     print(f"stage-select hint: sprite {SPRITE[0]},{SPRITE[1]} "
           f"({'added' if total else 'kept'}), frame repaints {frames}, "
+          f"VS art retinted {tinted}, "
           f"SelectBG layer {'added' if added else 'already present'}")
 
 

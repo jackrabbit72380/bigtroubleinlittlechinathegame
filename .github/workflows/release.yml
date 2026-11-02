@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           out="out/${{ matrix.folder }}"
-          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express upside_down"
+          ours="lopans_throne wingkong_exchange chinatown_alley porkchop_express the_upside_down"
           exe=$(find "$out" -maxdepth 4 -iname 'Ikemen_GO*' -type f | head -1)
           echo "engine: ${exe:-MISSING}"
           test -n "$exe" || { echo "engine executable missing"; exit 1; }

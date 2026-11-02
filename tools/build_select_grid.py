@@ -126,14 +126,20 @@ def background():
                   fill=GOLD + (255,), outline=(40, 32, 14, 255))
 
     # Side columns: rules marking where the two fighters stand, labelled on top.
-    for x, label in ((20, "PLAYER 1"), (SCREEN[0] - 21, "PLAYER 2")):
-        d.rectangle([x, 58, x + 2, SCREEN[1] - 46], fill=GOLD_DIM + (200,))
-        d.rectangle([x + 1, 58, x + 1, SCREEN[1] - 46], fill=GOLD + (110,))
+    # The labels sit on the screen's top edge and are set at the same size as
+    # the stage caption the engine draws under the arena thumbnail (font 11 =
+    # the 13px Body face), so PLAYER 1, PLAYER 2 and VERSUS all read as one
+    # caption line across the top instead of three unrelated sizes.
+    LABEL_Y = 2
+    LABEL_FONT = art.font(15)
+    for x in (20, SCREEN[0] - 21):
+        d.rectangle([x, LABEL_Y + 20, x + 2, SCREEN[1] - 46], fill=GOLD_DIM + (200,))
+        d.rectangle([x + 1, LABEL_Y + 20, x + 1, SCREEN[1] - 46], fill=GOLD + (110,))
     cx1, cx2 = GRID[0] // 2, SCREEN[0] - GRID[0] // 2
     for cx, label in ((cx1, "PLAYER 1"), (cx2, "PLAYER 2")):
-        tracked(d, (cx, 66), label, art.font(19), GOLD + (238,), tracking=3,
+        tracked(d, (cx, LABEL_Y), label, LABEL_FONT, GOLD + (238,), tracking=2,
                 anchor="ma")
-        rule(d, cx - 62, cx + 62, 92, GOLD_DIM + (220,))
+        rule(d, cx - 58, cx + 58, LABEL_Y + 17, GOLD_DIM + (220,))
 
     # No painted "ARENA" caption: the engine draws the selected stage's own
     # name under the thumbnail, and the caption used to sit on top of the
@@ -237,7 +243,11 @@ KEYS = (
     # the preview box showing nothing but its own frame.
     ("stage.portrait.spr", "9000,1"),
     ("stage.portrait.scale", ".4, .4"),
-    ("title.offset", "640,30"),
+    # VERSUS is drawn by the engine: same face as the stage caption (font 11),
+    # on the top edge, so it matches PLAYER 1 / PLAYER 2 and the stage name.
+    ("title.offset", "640, 2"),
+    ("title.font", "11, 0, 0, 255, 228, 140"),
+    ("title.scale", "1,1"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
     # each other no matter how tall the fighter is in play.
     ("p1.face.window", "0,0,1,1"),

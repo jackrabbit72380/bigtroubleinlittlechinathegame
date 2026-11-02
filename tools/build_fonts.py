@@ -211,14 +211,26 @@ SECTION_LAYOUT = {
         # right and overlapped the value column. Same alignment as the rest now.
         ("menu.item.selected.font", f"{D},0,-1, {BRIGHT}"),
         ("menu.item.selected.active.font", f"{DA},0,-1, {BRIGHT}"),
-        ("menu.item.value.offset", "30, 0"),
-        ("menu.item.value.active.offset", "30, 0"),
-        ("menu.item.value.conflict.offset", "30, 0"),
-        ("menu.item.info.offset", "30, 0"),
-        ("menu.item.info.active.offset", "30, 0"),
-        # The band spans the whole row rather than just the value column: it
-        # runs from 280 to 999 instead of 399 to 876.
-        ("menu.boxcursor.coords", "-504, 0, 215, 44"),
+        # Values get a column of their own. They inherited the label's -1
+        # (RIGHT) alignment, so each value ended at menu.pos.x + 30 = 814 while
+        # its label ended at 784: the value was printed across the last third
+        # of the label, which is what made Video Settings unreadable (every
+        # row read "RendererOpenGL 3.3"). Left-aligned (1) at +40 starts the
+        # column at 824, past the end of every label, and the longest value in
+        # the video menu ends before 1080.
+        ("menu.item.value.font", f"{B},0,1, {DEEP}"),
+        ("menu.item.value.active.font", f"{B},0,1, {BRIGHT}"),
+        ("menu.item.value.conflict.font", f"{B},0,1, {RED}"),
+        ("menu.item.info.font", f"{B},0,1, {GOLD}"),
+        ("menu.item.info.active.font", f"{B},0,1, {BRIGHT}"),
+        ("menu.item.value.offset", "40, 0"),
+        ("menu.item.value.active.offset", "40, 0"),
+        ("menu.item.value.conflict.offset", "40, 0"),
+        ("menu.item.info.offset", "40, 0"),
+        ("menu.item.info.active.offset", "40, 0"),
+        # The band spans both columns now: 272 to 1064, instead of stopping at
+        # 999 with the values past its right edge.
+        ("menu.boxcursor.coords", "-512, 0, 280, 44"),
     ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
