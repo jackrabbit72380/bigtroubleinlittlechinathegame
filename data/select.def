@@ -54,6 +54,7 @@ stages/wingkong_exchange.def
 stages/porkchop_express.def
 stages/lopans_throne.def
 stages/lopans_ceremony.def
+stages/lopans_hallway.def
 stages/the_upside_down.def
 stages/stage0.def        ; training room
 

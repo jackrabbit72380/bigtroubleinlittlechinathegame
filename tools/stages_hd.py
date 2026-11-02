@@ -1161,6 +1161,7 @@ def _scene(sid, layers):
 # stage except the airport, and the airport's file did not exist either.
 MUSIC = {
     "lopans_throne": "sound/LoPansDemise.ogg",
+    "lopans_hallway": "sound/LoPansDemise.ogg",
     "wingkong_exchange": "sound/WingKongExchange.ogg",
     "chinatown_alley": "sound/AlleyWar.ogg",
     "porkchop_express": "sound/PorkChopExpress.ogg",
