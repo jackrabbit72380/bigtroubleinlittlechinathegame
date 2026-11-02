@@ -817,6 +817,7 @@ p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
+title.scale = 1,1
 cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
@@ -830,7 +831,6 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-title.scale = 1,1
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
