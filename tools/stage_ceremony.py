@@ -1,0 +1,341 @@
+"""Lo Pan's Ceremony: the throne hall seen from the statue's side.
+
+The throne room's back wall is a skull gate; the ceremony side of the same
+building is the platform the six-armed bodhisattva stands on. This painter keeps
+the hall from tools/stage_throne.py - the niche rhythm, the neon balcony strip,
+the arcade corridors, torches, guardians and the tiled plaza - and replaces the
+skull gate and its narrow staircase with a seated six-armed statue, a lotus
+plinth and three broad steps. The steps are the point of the stage: 1080 canvas
+px across at the foot, against the throne's 608.
+
+Geometry is in canvas pixels on the shared 8192x1080 canvas. CX is the centre
+and FLOOR_Y the plaza line, both owned by tools/stages_hd.py.
+
+Run:  python3 tools/stage_ceremony.py       (part of tools/build_all.py)
+"""
+
+from __future__ import annotations
+
+import math
+import os
+import sys
+
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+import art
+import stages_hd as hd
+import stage_throne as throne
+
+W, H = hd.W, hd.H
+CX, FLOOR_Y, px = hd.CX, hd.FLOOR_Y, hd.px
+BAY = throne.BAY
+
+STATUE_W = px(96)                     # 432 canvas px: a head taller than the skull
+STATUE_H = px(104)                    # 468
+STATUE_TOP = px(16)                   # 72: whole crown stays in frame
+HALO_R = px(44)
+
+PLINTH_TOP = STATUE_TOP + px(96)      # 504: under the crossed legs
+PLINTH_HALF = px(47)
+STEPS = [(px(67), px(19)), (px(84), px(22)), (px(102), px(22)), (px(120), px(18))]
+
+JADE = (108, 138, 116)
+JADE_LIT = (176, 204, 172)
+JADE_DK = (44, 58, 50)
+GOLD = (206, 168, 86)
+GOLD_DK = (110, 80, 36)
+NEON = (64, 246, 160)
+
+LIGHTS = []
+
+
+def _limb(d, a, b, w0, w1, fill, lit=None):
+    ax, ay = a
+    bx, by = b
+    dx, dy = bx - ax, by - ay
+    ln = max(1e-6, math.hypot(dx, dy))
+    nx, ny = -dy / ln, dx / ln
+    d.polygon([(ax + nx * w0, ay + ny * w0), (bx + nx * w1, by + ny * w1),
+               (bx - nx * w1, by - ny * w1), (ax - nx * w0, ay - ny * w0)], fill)
+    if lit:
+        # a lit edge on the upper side, so limbs read as round rather than flat
+        d.polygon([(ax + nx * w0, ay + ny * w0), (bx + nx * w1, by + ny * w1),
+                   (bx + nx * (w1 - px(1.4)), by + ny * (w1 - px(1.4))),
+                   (ax + nx * (w0 - px(1.4)), ay + ny * (w0 - px(1.4)))], lit)
+
+
+def _hand(d, cx, cy, r, closed):
+    if closed:
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=JADE)
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=JADE_DK,
+                  width=max(1, px(1.0)))
+        for k in (-0.4, 0.0, 0.4):
+            d.line([(cx + k * r, cy - r * 0.6), (cx + k * r, cy + r * 0.5)],
+                   fill=JADE_DK, width=max(1, px(0.9)))
+    else:
+        d.ellipse([cx - r, cy - r * 1.1, cx + r, cy + r * 1.1], fill=JADE)
+        d.ellipse([cx - r, cy - r * 1.1, cx + r, cy + r * 1.1],
+                  outline=JADE_DK, width=max(1, px(1.0)))
+        for k in (-0.4, -0.1, 0.2, 0.5):
+            d.line([(cx + k * r, cy - r * 0.95), (cx + k * r * 1.1, cy + r * 0.5)],
+                   fill=JADE_DK, width=max(1, px(0.8)))
+    # wrist bangle
+    d.rectangle([cx - r * 0.85, cy + r * 1.0, cx + r * 0.85,
+                 cy + r * 1.0 + px(2.6)], fill=GOLD)
+
+
+def statue_layer():
+    """The six-armed figure plus its halo, and the neon rim of the body."""
+    halo = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    hd_ = ImageDraw.Draw(halo)
+    hy = STATUE_TOP + px(50)
+    hd_.ellipse([CX - HALO_R, hy - HALO_R, CX + HALO_R, hy + HALO_R],
+                fill=(40, 52, 46))
+    hd_.ellipse([CX - HALO_R, hy - HALO_R, CX + HALO_R, hy + HALO_R],
+                outline=(88, 112, 94), width=max(2, px(2.0)))
+    for k in range(24):
+        a = k * (math.tau / 24)
+        x0 = CX + math.cos(a) * (HALO_R - px(11))
+        y0 = hy + math.sin(a) * (HALO_R - px(11))
+        x1 = CX + math.cos(a) * (HALO_R - px(2))
+        y1 = hy + math.sin(a) * (HALO_R - px(2))
+        hd_.line([(x0, y0), (x1, y1)], fill=(104, 128, 108),
+                 width=max(1, px(1.3)))
+
+    body = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(body)
+
+    head_cy = STATUE_TOP + px(33)
+    head_r = px(15)
+    leg_cy = STATUE_TOP + px(84)
+    shoulder_y = STATUE_TOP + px(51)
+    hip_y = STATUE_TOP + px(72)
+
+    # crossed legs, a low wide mass with the knees breaking the silhouette
+    d.ellipse([CX - px(42), leg_cy - px(12), CX + px(42), leg_cy + px(12)],
+              fill=JADE_DK)
+    d.arc([CX - px(42), leg_cy - px(12), CX + px(42), leg_cy + px(12)],
+          196, 344, fill=JADE_LIT, width=max(1, px(1.6)))
+    for k in (-0.66, -0.33, 0.33, 0.66):
+        d.line([(CX + k * px(34), leg_cy + px(2)), (CX + k * px(24), leg_cy + px(10))],
+               fill=(58, 74, 64), width=max(1, px(1.3)))
+    # crossed ankles in the middle
+    d.ellipse([CX - px(10), leg_cy + px(2), CX + px(10), leg_cy + px(10)],
+              fill=JADE)
+
+    # torso
+    d.polygon([(CX - px(22), shoulder_y), (CX + px(22), shoulder_y),
+               (CX + px(25), hip_y), (CX - px(25), hip_y)], JADE)
+    d.polygon([(CX - px(22), shoulder_y), (CX - px(10), shoulder_y),
+               (CX - px(13), hip_y), (CX - px(25), hip_y)], JADE_LIT)
+    d.line([(CX - px(22), shoulder_y), (CX - px(10), shoulder_y)], fill=JADE_LIT,
+           width=max(1, px(1.6)))
+    # sash and belt
+    d.line([(CX - px(24), hip_y - px(2)), (CX + px(24), hip_y - px(2))],
+           fill=GOLD, width=max(2, px(3.0)))
+    # necklace
+    d.arc([CX - px(14), shoulder_y - px(2), CX + px(14), shoulder_y + px(16)],
+          15, 165, fill=GOLD, width=max(1, px(2.0)))
+
+    # six arms: high pair with fists, middle pair offered open, low pair on knees
+    for sx in (-1, 1):
+        _limb(d, (CX + sx * px(20), shoulder_y + px(2)),
+              (CX + sx * px(30), shoulder_y - px(10)), px(7), px(6), JADE, JADE_LIT)
+        _limb(d, (CX + sx * px(30), shoulder_y - px(10)),
+              (CX + sx * px(34), shoulder_y - px(30)), px(6), px(5), JADE, JADE_LIT)
+        _hand(d, CX + sx * px(36), shoulder_y - px(36), px(7), True)
+
+        _limb(d, (CX + sx * px(20), shoulder_y + px(4)),
+              (CX + sx * px(33), shoulder_y + px(6)), px(7), px(6), JADE, JADE_LIT)
+        _limb(d, (CX + sx * px(33), shoulder_y + px(6)),
+              (CX + sx * px(38), shoulder_y + px(18)), px(6), px(5), JADE, JADE_LIT)
+        _hand(d, CX + sx * px(40), shoulder_y + px(22), px(7), False)
+
+        _limb(d, (CX + sx * px(20), shoulder_y + px(6)),
+              (CX + sx * px(30), hip_y - px(4)), px(7), px(6), JADE, JADE_LIT)
+        _limb(d, (CX + sx * px(30), hip_y - px(4)),
+              (CX + sx * px(33), leg_cy - px(4)), px(6), px(5), JADE, JADE_LIT)
+        _hand(d, CX + sx * px(34), leg_cy + px(2), px(7), False)
+
+    # head
+    d.ellipse([CX - head_r, head_cy - head_r, CX + head_r, head_cy + head_r],
+              fill=JADE)
+    d.ellipse([CX - head_r, head_cy - head_r, CX + head_r, head_cy + head_r],
+              outline=JADE_LIT, width=max(1, px(1.3)))
+    for sx in (-1, 1):
+        # long ears of a bodhisattva
+        d.rectangle([CX + sx * head_r - px(2.4), head_cy - px(6),
+                     CX + sx * head_r + px(2.4), head_cy + px(9)], fill=JADE_DK)
+        # closed eyes and brows
+        d.arc([CX + sx * px(6) - px(6), head_cy - px(3), CX + sx * px(6) + px(6),
+               head_cy + px(4)], 200, 340, fill=JADE_DK, width=max(1, px(1.3)))
+        d.arc([CX + sx * px(6) - px(7), head_cy - px(9), CX + sx * px(6) + px(7),
+               head_cy - px(2)], 200, 340, fill=(66, 84, 72), width=max(1, px(1.0)))
+    d.line([(CX - px(3), head_cy + px(8)), (CX, head_cy + px(9.6)),
+            (CX + px(3), head_cy + px(8))], fill=JADE_DK, width=max(1, px(1.2)))
+    # crown: band plus five points, with a jade cabochon
+    d.rectangle([CX - head_r, head_cy - px(17), CX + head_r, head_cy - px(11)],
+                fill=GOLD)
+    for k in (-0.74, -0.37, 0.0, 0.37, 0.74):
+        tip = head_cy - px(24) if k == 0 else head_cy - px(21)
+        d.polygon([(CX + k * px(13) - px(2.6), head_cy - px(16)),
+                   (CX + k * px(13), tip),
+                   (CX + k * px(13) + px(2.6), head_cy - px(16))], fill=GOLD)
+    d.ellipse([CX - px(3), head_cy - px(16), CX + px(3), head_cy - px(10)],
+              fill=(58, 150, 116))
+
+    rim = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    solid = body.split()[3].point(lambda v: 255 if v > 60 else 0)
+    glow = solid.filter(ImageFilter.MaxFilter(7)).filter(ImageFilter.GaussianBlur(px(0.7)))
+    rim.paste(Image.new("RGBA", (W, H), NEON + (255,)), (0, 0),
+              ImageChops.subtract(glow, solid))
+
+    layer = Image.alpha_composite(halo, body)
+    return layer, rim
+
+
+def dais():
+    """Lotus plinth and four broad steps down to the plaza."""
+    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+
+    # lotus plinth: a band of petals under the figure
+    d.polygon([(CX - PLINTH_HALF, PLINTH_TOP), (CX + PLINTH_HALF, PLINTH_TOP),
+               (CX + PLINTH_HALF + px(6), PLINTH_TOP + px(12)),
+               (CX - PLINTH_HALF - px(6), PLINTH_TOP + px(12))],
+              fill=(96, 84, 68))
+    for k in range(-7, 8):
+        cx = CX + k * PLINTH_HALF / 7.5
+        d.ellipse([cx - px(4.4), PLINTH_TOP + px(1), cx + px(4.4), PLINTH_TOP + px(11)],
+                  outline=(140, 122, 96), width=max(1, px(0.9)))
+    d.line([(CX - PLINTH_HALF, PLINTH_TOP), (CX + PLINTH_HALF, PLINTH_TOP)],
+           fill=(168, 146, 110), width=max(1, px(1.4)))
+
+    # steps: wide terraces, each with a lit top face and a dark riser
+    y = PLINTH_TOP + px(12)
+    for half, depth in STEPS:
+        y2 = min(FLOOR_Y, y + depth)
+        d.polygon([(CX - half, y), (CX + half, y),
+                   (CX + half + px(10), y2), (CX - half - px(10), y2)],
+                  fill=(74, 62, 54))
+        d.polygon([(CX - half, y), (CX + half, y),
+                   (CX + half, y + px(5)), (CX - half, y + px(5))],
+                  fill=(138, 120, 96))
+        d.line([(CX - half - px(10), y2), (CX + half + px(10), y2)],
+               fill=(26, 20, 18), width=max(1, px(1.4)))
+        # jade inlay across the tread, and a low offering bowl either side
+        d.rectangle([CX - px(30), y + px(6), CX + px(30), y + px(8.5)],
+                    fill=(52, 116, 96))
+        LIGHTS.append((CX - half * 0.86, y + px(4), px(26), (255, 168, 88), 90))
+        LIGHTS.append((CX + half * 0.86, y + px(4), px(26), (255, 168, 88), 90))
+        y = y2
+    return img
+
+
+def paint():
+    LIGHTS.clear()
+    base = hd.blank([
+        (0, (14, 8, 9)), (40, (52, 24, 20)), (86, (62, 30, 23)),
+        (130, (44, 24, 20)), (170, (32, 20, 19)), (200, (18, 12, 13)),
+        (240, (8, 7, 9)),
+    ])
+    d = ImageDraw.Draw(base)
+
+    hd.stone(d, 0, 0, W, FLOOR_Y, (54, 39, 35), (29, 21, 20), rows=62, seed=12,
+             jitter=0.55)
+    for x in range(0, W, px(44)):
+        d.rectangle([x + px(3), px(1), x + px(38), px(9)], fill=(21, 13, 13))
+
+    neon = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    nd = ImageDraw.Draw(neon)
+    gap = STEPS[-1][0] + px(24)
+
+    for i in range(-9, 10):
+        x = CX + i * BAY
+        if not (-BAY < x < W + BAY) or abs(i) <= 2:
+            continue
+        y0 = throne.ring_y(x)
+        throne.niche(d, x, y0 - px(3), BAY * 0.60, px(40), face=(94, 78, 63),
+                     deep=(9, 7, 9), lights=False)
+        hd.glyph(nd, x - BAY * 0.10, y0 - px(31), BAY * 0.20, (255, 54, 38),
+                 seed=i + 4, width=px(1.8))
+        nd.rectangle([x - BAY * 0.115, y0 - px(36), x + BAY * 0.115, y0 - px(6)],
+                     outline=(255, 46, 34), width=max(1, px(0.9)))
+
+    for i in range(-9, 10):
+        x = CX + i * BAY
+        if not (-BAY < x < W + BAY) or abs(i) <= 2:
+            continue
+        y0 = throne.ring_y(x)
+        d.rectangle([x - BAY / 2, y0, x + BAY / 2, y0 + px(12)], fill=(46, 34, 30))
+        for k in range(-4, 5):
+            bxx = x + k * BAY * 0.105
+            d.rectangle([bxx - px(1.3), y0 + px(2), bxx + px(1.3), y0 + px(12)],
+                        fill=(102, 88, 72))
+        d.line([(x - BAY / 2, y0), (x + BAY / 2, y0)], fill=(158, 138, 114),
+               width=max(1, px(1.6)))
+    throne.ring_line(nd, px(1.5), (58, 214, 240), px(2.2), gap=gap)
+    throne.ring_line(nd, px(4.5), (238, 52, 42), px(1.6), gap=gap)
+
+    for i in range(-9, 10):
+        x = CX + i * BAY
+        if not (-BAY < x < W + BAY) or abs(i) <= 2:
+            continue
+        y0 = throne.ring_y(x)
+        base_y = FLOOR_Y - px(8)
+        h = min(px(104), base_y - (y0 + px(24)))
+        if h < px(46):
+            continue
+        throne.niche(d, x, base_y, BAY * 0.80, h, face=(86, 72, 58),
+                     deep=(12, 9, 10), lacquer=(74, 42, 28), lights=False)
+        throne.corridor(d, x, base_y - h, base_y, BAY * 0.26)
+        if i % 2 == 0:
+            throne.torch(d, x + BAY * 0.33, base_y - px(52))
+
+    base = Image.alpha_composite(base, dais())
+    statue, rim = statue_layer()
+    base = Image.alpha_composite(base, statue)
+
+    for sx in (-1, 1):
+        base = throne.guardian(base, CX + sx * px(150), FLOOR_Y, px(28))
+    d = ImageDraw.Draw(base)
+    for sx in (-1, 1):
+        throne.brazier(d, CX + sx * px(112), FLOOR_Y, px(24))
+        LIGHTS.append((CX + sx * px(112), FLOOR_Y - px(14), px(46),
+                       (255, 168, 88), 130))
+    LIGHTS.append((CX, PLINTH_TOP + px(10), px(112), (40, 200, 126), 96))
+    LIGHTS.append((CX, STATUE_TOP + px(33), px(76), (52, 200, 132), 70))
+    throne.plaza(d, FLOOR_Y)
+
+    base = hd.shade(base, [(hd.light(cx, cy, r, col, peak), px(8), 1.2)
+                           for cx, cy, r, col, peak in LIGHTS])
+    base = hd.finish(base, 5, 3, 0.32, FLOOR_Y)
+    base = art.screen(base, neon, glow_radius=px(3), gain=1.5, passes=2)
+    base = art.screen(base, rim, glow_radius=px(1.6), gain=0.5, passes=2)
+    base.putalpha(Image.new("L", (W, H), 255))
+
+    ring = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(ring).arc([CX - px(170), -px(8), CX + px(170), px(190)],
+                             196, 344, fill=NEON, width=max(2, px(1.5)))
+    base = art.screen(base, ring, glow_radius=px(4), gain=1.3)
+
+    fg = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    fd = ImageDraw.Draw(fg)
+    for i in range(px(26)):
+        a = int(200 * (1 - i / px(26)) ** 1.6)
+        fd.line([(0, H - i), (W, H - i)], fill=(6, 5, 8, a))
+
+    return [("bg", 0, 0, base, 0),
+            ("fg", 3, 0, fg, 1)]
+
+
+def main():
+    hd.STAGES["lopans_ceremony"] = ("Lo Pan's Ceremony", paint)
+    hd.build("lopans_ceremony")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
