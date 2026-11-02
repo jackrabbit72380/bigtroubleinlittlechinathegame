@@ -69,7 +69,7 @@ FLOOR_Y = int(200 * S)                   # 900: ground line = zoffset
 START_X = -HALF_SPAN                     # -4096: canvas left edge in stage x
 PLAYER_BOUND = SCROLL + LOCAL_W // 2 - 68   # 4028: one screen margin in from the edge
 SCREEN_MARGIN = int(round(15 * S))       # 68
-VIEW_W = int(LOCAL_H * 16 / 9)           # 1707: what a 16:9 window shows
+VIEW_W = int(LOCAL_H * 16 / 9)           # 1920: what a 16:9 window shows
 # The VS / select stage card. Those screens draw it at stage.portrait.scale
 # = .4 inside a motif whose localcoord is 1280x720, and a stage sprite is
 # scaled by motif.localcoord[1] / stage.localcoord[1] = 1280/1920, so one art
