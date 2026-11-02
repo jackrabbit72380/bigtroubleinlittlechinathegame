@@ -1416,6 +1416,51 @@ WIDE_META = {
 }
 
 
+def interleave_wide(text):
+    """Put each extra column block directly after the layer it extends.
+
+    The engine draws [BG] blocks in file order within a layerno. The extra
+    columns used to be appended in one lump after every base block, so on the
+    right half of the canvas the backdrop was drawn after the truck bed, the
+    floor and the road and painted over all three - the left half stacked
+    correctly and the level went wrong exactly past the middle of the art,
+    which read as "the background stops scrolling half a screen in". Grouping
+    each column with its own layer gives both halves the same stacking.
+    """
+    lines = text.splitlines(keepends=True)
+    starts = [i for i, ln in enumerate(lines) if ln.startswith("[BG ")]
+    if len(starts) < 2:
+        return text
+    head = "".join(lines[:starts[0]])
+    blocks = []
+    for n, i in enumerate(starts):
+        end = starts[n + 1] if n + 1 < len(starts) else len(lines)
+        blocks.append("".join(lines[i:end]))
+
+    def label(block):
+        # "[BG bg 1]" -> "bg 1": the closing bracket has to go too, or every
+        # label ends in "]" and the digit test below never matches.
+        return block.splitlines()[0][4:].split("]")[0].strip()
+
+    def words(block):
+        return label(block).split()
+
+    base = [b for b in blocks if not words(b)[-1].isdigit()]
+    extra = [b for b in blocks if words(b)[-1].isdigit()]
+
+    out = []
+    used = set()
+    for b in base:
+        out.append(b)
+        for e in extra:
+            if " ".join(words(e)[:-1]) == label(b):
+                out.append(e)
+                used.add(id(e))
+    # anything whose layer is not in this stage keeps its own place at the end
+    out.extend(e for e in extra if id(e) not in used)
+    return head + "".join(out)
+
+
 def wide_blocks(splits, lip_top):
     """[BG] blocks for the second and later column of every split layer."""
     out = []
@@ -1714,7 +1759,7 @@ def build(sid):
     with open(os.path.join(ROOT, "stages", f"{sid}.sff"), "wb") as fh:
         fh.write(data)
     with open(os.path.join(ROOT, "stages", f"{sid}.def"), "w", encoding="utf-8") as fh:
-        fh.write(DEF_TEMPLATE.format(
+        fh.write(interleave_wide(DEF_TEMPLATE.format(
             sid=sid, name=name,
             bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerbound=PLAYER_BOUND,
             margin=SCREEN_MARGIN, zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
@@ -1726,7 +1771,7 @@ def build(sid):
                             + EXTRA_AFTER_BG.get(sid, "")),
             sky_start=-(SKY_W // 2), sky_delta=SKY_DELTA,
             lip_y=lip_top, half=HALF, wide=wide_blocks(splits, lip_top),
-        ))
+        )))
     # README preview: the 4:3 match-start view, same path build_stages.py uses so
     # the docs show what actually ships
     arts = os.path.join(ROOT, "artifacts")
