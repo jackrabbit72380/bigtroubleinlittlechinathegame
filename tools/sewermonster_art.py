@@ -73,26 +73,43 @@ def _limb(size, pts, base, lit, dark):
     return char_rig._shade(mask, base, lit, dark)
 
 
-def _matted(img, box, colour, lit, dark, seed=1):
-    """Paint matted hair inside a box, clipped to whatever is already drawn."""
+def _matted(img, box, colour, lit, dark, seed=1, clip=True):
+    """A matted mass of hair: one solid shape, textured, never stripes.
+
+    The first version drew each strand as its own shaded line, so the gaps
+    between them showed the pale body through and the mane read as red-and-
+    white banding. The mass is one mask now, shaded once, with the strands as
+    texture on top at low alpha. ``clip`` keeps it to what is already painted
+    (hair on a shoulder); the mane under the skull passes clip=False because
+    it is drawn before the face exists.
+    """
     x0, y0, x1, y1 = box
-    lay = _blank(img.size)
-    d = ImageDraw.Draw(lay)
-    x = x0
+    region = Image.new("L", img.size, 0)
+    rd = ImageDraw.Draw(region)
+    rd.ellipse([x0, y0, x1, y1], fill=255)
+    # ragged locks hanging out of the mass
     i = seed
-    while x < x1:
-        spread = 3 + (i * 7) % 5
-        d.line([(x, y0 + (i * 11) % 9), (x + (i % 3) - 1, y1)],
-               fill=colour + (232,), width=spread)
-        x += 5 + (i * 3) % 4
+    x = x0 + 3
+    while x < x1 - 2:
+        length = (y1 - y0) * (0.25 + 0.30 * ((i * 13) % 5) / 4.0)
+        rd.line([(x, y0 + (y1 - y0) * 0.55), (x + (i % 3) - 1, y1 + length)],
+                fill=255, width=5 + (i * 5) % 4)
+        x += 7
         i += 1
-    lay.putalpha(ImageChops.multiply(lay.getchannel("A"),
-                                     img.getchannel("A")))
+    if clip:
+        region = ImageChops.multiply(region, img.getchannel("A"))
     out = img.copy()
-    shaded = char_rig._shade(lay.getchannel("A"), colour, lit, dark)
-    shaded.putalpha(ImageChops.multiply(shaded.getchannel("A"),
-                                        lay.getchannel("A")))
+    shaded = char_rig._shade(region, colour, lit, dark)
+    shaded.putalpha(ImageChops.multiply(shaded.getchannel("A"), region))
     out.alpha_composite(shaded)
+    d = ImageDraw.Draw(out)
+    i = seed
+    x = x0 + 4
+    while x < x1 - 3:
+        d.line([(x, y0 + (y1 - y0) * 0.1), (x + (i % 4) - 2, y1)],
+               fill=dark + (95,), width=1)
+        x += 5
+        i += 1
     return out
 
 
@@ -185,6 +202,15 @@ def head():
                                   (cx + 15, H), (cx - 15, H)], fill=255)
     img.alpha_composite(char_rig._shade(neck, FLESH_DK, FLESH, FLESH_DEEP))
 
+    # The mane goes on before the skull, so it frames the face instead of
+    # sitting on top of it as a cap.
+    img = _matted(img, (cx - 40, 4, cx + 40, 58), MANE, MANE_LIT, MANE_DK,
+                  1, clip=False)
+    img = _matted(img, (cx - 47, 24, cx - 23, 88), MANE, MANE_LIT, MANE_DK,
+                  4, clip=False)
+    img = _matted(img, (cx + 23, 24, cx + 47, 88), MANE, MANE_LIT, MANE_DK,
+                  7, clip=False)
+
     # skull: tall cranium, heavy brow, jaw that is mostly teeth
     face = Image.new("L", (W, H), 0)
     fd = ImageDraw.Draw(face)
@@ -195,9 +221,6 @@ def head():
                fill=255)
     img.alpha_composite(char_rig._shade(face, FLESH, FLESH_LIT, FLESH_DK))
 
-    img = _matted(img, (cx - 34, 2, cx + 34, 34), MANE, MANE_LIT, MANE_DK, 1)
-    img = _matted(img, (cx - 42, 12, cx - 22, 74), MANE, MANE_LIT, MANE_DK, 4)
-    img = _matted(img, (cx + 22, 12, cx + 42, 74), MANE, MANE_LIT, MANE_DK, 7)
     d = ImageDraw.Draw(img)
 
     # brow ridge, then the sockets
@@ -250,7 +273,7 @@ def arm(near=True):
 
     bare = Image.new("L", (W, H), 0)
     bd = ImageDraw.Draw(bare)
-    bd.ellipse([sh[0] - 20, sh[1] - 14, sh[0] + 20, sh[1] + 22], fill=255)
+    bd.ellipse([sh[0] - 15, sh[1] - 11, sh[0] + 15, sh[1] + 17], fill=255)
     bd.line([sh, elbow], fill=255, width=18)
     bd.ellipse([elbow[0] - 11, elbow[1] - 11, elbow[0] + 11, elbow[1] + 11],
                fill=255)
