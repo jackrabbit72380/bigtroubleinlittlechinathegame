@@ -118,71 +118,72 @@ def _capsule(d, a, b, w0, w1, fill):
                   n=10, swell=0.0)
 
 
-def _fist(d, c, r, ang, fill, seam, knuckle_fill):
-    """A clenched fist: palm block, four fingers curled over the front, thumb.
+def _fist(d, c, r, ang, fill, seam, lit):
+    """A big clenched fist, seen knuckle-on as in the still.
 
-    Each finger is its own rounded bar with a seam between it, so the contour
-    breaks into four knuckles and the neon follows them, as the tube does in
-    the still. The knuckle row is caught by the key light from above.
+    The fists are the biggest things on the statue after the belly: the knuckle
+    ridge faces out along the arm, four finger rolls cross the palm under it, and
+    the thumb lies diagonally over the bottom. Drawn as rolls rather than a ball,
+    so the contour steps and the neon steps with it.
     """
-    ax, ay = math.cos(ang), math.sin(ang)          # along the forearm
-    nx, ny = -ay, ax                               # across it
-    cx, cy = c[0] - ax * r * 0.12, c[1] - ay * r * 0.12
-    d.ellipse([cx - r * 1.02, cy - r * 1.00, cx + r * 1.02, cy + r * 1.00], fill=fill)
+    ax, ay = math.cos(ang), math.sin(ang)      # along the forearm, out to the tips
+    nx, ny = -ay, ax                           # across the back of the hand
 
-    # four fingers across the outside of the fist, curled back toward the wrist
-    for k, flen in ((-0.66, 0.86), (-0.22, 0.98), (0.22, 0.92), (0.66, 0.78)):
-        bx = cx + nx * k * r * 0.80 + ax * r * 0.30
-        by = cy + ny * k * r * 0.80 + ay * r * 0.30
-        tipx = bx + ax * r * (0.30 + flen * 0.34) - nx * k * r * 0.22
-        tipy = by + ay * r * (0.30 + flen * 0.34) - ny * k * r * 0.22
-        d.line([(bx, by), (tipx, tipy)], fill=seam, width=max(1, int(r * 0.20)))
-        d.line([(bx + nx * r * 0.02, by + ny * r * 0.02),
-                (tipx + nx * r * 0.02, tipy + ny * r * 0.02)],
-               fill=fill, width=max(1, int(r * 0.17)))
-        d.ellipse([tipx - r * 0.17, tipy - r * 0.17, tipx + r * 0.17, tipy + r * 0.17],
-                  fill=knuckle_fill)
-    # thumb laid across the near side, with the nail catching the key
-    tx = cx - ax * r * 0.35 - nx * r * 0.72
-    ty = cy - ay * r * 0.35 - ny * r * 0.72
-    d.line([(tx, ty), (cx - ax * r * 0.15 + nx * r * 0.30,
-                       cy - ay * r * 0.15 + ny * r * 0.30)],
-           fill=seam, width=max(1, int(r * 0.24)))
-    d.line([(tx + nx * r * 0.02, ty + ny * r * 0.02),
-            (cx - ax * r * 0.15 + nx * r * 0.32, cy - ay * r * 0.15 + ny * r * 0.32)],
-           fill=fill, width=max(1, int(r * 0.20)))
-    d.ellipse([tx - r * 0.20, ty - r * 0.20, tx + r * 0.20, ty + r * 0.20],
-              fill=knuckle_fill)
+    def at(fx, fy):
+        return (c[0] + ax * fx * r + nx * fy * r, c[1] + ay * fx * r + ny * fy * r)
+
+    d.ellipse([c[0] - r * 1.02, c[1] - r * 1.02,
+               c[0] + r * 1.02, c[1] + r * 1.02], fill=fill)
+
+    # four finger rolls across the back of the hand, stacked toward the wrist
+    for k in (-0.48, -0.16, 0.16, 0.48):
+        a1 = at(k, -0.80)
+        b1 = at(k, 0.74)
+        _capsule(d, a1, b1, r * 0.165, r * 0.150, fill)
+        d.line([at(k + 0.20, -0.74), at(k + 0.20, 0.68)],
+               fill=seam, width=max(1, int(r * 0.085)))
+    # knuckle ridge at the far edge, catching the key from above
+    for j in (-0.56, -0.19, 0.19, 0.56):
+        p = at(0.80, j)
+        d.ellipse([p[0] - r * 0.21, p[1] - r * 0.21,
+                   p[0] + r * 0.21, p[1] + r * 0.21], fill=lit)
+    # thumb over the near side, with its own seam
+    t1, t2 = at(-0.52, -0.86), at(0.34, 0.58)
+    d.line([t1, t2], fill=seam, width=max(1, int(r * 0.26)))
+    _capsule(d, t1, t2, r * 0.19, r * 0.15, fill)
+    d.ellipse([t1[0] - r * 0.19, t1[1] - r * 0.19,
+               t1[0] + r * 0.19, t1[1] + r * 0.19], fill=lit)
 
 
-def _open_hand(d, c, r, ang, fill, seam, knuckle_fill):
-    """An open hand: palm, four fingers splayed and curled, thumb out.
+def _open_hand(d, c, r, ang, fill, seam, lit):
+    """An open hand: palm, four fingers hanging loose, thumb out to the side.
 
-    The bottom pair of arms do not clench - in the still they hang open over
-    the knees - so the fingers are separate capsules rather than a fist.
+    The lowest pair do not clench - in the wide shot they hang open beside the
+    knees - so the fingers are separate capsules with seams between them.
     """
     ax, ay = math.cos(ang), math.sin(ang)
     nx, ny = -ay, ax
-    d.ellipse([c[0] - r * 0.92, c[1] - r * 0.80, c[0] + r * 0.92, c[1] + r * 0.90],
-              fill=fill)
-    for k, spread in ((-0.62, 0.44), (-0.21, 0.52), (0.21, 0.50), (0.62, 0.38)):
-        base = (c[0] + ax * r * 0.55 + nx * k * r * 0.52,
-                c[1] + ay * r * 0.55 + ny * k * r * 0.52)
-        tip = (base[0] + ax * r * (0.72 + spread) + nx * k * r * 0.30,
-               base[1] + ay * r * (0.72 + spread) + ny * k * r * 0.30)
-        _capsule(d, base, tip, r * 0.15, r * 0.12, fill)
-        d.line([(base[0] - nx * r * 0.05, base[1] - ny * r * 0.05),
-                (tip[0] - nx * r * 0.04, tip[1] - ny * r * 0.04)],
-               fill=seam, width=max(1, int(r * 0.05)))
-        d.ellipse([tip[0] - r * 0.13, tip[1] - r * 0.13,
-                   tip[0] + r * 0.13, tip[1] + r * 0.13], fill=knuckle_fill)
-    d.ellipse([c[0] - ax * r * 0.30 - nx * r * 0.86 - r * 0.17,
-               c[1] - ay * r * 0.30 - ny * r * 0.86 - r * 0.17,
-               c[0] - ax * r * 0.30 - nx * r * 0.86 + r * 0.17,
-               c[1] - ay * r * 0.30 - ny * r * 0.86 + r * 0.17], fill=fill)
+    d.ellipse([c[0] - r * 0.78, c[1] - r * 0.90,
+               c[0] + r * 0.78, c[1] + r * 0.90], fill=fill)
+    for k, drop, length in ((-0.60, 0.10, 1.15), (-0.20, 0.03, 1.32),
+                            (0.20, 0.03, 1.26), (0.60, 0.12, 1.02)):
+        base = (c[0] + ax * r * 0.52 + nx * k * r * 0.46,
+                c[1] + ay * r * 0.52 + ny * k * r * 0.46)
+        tip = (base[0] + ax * r * length + nx * k * drop * r,
+               base[1] + ay * r * length + ny * k * drop * r)
+        _capsule(d, base, tip, r * 0.155, r * 0.105, fill)
+        d.line([(base[0] - ax * r * 0.05 - nx * r * 0.04,
+                 base[1] - ay * r * 0.05 - ny * r * 0.04), tip],
+               fill=seam, width=max(1, int(r * 0.07)))
+        d.ellipse([tip[0] - r * 0.12, tip[1] - r * 0.12,
+                   tip[0] + r * 0.12, tip[1] + r * 0.12], fill=lit)
+    t1 = (c[0] - ax * r * 0.30 - nx * r * 0.72,
+          c[1] - ay * r * 0.30 - ny * r * 0.72)
+    t2 = (t1[0] - ax * r * 0.55 - nx * r * 0.35,
+          t1[1] - ay * r * 0.55 - ny * r * 0.35)
+    _capsule(d, t1, t2, r * 0.16, r * 0.12, fill)
 
 
-# ------------------------------------------------------------------ lighting
 def _vgrad(w, h, stops):
     """Vertical ramp as an L image from (position, gain) stops, gain x255."""
     thin = Image.new("L", (1, h))
@@ -290,44 +291,63 @@ def build(S, cx, top, w_full, h_full):
     d.line(P([(-29, 75.4), (-17, 79.4), (-2, 81.4), (13, 82.9), (28, 86.4)]),
            fill=(168, 158, 140), width=max(1, int(0.24 * S * SS)))
 
-    # ---- six arms in three tiers ----------------------------------------
-    # (shoulder, control, wrist, upper-arm width, forearm width, hand radius)
-    tiers = [
-        ((22, 46), (41, 33), (34, 16), 10.2, 7.8, 8.6, "fist"),
-        ((24, 53), (53, 45), (53, 31), 10.6, 8.2, 8.0, "fist"),
-        ((23, 62), (48, 72), (47, 86), 9.6, 7.0, 7.4, "open"),
+    # ---- six arms: three pairs, every one bent hard at the elbow ---------
+    # In the still the arms are not spokes off the shoulders: each turns a
+    # corner, the upper pairs throwing the fists up above the head and the
+    # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
+    arms = [
+        # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
+        ((22, 58), (46, 67), (50, 82), 9.8, 8.2, 7.4, 6.2, 7.8, "open"),
+        ((22, 50), (48, 45), (55, 26), 10.6, 8.8, 8.0, 6.4, 9.4, "fist"),
+        ((16, 44), (34, 41), (31, 18), 10.2, 8.6, 7.8, 6.2, 9.6, "fist"),
     ]
-    bands = []
-    for sx in (-1, 1):
-        for (au, av), (cu, cv), (bu, bv), w0, w1, wr, kind in tiers:
-            a = (sx * au, av)
-            ctrl = (sx * cu, cv)
-            b = (sx * bu, bv)
-            d.ellipse([X(a[0] - w0 * 1.08), Y(a[1] - w0 * 1.08),
-                       X(a[0] + w0 * 1.08), Y(a[1] + w0 * 1.08)], fill=STONE)
-            limb = _taper(a, ctrl, b, w0, w1)
-            d.polygon(P(limb), fill=STONE)
-            contours.append(limb)
-            ang = math.atan2(b[1] - ctrl[1], b[0] - ctrl[0])
-            hx = (b[0] + math.cos(ang) * wr * 0.50, b[1] + math.sin(ang) * wr * 0.50)
-            if kind == "fist":
-                _fist(d, hx, wr, ang, STONE, STONE_DK, STONE_LT)
-            else:
-                _open_hand(d, hx, wr, ang, STONE, STONE_DK, STONE_LT)
-            for frac, half, thick in ((0.93, w1 * 1.05, 1.3), (0.27, w0 * 0.99, 1.2)):
-                sp = _spine(a, ctrl, b)
-                px_, py_, tx, ty = sp[int(round(frac * (len(sp) - 1)))]
-                bands.append((px_, py_, -ty, tx, tx, ty, half, thick))
 
-    for bx, by, nx, ny, tx, ty, half, thick in bands:
-        quad = [(bx + nx * half - tx * thick, by + ny * half - ty * thick),
-                (bx - nx * half - tx * thick, by - ny * half - ty * thick),
-                (bx - nx * half + tx * thick, by - ny * half + ty * thick),
-                (bx + nx * half + tx * thick, by + ny * half + ty * thick)]
-        d.polygon(P(quad), fill=GOLD)
-        d.line(P([(bx + nx * half - tx * thick, by + ny * half - ty * thick),
-                  (bx - nx * half - tx * thick, by - ny * half - ty * thick)]),
-               fill=(246, 220, 150), width=max(1, int(0.20 * S * SS)))
+    def ring(p, tx, ty, half, thick, fill=GOLD):
+        nx_, ny_ = -ty, tx
+        quad = [(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
+                (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick),
+                (p[0] - nx_ * half + tx * thick, p[1] - ny_ * half + ty * thick),
+                (p[0] + nx_ * half + tx * thick, p[1] + ny_ * half + ty * thick)]
+        d.polygon(P(quad), fill=fill)
+        d.line(P([(p[0] + nx_ * half - tx * thick, p[1] + ny_ * half - ty * thick),
+                  (p[0] - nx_ * half - tx * thick, p[1] - ny_ * half - ty * thick)]),
+               fill=(248, 222, 152), width=max(1, int(0.14 * S * SS)))
+
+    for sx in (-1, 1):
+        for sh, el, wr, w0, w1, w2, w3, hr, kind in arms:
+            sh_p = (sx * sh[0], sh[1])
+            el_p = (sx * el[0], el[1])
+            wr_p = (sx * wr[0], wr[1])
+            d.ellipse([X(sh_p[0] - w0 * 1.08), Y(sh_p[1] - w0 * 1.08),
+                       X(sh_p[0] + w0 * 1.08), Y(sh_p[1] + w0 * 1.08)], fill=STONE)
+            upper = _taper(sh_p, ((sh_p[0] + el_p[0]) / 2,
+                                  (sh_p[1] + el_p[1]) / 2 + 1.4),
+                           el_p, w0, w1)
+            d.polygon(P(upper), fill=STONE)
+            contours.append(upper)
+            d.ellipse([X(el_p[0] - w1), Y(el_p[1] - w1),
+                       X(el_p[0] + w1), Y(el_p[1] + w1)], fill=STONE)
+            fore_ctrl = ((el_p[0] + wr_p[0]) / 2, (el_p[1] + wr_p[1]) / 2)
+            fore = _taper(el_p, fore_ctrl, wr_p, w2 * 0.94, w3)
+            d.polygon(P(fore), fill=STONE)
+            contours.append(fore)
+            ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
+            hc = (wr_p[0] + math.cos(ang) * hr * 0.40,
+                  wr_p[1] + math.sin(ang) * hr * 0.40)
+            if kind == "fist":
+                _fist(d, hc, hr, ang, STONE, STONE_DK, STONE_LT)
+            else:
+                _open_hand(d, hc, hr, ang, STONE, STONE_DK, STONE_LT)
+            # bangles: the still's cuffs sit right at the wrist and inboard of
+            # it, and their width follows the forearm they wrap - a ring cut to
+            # the arm's width at the elbow floats off it
+            sp = _spine(el_p, fore_ctrl, wr_p)
+            for idx in (len(sp) - 1, len(sp) - 4):
+                bx_, by_, tx, ty = sp[max(0, idx)]
+                t = max(0, idx) / (len(sp) - 1)
+                s_ = t * t * (3.0 - 2.0 * t)
+                half_w = (w2 * 0.94 + (w3 - w2 * 0.94) * s_) * 1.10
+                ring((bx_, by_), tx, ty, half_w, 1.05)
 
     # ---- head ------------------------------------------------------------
     hx, hy = HEAD
