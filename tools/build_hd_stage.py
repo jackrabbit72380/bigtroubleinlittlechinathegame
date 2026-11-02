@@ -6,24 +6,31 @@ This script is the HD path: give it real backdrop art and it writes a stage that
 is authored at 1920x1080, so a 1080p display shows real pixels instead of an
 upscaled 240-line image.
 
-Layout — one folder per stage under art_src/:
+Layout - one folder per stage under art_src/:
 
     art_src/
       lopans_throne/
-        backdrop.png      required, anything from 1920x1080 up (5600x1080 is ideal)
+        backdrop.png      required, 8192x1080 is ideal, anything from 1920x1080 up
         foreground.png    optional, same size, drawn in front of the fighters
+        stage.txt         optional, "name = Lo Pan's Throne"
 
 The backdrop is cover-fitted to the stage canvas: scaled to fill without
 distorting, then centre-cropped, so 16:9 art drops in untouched and taller art
 loses a little top and bottom.
 
-Geometry is the same model as the arcade stages, multiplied by 4.5:
+Geometry is imported from tools/stages_hd.py rather than copied, so art that
+comes in this way lands in exactly the arena the shipped stages use:
 
-    stage canvas      5600 x 1080  (camera travel 3576 + 1012 overpaint each side)
-    camera            boundleft/right +/-1788
-    players           leftbound/rightbound +/-2368, inside the painted edge
+    stage canvas      8192 x 1080  (two 4096-wide halves)
+    camera            boundleft/right +/-3136
+    players           leftbound/rightbound +/-4028, 68 px inside the edge
     floor             zoffset 900  (the art's floor line sits at row 900)
     localcoord        1920, 1080
+
+It used to carry its own smaller set of numbers (5600 x 1080, camera +/-1788,
+players +/-2368), which meant dropping art in here quietly produced a narrower
+arena than the procedural stages - and a 5600-wide sprite, past the 4096 texture
+limit that makes the renderer drop the device.
 
 The localcoord height has to equal the canvas height. Ikemen derives the
 vertical framing from it (src/camera.go):
@@ -32,6 +39,10 @@ vertical framing from it (src/camera.go):
 
 With localcoord 720 and zoffset 900 that resolves negative, the floor lands
 past the bottom of the coordinate space and the backdrop is framed wrong.
+
+Wide layers are cut into columns of at most MAX_TEX pixels, one sprite and one
+[BG] block each, for the same reason stages_hd.py does it: an 8192-wide texture
+is refused by the driver.
 
 tools/build_stages.py skips any stage that has an art_src/ folder, so an HD
 backdrop replaces the procedural one without editing code.
@@ -49,28 +60,30 @@ from PIL import Image, ImageChops, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import sff
+import stages_hd as hd
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ART_SRC = os.path.join(ROOT, "art_src")
 
-# HD geometry: the arcade numbers in tools/build_stages.py times four.
-SCALE = 4.5
-LOCAL_W, LOCAL_H = 1920, 1080
-VIEW_W, H = int(640 * SCALE), int(240 * SCALE)  # 2880 x 1080
-SCROLL = 1788                                 # camera travel
-COVER = 1012                                  # art reaches +/-2800
-W = 2 * (SCROLL + COVER)                      # 5600
-CX = W // 2                                   # 2000
-START_X = -(SCROLL + COVER)                   # -2000
-ZOFFSET = int(200 * SCALE)                    # 900
-PLAYER_BOUND = SCROLL + 580                   # 2368
-SCREEN_MARGIN = int(round(15 * SCALE))        # 68
+# HD geometry, owned by the painter that produces the shipped stages.
+SCROLL = hd.SCROLL                            # 3136: camera travel
+LOCAL_W, LOCAL_H = hd.LOCAL_W, hd.LOCAL_H     # 1920 x 1080
+H = hd.H                                      # 1080 painted height
+W = hd.W                                      # 8192: full stage canvas
+CX = hd.CX                                    # 4096: canvas centre
+START_X = hd.START_X                          # -4096: canvas left edge in stage x
+ZOFFSET = hd.FLOOR_Y                          # 900: ground line
+PLAYER_BOUND = hd.PLAYER_BOUND                # 4028
+SCREEN_MARGIN = hd.SCREEN_MARGIN              # 68
+MAX_TEX = hd.MAX_TEX                          # 4096: widest single sprite
+split_wide = hd.split_wide
+PREVIEW_W, PREVIEW_H = hd.PREVIEW_W, hd.PREVIEW_H
 
-# Depth layers. The painted canvas is 5600 wide for a 1788-travel camera, so a
+# Depth layers. The painted canvas is 8192 wide for a 3136-travel camera, so a
 # parallax plate only has to be LOCAL_W + delta*2*SCROLL across, and the floor
 # lip only needs the strip the fighters stand in.
 SKY_DELTA = 0.35
-SKY_W = int(LOCAL_W + SKY_DELTA * 2 * SCROLL)   # 3172 px on screen
+SKY_W = int(LOCAL_W + SKY_DELTA * 2 * SCROLL)   # 4115 px, 4096 + 19 once split
 LIP_TOP = ZOFFSET                                # the lip starts at the ground line
 # Cutting the lip 40px above the ground line pasted the wall/floor junction
 # (luma 8-21) in front of the fighters' feet, which stand on a lit floor
@@ -120,10 +133,50 @@ def lip_layer(bg):
     return lip
 
 
+BG_BLOCK = """
+[BG {name}]
+type = normal
+spriteno = {group},{number}
+layerno = {layerno}
+start = {start},{y}
+delta = {delta}
+scale = 1,1
+trans = none
+mask = {mask}
+tile = 0,0
+"""
+
+
+def columns(sprites, group, img):
+    """Cut `img` at MAX_TEX, one sprite per column, and return the offsets.
+
+    A sprite wider than the driver's texture limit is not drawn at all - the
+    device is dropped mid-match - so no layer here is ever one big image.
+    """
+    offsets = []
+    for number, (offset, piece) in enumerate(split_wide(img)):
+        sprites.append({"group": group, "number": number,
+                        "image": piece, "axis": (0, 0)})
+        offsets.append(offset)
+    return offsets
+
+
+def blocks(layer, group, offsets, start_x, y, delta, layerno, mask):
+    """One [BG] block per column, extra columns labelled layer 1, layer 2."""
+    out = []
+    for number, offset in enumerate(offsets):
+        name = layer if number == 0 else f"{layer} {number}"
+        out.append(BG_BLOCK.format(
+            name=name, group=group, number=number,
+            start=start_x + offset, y=y, delta=delta,
+            layerno=layerno, mask=mask))
+    return "".join(out)
+
+
 DEF_TEMPLATE = """;---------------------------------------------------------------------------
 ; {name}
 ; Part of Big Trouble in Little China: The Game (Ikemen GO)
-; HD stage: authored at 1280x960 from art_src/{sid}/.
+; HD stage: authored at 1920x1080 from art_src/{sid}/.
 ; Generated by tools/build_hd_stage.py.
 ;---------------------------------------------------------------------------
 [Info]
@@ -194,50 +247,14 @@ debugbg = 0
 9000,1, 0,0, -1
 
 ; far parallax: a softened crop of the backdrop, travelling at 0.35 speed
-[BG sky]
-type = normal
-spriteno = 10,0
-layerno = 0
-start = {sky_start},0
-delta = {sky_delta},1
-scale = {half},{half}
-trans = none
-mask = 1
-tile = 0,0
-
-[BG bg]
-type = normal
-spriteno = 0,0
-layerno = 0
-start = {start_x},0
-delta = 1,1
-trans = none
-mask = 0
-tile = 0,0
-
-[BG fg]
-type = normal
-spriteno = 3,0
-layerno = 1
-start = {start_x},0
-delta = 1,1
-trans = none
-mask = 1
-tile = 0,0
-
+{sky_blocks}
+; the backdrop itself, one block per column of the split
+{bg_blocks}
+; your foreground.png, in front of the fighters
+{fg_blocks}
 ; foreground floor lip: the bottom of the backdrop drawn in FRONT of the
 ; fighters, so their feet sit in the floor rather than on top of it
-[BG lip]
-type = normal
-spriteno = 11,0
-layerno = 1
-start = {start_x},{lip_y}
-delta = 1,1
-scale = {half},{half}
-trans = none
-mask = 1
-tile = 0,0
-"""
+{lip_blocks}"""
 
 
 def cover_fit(path, size):
@@ -260,8 +277,8 @@ def build_stage(sid):
         print(f"  {sid}: no backdrop.png, skipped")
         return None
 
-    print(f"  {sid}: source {Image.open(backdrop).size[0]}x"
-          f"{Image.open(backdrop).size[1]} -> {W}x{H} stage canvas")
+    src_w, src_h = Image.open(backdrop).size
+    print(f"  {sid}: source {src_w}x{src_h} -> {W}x{H} stage canvas")
     bg = cover_fit(backdrop, (W, H))
 
     fg_path = os.path.join(src, "foreground.png")
@@ -273,17 +290,17 @@ def build_stage(sid):
     # select / VS card: 1215x398 of art lands on the 324x106 window at the
     # motif's stage.portrait.scale of .4 (see tools/stages_hd.py build() for
     # the .4 * 1280/1920 arithmetic). A 320x240 thumb sat letterboxed in it.
-    preview = bg.crop((CX - 1215 // 2, H // 2 - 199,
-                       CX + 1215 // 2, H // 2 + 199))
+    preview = bg.crop((CX - PREVIEW_W // 2, H // 2 - PREVIEW_H // 2,
+                       CX + PREVIEW_W // 2, H // 2 + PREVIEW_H // 2))
 
-    sprites = [
-        {"group": 0, "number": 0, "image": bg, "axis": (0, 0)},
-        {"group": 3, "number": 0, "image": fg, "axis": (0, 0)},
-        {"group": 10, "number": 0, "image": sky_layer(bg), "axis": (0, 0)},
-        {"group": 11, "number": 0, "image": lip_layer(bg), "axis": (0, 0)},
-        {"group": 9000, "number": 1, "image": preview,
-         "axis": (1215 // 2, 398 // 2)},
-    ]
+    sprites = []
+    bg_offsets = columns(sprites, 0, bg)
+    fg_offsets = columns(sprites, 3, fg)
+    sky_offsets = columns(sprites, 10, sky_layer(bg))
+    lip_offsets = columns(sprites, 11, lip_layer(bg))
+    sprites.append({"group": 9000, "number": 1, "image": preview,
+                    "axis": (PREVIEW_W // 2, PREVIEW_H // 2)})
+
     data = sff.write_sff(sprites)
     sff_path = os.path.join(ROOT, "stages", f"{sid}.sff")
     with open(sff_path, "wb") as fh:
@@ -305,11 +322,15 @@ def build_stage(sid):
             sid=sid, name=name, display=display,
             scroll=SCROLL, playerbound=PLAYER_BOUND, margin=SCREEN_MARGIN,
             zoffset=ZOFFSET, localw=LOCAL_W, localh=LOCAL_H,
-            boundhigh=int(-25 * SCALE), cuthigh=int(35 * SCALE),
-            cutlow=int(25 * SCALE), startx=int(-70 * SCALE),
-            p2startx=int(70 * SCALE), start_x=START_X,
-            sky_start=-(SKY_W // 2), sky_delta=SKY_DELTA,
-            lip_y=LIP_TOP, half=HALF,
+            boundhigh=int(-25 * hd.SCALE), cuthigh=int(35 * hd.SCALE),
+            cutlow=int(25 * hd.SCALE), startx=int(-70 * hd.SCALE),
+            p2startx=int(70 * hd.SCALE),
+            sky_blocks=blocks("sky", 10, sky_offsets, -(SKY_W // 2), 0,
+                              f"{SKY_DELTA},1", 0, 1),
+            bg_blocks=blocks("bg", 0, bg_offsets, START_X, 0, "1,1", 0, 0),
+            fg_blocks=blocks("fg", 3, fg_offsets, START_X, 0, "1,1", 1, 1),
+            lip_blocks=blocks("lip", 11, lip_offsets, START_X, LIP_TOP,
+                              "1,1", 1, 1),
         ))
     print(f"  {sid}: wrote stages/{sid}.sff ({len(data) / 1024:.0f} KiB) and .def")
     return True

@@ -168,7 +168,8 @@ Precedence, in `tools/build_all.py` order:
 1. `build_stages.py` — arcade stages
 2. `stages_hd.py` — overwrites the same four ids at 1920×1080, and paints
 The Upside Down
-3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`
+3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`,
+   on the same 8192×1080 / ±3136 geometry and split at 4096 like the rest
 
 The HD painters use one `SCALE = 4.5` and read coordinates through `px(n)`, so
 `px(150)` means "150 arcade pixels", which keeps the HD compositions honest
