@@ -81,13 +81,19 @@ def main():
     # Margo, the reporter: denim jacket, press badge, satchel and wrist
     # recorder, painted in code like the rest of the roster.
     scripts += ["margo_art.py", ("bake_char.py", "margo")]
-    # The two gangs are built from Kung Fu Man himself rather than from painted
-    # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
-    # and red Wing Kong), upscales the art to roster height, paints the staff or
-    # the machete into the lead fist of every frame and writes the matching AIR.
-    # gangs.py still supplies the names, stats and roster entries.
+    # The two gangs are puppet rigs like everyone else: gangs.py paints each
+    # member's parts under art_src/chars/<id>/, and that member is then baked on
+    # his own. One bake per fighter, so editing Bo's gi or Bai's bandana and
+    # rebuilding touches that fighter's parts and nobody else's.
+    #
+    # gang_kfm.py is NOT in this chain. It rebuilds every member from Kung Fu
+    # Man's recoloured sheet, which drops the rig art and the portraits, so a
+    # full rebuild used to silently undo hand-tuned fighters. It is a prototype
+    # now, writes to chars/<id>_kfm, and needs --force to touch a shipped rig.
     scripts.append("gangs.py")
-    scripts.append(("gang_kfm.py", "--build"))
+    gang_ids = [f"{gang}_{member[0]}"
+                for gang, members in gangs.MEMBERS for member in members]
+    scripts += [("bake_char.py", cid) for cid in gang_ids]
     # Select-screen portraits: the pre-match screens read each fighter's 9000,0
     # and 9000,1 out of its own SFF, and a character baked from the rig has
     # neither, so they are rendered from its own art after the bake.

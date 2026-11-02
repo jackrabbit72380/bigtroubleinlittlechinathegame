@@ -14,7 +14,16 @@ Props are painted onto the real frames: the hands are found by their skin
 colour and the face by the top of the silhouette, so the weapon stays in the
 fist and the moustache stays on the face in all 279 frames.
 
+This is a prototype path, not what ships. The gang fighters in the game are
+puppet rigs painted by tools/gangs.py and baked one at a time with
+bake_char.py, which gives each of them his own parts, portraits and hit boxes.
+A kfm rebuild replaces all of that with recoloured Kung Fu Man art (it is the
+"scattered parts" look), so --build writes to chars/<id>_kfm and refuses to
+touch a shipped rig unless --force is passed. Nothing in build_all.py calls it.
+
 Run:  python3 tools/gang_kfm.py --sheet
+      python3 tools/gang_kfm.py --build wingkong_lu
+      python3 tools/gang_kfm.py --build wingkong_lu --force
 """
 
 from __future__ import annotations
@@ -774,9 +783,16 @@ def scale_air(text, k):
     return "\n".join(out) + "\n"
 
 
-def build(cid):
-    """Bake one gang member: recoloured, upscaled, dressed Kung Fu Man art."""
+def build(cid, force=False):
+    """Bake one gang member: recoloured, upscaled, dressed Kung Fu Man art.
+
+    The sprite art is written to chars/<id>_kfm. The shipped rig lives in
+    chars/<id>_rig and belongs to bake_char.py, so this writes there only when
+    ``force`` is set - a plain rebuild of every member must not be able to
+    destroy a fighter whose parts and portraits were tuned by hand.
+    """
     m = member(cid)
+    dest = cid + ("_rig" if force else "_kfm")
     raw, sprites, pal = sff.read_sff(os.path.join(BASE, "kfm.sff"))
     cmap = colour_map(m["gang"], m["cloth"], m["skin"], m["band"], m["hair"])
     pal_bytes, pal_img = member_palette(m)
@@ -807,7 +823,7 @@ def build(cid):
                     "image": flat_p,
                     "axis": (round(ax * SCALE) + PAD_X, round(ay * SCALE) + PAD_Y)})
 
-    d = os.path.join(ROOT, "chars", cid + "_rig")
+    d = os.path.join(ROOT, "chars", dest)
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, cid + ".sff"), "wb") as f:
         f.write(sff.write_sff(out, [pal_bytes]))
@@ -822,7 +838,11 @@ def build(cid):
             text = f.read().replace(' (rig)"', '"')
         with open(def_path, "w", encoding="utf-8") as f:
             f.write(text)
-    print(f"{cid}: {len(out)} sprites -> chars/{cid}_rig")
+    if force:
+        print(f"{cid}: {len(out)} sprites -> chars/{cid}_rig (forced, rig art replaced)")
+    else:
+        print(f"{cid}: {len(out)} sprites -> chars/{dest} "
+              f"(prototype; the rig in chars/{cid}_rig is untouched)")
 
 
 def sheet(path="artifacts/kfm_gang_proto.png"):
@@ -856,9 +876,11 @@ if __name__ == "__main__":
         sheet()
     elif "--build" in sys.argv:
         i = sys.argv.index("--build")
-        ids = (sys.argv[i + 1].split(",") if len(sys.argv) > i + 1
+        force = "--force" in sys.argv
+        ids = (sys.argv[i + 1].split(",")
+               if len(sys.argv) > i + 1 and not sys.argv[i + 1].startswith("--")
                else [m["id"] for m in MEMBERS])
         for cid in ids:
-            build(cid)
+            build(cid, force)
     else:
         print("usage: python3 tools/gang_kfm.py [--sheet | --build [id,id,...]]")

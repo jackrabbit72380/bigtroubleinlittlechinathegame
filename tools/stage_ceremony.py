@@ -51,7 +51,8 @@ NEON = (64, 246, 160)
 LIGHTS = []
 
 
-def _limb(d, a, b, w0, w1, fill, lit=None):
+def _segment(d, a, b, w0, w1, fill=JADE, lit=JADE_LIT, edge=JADE_DK):
+    """One tapered limb: thick at the shoulder, narrow at the wrist."""
     ax, ay = a
     bx, by = b
     dx, dy = bx - ax, by - ay
@@ -59,31 +60,58 @@ def _limb(d, a, b, w0, w1, fill, lit=None):
     nx, ny = -dy / ln, dx / ln
     d.polygon([(ax + nx * w0, ay + ny * w0), (bx + nx * w1, by + ny * w1),
                (bx - nx * w1, by - ny * w1), (ax - nx * w0, ay - ny * w0)], fill)
+    # a lit stripe just inside the upper contour: reads as a rounded arm
     if lit:
-        # a lit edge on the upper side, so limbs read as round rather than flat
         d.polygon([(ax + nx * w0, ay + ny * w0), (bx + nx * w1, by + ny * w1),
-                   (bx + nx * (w1 - px(1.4)), by + ny * (w1 - px(1.4))),
-                   (ax + nx * (w0 - px(1.4)), ay + ny * (w0 - px(1.4)))], lit)
+                   (bx + nx * (w1 - px(1.8)), by + ny * (w1 - px(1.8))),
+                   (ax + nx * (w0 - px(1.8)), ay + ny * (w0 - px(1.8)))], lit)
+    # and a dark line along the lower contour so the arm separates from the torso
+    if edge:
+        d.polygon([(ax - nx * w0, ay - ny * w0), (bx - nx * w1, by - ny * w1),
+                   (bx - nx * (w1 - px(1.0)), by - ny * (w1 - px(1.0))),
+                   (ax - nx * (w0 - px(1.0)), ay - ny * (w0 - px(1.0)))], edge)
 
 
-def _hand(d, cx, cy, r, closed):
-    if closed:
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=JADE)
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=JADE_DK,
+def _joint(d, cx, cy, r, fill=JADE, edge=None):
+    """Deltoid or elbow: a round cap so the limb has a body, not a stick end.
+
+    Filled without a contour by default: the segments either side already carry
+    their own edges, and circling every joint turned the arm into a row of beads.
+    """
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=fill)
+    if edge:
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], outline=edge,
                   width=max(1, px(1.0)))
-        for k in (-0.4, 0.0, 0.4):
-            d.line([(cx + k * r, cy - r * 0.6), (cx + k * r, cy + r * 0.5)],
-                   fill=JADE_DK, width=max(1, px(0.9)))
+
+
+def _hand(d, cx, cy, r, fist=True):
+    """A hand: fist with knuckles and a thumb, or a palm turned up offering."""
+    d.ellipse([cx - r, cy - r * 0.95, cx + r, cy + r * 0.95], fill=JADE)
+    d.ellipse([cx - r, cy - r * 0.95, cx + r, cy + r * 0.95], outline=JADE_DK,
+              width=max(1, px(1.0)))
+    if fist:
+        for k in (-0.55, -0.18, 0.18, 0.55):        # knuckle bumps
+            kx = cx + k * r * 1.25
+            d.arc([kx - r * 0.34, cy - r * 1.16, kx + r * 0.34, cy - r * 0.30],
+                  190, 350, fill=JADE_LIT, width=max(1, px(1.1)))
+        d.arc([cx - r * 1.02, cy - r * 1.02, cx + r * 1.02, cy + r * 0.55],
+              200, 340, fill=JADE_LIT, width=max(1, px(1.2)))
+        d.line([(cx - r * 0.55, cy + r * 0.55), (cx + r * 0.60, cy + r * 0.35)],
+               fill=JADE_DK, width=max(1, px(1.0)))       # finger seam
     else:
-        d.ellipse([cx - r, cy - r * 1.1, cx + r, cy + r * 1.1], fill=JADE)
-        d.ellipse([cx - r, cy - r * 1.1, cx + r, cy + r * 1.1],
-                  outline=JADE_DK, width=max(1, px(1.0)))
-        for k in (-0.4, -0.1, 0.2, 0.5):
-            d.line([(cx + k * r, cy - r * 0.95), (cx + k * r * 1.1, cy + r * 0.5)],
-                   fill=JADE_DK, width=max(1, px(0.8)))
-    # wrist bangle
-    d.rectangle([cx - r * 0.85, cy + r * 1.0, cx + r * 0.85,
-                 cy + r * 1.0 + px(2.6)], fill=GOLD)
+        d.arc([cx - r * 0.9, cy - r * 0.9, cx + r * 0.9, cy + r * 0.7],
+              200, 340, fill=JADE_LIT, width=max(1, px(1.2)))
+        for k in (-0.45, -0.05, 0.35, 0.72):            # fingers curled up
+            d.line([(cx + k * r * 0.85, cy - r * 0.55),
+                    (cx + k * r * 1.05, cy + r * 0.55)],
+                   fill=JADE_DK, width=max(1, px(0.9)))
+        d.line([(cx - r * 0.80, cy + r * 0.10), (cx - r * 1.15, cy + r * 0.55)],
+               fill=JADE_DK, width=max(1, px(1.2)))       # thumb
+    # wrist bangle, gold, sitting where the arm meets the hand
+    d.rectangle([cx - r * 0.80, cy + r * 0.80, cx + r * 0.80,
+                 cy + r * 0.80 + px(2.4)], fill=GOLD)
+    d.line([(cx - r * 0.80, cy + r * 0.80), (cx + r * 0.80, cy + r * 0.80)],
+           fill=GOLD_DK, width=max(1, px(0.8)))
 
 
 def statue_layer():
@@ -125,13 +153,19 @@ def statue_layer():
     d.ellipse([CX - px(10), leg_cy + px(2), CX + px(10), leg_cy + px(10)],
               fill=JADE)
 
-    # torso
-    d.polygon([(CX - px(22), shoulder_y), (CX + px(22), shoulder_y),
-               (CX + px(25), hip_y), (CX - px(25), hip_y)], JADE)
-    d.polygon([(CX - px(22), shoulder_y), (CX - px(10), shoulder_y),
-               (CX - px(13), hip_y), (CX - px(25), hip_y)], JADE_LIT)
-    d.line([(CX - px(22), shoulder_y), (CX - px(10), shoulder_y)], fill=JADE_LIT,
-           width=max(1, px(1.6)))
+    # torso: broad chest tapering to the waist, with the chest and belly shaded
+    d.polygon([(CX - px(26), shoulder_y), (CX + px(26), shoulder_y),
+               (CX + px(24), hip_y), (CX - px(24), hip_y)], JADE)
+    d.polygon([(CX - px(26), shoulder_y), (CX - px(13), shoulder_y),
+               (CX - px(15), hip_y), (CX - px(24), hip_y)], JADE_LIT)
+    d.ellipse([CX - px(20), shoulder_y + px(2), CX - px(1), shoulder_y + px(22)],
+              outline=(86, 112, 94), width=max(1, px(1.0)))      # chest
+    d.ellipse([CX + px(1), shoulder_y + px(2), CX + px(20), shoulder_y + px(22)],
+              outline=(86, 112, 94), width=max(1, px(1.0)))
+    for k in (18, 28, 38):                                     # belly folds
+        d.arc([CX - px(17), shoulder_y + px(k), CX + px(17),
+               shoulder_y + px(k + 14)], 200, 340, fill=(86, 112, 94),
+              width=max(1, px(0.9)))
     # sash and belt
     d.line([(CX - px(24), hip_y - px(2)), (CX + px(24), hip_y - px(2))],
            fill=GOLD, width=max(2, px(3.0)))
@@ -139,25 +173,29 @@ def statue_layer():
     d.arc([CX - px(14), shoulder_y - px(2), CX + px(14), shoulder_y + px(16)],
           15, 165, fill=GOLD, width=max(1, px(2.0)))
 
-    # six arms: high pair with fists, middle pair offered open, low pair on knees
+    # Six arms, in the three tiers of the film statue: fists raised level with
+    # the head, fists out at the chest, fists resting on the knees. Each is a
+    # deltoid, a tapered upper arm, an elbow, a tapered forearm and a hand, so
+    # the silhouette is a body rather than sticks off the shoulders.
     for sx in (-1, 1):
-        _limb(d, (CX + sx * px(20), shoulder_y + px(2)),
-              (CX + sx * px(30), shoulder_y - px(10)), px(7), px(6), JADE, JADE_LIT)
-        _limb(d, (CX + sx * px(30), shoulder_y - px(10)),
-              (CX + sx * px(34), shoulder_y - px(30)), px(6), px(5), JADE, JADE_LIT)
-        _hand(d, CX + sx * px(36), shoulder_y - px(36), px(7), True)
-
-        _limb(d, (CX + sx * px(20), shoulder_y + px(4)),
-              (CX + sx * px(33), shoulder_y + px(6)), px(7), px(6), JADE, JADE_LIT)
-        _limb(d, (CX + sx * px(33), shoulder_y + px(6)),
-              (CX + sx * px(38), shoulder_y + px(18)), px(6), px(5), JADE, JADE_LIT)
-        _hand(d, CX + sx * px(40), shoulder_y + px(22), px(7), False)
-
-        _limb(d, (CX + sx * px(20), shoulder_y + px(6)),
-              (CX + sx * px(30), hip_y - px(4)), px(7), px(6), JADE, JADE_LIT)
-        _limb(d, (CX + sx * px(30), hip_y - px(4)),
-              (CX + sx * px(33), leg_cy - px(4)), px(6), px(5), JADE, JADE_LIT)
-        _hand(d, CX + sx * px(34), leg_cy + px(2), px(7), False)
+        tiers = [
+            # (shoulder, elbow, hand, fist?)
+            ((px(23), shoulder_y + px(1)), (px(36), shoulder_y - px(11)),
+             (px(39), shoulder_y - px(25)), True),
+            ((px(23), shoulder_y + px(3)), (px(40), shoulder_y + px(7)),
+             (px(44), shoulder_y + px(14)), True),
+            ((px(22), shoulder_y + px(5)), (px(33), shoulder_y + px(19)),
+             (px(35), shoulder_y + px(29)), False),
+        ]
+        for (sx0, sy0), (ex, ey), (hx, hy), fist in tiers:
+            sh = (CX + sx * sx0, sy0)
+            el = (CX + sx * ex, ey)
+            wr = (CX + sx * hx, hy)
+            _segment(d, sh, el, px(8.2), px(6.4))
+            _segment(d, el, wr, px(6.2), px(4.6))
+            _joint(d, *sh, px(9.4), edge=JADE_DK)   # deltoid, outlined: it is a
+            _joint(d, *el, px(6.4))                 # shoulder; elbow is soft
+            _hand(d, wr[0], wr[1], px(7.4), fist)
 
     # head
     d.ellipse([CX - head_r, head_cy - head_r, CX + head_r, head_cy + head_r],
