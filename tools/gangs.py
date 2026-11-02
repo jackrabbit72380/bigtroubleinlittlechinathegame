@@ -73,6 +73,8 @@ MEMBERS = [
         ("lu", "Lu the Wire", "topknot", "machete", 1.00),
         ("gerald", "Gold Gun Gerald", "shaved", "pistols", 1.00),
         ("hatchet", "Hatchet Man", "long", "hatchet", 1.00),
+        ("bai", "Bai the Lookout", "bandana", "machete", 1.00),
+        ("shen", "Shen the Bruiser", "topknot", "staff", 1.00),
     ]),
 ]
 

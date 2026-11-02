@@ -153,6 +153,14 @@ MEMBERS = [
     # moustache, hatchet in the lead fist.
     dict(id="wingkong_hatchet", gang="wing", cloth=1.06, skin=1.04, band=0.85,
          hair="brown", face="moustache", gear="", weapon="hatchet", length=104),
+    # Bai the Lookout: bandana down low, machete carried close.
+    dict(id="wingkong_bai", gang="wing", cloth=0.97, skin=1.02, band=0.90,
+         hair="black", face="beard", gear="", weapon="machete", length=118,
+         style="bandana"),
+    # Shen the Bruiser: the biggest of them, staff in both hands.
+    dict(id="wingkong_shen", gang="wing", cloth=1.08, skin=0.98, band=0.65,
+         hair="brown", face="full", gear="", weapon="staff", length=206,
+         style="topknot"),
 ]
 
 
@@ -641,7 +649,7 @@ def paint_identity(img, m, geom=None):
             cx, cy, hw = fx + ffw * 0.22, fy + ffh * 0.30, ffw * 0.42
         layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
         d = ImageDraw.Draw(layer)
-        if m["id"] == "wingkong_hatchet":
+        if m["id"] in ("wingkong_hatchet", "wingkong_bai", "wingkong_shen"):
             # long hair falling down the back, behind the shoulders
             d.polygon([(cx + hw * 0.50, cy - hw * 0.30),
                        (cx - hw * 0.25, cy - hw * 0.95),
