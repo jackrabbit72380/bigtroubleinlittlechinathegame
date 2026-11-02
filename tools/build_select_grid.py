@@ -350,6 +350,12 @@ KEYS = (
     # the cells beside it.
     ("cell.random.offset", "-30,-24"),
     ("cell.random.scale", "1.5, 1.5"),
+    # The stock screen re-rolls the random portrait every 4 ticks and plays
+    # pX.random.move.snd on every roll, which stacked voices into a continuous
+    # machine-gun tone while the "?" was highlighted. Half a second per roll,
+    # and the cancel flag so a new roll stops the previous sound.
+    ("cell.random.switchtime", "32"),
+    ("random.move.snd.cancel", "1"),
 )
 for i, spr in enumerate(CURSOR, start=1):
     KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % spr),
