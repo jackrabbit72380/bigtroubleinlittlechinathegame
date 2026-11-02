@@ -118,20 +118,48 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 
 
 
-# The stage preview is the one screenpack slot left switched off: [Select Info]
-# ships stage.portrait.spr commented out, so the window draws its empty frame
-# (bg anim 110) and the engine fills the gap with its grey "?" placeholder.
-# A 320x240 preview at scale 0.4 is 128x96; the window is 238x98 at
-# x 521..759, y 567..665, centred on (640,616), and the sprite's axis sits at
-# its centre, so an offset of 0,-44 from stage.pos 640,660 centres it there.
+# The stage card. Every stage's preview art (group 9000) is 1214x398 and its
+# axis is its centre, so at stage.portrait.scale 0.4 it is 486x159 on screen.
+# The window and the plate were 324x106, which cropped two thirds of it away and
+# is why the preview read as a thumbnail on a wide band rather than a picture of
+# the stage. The window is now the art's own size: with stage.pos 640,660 the
+# art's top is 660 - 120 - (199 * 0.4) = 460 and its left is
+# 640 - 1 - (607 * 0.4) = 396, so the card spans 396..884, 460..620 - above the
+# "Next Stage" caption and below the VS logo.
 STAGE_PORTRAIT = (
     ("stage.portrait.spr", "9000,1"),
-    ("stage.portrait.offset", "-1, -91"),
+    ("stage.portrait.offset", "-1, -120"),
     ("stage.portrait.scale", "0.4, 0.4"),
-    # the frame plate drawn by [Begin Action 110] sits at 477,516..801,622, so
-    # clip to exactly that instead of the motif's 521,567..759,665 box, which
-    # cut the top off the preview
-    ("stage.portrait.window", "477, 516, 801, 622"),
+    ("stage.portrait.window", "396, 460, 884, 620"),
+)
+
+# The plate behind the preview is a 324x106 sprite with its axis at 0,0, so it
+# is scaled up to the window instead of repainted: 324 * 1.505 = 488 and
+# 106 * 1.505 = 160, drawn from 640-244, 660-200 = 396,460.
+PLATE = (
+    ("stage.portrait.bg.offset", "-244, -200"),
+    ("stage.portrait.bg.scale", "1.505, 1.505"),
+)
+
+# The select screen draws the plate as [Begin Action 110]; pin it to its first
+# sprite so the anim's own offsets cannot shift the scaled plate.
+SELECT_PLATE = PLATE + (
+    ("stage.portrait.bg.anim", "-1"),
+    ("stage.portrait.bg.spr", "110,0"),
+)
+VS_PLATE = PLATE + (
+    ("stage.portrait.bg.spr", "112,0"),
+)
+
+# Text on the VS screen. The caption under the card was DEEP (176,126,44) on a
+# near-black backdrop, which is what made it read as the wrong colour - it was
+# nearly invisible - and the two names were within a few units of each other, so
+# both sides looked like the same orange. P1 is the motif's bright cream, P2 a
+# warmer amber, and the caption is legible.
+VS_TEXT = (
+    ("p1.name.font", "10, 0, 1, 255, 228, 140"),
+    ("p2.name.font", "10, 0, -1, 255, 170, 96"),
+    ("stage.font", "11, 0, 0, 255, 228, 140"),
 )
 
 
@@ -159,8 +187,9 @@ def _apply_section(text, section, pairs):
 def layout(text):
     """Switch the stage preview on in both screens that draw it."""
     changed = []
-    for section in ("[Select Info]", "[VS Screen]"):
-        text, done = _apply_section(text, section, STAGE_PORTRAIT)
+    for section, extra in (("[Select Info]", SELECT_PLATE),
+                           ("[VS Screen]", VS_PLATE + VS_TEXT)):
+        text, done = _apply_section(text, section, STAGE_PORTRAIT + extra)
         changed += done
     return text, changed
 
