@@ -60,6 +60,7 @@ FACE2_WIN_P2 = "962,86,1276,712"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
+GOLD_LIT = (244, 216, 120)
 INK = (9, 12, 12)
 ARENA_Y = 604
 STAGE_Y = 660
@@ -180,6 +181,74 @@ def cursor_frame(colour):
     out.alpha_composite(glow)
     out.alpha_composite(img)
     return out
+
+
+# The random box (and the two big side panels while "?" is showing) use the
+# engine's stock white question mark, which read as bare silver next to the
+# gold frames and the amber captions. It cannot be tinted from a .def, so the
+# glyph is repainted into the same gold ramp the cells use.
+RANDOM_MARK = ((151, 0), (151, 1))
+
+
+def gold_glyph(img):
+    """Recolour the stock white "?" onto the grid's gold ramp.
+
+    The glyph is a white face over a black outline and a grey shadow, so the
+    luminance carries the whole shape: dark pixels stay as the outline, the
+    body runs from bronze in shadow to bright gold on the lit face.
+    """
+    out = img.convert("RGBA")
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            r, g, b, a = px[x, y]
+            if not a:
+                continue
+            lum = max(r, g, b) / 255.0
+            if lum < 0.18:
+                px[x, y] = (14, 12, 8, a)
+                continue
+            k = (lum - 0.18) / 0.82
+            px[x, y] = tuple(
+                int(round(GOLD_DIM[i] + (GOLD_LIT[i] - GOLD_DIM[i]) * k))
+                for i in range(3)) + (a,)
+    return out
+
+
+def repaint_random_mark():
+    """Rewrite the "?" sprites in place, keeping their own axis.
+
+    The axis matters here: 151,0 sits at (-22,-18) and the select layout
+    compensates for it, so the sprite has to go back with the axis it had.
+    """
+    d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    out, changed = [], 0
+    for sp in sprites:
+        key = (sp["group"], sp["number"])
+        glyph = None
+        if key in RANDOM_MARK:
+            try:
+                glyph = sff.decode_sprite(d, sp, palettes)
+            except ValueError:
+                # 8-bit indexed variants of the glyph cannot be decoded here;
+                # the main mark (151,0) is what the cell and the panels draw
+                pass
+        if glyph is not None:
+            out.append({"group": key[0], "number": key[1],
+                        "image": gold_glyph(glyph), "axis": sp["axis"]})
+            changed += 1
+            continue
+        out.append({"group": sp["group"], "number": sp["number"],
+                    "raw": sp["raw"], "format": sp["format"],
+                    "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
+                    "axis": sp["axis"], "pal": sp["pal"], "link": sp["link"]})
+    if not changed:
+        raise SystemExit("no question-mark sprite (151,0) in system.sff")
+    blob = sff.write_sff(out, [p["rgba"] for p in palettes])
+    with open(SYSTEM_SFF + ".tmp", "wb") as f:
+        f.write(blob)
+    os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
+    return changed
 
 
 def rewrite_system_sff(images):
@@ -381,6 +450,7 @@ def main():
         images[spr] = cursor_frame(colour)
 
     rewrite_system_sff(images)
+    marks = repaint_random_mark()
     patch_select_info()
     added = patch_bg_layer()
 
@@ -406,7 +476,8 @@ def main():
     sheet.alpha_composite(cursor_frame(PLAYER_COLOURS[1]), (CELL * 2 + 24, 8))
     sheet.convert("RGB").save(os.path.join(ROOT, "artifacts", "select_cells.png"))
     print(f"select screen: {COLS}x{ROWS} grid at {GRID[0]},{GRID[1]}, "
-          f"cells {CELL}px, background layer {'added' if added else 'kept'}")
+          f"cells {CELL}px, background layer {'added' if added else 'kept'}, "
+          f"{marks} random mark(s) in gold")
 
 
 if __name__ == "__main__":

@@ -459,7 +459,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
 title.offset = 640, 2
-title.font = 10,0,0, 255, 228, 140
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -644,8 +644,8 @@ p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 640,660
-stage.font = 10, 0, 0, 176, 126, 44
-stage.active.font = 12, 0, 0, 255, 228, 140
+stage.font = 11, 0, 0, 236, 200, 120
+stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 10, 0, 0, 176, 126, 44
 stage.done.font = 10, 0, 0, 176, 126, 44
 stage.layerno = 2
@@ -654,7 +654,7 @@ stage.layerno = 2
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
 stage.portrait.offset = 0, -160
-stage.portrait.scale = 0.6255, 0.6255
+stage.portrait.scale = .4, .4
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
 stage.portrait.bg.offset = -380, -284
