@@ -253,10 +253,17 @@ menu.itemname.menuwatch.back = BACK
 menu.itemname.options = OPTIONS
 
 ; Options > Video > Resolution. The engine takes the size straight from the
-suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
-had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
-the motif's own 1280x720, so the art, the framing and the netplay handshake are
-all unaffected.
+suffix, so this block IS the list.
+;
+; This is the WINDOW size, not the render size. Ikemen's render resolution is
+; Video.GameWidth/GameHeight in config.ini and it has no option-menu item at
+; all, so nothing in this list can add detail to the art - picking 4K here
+; draws the same sprites, scaled up, into a 4K window. The labels say so
+; rather than implying the picture gets sharper.
+;
+; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
+; the one window where every sprite lands on whole pixels; 2560x1440 and
+; 3840x2160 are clean 1.33x and 2x scales of that same art.
 	menu.itemname.menuvideo.resolution = RESOLUTION (WINDOW)
 	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD window)
 	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+ window)
@@ -436,7 +443,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
 title.offset = 640, 2
-title.font = 10,0,0, 255, 228, 140
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -621,7 +628,7 @@ p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 640,660
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 176, 126, 44 ;Second font color for blinking
 stage.done.font = 11, 0, 0, 176, 126, 44
@@ -817,6 +824,7 @@ p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
+title.scale = 1,1
 cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
@@ -830,7 +838,6 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-title.scale = 1,1
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
@@ -1078,11 +1085,11 @@ p2.done.anim = 181
 ;Names
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20,615      ;Position to put name
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 10, 0, 1, 255, 228, 140
 p1.name.spacing = 15,25      ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
 p2.name.offset = 1260,615
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 10, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 
 orderselect.enabled = 1
@@ -1256,7 +1263,7 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 640,707
 stage.text = Next Stage: %s
 stage.offset = 0, -10
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 255, 228, 140
 stage.scale = 0.6, 0.6
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
