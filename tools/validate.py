@@ -221,12 +221,12 @@ def check_select_screen(chars):
             key, value = line.split("=", 1)
             opts[key.strip().lower()] = value.split(";")[0].strip()
 
-    if opts.get("rows") != "4" or opts.get("columns") != "6":
-        err("select screen: grid is %s rows by %s columns, expected 4 by 6 "
-            "(24 cells for a 21-line roster)"
+    if opts.get("rows") != "4" or opts.get("columns") != "7":
+        err("select screen: grid is %s rows by %s columns, expected 4 by 7 "
+            "(28 cells for a 25-line roster)"
             % (opts.get("rows"), opts.get("columns")))
-    if opts.get("cell.size") != "100,100":
-        err("select screen: cell.size is %r, expected 100,100" % opts.get("cell.size"))
+    if opts.get("cell.size") != "84,84":
+        err("select screen: cell.size is %r, expected 84,84" % opts.get("cell.size"))
     # Every roster line must land on the one page, or fighters exist but cannot
     # be picked.
     try:
@@ -332,7 +332,7 @@ def check_select_screen(chars):
                     "expected %dx%d"
                     % (name, key[0], key[1], round(drawn[0]), round(drawn[1]),
                        localcoord, size[0], size[1]))
-    notes.append("select screen: 6x4 portrait grid, 100px cells, framed sides; "
+    notes.append("select screen: 7x4 portrait grid, 84px cells, framed sides; "
                  "every fighter carries 9000,0 cell art, 9000,1 VS art and "
                  "9000,2 side art")
 

@@ -16,6 +16,7 @@ jade_rig/jade.def, stages/lopans_throne.def, order=1
 eggshen_rig/eggshen.def, stages/wingkong_exchange.def, order=3
 eddilee_rig/eddilee.def, stages/chinatown_alley.def, order=1
 sewermonster_rig/sewermonster.def, stages/the_upside_down.def, order=3
+margo_rig/margo.def, stages/chinatown_alley.def, order=2
 
  ; --- the Three Storms ------------------------------------------------------
 rain_rig/rain.def, stages/porkchop_express.def, order=1
