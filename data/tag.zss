@@ -376,10 +376,3 @@ if cond(isHelper, root, map(_iksys_tagActive), map(_iksys_tagActive)) {
 		screenbound{value: 0; movecamera: 0, 0; stagebound: 0}
 	}
 }
-
-# The intro lock above has to end with the intro. ScreenBound persists for the
-# rest of the round, so leaving it set left the camera unable to follow the
-# fighters: they stopped at the screen edge and the stage never scrolled.
-if cond(isHelper, root, map(_iksys_tagActive), map(_iksys_tagActive)) && roundstate = [2, 3] {
-	screenbound{value: 0; movecamera: 1, 1; stagebound: 0}
-}
