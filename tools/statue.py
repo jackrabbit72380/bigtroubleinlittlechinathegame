@@ -301,9 +301,9 @@ def build(S, cx, top, w_full, h_full):
     # lowest pair hanging open over the knees. Widths taper shoulder to wrist.
     arms = [
         # shoulder,     elbow,       wrist,       w0    w1    w2    w3   hand
-        ((24, 56), (46, 62), (59, 59), 9.8, 8.2, 7.4, 6.2, 10.4, "open"),
-        ((22, 48), (45, 37), (53, 22), 10.6, 8.8, 8.0, 6.4, 12.8, "fist"),
-        ((14, 43), (30, 29), (23, 13), 10.2, 8.6, 7.8, 6.2, 13.0, "fist"),
+        ((24, 56), (46, 62), (60, 59), 9.8, 8.2, 7.4, 6.2, 8.6, "open"),
+        ((22, 48), (45, 37), (54, 24), 10.6, 8.8, 8.0, 6.4, 10.6, "fist"),
+        ((14, 43), (30, 29), (24, 15), 10.2, 8.6, 7.8, 6.2, 10.8, "fist"),
     ]
 
     def ring(p, tx, ty, half, thick, fill=GOLD):
@@ -339,8 +339,8 @@ def build(S, cx, top, w_full, h_full):
                    width=max(2, int(1.1 * S * SS)), joint="curve")
             d.polygon(P(fore), fill=STONE)
             ang = math.atan2(wr_p[1] - el_p[1], wr_p[0] - el_p[0])
-            hc = (wr_p[0] + math.cos(ang) * hr * 0.40,
-                  wr_p[1] + math.sin(ang) * hr * 0.40)
+            hc = (wr_p[0] + math.cos(ang) * hr * 0.80,
+                  wr_p[1] + math.sin(ang) * hr * 0.80)
             # hands are drawn straight into canvas pixels, so the centre and the
             # radius have to be transformed. Passing unit-space values put every
             # fist a fifth of its size in the corner of the canvas, which is why no
