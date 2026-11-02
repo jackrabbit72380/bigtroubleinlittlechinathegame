@@ -31,3 +31,6 @@ dist/
 # deploy key for pushing from this sandbox (never commit the private half)
 .deploy_key
 .deploy_key.pub
+
+# prototype gang art from tools/gang_kfm.py --build, never shipped
+chars/*_kfm/
