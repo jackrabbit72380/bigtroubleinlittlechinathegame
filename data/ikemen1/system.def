@@ -621,7 +621,7 @@ p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 640,660
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 176, 126, 44 ;Second font color for blinking
 stage.done.font = 11, 0, 0, 176, 126, 44
@@ -631,7 +631,7 @@ stage.layerno = 2
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
 stage.portrait.offset = -1, -91
-stage.portrait.scale = .4, .4
+stage.portrait.scale = 0.4, 0.4
 stage.portrait.bg.anim = 110
 ;stage.portrait.bg.spr = 
 stage.portrait.bg.offset = -163, -144
@@ -817,6 +817,7 @@ p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
+cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
 p1.cursor.done.offset = 0,0
@@ -829,7 +830,6 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-cell.random.offset = -30,-24
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
@@ -1020,21 +1020,21 @@ mask = 1
 
 ;-------------------------------------------------------------------
 ;------------------------------------
-; Stage-select hint, painted by tools/build_select_ui.py
-[SelectBG Stage Hint]
-type = normal
-spriteno = 221, 0
-start = 0, 668
-layerno = 2
-mask = 1
-
-;------------------------------------
 ; Select-screen background, painted by tools/build_select_grid.py
 [SelectBG Portrait Grid]
 type = normal
 spriteno = 220, 0
 start = -640, 0
 layerno = 0
+mask = 1
+
+;------------------------------------
+; Stage-select hint, painted by tools/build_select_ui.py
+[SelectBG Stage Hint]
+type = normal
+spriteno = 221, 0
+start = 0, 700
+layerno = 2
 mask = 1
 
 [VS Screen]
@@ -2308,11 +2308,11 @@ movelist.arrow.down.scale = 1.0, 1.0
 ;-------------------------------------------------------------------
 ;Training menu screen definition
 [Training Pause Menu]
-menu.boxcursor.coords = -15, 0, 462, 44
 menu.item.selected.active.font = 12,0,1, 255, 228, 140
 menu.item.selected.font = 10,0,1, 255, 228, 140
 menu.item.active.font = 12,0,1, 255, 228, 140
 menu.item.font = 10,0,1, 240, 196, 88
+menu.boxcursor.coords = -15, 0, 462, 44
 menu.window.visibleitems = 10
 menu.item.spacing = 0, 50
 menu.pos = 460, 140
