@@ -5,7 +5,7 @@ building is the platform the six-armed bodhisattva stands on. This painter keeps
 the hall from tools/stage_throne.py - the niche rhythm, the neon balcony strip,
 the arcade corridors, torches, guardians and the tiled plaza - and replaces the
 skull gate and its narrow staircase with a seated six-armed statue, a lotus
-plinth and three broad steps. The steps are the point of the stage: 1080 canvas
+plinth and three broad steps. The steps are the point of the stage: 1316 canvas
 px across at the foot, against the throne's 608.
 
 Geometry is in canvas pixels on the shared 8192x1080 canvas. CX is the centre
@@ -38,8 +38,8 @@ STATUE_TOP = px(16)                   # 72: whole crown stays in frame
 HALO_R = px(44)
 
 PLINTH_TOP = STATUE_TOP + px(96)      # 504: under the crossed legs
-PLINTH_HALF = px(58)
-STEPS = [(px(67), px(19)), (px(84), px(22)), (px(102), px(22)), (px(120), px(18))]
+PLINTH_HALF = px(72)                 # a broad drum, as wide as the whole figure
+STEPS = [(px(84), px(19)), (px(104), px(22)), (px(124), px(22)), (px(144), px(18))]
 
 JADE = (108, 138, 116)
 JADE_LIT = (176, 204, 172)
@@ -320,8 +320,8 @@ def dais():
                (CX + PLINTH_HALF + px(6), PLINTH_TOP + px(12)),
                (CX - PLINTH_HALF - px(6), PLINTH_TOP + px(12))],
               fill=(96, 84, 68))
-    for k in range(-7, 8):
-        cx = CX + k * PLINTH_HALF / 7.5
+    for k in range(-10, 11):
+        cx = CX + k * PLINTH_HALF / 10.5
         d.ellipse([cx - px(4.4), PLINTH_TOP + px(1), cx + px(4.4), PLINTH_TOP + px(11)],
                   outline=(140, 122, 96), width=max(1, px(0.9)))
     d.line([(CX - PLINTH_HALF, PLINTH_TOP), (CX + PLINTH_HALF, PLINTH_TOP)],
