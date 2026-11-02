@@ -257,12 +257,12 @@ suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
 had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
 the motif's own 1280x720, so the art, the framing and the netplay handshake are
 all unaffected.
-	menu.itemname.menuvideo.resolution = RESOLUTION (WINDOW)
-	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (16:9 HD window)
-	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (16:9 HD+ window)
-	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (16:9 FHD window, native art)
-	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (16:9 2K window, 1.33x)
-	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (16:9 4K window, 2x)
+	menu.itemname.menuvideo.resolution = RESOLUTION
+	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
+	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
+	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
+	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
+	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
 	menu.itemname.menuvideo.resolution.back = BACK
 
 ; Exit Game
