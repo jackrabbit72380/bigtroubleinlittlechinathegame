@@ -362,13 +362,17 @@ def paint():
     for x in range(0, W, px(44)):
         d.rectangle([x + px(3), px(1), x + px(38), px(9)], fill=(21, 13, 13))
 
+    # The mezzanine is the throne hall's own: one niche per bay and the same
+    # balustrade, only bay 0 skipped where the figure stands, exactly as the
+    # throne skips it for the gate. No bare wall either side of the centre.
     neon = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     nd = ImageDraw.Draw(neon)
-    gap = STEPS[-1][0] + px(24)
 
     for i in range(-9, 10):
+        if i == 0:
+            continue
         x = CX + i * BAY
-        if not (-BAY < x < W + BAY) or abs(i) <= 2:
+        if not (-BAY < x < W + BAY):
             continue
         y0 = throne.ring_y(x)
         throne.niche(d, x, y0 - px(3), BAY * 0.60, px(40), face=(94, 78, 63),
@@ -380,7 +384,7 @@ def paint():
 
     for i in range(-9, 10):
         x = CX + i * BAY
-        if not (-BAY < x < W + BAY) or abs(i) <= 2:
+        if not (-BAY < x < W + BAY):
             continue
         y0 = throne.ring_y(x)
         d.rectangle([x - BAY / 2, y0, x + BAY / 2, y0 + px(12)], fill=(46, 34, 30))
@@ -390,8 +394,11 @@ def paint():
                         fill=(102, 88, 72))
         d.line([(x - BAY / 2, y0), (x + BAY / 2, y0)], fill=(158, 138, 114),
                width=max(1, px(1.6)))
-    throne.ring_line(nd, px(1.5), (58, 214, 240), px(2.2), gap=gap)
-    throne.ring_line(nd, px(4.5), (238, 52, 42), px(1.6), gap=gap)
+    # Blue and red run the whole wall and meet on the centre line, passing
+    # behind the statue - the strip is composited before the figure, so the
+    # stone hides it where it overlaps and it reappears either side.
+    throne.ring_line(nd, px(1.5), (58, 214, 240), px(2.2))
+    throne.ring_line(nd, px(4.5), (238, 52, 42), px(1.6))
 
     for i in range(-9, 10):
         x = CX + i * BAY
@@ -411,6 +418,14 @@ def paint():
     base = Image.alpha_composite(base, dais())
     statue, rim, eyes = statue_layer()
     base = Image.alpha_composite(base, statue)
+    # The mezzanine strip is drawn before the figure but screened in at the end,
+    # so without this it would glow straight across the stone. Punching the
+    # statue's silhouette out of the neon layer puts the lines behind it: they
+    # meet at the centre and vanish under the body and halo, as they would in
+    # the room.
+    neon.putalpha(ImageChops.subtract(
+        neon.split()[3],
+        statue.split()[3].point(lambda v: 255 if v > 40 else 0)))
 
     for sx in (-1, 1):
         base = throne.guardian(base, CX + sx * px(150), FLOOR_Y, px(28))
