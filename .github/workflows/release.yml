@@ -82,6 +82,23 @@ jobs:
               for d in "$out"/*.app; do
                 if [ -d "$d" ]; then mv "$d" "$out/BigTroubleInLittleChinaTheGame.app"; fi
               done
+              app="$out/BigTroubleInLittleChinaTheGame.app"
+              # the name Finder and the menu bar show comes from CFBundleName
+              if [ -f "$app/Contents/Info.plist" ]; then
+                sed -i.bak -e 's|<string>I\.K\.E\.M\.E\.N-Go</string>|<string>Big Trouble in Little China</string>|g' \
+                  "$app/Contents/Info.plist"
+                rm -f "$app/Contents/Info.plist.bak"
+              fi
+              # the .command launcher hard-codes the .app's name, so it has to be
+              # rewritten as well or double-clicking it finds nothing to start
+              for f in "$out"/Ikemen_GO*.command; do
+                if [ -f "$f" ]; then
+                  sed -i.bak -e 's|I\.K\.E\.M\.E\.N-Go\.app|BigTroubleInLittleChinaTheGame.app|g' \
+                    -e 's|Ikemen_GO_|BigTroubleInLittleChinaTheGame_|g' "$f"
+                  rm -f "$f.bak"
+                  mv "$f" "$out/BigTroubleInLittleChinaTheGame.command"
+                fi
+              done
               ;;
             Linux)
               for f in "$out"/Ikemen_GO*; do
