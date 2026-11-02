@@ -370,6 +370,24 @@ time = 1
 
 
 ; Don't remove the following line. It's required by the CMD standard.
+
+;-| Lo Pan - sorcerous motions |------------------------------------------
+[Command]
+name = "sigil_a"
+command = ~D, DB, B, a
+
+[Command]
+name = "sigil_b"
+command = ~D, DB, B, b
+
+[Command]
+name = "hellfire_a"
+command = ~F, DF, D, DB, B, a
+
+[Command]
+name = "hellfire_b"
+command = ~F, DF, D, DB, B, b
+
 [Statedef -1]
 
 ;===========================================================================
@@ -773,3 +791,26 @@ trigger1 = ctrl
 trigger2 = stateno = 600 || stateno = 630 ;jump_x or jump_a
 trigger2 = movecontact
 trigger3 = stateno = 1350 ;Air blocking
+
+;---------------------------------------------------------------------------
+; Lo Pan - sorcery
+;---------------------------------------------------------------------------
+;Sigils of the Six (three conjured runes)
+[State -1, Sigils of the Six]
+type = ChangeState
+value = 1500
+triggerall = command = "sigil_a" || command = "sigil_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Hell of Boiling Oil (single rolling wall of green fire)
+[State -1, Hell of Boiling Oil]
+type = ChangeState
+value = 1600
+triggerall = command = "hellfire_a" || command = "hellfire_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)

@@ -44,11 +44,33 @@ def main():
         # never in this chain, so a clean build baked whatever parts_side copy
         # happened to be on disk - including the one with the arm pivoted at a
         # placeholder corner and a torso bone longer than the torso art.
-        scripts += ["jack_cut.py", "side_parts.py",
+        scripts += ["jack_parts.py",
                     ("bake_char.py", "jackburton")]
     # Lightning has no turnaround to cut: his parts are painted in code, so the
     # only inputs are the tools themselves and a clean checkout can build him.
     scripts += ["lightning_art.py", ("bake_char.py", "lightning")]
+    # Rain is the third Storm and wears the same hat and cloak, so he is painted
+    # from the same pieces in pale grey cloth, with a claw rake in each fist.
+    scripts += ["rain_art.py", ("bake_char.py", "rain")]
+    # Thunder is the last of the Three Storms: the same hat and cloak, but he
+    # is the heavyweight - quilted ochre robe, iron pauldrons and a crescent
+    # blade in each fist, throwing air pressure rather than lightning.
+    scripts += ["thunder_art.py", ("bake_char.py", "thunder")]
+    # Lo Pan, from the concept sheet and the film: the towering headdress, the
+    # navy imperial robe with the phoenix on it, the beard and the claws. His
+    # sorcery is conjured sigils and green fire, in tools/lopan.py.
+    scripts += ["lopan_art.py", ("bake_char.py", "lopan")]
+    # Gracie Law and Maio Yin are painted in code too: vermilion wedding silk,
+    # a gold sunburst on Maio Yin and a silver filigree on Gracie. Their base skeleton
+    # comes from build_chars.py above, so both bake after it.
+    scripts += ["women_art.py", ("bake_char.py", "gracielaw"),
+                ("bake_char.py", "jade")]
+    # Egg Shen, from the statue and the concept drawing: baggy jacket, rope
+    # belt, satchel slung across him, long grey hair and a small beard.
+    scripts += ["eggshen_art.py", ("bake_char.py", "eggshen")]
+    # Wang Chi, from the warehouse drawing and the film still: brown fedora,
+    # blue-and-tan striped scarf, light shirt, charcoal trousers.
+    scripts += ["wangchi_art.py", ("bake_char.py", "wangchi")]
     # The two gangs are built from Kung Fu Man himself rather than from painted
     # parts: gang_kfm.py rewrites his palette per member (tan Chang Sing, black
     # and red Wing Kong), upscales the art to roster height, paints the staff or

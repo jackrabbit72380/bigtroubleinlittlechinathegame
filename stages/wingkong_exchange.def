@@ -13,8 +13,8 @@ author = "Big Trouble in Little China: The Game"
 [Camera]
 startx = 0
 starty = 0
-boundleft = -1788
-boundright = 1788
+boundleft = -3136
+boundright = 3136
 boundhigh = -112
 boundlow = 0
 verticalfollow = .2
@@ -34,8 +34,8 @@ p1facing = 1
 p2startx = 315
 p2starty = 0
 p2facing = -1
-leftbound = -2368
-rightbound = 2368
+leftbound = -4028
+rightbound = 4028
 
 [Bound]
 screenleft = 68
@@ -59,7 +59,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic = 
+bgmusic = sound/WingKongExchange.ogg
 bgmvolume = 100
 
 [BGdef]
@@ -70,22 +70,70 @@ debugbg = 0
 [Begin Action 9000]
 9000,1, 0,0, -1
 
+; far parallax: a softened crop of the backdrop, travelling at 0.35 speed
+[BG sky]
+type = normal
+spriteno = 10,0
+layerno = 0
+start = -2057,0
+delta = 0.35,1
+scale = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
 [BG bg]
 type = normal
 spriteno = 0,0
 layerno = 0
-start = -2800,0
+start = -4096,0
 delta = 1,1
 trans = none
 mask = 1
 tile = 0,0
 
+
+; the floor: its own bitmap, cut from the backdrop at the ground line
+[BG floor]
+type = normal
+spriteno = 15,0
+layerno = 0
+start = -4096,900
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
 [BG fg]
 type = normal
 spriteno = 3,0
 layerno = 1
-start = -2800,0
+start = -4096,0
 delta = 1,1
 trans = none
+mask = 1
+tile = 0,0
+
+; foreground floor lip: the bottom of the backdrop drawn in FRONT of the
+; fighters, so their feet sit in the floor rather than on top of it
+[BG lip]
+type = normal
+spriteno = 11,0
+layerno = 1
+start = -4096,900
+delta = 1,1
+scale = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; air: embers, dust or rain on its own plane, drifting faster than the wall
+[BG fx]
+type = normal
+spriteno = 12,0
+layerno = 1
+start = -4096,0
+delta = 1.02,1
+scale = 1,1
+trans = add
 mask = 1
 tile = 0,0

@@ -266,7 +266,98 @@ def main():
             return (210, 165, 135)
         return tuple(v // n for v in tot)
 
-    def part_from_pixels(name, pix, pivot, angle, cap=0):
+    # --- neck ---------------------------------------------------------------
+    def add_neck(name, depth, width_frac=0.40):
+        """Paint the neck the cut never had.
+
+        HEAD_BOX stops at the jaw, so the head part carried nothing below the
+        chin. However exactly the joints were fitted, the jaw therefore ended
+        on air above his black collar and the head read as detached, and a
+        first flat column of skin read as a pale block taped to his throat.
+        The neck is grown from the part's own chin: narrower under the jaw,
+        widening into the collar, sides falling into shadow, the throat dark
+        where the jaw casts over it, and the bottom fading into the shirt
+        rather than ending on a straight edge across the chest.
+        """
+        from PIL import ImageDraw
+        path = os.path.join(OUT, f"{name}.png")
+        img = Image.open(path).convert("RGBA")
+        a = img.getchannel("A")
+        rows = []
+        for y in range(max(0, img.height - 5), img.height):
+            xs = [x for x in range(img.width) if a.getpixel((x, y)) > 128]
+            if xs:
+                rows.append((min(xs) + max(xs)) / 2.0)
+        cx = int(round(sum(rows) / len(rows))) if rows else int(pivots[name][0])
+        py = int(pivots[name][1])
+        tone = mean_colour(img.crop((max(0, cx - 8), max(0, py - 8),
+                                     min(img.width, cx + 8), max(1, py - 1))), 1.0)
+        tone = tuple(int(v * 0.94) for v in tone)
+        w = img.width
+        h = img.height + depth
+        out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+        out.paste(img, (0, 0), img)
+        top = img.height - 3
+        half_top = max(6.0, w * width_frac * 0.34)
+        half_bot = max(8.0, w * width_frac * 0.50)
+        mask = Image.new("L", (w, h), 0)
+        ImageDraw.Draw(mask).polygon(
+            [(cx - half_top, top), (cx + half_top, top),
+             (cx + half_bot, h + 6), (cx - half_bot, h + 6)], fill=255)
+        mask = mask.filter(ImageFilter.GaussianBlur(2.0))
+        shade = Image.new("L", (w, h), 255)
+        sd = ImageDraw.Draw(shade)
+        for x in range(w):
+            dx = abs(x - cx) / half_bot
+            sd.line([(x, top), (x, h)], fill=255 - int(62 * min(1.0, dx ** 1.5)))
+        fade = Image.new("L", (w, h), 255)
+        fd = ImageDraw.Draw(fade)
+        for i in range(10):
+            fd.line([(0, h - 10 + i), (w, h - 10 + i)], fill=int(255 * (i / 9.0)))
+        jaw = Image.new("L", (w, h), 0)
+        jd = ImageDraw.Draw(jaw)
+        for i in range(12):
+            y = top + i
+            if y < h:
+                jd.line([(0, y), (w, y)], fill=int(85 * (1 - i / 12.0)))
+        mult = ImageChops.subtract(ImageChops.multiply(shade, fade), jaw)
+        neck = ImageChops.multiply(Image.new("RGB", (w, h), tone),
+                                   Image.merge("RGB", (mult, mult, mult))).convert("RGBA")
+        neck.putalpha(ImageChops.multiply(mask, fade))
+        out = Image.alpha_composite(out, neck)
+        out.save(path)
+        parts[name] = out.size
+        print(f"  {name}: neck painted, now {out.size[0]}x{out.size[1]}")
+
+    def paint_shoulder(img, piv, r):
+        """Feather the cut arm into the torso at the shoulder.
+
+        The arm is a photographic cut, so its top edge is a straight slice
+        through skin; pasted on the torso that slice reads as a slab hanging
+        off the body, and every rotation swings it clear. Fading the part's
+        alpha out over a radius around the shoulder joint lets the torso show
+        through the join, so the arm grows out of the body instead of being
+        laid on top of it. A painted dome was tried first and read as a flat
+        patch of its own colour stuck to the chest.
+        """
+        w, h = img.size
+        ramp = Image.new("L", (w, h), 0)
+        rp = ramp.load()
+        inner = r * 0.30
+        for y in range(h):
+            dy = y - piv[1]
+            for x in range(w):
+                dd = ((x - piv[0]) ** 2 + dy * dy) ** 0.5
+                if dd <= inner:
+                    rp[x, y] = 0
+                elif dd >= r:
+                    rp[x, y] = 255
+                else:
+                    rp[x, y] = int((dd - inner) / (r - inner) * 255)
+        img.putalpha(ImageChops.multiply(img.getchannel("A"), ramp))
+        return img
+
+    def part_from_pixels(name, pix, pivot, angle, cap=0, dome=0):
         """Mask the art to exactly these pixels and crop to them.
 
         ``cap`` paints a disc of the arm's own colour UNDER the art at the
@@ -292,6 +383,8 @@ def main():
             disc = Image.new("RGBA", img.size, mean_colour(img) + (0,))
             disc.putalpha(shape)
             img = Image.alpha_composite(img, disc)
+        if dome:
+            img = paint_shoulder(img, piv, dome)
         emit(name, img, piv, angle)
 
     def auto_arm(side, centre_x=300):
@@ -347,6 +440,25 @@ def main():
         tip = max(best, key=lambda q: (q[0] - sh[0]) ** 2 + (q[1] - sh[1]) ** 2)
         a_up = math.degrees(math.atan2(tip[0] - sh[0], tip[1] - sh[1]))
 
+        # Keep only pixels that lie ON the limb: a capsule around the
+        # shoulder-to-tip line. The skin group runs on into the bare back and
+        # the deltoid, and that slab pivoted out of his ribs in every pose -
+        # the floating shoulder. The capsule keeps the arm and its fist and
+        # drops everything hanging off behind it.
+        limb_len = math.hypot(tip[0] - sh[0], tip[1] - sh[1])
+        limb_ux = (tip[0] - sh[0]) / limb_len
+        limb_uy = (tip[1] - sh[1]) / limb_len
+        limb_r = max(26.0, limb_len * 0.32)
+
+        def on_limb(pt):
+            vx, vy = pt[0] - sh[0], pt[1] - sh[1]
+            along = vx * limb_ux + vy * limb_uy
+            if along < -limb_r or along > limb_len * 1.10:
+                return False
+            return abs(vx * -limb_uy + vy * limb_ux) <= limb_r
+
+        best = [p for p in best if on_limb(p)]
+
         # Bridge non-skin pixels that belong to the arm. The leather wristband
         # is dark, so a skin-only mask leaves the fist floating beside the
         # forearm in every frame. Grow the mask a little and keep non-white
@@ -356,7 +468,7 @@ def main():
         sp = sel.load()
         for x, y in best:
             sp[x, y] = 255
-        grown = sel.filter(ImageFilter.MaxFilter(29))
+        grown = sel.filter(ImageFilter.MaxFilter(17))
         alpha = art.getchannel("A").point(lambda v: 255 if v > 128 else 0)
         solid = Image.new("L", art.size, 0)
         dp = solid.load()
@@ -370,9 +482,9 @@ def main():
         keep = ImageChops.multiply(ImageChops.multiply(grown, alpha), solid)
         kp = keep.load()
         best = [(xx, yy) for yy in range(art.height) for xx in range(art.width)
-                if kp[xx, yy] > 128]
+                if kp[xx, yy] > 128 and on_limb((xx, yy))]
 
-        part_from_pixels(f"arm_{side}", best, sh, a_up, cap=0)
+        part_from_pixels(f"arm_{side}", best, sh, a_up, cap=0, dome=24)
 
         length = math.hypot(tip[0] - sh[0], tip[1] - sh[1])
         ux, uy = (tip[0] - sh[0]) / length, (tip[1] - sh[1]) / length
@@ -419,6 +531,8 @@ def main():
     emit_shape("prop", GUN_GRIP, box=GUN_BOX, angle=0.0,
                rotate_to=90.0 - barrel)
     emit_shape("prop_knife", KNIFE_GRIP, box=KNIFE_BOX, angle=0.0)
+
+    add_neck("head", 28)
 
     # --- skeleton, in the art's own pixels ----------------------------------
     # The cut parts are the ONLY source of truth for the skeleton. Bone

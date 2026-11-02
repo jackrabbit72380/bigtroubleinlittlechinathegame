@@ -370,6 +370,29 @@ time = 1
 
 
 ; Don't remove the following line. It's required by the CMD standard.
+
+;-| Rain - storm motions |------------------------------------------------
+[Command]
+name = "drizzle_a"
+command = ~D, DB, B, a
+
+[Command]
+name = "drizzle_b"
+command = ~D, DB, B, b
+
+[Command]
+name = "downpour_a"
+command = ~F, DF, D, DB, B, a
+
+[Command]
+name = "downpour_b"
+command = ~F, DF, D, DB, B, b
+
+; Rain Step: down, then up, with no button - the step is a movement
+[Command]
+name = "rain_step"
+command = ~D, U
+
 [Statedef -1]
 
 ;===========================================================================
@@ -773,3 +796,38 @@ trigger1 = ctrl
 trigger2 = stateno = 600 || stateno = 630 ;jump_x or jump_a
 trigger2 = movecontact
 trigger3 = stateno = 1350 ;Air blocking
+
+;---------------------------------------------------------------------------
+; Rain - water specials
+;---------------------------------------------------------------------------
+;Rain Dart (three darts)
+[State -1, Rain Dart]
+type = ChangeState
+value = 1500
+triggerall = command = "drizzle_a" || command = "drizzle_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Cloudburst (single heavy wave)
+[State -1, Cloudburst]
+type = ChangeState
+value = 1600
+triggerall = command = "downpour_a" || command = "downpour_b"
+triggerall = statetype != A
+trigger1 = ctrl
+trigger2 = movecontact
+trigger2 = stateno != [1500,1600)
+
+;Rain Step (dash through the downpour)
+; Numbered triggers are OR'ed, so everything that must hold goes in triggerall:
+; written as trigger1..trigger3 the stateno test alone fired the step on the
+; first frame of the round.
+[State -1, Rain Step]
+type = ChangeState
+value = 1700
+triggerall = command = "rain_step"
+triggerall = statetype != A
+triggerall = ctrl
+trigger1 = stateno != [1700,1703)

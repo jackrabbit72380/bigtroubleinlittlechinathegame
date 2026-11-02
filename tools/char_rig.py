@@ -39,6 +39,11 @@ import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
+try:
+    from arm_joints import ARM_JOINTS
+except ImportError:                  # imported as tools.char_rig
+    from tools.arm_joints import ARM_JOINTS
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PARTS_DIR = os.path.join(ROOT, "art_src", "chars")
 OUT_DIR = os.path.join(ROOT, "artifacts")
@@ -168,6 +173,61 @@ def _shade(mask, base, lit, dark, light_from=0.12):
     return body
 
 
+# Proportions the parts cannot supply on their own. Jack's profile parts are cut
+# from a photo where the legs run 61% of his height, so on a 197px fighter he
+# reads as all boots and a short torso. The thigh and shin are pulled in 12% and
+# the torso given that length back (180 -> 212 units, +18%), which drops the hip
+# and lifts the shoulders by the same amount: his standing height and his feet
+# stay exactly where they were, only the hip line moves toward the middle of the
+# figure.
+# Rigs built by re-cutting old art carry corrections here. Jack's painted
+# parts are authored at the rig's own scale, so he needs none: the art is the
+# metric, and nothing can drift apart.
+METRIC_FIX = {}
+
+
+def _unit(v):
+    n = math.hypot(v[0], v[1]) or 1.0
+    return (v[0] / n, v[1] / n)
+
+
+def _angle_of(v):
+    """The rig's angle of a direction: 0 = straight down, + = toward +x."""
+    return math.degrees(math.atan2(v[0], v[1]))
+
+
+def _half_plane(size, point, normal, sign):
+    """Mask of one side of the line through ``point`` square to ``normal``."""
+    w, h = size
+    span = w + h
+    along = (-normal[1], normal[0])
+    p = (point[0] - along[0] * span, point[1] - along[1] * span)
+    q = (point[0] + along[0] * span, point[1] + along[1] * span)
+    off = (normal[0] * sign * span, normal[1] * sign * span)
+    mask = Image.new("L", (w, h), 0)
+    ImageDraw.Draw(mask).polygon(
+        [p, q, (q[0] + off[0], q[1] + off[1]), (p[0] + off[0], p[1] + off[1])],
+        fill=255)
+    return mask
+
+
+def _lap_of(alpha, y, frac=0.30, lo=3, hi=8):
+    """How far to lap one piece over the joint, from the arm's own width there.
+
+    The two pieces are cut on the same line, so bending the elbow opens a wedge
+    on the outside of the joint and the straight cut edge shows as a step. If
+    the piece ABOVE the joint reaches a little past it, that overhang is what
+    the eye sees when the joint folds - sleeve cloth over an elbow, which is
+    what a real bent arm looks like - and the straight edge is never exposed.
+    """
+    band = alpha.crop((0, max(0, int(y) - 2), alpha.width,
+                       min(alpha.height, int(y) + 3)))
+    box = band.getbbox()
+    if not box:
+        return lo
+    return max(lo, min(hi, int(round((box[2] - box[0]) * frac))))
+
+
 # ----------------------------------------------------------------- load/rig
 class Rig:
     def __init__(self, parts, metrics=None, art_angles=None, canvas=None, axis=None):
@@ -236,8 +296,97 @@ def load_rig(char_id, view=None):
         missing.append(n)
     if missing:
         raise SystemExit(f"{char_id}: missing parts: {', '.join(missing)}")
-    return Rig(parts, cfg.get("metrics"), cfg.get("angles"),
-               cfg.get("canvas"), cfg.get("axis"))
+    metrics = dict(cfg.get("metrics") or {})
+    for key, factor in METRIC_FIX.get(char_id, {}).items():
+        if key in metrics:
+            metrics[key] = round(metrics[key] * factor, 1)
+    if char_id in METRIC_FIX:
+        print("  %s: proportions %s" % (char_id, ", ".join(
+            "%s x%.2f" % (k, v) for k, v in METRIC_FIX[char_id].items())))
+    # A rig supplies ONE piece per arm, drawn as a bent arm in a guard. That
+    # piece can only swing from the shoulder: the forearm is welded to it, so no
+    # pose can bend an elbow and the hand never moves relative to the forearm.
+    # Cut it at the joints the ART draws (arm_joints) into upper arm, forearm
+    # and hand, and hang each on the joint the rig already computes.
+    show = dict(cfg.get("angles") or {})
+    jt = ARM_JOINTS.get(char_id)
+    if jt:
+        for side in ("n", "f"):
+            one = "arm_" + side
+            if one not in parts or ("uarm_" + side) in parts:
+                continue
+            elbow, wrist = jt[0 if side == "n" else 1]
+            img = parts[one]["image"]
+            px, py = parts[one]["pivot"]
+            if not (0 < elbow[0] < img.width and 0 < wrist[0] < img.width
+                    and 0 < elbow[1] < wrist[1] < img.height):
+                continue                 # declared joints off the art: leave it
+            d_up = _unit((elbow[0] - px, elbow[1] - py))
+            d_fa = _unit((wrist[0] - elbow[0], wrist[1] - elbow[1]))
+            # Square to the arm, on the bisector at the elbow: a horizontal cut
+            # through a 45-degree forearm severs it across the tube.
+            n_el = _unit((d_up[0] + d_fa[0], d_up[1] + d_fa[1]))
+            alpha0 = img.getchannel("A")
+            lap_el = _lap_of(alpha0, elbow[1])
+            lap_wr = _lap_of(alpha0, wrist[1], frac=0.25, hi=6)
+            # Upper arm: everything on the shoulder side, PLUS a lap past the
+            # elbow, drawn under the forearm until the joint folds.
+            up_cut = (elbow[0] - n_el[0] * lap_el, elbow[1] - n_el[1] * lap_el)
+            upper = _half_plane(img.size, up_cut, n_el, -1)
+            fore = _half_plane(img.size, elbow, n_el, +1)
+            # Forearm: past the elbow, plus a lap past the wrist under the hand.
+            wr_cut = (wrist[0] + d_fa[0] * lap_wr, wrist[1] + d_fa[1] * lap_wr)
+            hand_side = _half_plane(img.size, wr_cut, d_fa, +1)
+            hand_piece = _half_plane(img.size, wrist, d_fa, +1)
+            for name, mask, pivot, base in (
+                    ("uarm_" + side, upper, (px, py), _angle_of(d_up)),
+                    ("farm_" + side,
+                     ImageChops.multiply(fore, ImageChops.invert(hand_side)),
+                     elbow, _angle_of(d_fa)),
+                    ("hand_" + side, hand_piece, wrist, _angle_of(d_fa))):
+                alpha = ImageChops.multiply(alpha0, mask)
+                box = alpha.getbbox()
+                if not box:
+                    continue
+                piece = img.copy()
+                piece.putalpha(alpha)
+                parts[name] = dict(
+                    image=piece.crop(box),
+                    pivot=(pivot[0] - box[0], pivot[1] - box[1]))
+                # The angle the art is DRAWN at, so a pose value of zero
+                # reproduces the art and every pose number is a joint angle.
+                show[name] = round(base, 2)
+            del parts[one]
+            # The skeleton has to use the drawn lengths, or the forearm lands
+            # where the metric elbow was instead of where the art bends.
+            metrics["uarm"] = round(math.hypot(elbow[0] - px, elbow[1] - py), 1)
+            metrics["farm"] = round(math.hypot(wrist[0] - elbow[0],
+                                              wrist[1] - elbow[1]), 1)
+
+    # The shoulder sockets are placed from METRICS, but every fighter's torso is
+    # PAINTED at whatever width the artists chose: a guard's coat is 113px
+    # across, Gracie is 63. At the shared 96px spread her sockets landed outside
+    # her own body, so both arms hung in the air beside her and no amount of
+    # joint work could join them. Take the shoulder line from the art, a little
+    # inside the edge so the sleeve still overlaps the torso.
+    tpart = parts.get("torso")
+    if tpart is not None:
+        ta = tpart["image"].getchannel("A")
+        tb = ta.getbbox()
+        if tb:
+            line = int(round(float(tpart["pivot"][1])
+                             - metrics.get("torso_len", M["torso_len"])))
+            band = ta.crop((0, max(0, line - 3), ta.width,
+                            min(ta.height, line + 4))).getbbox()
+            if band and band[2] - band[0] > 20:
+                drawn = (band[2] - band[0]) * 0.5 * 0.86
+                metrics["shoulder_half"] = round(
+                    min(metrics.get("shoulder_half", M["shoulder_half"]),
+                        drawn), 1)
+
+    rig = Rig(parts, metrics or None, show,
+              cfg.get("canvas"), cfg.get("axis"))
+    return rig
 
 
 def _place(dst, part, angle_deg, joint):
@@ -289,7 +438,77 @@ def _avg_rgb(img):
     return tuple(v // n for v in tot)
 
 
-def _socket(dst, part, joint, scale=0.11):
+def _near_rgb(img, px, py, rad=8):
+    """Colour of the part AT its pivot - a sleeve is not one flat colour."""
+    px, py = int(px), int(py)
+    box = (max(0, px - rad), max(0, py - rad),
+           min(img.width, px + rad + 1), min(img.height, py + rad + 1))
+    tot = [0, 0, 0]
+    n = 0
+    for r, g, b, a in img.crop(box).getdata():
+        if a > 140:
+            tot[0] += r
+            tot[1] += g
+            tot[2] += b
+            n += 1
+    if not n:
+        return _avg_rgb(img)
+    return tuple(v // n for v in tot)
+
+
+def _joint_radius(part, ss=1.0):
+    """Half the limb's painted thickness at its own pivot.
+
+    A joint disc has to be as wide as the limb it joins, or the fold still
+    shows: cut limbs are cut square, and a square edge rotated by 30 degrees
+    exposes a wedge half as wide as the limb. Sizing from ``min(width, height)``
+    of the whole piece made this arbitrary, because a bent arm's part is as wide
+    as it is long.
+    """
+    img = part["image"]
+    alpha = img.getchannel("A")
+    px, py = part["pivot"]
+    y0 = max(0, int(py) - 2)
+    y1 = min(img.height, int(py) + 9)
+    box = alpha.crop((0, y0, img.width, y1)).getbbox() if y1 > y0 else None
+    if not box:
+        box = alpha.getbbox()
+    if not box:
+        return max(4, int(6 * ss))
+    return max(4, min(20, int(round((box[2] - box[0]) * 0.5 * ss))))
+
+
+def _disc(dst, joint, r, col, feather=1.0):
+    """A shaded disc that fills only the AIR at a joint.
+
+    Drawn whole, a joint disc is a ball pasted over the body, which reads worse
+    than the gap it was there to close. Clipping it to the canvas it has not
+    already painted means it fills exactly the wedge the rotation opened and
+    fades into the silhouette on both sides, so it looks like the sleeve
+    continuing to the shoulder instead of a mannequin joint.
+    """
+    size = r * 2 + 8
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).ellipse([4, 4, 4 + r * 2 - 1, 4 + r * 2 - 1], fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(max(0.5, 0.6 * feather)))
+    x0, y0 = int(joint[0] - r - 4), int(joint[1] - r - 4)
+    bx0, by0 = max(0, x0), max(0, y0)
+    bx1, by1 = min(dst.width, x0 + size), min(dst.height, y0 + size)
+    if bx1 <= bx0 or by1 <= by0:
+        return
+    air = ImageChops.invert(dst.getchannel("A").crop((bx0, by0, bx1, by1)))
+    air = air.filter(ImageFilter.GaussianBlur(feather))
+    full = Image.new("L", (size, size), 0)
+    full.paste(air, (bx0 - x0, by0 - y0))
+    mask = ImageChops.multiply(mask, full)
+    if not mask.getbbox():
+        return
+    lit = tuple(min(255, c + 24) for c in col)
+    dark = tuple(int(c * 0.76) for c in col)
+    dst.alpha_composite(_shade(mask, col, lit, dark), (x0, y0))
+
+
+def _socket(dst, part, joint, scale=0.08, ss=1.0):
     """A colour-matched disc at a limb's own socket.
 
     Rotated parts leave a visible gap or a hard step at the joint; a disc
@@ -297,16 +516,44 @@ def _socket(dst, part, joint, scale=0.11):
     is the difference between a paper doll and an articulated figure.
     """
     img = part["image"]
-    # Thickness, not length: a bent arm's part is as wide as it is long, and
-    # sizing the disc from that painted a dinner-plate over the chest.
-    r = max(4, min(12, int(min(img.width, img.height) * scale)))
-    col = _avg_rgb(img)
-    lit = tuple(min(255, c + 30) for c in col)
-    dark = tuple(int(c * 0.70) for c in col)
-    mask = Image.new("L", (r * 2, r * 2), 0)
-    ImageDraw.Draw(mask).ellipse([0, 0, r * 2 - 1, r * 2 - 1], fill=255)
-    dst.alpha_composite(_shade(mask, col, lit, dark),
-                        (int(joint[0] - r), int(joint[1] - r)))
+    r = max(3, int(round(_joint_radius(part, ss) * 0.85)))
+    _disc(dst, joint, r, _near_rgb(img, *part["pivot"]), feather=1.0 * ss)
+
+
+def _shoulder_bridge(dst, part, joint, axis_x, ss=1.0):
+    """Weld the sleeve to the body at the shoulder.
+
+    The upper arm is painted touching the torso, then rotated. Swing it and a
+    wedge of background opens at the armpit, so the limb reads as a slab
+    floating beside the body even though its pivot is exactly right. A disc
+    centred ON the pivot cannot open a gap under rotation, so one drawn in the
+    sleeve's own colour, under the arm, closes the shoulder in every pose
+    instead of just the rest pose.
+    """
+    img = part["image"]
+    px, py = part["pivot"]
+    hw = _joint_radius(part, ss)
+    col = _near_rgb(img, px, py)
+    # Walk from the socket toward the centreline to the first body pixel: that
+    # distance is the air the bridge has to span.
+    step = -1.0 if joint[0] > axis_x else 1.0
+    reach = 0
+    for d in range(2, int(hw * 1.6) + 3):
+        x = int(round(joint[0] + step * d))
+        if not (0 <= x < dst.width):
+            break
+        hit = False
+        for dy in (-3, -1, 1, 3):
+            y = int(round(joint[1] + dy * ss))
+            if 0 <= y < dst.height and dst.getpixel((x, y))[3] > 40:
+                hit = True
+                break
+        if hit:
+            reach = d
+            break
+    r = int(round(max(hw * 0.9, min(hw * 1.2, reach + 2 * ss))))
+    r = max(4, min(22, r))
+    _disc(dst, joint, r, col, feather=1.0 * ss)
 
 
 def _seg(origin, angle_deg, length):
@@ -329,8 +576,14 @@ def rest_pose(rig):
     a = rig.art
     return dict(
         lean=0.0, head=0.0, lift=0.0, shift=0.0,
-        arm_n=(0.0, 0.0, 0.0),
-        arm_f=(0.0, 0.0, 0.0),
+        # Cut segments sit at the angles their art is drawn at, so the rest
+        # pose has to state them or the arm straightens out of its guard.
+        arm_n=(a.get("uarm_n", 0.0),
+               a.get("farm_n", 0.0) - a.get("uarm_n", 0.0),
+               a.get("hand_n", 0.0) - a.get("farm_n", 0.0)),
+        arm_f=(a.get("uarm_f", 0.0),
+               a.get("farm_f", 0.0) - a.get("uarm_f", 0.0),
+               a.get("hand_f", 0.0) - a.get("farm_f", 0.0)),
         leg_n=(a.get("thigh_n", 0.0), a.get("shin_n", 0.0), 90.0),
         leg_f=(a.get("thigh_f", 0.0), a.get("shin_f", 0.0), 90.0),
     )
@@ -380,11 +633,14 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     leg_f = pose.get("leg_f", (0, 0, 88))
 
     def arm(joint, angles):
+        # (swing, elbow bend, wrist bend): a joint angle measured from the
+        # segment before it, so a pose reads as shoulder / elbow / hand instead
+        # of three absolute directions that have to be kept consistent by hand.
         a1 = angles[0] + torso_dir
         elbow = _seg(joint, a1, m["uarm"] * ss)
-        a2 = angles[1] + torso_dir
+        a2 = a1 + angles[1]
         wrist = _seg(elbow, a2, m["farm"] * ss)
-        a3 = angles[2] + torso_dir if len(angles) > 2 else a2
+        a3 = a2 + (angles[2] if len(angles) > 2 else 0.0)
         tip = _seg(wrist, a3, m["hand"] * ss)
         return elbow, wrist, tip
 
@@ -413,15 +669,22 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     angles = {
         "torso": torso_dir, "head": torso_dir * 0.4 + head_a, "pelvis": 0.0,
         "arm_n": arm_n[0] + torso_dir, "arm_f": arm_f[0] + torso_dir,
-        "uarm_n": arm_n[0] + torso_dir, "farm_n": arm_n[1] + torso_dir,
-        "hand_n": (arm_n[2] + torso_dir) if len(arm_n) > 2 else arm_n[1] + torso_dir,
-        "uarm_f": arm_f[0] + torso_dir, "farm_f": arm_f[1] + torso_dir,
-        "hand_f": (arm_f[2] + torso_dir) if len(arm_f) > 2 else arm_f[1] + torso_dir,
+        "uarm_n": arm_n[0] + torso_dir,
+        "farm_n": arm_n[0] + arm_n[1] + torso_dir,
+        "hand_n": arm_n[0] + arm_n[1] + (arm_n[2] if len(arm_n) > 2 else 0.0)
+        + torso_dir,
+        "uarm_f": arm_f[0] + torso_dir,
+        "farm_f": arm_f[0] + arm_f[1] + torso_dir,
+        "hand_f": arm_f[0] + arm_f[1] + (arm_f[2] if len(arm_f) > 2 else 0.0)
+        + torso_dir,
         "thigh_n": leg_n[0], "shin_n": leg_n[1], "foot_n": fa_n,
         "thigh_f": leg_f[0], "shin_f": leg_f[1], "foot_f": fa_f,
     }
 
     out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    # The far arm is drawn BEHIND the torso, so its shoulder bridge has to wait
+    # for the torso, or it would test a canvas that has no body in it yet.
+    pending_bridge = []
     order = []
     for nm in ORDER:
         if nm.startswith(("uarm_", "farm_", "hand_")):
@@ -484,9 +747,19 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         # rotation opens at the joint, so it must never paint over the art.
         if name.startswith(SOCKETED):
             turned = abs((angles.get(name, 0.0) - part["base"]) % 360.0)
-            if min(turned, 360.0 - turned) > 6.0:
-                _socket(out, part, joints[name])
+            turned = min(turned, 360.0 - turned)
+            if name.startswith("uarm_"):
+                if name.endswith("_f"):
+                    pending_bridge.append((part, joints[name]))
+                else:
+                    _shoulder_bridge(out, part, joints[name], axis[0] * ss, ss)
+            elif turned > 12.0:
+                _socket(out, part, joints[name], ss=ss)
         _place(out, part, angles.get(name, 0.0), joints[name])
+        if name == "torso" and pending_bridge:
+            for p, j in pending_bridge:
+                _shoulder_bridge(out, p, j, axis[0] * ss, ss)
+            pending_bridge.clear()
 
     if ss != 1:
         out = out.resize(canvas, Image.LANCZOS)
@@ -501,70 +774,70 @@ POSES = {
     # to swing them back down by ~30 degrees. Held up at the drawn guard it read
     # as a man holding an invisible tray, which is not a fighting stance.
     "stance": dict(lean=4, head=-2,
-                   arm_n=(-30, 0, 0), arm_f=(-26, 0, 0),
+                   arm_n=(-30, 22, 0), arm_f=(-26, 22, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "breath": dict(lean=3, head=-3, lift=1,
-                   arm_n=(-27, 0, 0), arm_f=(-29, 0, 0),
+                   arm_n=(-27, 20, 0), arm_f=(-29, 20, 0),
                    leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
     "walk_a": dict(lean=7, head=-4, shift=1,
-                   arm_n=(-22, 0, 0), arm_f=(-34, 0, 0),
+                   arm_n=(-22, 18, 0), arm_f=(-34, 18, 0),
                    leg_n=(26, -18, 92), leg_f=(-22, 4, 86)),
     "walk_b": dict(lean=6, head=-3, shift=-1,
-                   arm_n=(-34, 0, 0), arm_f=(-22, 0, 0),
+                   arm_n=(-34, 22, 0), arm_f=(-22, 22, 0),
                    leg_n=(-16, 2, 84), leg_f=(24, -20, 96)),
     "crouch": dict(lean=16, head=8,
-                   arm_n=(18, 0, 0), arm_f=(8, 0, 0),
+                   arm_n=(18, 30, 0), arm_f=(8, 30, 0),
                    leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
     "jump": dict(lean=8, head=-4, lift=-20, ground=False,
-                 arm_n=(26, 0, 0), arm_f=(-20, 0, 0),
+                 arm_n=(26, 26, 0), arm_f=(-20, 26, 0),
                  leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
     "jab": dict(lean=8, shift=3, head=-2,
-                arm_n=(30, 0, 0), arm_f=(8, 0, 0),
+                arm_n=(30, 6, 0), arm_f=(8, 6, 0),
                 leg_n=(20, -14, 88), leg_f=(-18, 8, 92)),
     "cross": dict(lean=14, shift=5, head=-5,
-                  arm_n=(32, 0, 0), arm_f=(-12, 0, 0),
+                  arm_n=(32, 8, 0), arm_f=(-12, 8, 0),
                   leg_n=(30, -20, 88), leg_f=(-24, 10, 94)),
     "upper": dict(lean=-8, lift=-14, shift=3, head=4,
-                  arm_n=(30, 0, 0), arm_f=(-14, 0, 0),
+                  arm_n=(30, 34, 0), arm_f=(-14, 34, 0),
                   leg_n=(38, -46, 90), leg_f=(-30, 24, 92)),
     "boot": dict(lean=-14, head=6, shift=-6,
-                 arm_n=(-20, 0, 0), arm_f=(-22, 0, 0),
+                 arm_n=(-20, 20, 0), arm_f=(-22, 20, 0),
                  leg_n=(84, -6, 60), leg_f=(-16, 10, 92)),
     "low_kick": dict(lean=-6, head=4, lift=-24,
-                     arm_n=(-18, 0, 0), arm_f=(16, 0, 0),
+                     arm_n=(-18, 20, 0), arm_f=(16, 20, 0),
                      leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
     "gun_aim": dict(lean=6, head=-2,
-                    arm_n=(34, 0, 0), arm_f=(10, 0, 0),
+                    arm_n=(34, 26, 0), arm_f=(10, 26, 0),
                     leg_n=(16, -14, 88), leg_f=(-16, 8, 92),
                     prop=True, prop_angle=78),
     "gun_fire": dict(lean=2, head=-4, shift=-3,
-                     arm_n=(28, 0, 0), arm_f=(8, 0, 0),
+                     arm_n=(28, 18, 0), arm_f=(8, 18, 0),
                      leg_n=(18, -16, 88), leg_f=(-18, 10, 92),
                      prop=True, prop_angle=72),
     "knife": dict(lean=10, head=-3,
-                  arm_n=(-14, 0, 0), arm_f=(12, 0, 0),
+                  arm_n=(-14, 34, 0), arm_f=(12, 34, 0),
                   leg_n=(18, -14, 88), leg_f=(-18, 8, 92),
                   prop=True, prop_part="prop_knife", prop_angle=-58),
     "knife_throw": dict(lean=18, shift=4, head=-6,
-                        arm_n=(34, 0, 0), arm_f=(-10, 0, 0),
+                        arm_n=(34, 6, 0), arm_f=(-10, 6, 0),
                         leg_n=(26, -18, 88), leg_f=(-22, 10, 92),
                         prop=True, prop_part="prop_knife", prop_angle=-40),
     # Lightning's specials: hands charged, then hurled forward. The cloak
     # trails the lean instead of swinging with the arms.
     "cast": dict(lean=-6, head=3, shift=-2, cape=-12,
-                 arm_n=(26, 0, 0), arm_f=(18, 0, 0),
+                 arm_n=(26, 30, 0), arm_f=(18, 30, 0),
                  leg_n=(14, -10, 88), leg_f=(-18, 10, 92)),
     "cast_release": dict(lean=11, shift=4, head=-4, cape=9,
-                         arm_n=(44, 0, 0), arm_f=(-4, 0, 0),
+                         arm_n=(44, 8, 0), arm_f=(-4, 8, 0),
                          leg_n=(24, -16, 88), leg_f=(-20, 10, 92)),
     "block": dict(lean=-4, lift=-4, head=6,
-                  arm_n=(24, 0, 0), arm_f=(20, 0, 0),
+                  arm_n=(24, 40, 0), arm_f=(20, 40, 0),
                   leg_n=(6, -4, 88), leg_f=(-10, 6, 92)),
     "hit": dict(lean=-16, head=14, shift=-5,
-                arm_n=(-24, 0, 0), arm_f=(-30, 0, 0),
+                arm_n=(-24, 26, 0), arm_f=(-30, 26, 0),
                 leg_n=(-10, 12, 88), leg_f=(-26, 18, 92)),
     "win": dict(lean=-4, head=-6,
-                arm_n=(26, 0, 0), arm_f=(-24, 0, 0),
+                arm_n=(26, 20, 0), arm_f=(-24, 20, 0),
                 leg_n=(14, -10, 88), leg_f=(-18, 8, 92)),
 }
 
@@ -916,58 +1189,58 @@ POSE_SETS = {
     # weight on his legs, which is what the panels show anyway.
     "jackburton": {
         "stance": dict(lean=3, head=-1,
-                       arm_n=(-4, 0, 0), arm_f=(0, 0, 0),
+                       arm_n=(-4, 22, 0), arm_f=(0, 22, 0),
                        leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
         "breath": dict(lean=2, head=-2, lift=1,
-                       arm_n=(-2, 0, 0), arm_f=(0, 0, 0),
+                       arm_n=(-2, 20, 0), arm_f=(0, 20, 0),
                        leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
         "walk_a": dict(lean=6, head=-3, shift=1,
-                       arm_n=(6, 0, 0), arm_f=(0, 0, 0),
+                       arm_n=(6, 18, 0), arm_f=(0, 18, 0),
                        leg_n=(26, -18, 92), leg_f=(-22, 4, 86)),
         "walk_b": dict(lean=5, head=-2, shift=-1,
-                       arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                       arm_n=(-8, 22, 0), arm_f=(0, 22, 0),
                        leg_n=(-16, 2, 84), leg_f=(24, -20, 96)),
         "jab": dict(lean=7, shift=2, head=-1,
-                    arm_n=(10, 0, 0), arm_f=(0, 0, 0),
+                    arm_n=(10, 6, 0), arm_f=(0, 6, 0),
                     leg_n=(20, -14, 88), leg_f=(-18, 8, 92)),
         "cross": dict(lean=12, shift=4, head=-3,
-                      arm_n=(14, 0, 0), arm_f=(0, 0, 0),
+                      arm_n=(14, 8, 0), arm_f=(0, 8, 0),
                       leg_n=(30, -20, 88), leg_f=(-24, 10, 94)),
         "upper": dict(lean=-6, lift=-12, shift=2, head=3,
-                      arm_n=(-10, 0, 0), arm_f=(0, 0, 0),
+                      arm_n=(-10, 34, 0), arm_f=(0, 34, 0),
                       leg_n=(38, -46, 90), leg_f=(-30, 24, 92)),
         "crouch": dict(lean=14, head=6,
-                       arm_n=(4, 0, 0), arm_f=(0, 0, 0),
+                       arm_n=(4, 30, 0), arm_f=(0, 30, 0),
                        leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
         "jump": dict(lean=7, head=-3, lift=-20, ground=False,
-                     arm_n=(8, 0, 0), arm_f=(0, 0, 0),
+                     arm_n=(8, 26, 0), arm_f=(0, 26, 0),
                      leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
         "boot": dict(lean=-12, head=5, shift=-5,
-                     arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                     arm_n=(-8, 20, 0), arm_f=(0, 20, 0),
                      leg_n=(84, -6, 60), leg_f=(-16, 10, 92)),
         "low_kick": dict(lean=-5, head=3, lift=-22,
-                         arm_n=(-6, 0, 0), arm_f=(0, 0, 0),
+                         arm_n=(-6, 20, 0), arm_f=(0, 20, 0),
                          leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
         "gun_aim": dict(lean=4, head=-1,
-                        arm_n=(4, 0, 0), arm_f=(0, 0, 0),
+                        arm_n=(4, 26, 0), arm_f=(0, 26, 0),
                         leg_n=(16, -14, 88), leg_f=(-16, 8, 92)),
         "gun_fire": dict(lean=1, head=-2, shift=-2,
-                         arm_n=(2, 0, 0), arm_f=(0, 0, 0),
+                         arm_n=(2, 18, 0), arm_f=(0, 18, 0),
                          leg_n=(18, -16, 88), leg_f=(-18, 10, 92)),
         "knife": dict(lean=8, head=-2,
-                      arm_n=(-4, 0, 0), arm_f=(0, 0, 0),
+                      arm_n=(-4, 34, 0), arm_f=(0, 34, 0),
                       leg_n=(18, -14, 88), leg_f=(-18, 8, 92)),
         "knife_throw": dict(lean=14, shift=3, head=-4,
-                            arm_n=(12, 0, 0), arm_f=(0, 0, 0),
+                            arm_n=(12, 6, 0), arm_f=(0, 6, 0),
                             leg_n=(26, -18, 88), leg_f=(-22, 10, 92)),
         "block": dict(lean=-3, lift=-3, head=4,
-                      arm_n=(8, 0, 0), arm_f=(0, 0, 0),
+                      arm_n=(8, 40, 0), arm_f=(0, 40, 0),
                       leg_n=(6, -4, 88), leg_f=(-10, 6, 92)),
         "hit": dict(lean=-13, head=11, shift=-4,
-                    arm_n=(-8, 0, 0), arm_f=(0, 0, 0),
+                    arm_n=(-8, 26, 0), arm_f=(0, 26, 0),
                     leg_n=(-10, 12, 88), leg_f=(-26, 18, 92)),
         "win": dict(lean=-3, head=-4,
-                    arm_n=(6, 0, 0), arm_f=(0, 0, 0),
+                    arm_n=(6, 20, 0), arm_f=(0, 20, 0),
                     leg_n=(14, -10, 88), leg_f=(-18, 8, 92)),
     },
     "lightning": {
@@ -977,13 +1250,64 @@ POSE_SETS = {
         # concept draws. The far arm's part is MIRRORED, so its angle runs the
         # other way to keep the two arms symmetric.
         "stance": dict(lean=-2, head=1, cape=-4,
-                       arm_n=(-18, 0, 0), arm_f=(14, 0, 0),
+                       arm_n=(-18, 22, 0), arm_f=(14, 22, 0),
                        leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
         # He stands nearly upright in the concept; the old 26/-28 split squatted
         # him into a crab stance that made the boots look enormous.
         "breath": dict(lean=-3, head=0, lift=1, cape=-2,
-                        arm_n=(-22, 0, 0), arm_f=(18, 0, 0),
+                        arm_n=(-22, 20, 0), arm_f=(18, 20, 0),
                         leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
+    },
+    # Rain wears Lightning's cloak and hat, so he gets the same upright stance -
+    # but he carries a claw rake in each fist, and a shaft that long turns every
+    # degree of arm swing into a wide sweep, so his arms move half as far.
+    "rain": {
+        "stance": dict(lean=-1, head=1, cape=-1,
+                       arm_n=(-6, 22, 0), arm_f=(6, 22, 0),
+                       leg_n=(12, -6, 86), leg_f=(-14, 8, 94)),
+        "breath": dict(lean=-2, head=0, lift=1, cape=0,
+                       arm_n=(-9, 20, 0), arm_f=(9, 20, 0),
+                       leg_n=(12, -6, 86), leg_f=(-14, 8, 94)),
+    },
+    # Gracie and Maio Yin hang their arms: their sleeve art is cut hanging, so the
+    # male table's -30 swing (which was tuned to a raised guard) folded the near
+    # forearm across the bodice and read as a red paddle over the chest.
+    "gracielaw": {
+        "stance": dict(lean=-1, head=0,
+                       arm_n=(-5, 22, 0), arm_f=(5, 22, 0),
+                       leg_n=(8, -4, 86), leg_f=(-10, 6, 94)),
+        "breath": dict(lean=-2, head=-1, lift=1,
+                       arm_n=(-8, 20, 0), arm_f=(8, 20, 0),
+                       leg_n=(8, -4, 86), leg_f=(-10, 6, 94)),
+    },
+    # Egg Shen is an older, heavier man: he stands square with his arms out
+    # from his sides rather than tucked into a boxer's guard.
+    "eggshen": {
+        "stance": dict(lean=0, head=1,
+                       arm_n=(-11, 22, 0), arm_f=(11, 22, 0),
+                       leg_n=(14, -8, 84), leg_f=(-16, 10, 96)),
+        "breath": dict(lean=-1, head=0, lift=1,
+                       arm_n=(-14, 20, 0), arm_f=(14, 20, 0),
+                       leg_n=(14, -8, 84), leg_f=(-16, 10, 96)),
+    },
+    # Wang Chi is young and light on his feet, and his arm art is cut hanging
+    # like the women's, so he needs the same shallow swing - but with a wider
+    # stance, because he is the one who fights with his legs.
+    "wangchi": {
+        "stance": dict(lean=1, head=-1,
+                       arm_n=(-7, 22, 0), arm_f=(7, 22, 0),
+                       leg_n=(16, -10, 84), leg_f=(-18, 12, 96)),
+        "breath": dict(lean=0, head=-2, lift=1,
+                       arm_n=(-10, 20, 0), arm_f=(10, 20, 0),
+                       leg_n=(16, -10, 84), leg_f=(-18, 12, 96)),
+    },
+    "jade": {
+        "stance": dict(lean=-1, head=0,
+                       arm_n=(-5, 22, 0), arm_f=(5, 22, 0),
+                       leg_n=(8, -4, 86), leg_f=(-10, 6, 94)),
+        "breath": dict(lean=-2, head=-1, lift=1,
+                       arm_n=(-8, 20, 0), arm_f=(8, 20, 0),
+                       leg_n=(8, -4, 86), leg_f=(-10, 6, 94)),
     },
 }
 

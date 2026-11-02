@@ -6,8 +6,9 @@ replaced here with the project's wordmark, so the screenpack's positioning,
 bobbing and fades keep working untouched.
 
 The wordmark is the gold-on-maroon lockup: BIG TROUBLE arched across the top,
-then IN / LITTLE / CHINA stacked beneath it, with the two blue ribbon swooshes
-that sweep past the letters. The lockup is composed on a tall scratch canvas and
+then IN / LITTLE / CHINA stacked beneath it. The blue ribbon swooshes an
+earlier version swept past the letters are gone: they crossed the wordmark and
+read as stray blue streaks sitting behind the title. The lockup is composed on a tall scratch canvas and
 then fitted to the sprite, because the stacked lines and the arch's descending
 arms do not fit a short canvas at any font size - and art.font() falls back
 through system faces to Pillow's own default, so the metrics are not constant
@@ -342,27 +343,7 @@ def lockup():
                           jitter=0.4, weight=0.05, tilt=-0.5)
     hbox = china.getbbox()
 
-    back = Image.new("RGBA", WORK, (0, 0, 0, 0))
-    # a ribbon falling from behind the left arm, then curling in under the stack
-    left = max(8.0, cbox[0] + 18)
-    back.alpha_composite(ribbon([(left, cbox[3] * 0.46), (left + 66, cbox[3] * 0.30),
-                                 (left + 132, cbox[3] * 0.38),
-                                 (left + 96, lbox[1] + 16),
-                                 (left + 26, hbox[1] + 26),
-                                 (left + 44, hbox[3] + 30)],
-                                width=(46.0, 34.0),
-                                colors=((186, 212, 250), BLUE_DEEP), seed=5))
-    # a ribbon leaving under CHINA and trailing out to the lower right
-    right = min(WORK[0] - 60.0, hbox[2] - 40.0)
-    back.alpha_composite(ribbon([(right - 110, hbox[3] - 8), (right, hbox[3] - 18),
-                                 (right + 74, hbox[3] + 4),
-                                 (right + 126, hbox[3] + 58),
-                                 (right + 146, hbox[3] + 100)],
-                                width=(46.0, 34.0),
-                                colors=((194, 216, 250), BLUE_DEEP), seed=8))
-
     art_img = Image.new("RGBA", WORK, (0, 0, 0, 0))
-    art_img.alpha_composite(back)
     art_img.alpha_composite(paint_line(caps, depth=(12, 13)))
     art_img.alpha_composite(paint_line(in_mask, depth=(5, 6)))
     art_img.alpha_composite(paint_line(
@@ -430,6 +411,36 @@ def place_def(start):
     return start
 
 
+def strip_menu_shade():
+    """Drop the engine's black panel from behind the title menu.
+
+    The stock motif draws [TitleBG Background Black Menu Bars]: a 785x348
+    semi-transparent black plate at start = 640,282, which lands right where the
+    menu column sits - so the whole list was read through a grey smear. The
+    engine data is restored on every build, so the layer is removed here instead
+    of by hand. Idempotent: a file without the block is left untouched.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return False
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    out, skipping = [], False
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            skipping = s.startswith("[titlebg background black menu bar")
+        if not skipping:
+            out.append(line)
+    if len(out) == len(lines):
+        return False
+    while out and not out[-1].strip():
+        out.pop()
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
+    return True
+
+
 def build():
     if not os.path.isfile(SYSTEM_SFF):
         raise SystemExit("data/ikemen1/system.sff is missing - fetch the engine "
@@ -485,6 +496,8 @@ def build():
     start = (int(round(axis[0] - (box[0] + box[2]) / 2.0)),
              int(round(TOP_MARGIN + axis[1] - box[1])))
     place_def(start)
+    if strip_menu_shade():
+        print("removed the black menu panel from the title background")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     logo.save(os.path.join(ROOT, "artifacts", "title_logo.png"))

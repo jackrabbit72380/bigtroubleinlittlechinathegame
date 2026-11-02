@@ -2506,3 +2506,48 @@ Clsn2Default: 1
 5300,3, 0,0, 8
 5300,2, 0,0, 8
 5300,1, 0,0, 8
+
+;---------------------------------------------------------------------------
+; Lo Pan - sorcery animation set (added by tools/lopan.py)
+; The 7000-series frames carry the AIR blend flag A, so the runes and the
+; green fire composite additively wherever they are drawn.
+;---------------------------------------------------------------------------
+; Conjured sigil (projectile)
+[Begin Action 7000]
+Clsn1: 1
+ Clsn1[0] = -13,-13, 13,13
+7000,0, 0,0, -1, , A
+
+; Rune opening at the hands
+[Begin Action 7001]
+7001,0, 0,0, 2, , A
+7001,1, 0,0, 2, , A
+7001,2, 0,0, -1, , A
+
+; Sigil breaking, spirits released
+[Begin Action 7002]
+7002,0, 0,0, 3, , A
+7002,1, 0,0, 3, , A
+7002,2, 0,0, -1, , A
+
+; Green fire, rolling out
+[Begin Action 7010]
+Clsn1: 1
+ Clsn1[0] = -38,-18, 38,18
+7010,0, 0,0, 3, , A
+7010,1, 0,0, 3, , A
+7010,2, 0,0, 3, , A
+7010,3, 0,0, 3, , A
+
+; Column of spirits
+[Begin Action 7020]
+7020,0, 0,0, 4, , A
+7020,1, 0,0, 4, , A
+7020,2, 0,0, -1, , A
+
+; Light at his hands - laid over the body, never in it
+[Begin Action 7030]
+7030,0, 0,0, 3, , A
+7030,1, 0,0, 3, , A
+7030,2, 0,0, 3, , A
+7030,3, 0,0, -1, , A

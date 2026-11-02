@@ -35,9 +35,11 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-CELL = 120
+# 6x4 = 24 cells for a 21-line roster (20 fighters + the random box), so every
+# character has a home on one screen. Five columns showed only ten of them.
+CELL = 100
 GAP = 8
-COLS, ROWS = 5, 2
+COLS, ROWS = 6, 4
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 100)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
@@ -46,6 +48,9 @@ BG_SPR = (220, 0)
 CELL_SPR = (222, 0)
 CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
+# Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
+FACE2_WIN_P1 = "0,86,320,712"
+FACE2_WIN_P2 = "962,86,1276,712"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
@@ -124,11 +129,9 @@ def background():
                 anchor="ma")
         rule(d, cx - 62, cx + 62, 92, GOLD_DIM + (220,))
 
-    # Arena caption: the engine draws the stage's own name under this line.
-    tracked(d, (640, ARENA_Y - 34), "ARENA", art.font(20), GOLD + (238,),
-            tracking=8, anchor="ma")
-    rule(d, 520, 600, ARENA_Y - 9, GOLD_DIM + (210,))
-    rule(d, 680, 760, ARENA_Y - 9, GOLD_DIM + (210,))
+    # No painted "ARENA" caption: the engine draws the selected stage's own
+    # name under the thumbnail, and the caption used to sit on top of the
+    # preview box with nothing beneath it.
 
     img = art.vignette(img, strength=0.55)
     return art.grain(img, amount=5, seed=5)
@@ -218,6 +221,14 @@ KEYS = (
     ("portrait.offset", "0,0"),
     ("portrait.scale", "1,1"),
     ("stage.pos", "640,%d" % STAGE_Y),
+    # The engine fills the stage name in itself; only the face needs setting,
+    # and the stock brown was invisible against this backdrop.
+    ("stage.font", "11, 0, 0, 236, 200, 120"),
+    ("stage.active.font", "11, 0, 0, 255, 228, 140"),
+    # The arena thumbnail. It was commented out by an older build, which left
+    # the preview box showing nothing but its own frame.
+    ("stage.portrait.spr", "9000,1"),
+    ("stage.portrait.scale", ".4, .4"),
     ("title.offset", "640,30"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
     # each other no matter how tall the fighter is in play.
@@ -225,12 +236,33 @@ KEYS = (
     ("p1.face2.spr", "9000,2"),
     ("p1.face2.offset", "8,150"),
     ("p1.face2.scale", "1,1"),
-    ("p1.face2.window", "0,86,320,712"),
+    ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
     ("p2.face2.offset", "1266,150"),
     ("p2.face2.scale", "1,1"),
-    ("p2.face2.window", "962,86,1276,712"),
+    ("p2.face2.window", FACE2_WIN_P2),
+    # The "?" and the loading art stand in for the portrait, so they are drawn
+    # inside the same rect and clipped by the same window. Left at the stock
+    # 5x scale and a 476px-wide window they spilled past the panel and showed
+    # around the preview art. Offsets below compensate for each sprite's axis:
+    # 151,0 sits at (-22,-18), 151,1 (mirrored) at (31,0), 1000,1 at (0,0).
+    ("p1.face2.random.offset", "-97, 173"),
+    ("p1.face2.random.scale", "4.8, 4.8"),
+    ("p1.face2.random.window", FACE2_WIN_P1),
+    ("p1.face2.loading.offset", "8, 235"),
+    ("p1.face2.loading.scale", ".625, .625"),
+    ("p1.face2.loading.window", FACE2_WIN_P1),
+    ("p2.face2.random.offset", "1328, 173"),
+    ("p2.face2.random.scale", "4.8, 4.8"),
+    ("p2.face2.random.window", FACE2_WIN_P2),
+    ("p2.face2.loading.offset", "1266, 235"),
+    ("p2.face2.loading.scale", ".625, .625"),
+    ("p2.face2.loading.window", FACE2_WIN_P2),
+    # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
+    # the cells beside it.
+    ("cell.random.offset", "-30,-24"),
+    ("cell.random.scale", "1.5, 1.5"),
 )
 for i, spr in enumerate(CURSOR, start=1):
     KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % spr),
@@ -243,11 +275,11 @@ for i, spr in enumerate(CURSOR, start=1):
 # Keys that belong to the wall-of-cells layout and would fight the grid.
 DROP = re.compile(r"^\s*cell\.\*-\d+\.", re.IGNORECASE)
 # Anim-based overrides that would draw the old cursor or the perspective face2
-# art on top of the new layout.
+# art on top of the new layout. stage.portrait.spr is deliberately NOT here:
+# it is the arena thumbnail, and disabling it left the preview box empty.
 DISABLE = re.compile(
     r"^\s*(p[1-4]\.cursor\.(active|done)\.anim|"
-    r"p[12]\.face2\.(projection|yangle|focallength)\s*|"
-    r"stage\.portrait\.spr)\s*=", re.IGNORECASE)
+    r"p[12]\.face2\.(projection|yangle|focallength))\s*=", re.IGNORECASE)
 
 
 def patch_select_info():

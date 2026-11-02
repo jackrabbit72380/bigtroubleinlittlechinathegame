@@ -221,15 +221,42 @@ def check_select_screen(chars):
             key, value = line.split("=", 1)
             opts[key.strip().lower()] = value.split(";")[0].strip()
 
-    if opts.get("rows") != "2" or opts.get("columns") != "5":
-        err("select screen: grid is %s rows by %s columns, expected 2 by 5"
+    if opts.get("rows") != "4" or opts.get("columns") != "6":
+        err("select screen: grid is %s rows by %s columns, expected 4 by 6 "
+            "(24 cells for a 21-line roster)"
             % (opts.get("rows"), opts.get("columns")))
-    if opts.get("cell.size") != "120,120":
-        err("select screen: cell.size is %r, expected 120,120" % opts.get("cell.size"))
+    if opts.get("cell.size") != "100,100":
+        err("select screen: cell.size is %r, expected 100,100" % opts.get("cell.size"))
+    # Every roster line must land on the one page, or fighters exist but cannot
+    # be picked.
+    try:
+        rows = int(opts.get("rows", 0))
+        cols = int(opts.get("columns", 0))
+        sel = read(os.path.join(ROOT, "data", "select.def"))
+        entries = [ln for ln in sel.split("[Characters]", 1)[-1].split("[", 1)[0]
+                   .splitlines()
+                   if ln.strip() and not ln.strip().startswith(";")
+                   and not ln.strip().startswith("def")]
+        if rows and cols and len(entries) > rows * cols:
+            err("select screen: %d roster lines but only %d cells, so %d "
+                "character(s) cannot be selected"
+                % (len(entries), rows * cols, len(entries) - rows * cols))
+    except OSError:
+        pass
     if opts.get("portrait.spr") != "9000,0":
         err("select screen: portrait.spr is %r, expected 9000,0" % opts.get("portrait.spr"))
     if "p1.face.window" not in opts or "p2.face.window" not in opts:
         err("select screen: the big side portraits have no window")
+
+    # The "?" and loading art are drawn in the portrait panels; sharing the
+    # panel window is what keeps them from spilling onto the grid.
+    for side in ("p1", "p2"):
+        panel = opts.get(side + ".face2.window")
+        for state in ("random", "loading"):
+            win = opts.get("%s.face2.%s.window" % (side, state))
+            if panel and win != panel:
+                err("select screen: %s.face2.%s.window is %r, expected the panel "
+                    "window %r" % (side, state, win, panel))
 
     sff_path = os.path.join(ROOT, "data", "ikemen1", "system.sff")
     if not os.path.isfile(sff_path):
@@ -237,6 +264,36 @@ def check_select_screen(chars):
         return
     _d, sprites, _p = sff.read_sff(sff_path)
     have = {(sp["group"], sp["number"]): sp for sp in sprites}
+
+    # The "?" and the loading art stand in for the big side portraits, so they
+    # must draw inside the portrait rect. The engine scales a sprite's axis with
+    # it, which is what pushed the stock 5x "?" out past the panel and left it
+    # showing around the preview art.
+    portrait = (300.0, 520.0)          # 9000,2 on screen at scale 1
+    for side, flip in (("p1", 1), ("p2", -1)):
+        off = [float(v) for v in opts.get(side + ".face2.offset", "0,0").split(",")]
+        psc = [float(v) for v in opts.get(side + ".face2.scale", "1,1").split(",")]
+        px = off[0] if flip > 0 else off[0] - portrait[0] * psc[0]
+        box = (px, off[1], px + portrait[0] * psc[0], off[1] + portrait[1] * psc[1])
+        for state in ("random", "loading"):
+            key = "%s.face2.%s" % (side, state)
+            spr = [int(v) for v in opts.get(key + ".spr", "0,0").split(",")]
+            hit = have.get((spr[0], spr[1]))
+            if hit is None:
+                continue
+            so = [float(v) for v in opts.get(key + ".offset", "0,0").split(",")]
+            ss = [float(v) for v in opts.get(key + ".scale", "1,1").split(",")]
+            ax, ay = hit["axis"]
+            rx = so[0] - ax * ss[0] if flip > 0 else so[0] + (ax - hit["w"]) * ss[0]
+            ry = so[1] - ay * ss[1]
+            rect = (rx, ry, rx + hit["w"] * ss[0], ry + hit["h"] * ss[1])
+            if (rect[0] < box[0] - 1 or rect[1] < box[1] - 1
+                    or rect[2] > box[2] + 1 or rect[3] > box[3] + 1):
+                err("select screen: %s draws %d,%d-%d,%d, outside the portrait "
+                    "rect %d,%d-%d,%d, so it shows around the preview art"
+                    % ((key,) + tuple(int(v) for v in rect)
+                       + tuple(int(v) for v in box)))
+
     for group, number in ((220, 0), (222, 0), (223, 0), (223, 1), (223, 2), (223, 3)):
         if (group, number) not in have:
             err("select screen: system.sff has no sprite %d,%d" % (group, number))
@@ -255,21 +312,29 @@ def check_select_screen(chars):
         if not os.path.isfile(char_sff):
             continue
         _cd, char_sprites, _cp = sff.read_sff(char_sff)
-        cell = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get((9000, 0))
-        if cell is None:
-            err("%s: no select portrait 9000,0" % name)
-        elif (cell["w"], cell["h"]) != (120, 120):
-            err("%s: select portrait is %dx%d, expected 120x120"
-                % (name, cell["w"], cell["h"]))
-        want = {(9000, 1): (120, 140), (9000, 2): (300, 520)}
+        # The engine draws a portrait at scale * motif.localcoord / char
+        # localcoord, so the size that matters is the one on screen, not the
+        # one in the sheet: a 320x240 fighter's art is blown up 4x.
+        lc_match = re.search(r"^\s*localcoord\s*=\s*(\d+)", read(def_path),
+                             re.M | re.I)
+        localcoord = int(lc_match.group(1)) if lc_match else 320
+        factor = 1280.0 / localcoord      # motif [Info] localcoord width
+        want = {(9000, 0): (100, 100), (9000, 1): (120, 140),
+                (9000, 2): (300, 520)}
         for key, size in want.items():
             hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
             if hit is None:
                 err("%s: no portrait sprite %d,%d" % (name, key[0], key[1]))
-            elif (hit["w"], hit["h"]) != size:
-                err("%s: portrait %d,%d is %dx%d, expected %dx%d"
-                    % (name, key[0], key[1], hit["w"], hit["h"], size[0], size[1]))
-    notes.append("select screen: 5x2 portrait grid, 120px cells, framed sides")
+                continue
+            drawn = (hit["w"] * factor, hit["h"] * factor)
+            if abs(drawn[0] - size[0]) > 4 or abs(drawn[1] - size[1]) > 4:
+                err("%s: portrait %d,%d draws %dx%d on screen at localcoord %d, "
+                    "expected %dx%d"
+                    % (name, key[0], key[1], round(drawn[0]), round(drawn[1]),
+                       localcoord, size[0], size[1]))
+    notes.append("select screen: 6x4 portrait grid, 100px cells, framed sides; "
+                 "every fighter carries 9000,0 cell art, 9000,1 VS art and "
+                 "9000,2 side art")
 
 
 def check_menu_theme():
@@ -327,12 +392,240 @@ def check_menu_theme():
             % ", ".join(stale))
     if declared.get("font10") is None or declared.get("font11") is None:
         err("menu theme: font10/font11 are not registered in [Files]")
+
+    # Every "[* Pause Menu]" block needs its own geometry. The engine fills a
+    # derived pause menu from its default motif, not from our [Pause Menu], so a
+    # section that merely exists renders with the stock layout.
+    sections, cur = {}, None
+    for line in def_text.splitlines():
+        head = re.match(r"^\s*\[([^\]]+)\]", line)
+        if head:
+            cur = head.group(1).strip()
+            sections[cur] = set()
+        elif cur is not None:
+            key = re.match(r"^\s*([A-Za-z0-9_.]+)\s*=", line)
+            if key:
+                sections[cur].add(key.group(1))
+    for name, keys in sections.items():
+        if not name.lower().endswith("pause menu"):
+            continue
+        for need in ("menu.pos", "menu.item.spacing", "menu.item.font"):
+            if need not in keys:
+                err("menu theme: [%s] has no %s, so it renders with the stock "
+                    "layout" % (name, need))
+
+    # The cursor band must cover the row it marks. The engine draws it from
+    # pos.y + coords[2] with height coords[4]-coords[2]+1 while the item text is
+    # drawn from pos.y, so a negative coords[2] parks it on the row above.
+    cur_sec, cursor = None, {}
+    for line in def_text.splitlines():
+        head = re.match(r"^\s*\[([^\]]+)\]", line)
+        if head:
+            cur_sec = head.group(1).strip()
+            cursor[cur_sec] = {}
+        elif cur_sec is not None and not line.strip().startswith(";"):
+            kv = re.match(r"^\s*(menu\.boxcursor\.(?:visible|coords))\s*=\s*([^;]*)",
+                          line, re.I)
+            if kv:
+                cursor[cur_sec][kv.group(1).lower()] = kv.group(2).strip()
+    for name, keys in cursor.items():
+        if not keys or keys.get("menu.boxcursor.visible", "0") == "0":
+            continue
+        try:
+            vals = [float(v) for v in keys["menu.boxcursor.coords"].split(",")]
+            y1, y2 = vals[1], vals[3]
+        except (KeyError, ValueError, IndexError):
+            continue
+        if y1 < -6 or y1 > 8 or (y2 - y1 + 1) < 40:
+            err("menu theme: [%s] cursor band spans y%+.0f..%+.0f, so it does "
+                "not sit on the row it marks (want 0..44)" % (name, y1, y2))
+
     notes.append("menu theme: logo face, gold face on maroon extrusion")
+
+
+def check_commands():
+    """Every ChangeState in a .cmd must carry a trigger1.
+
+    Ikemen refuses the whole file with "Missing trigger1" when a state block has
+    triggerall lines but no trigger1, and the engine shows it as a load-error
+    dialog the moment the character enters a match: Lightning's Storm Step was
+    written that way, which crashed Lo Pan's Throne whenever he was on screen.
+    """
+    base = os.path.join(ROOT, "chars")
+    if not os.path.isdir(base):
+        return
+    for folder in sorted(os.listdir(base)):
+        folder_path = os.path.join(base, folder)
+        if not os.path.isdir(folder_path):
+            continue
+        for filename in sorted(f for f in os.listdir(folder_path)
+                               if f.lower().endswith(".cmd")):
+            path = os.path.join(folder_path, filename)
+            label = "%s/%s" % (folder, filename)
+            cur, has_t1, is_change = None, False, False
+            for lineno, line in enumerate(read(path).splitlines(), 1):
+                stripped = line.strip()
+                if stripped.startswith("["):
+                    if cur and is_change and not has_t1:
+                        err("%s:%d %s is a ChangeState with no trigger1"
+                            % (label, cur[0], cur[1]))
+                    cur, has_t1, is_change = (lineno, stripped), False, False
+                    continue
+                low = stripped.lower().replace(" ", "")
+                if low.startswith("trigger1"):
+                    has_t1 = True
+                elif low.startswith("type=changestate"):
+                    is_change = True
+            if cur and is_change and not has_t1:
+                err("%s:%d %s is a ChangeState with no trigger1"
+                    % (label, cur[0], cur[1]))
+    notes.append("commands: every ChangeState carries a trigger1")
+
+
+def _report_gate(label, cur, idx):
+    if not cur or len(idx) < 2:
+        return
+    with_cmd = [n for n, has in idx.items() if has]
+    without = [n for n, has in idx.items() if not has]
+    if with_cmd and without:
+        err("%s:%d %s gates a command on trigger%d while trigger%d is a separate "
+            "OR branch, so the move fires without the input"
+            % (label, cur[0], cur[1], with_cmd[0], without[0]))
+
+
+def check_command_gates():
+    """A command must not sit on a numbered trigger beside state conditions.
+
+    Numbered triggers are OR'ed by the engine, so `trigger1 = command = "x"`
+    next to `trigger2 = statetype != A` fires the move whenever the state
+    condition holds, with no input at all. Storm Step shipped like that and
+    teleported Lightning on the first frame of every round.
+    """
+    base = os.path.join(ROOT, "chars")
+    if not os.path.isdir(base):
+        return
+    for folder in sorted(os.listdir(base)):
+        folder_path = os.path.join(base, folder)
+        if not os.path.isdir(folder_path):
+            continue
+        for filename in sorted(f for f in os.listdir(folder_path)
+                               if f.lower().endswith(".cmd")):
+            path = os.path.join(folder_path, filename)
+            label = "%s/%s" % (folder, filename)
+            cur, idx = None, {}
+            for lineno, line in enumerate(read(path).splitlines(), 1):
+                stripped = line.strip()
+                if stripped.startswith("["):
+                    _report_gate(label, cur, idx)
+                    cur, idx = (lineno, stripped), {}
+                    continue
+                m = re.match(r"^trigger(\d+)\s*=\s*(.*)$", stripped, re.I)
+                if m:
+                    n = int(m.group(1))
+                    idx[n] = idx.get(n, False) or ("command" in m.group(2).lower())
+            _report_gate(label, cur, idx)
+    notes.append("commands: no command is OR'ed with a state condition")
+
+
+def check_ladder():
+    """Every order the roster uses needs a non-zero maxmatches slot.
+
+    start.f_unifySettings() builds the ladder from <mode>maxmatches indexed by
+    order, so an order whose slot is 0 produces no fights at all: a boss with
+    order=4 is unreachable while the fourth entry is 0.
+    """
+    sel = read(os.path.join(ROOT, "data", "select.def"))
+    body = sel.split("[Characters]", 1)[-1].split("\n[", 1)[0]
+    orders = set()
+    for line in body.splitlines():
+        line = line.split(";")[0].strip()
+        if not line:
+            continue
+        m = re.search(r"\border\s*=\s*(\d+)", line)
+        if m and int(m.group(1)) > 0:
+            orders.add(int(m.group(1)))
+    if not orders:
+        return
+    for mode in ("arcade", "team", "timeattack"):
+        m = re.search(r"^%s\.maxmatches\s*=\s*([^\n;]*)" % mode, sel, re.M)
+        if not m:
+            err("ladder: %s.maxmatches is missing from select.def" % mode)
+            continue
+        try:
+            slots = [int(v) for v in m.group(1).split(",")]
+        except ValueError:
+            err("ladder: %s.maxmatches is not a number list" % mode)
+            continue
+        for order in sorted(orders):
+            if order > len(slots) or slots[order - 1] <= 0:
+                err("ladder: %s.maxmatches = %s gives order=%d no fights, so "
+                    "a character with that order never appears"
+                    % (mode, m.group(1).strip(), order))
+    notes.append("ladder: every roster order has fights in arcade and team")
+
+
+def check_intro_states():
+    """[Statedef 191] must not spawn KFM's wood pieces or their hit sounds.
+
+    Anims 191/192 are full-body poses in these characters, so the stock
+    explods threw copies of the fighter across the screen while fight-fx hit
+    sounds looped over the intro.
+    """
+    base = os.path.join(ROOT, "chars")
+    paths = [os.path.join(base, d, f)
+             for d in sorted(os.listdir(base))
+             if os.path.isdir(os.path.join(base, d))
+             for f in sorted(os.listdir(os.path.join(base, d)))
+             if f.lower().endswith(".cns")]
+    for path in paths:
+        label = os.path.relpath(path, ROOT)
+        inside = False
+        for lineno, line in enumerate(read(path).splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("["):
+                inside = stripped.startswith("[Statedef 191")
+                continue
+            if inside and re.match(r"^type\s*=\s*(PlaySnd|Explod)\b", stripped, re.I):
+                err("%s:%d intro state spawns %s" % (label, lineno, stripped))
+    notes.append("intro: no leftover wood explods or hit sounds")
+
+
+def check_stage_aspect():
+    """Stages listed for play must be 16:9, or they letterbox."""
+    sel = read(os.path.join(ROOT, "data", "select.def"))
+    body = sel.split("[ExtraStages]", 1)[-1].split("\n[", 1)[0]
+    for line in body.splitlines():
+        path = line.split(";")[0].strip()
+        if not path or "stage0" in path:
+            continue          # the training room is meant to stay arcade-shaped
+        full = os.path.join(ROOT, path)
+        if not os.path.isfile(full):
+            err("stages: %s is listed in [ExtraStages] but missing" % path)
+            continue
+        m = re.search(r"^\s*localcoord\s*=\s*(\d+)\s*,\s*(\d+)", read(full),
+                      re.M | re.I)
+        if not m:
+            err("stages: %s has no localcoord, so it falls back to 4:3" % path)
+            continue
+        w, h = int(m.group(1)), int(m.group(2))
+        if abs(w / float(h) - 16 / 9.0) > 0.02:
+            err("stages: %s is %dx%d (%.2f:1), so it letterboxes in a 16:9 "
+                "window" % (path, w, h, w / float(h)))
+        body = read(full)
+        for need in ("[BG sky]", "[BG lip]"):
+            if need not in body:
+                err("stages: %s has no %s layer, so it has no depth" % (path, need))
+    notes.append("stages: 16:9 canvases, no letterbox bars")
 
 
 def main():
     chars = check_select()
     check_menu_theme()
+    check_commands()
+    check_command_gates()
+    check_ladder()
+    check_intro_states()
+    check_stage_aspect()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)

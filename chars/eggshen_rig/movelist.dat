@@ -1,0 +1,22 @@
+<#f0f000>:Movement:</>
+Walk, jump, crouch						_DPAD_
+Dash forward / back						_F_F_ / _B_B_
+
+<#f0f000>:Guard:</>
+High guard							_F_+^X
+Low guard							_DF_+^X
+Air guard							_AIR_F_+^X
+
+<#f0f000>:Throws:</>
+Six Demon Toss							[_B/_F]_+^Y
+
+<#f0f000>:Special Moves:</>
+Hex Palm							_QDF^P
+Bag Upper							_DSF^P
+Thunder Scroll								_QDB^P
+Chicken Feather								_QDF^K
+Bus Driver Kick								_F_F^K
+
+<#f0f000>:Super Moves:</>
+Six Demon Bag <#bebebe>(1000)</>				_QDF_QDF^P
+Egg Shen's Ritual <#bebebe>(1000)</>				_QDB_QDB^P

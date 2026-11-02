@@ -163,47 +163,6 @@ type = ChangeState
 trigger1 = AnimTime = 0
 value = 0
 
-; You can delete the following two controllers if you're building your own
-; character using KFM. These are the wood pieces that KFM kicks.
-[State 191, Wood 1]
-type = Explod
-trigger1 = RoundState != 0
-persistent = 0
-anim = 191
-postype = p1
-pos = 260, -90
-velocity = -4.2, -7
-accel = 0, .32
-removetime = 48
-
-[State 191, Wood 2]
-type = Explod
-trigger1 = AnimElemTime(7) = 1
-anim = 192
-postype = p1
-pos = 60, -70
-velocity = 2, -4
-accel = 0, .32
-removetime = 35
-
-; You can delete the following two controllers if you're building your own
-; character using KFM. These play back the sounds of the wood block being
-; broken.
-[State 191, Snd 1]
-type = PlaySnd
-trigger1 = AnimElem = 7
-value = F5,2
-volume = -40
-
-[State 191, Snd 2]
-type = PlaySnd
-trigger1 = AnimElemTime(7) = 3
-value = F5,3
-volume = -80
-
-;---------------------------------------------------------------------------
-; Taunt
-; CNS difficulty: easy
 [Statedef 195]
 type = S
 ctrl = 0
@@ -3443,3 +3402,373 @@ triggerall = Time = 1
 trigger1 = stateno = 52 ;Jump land
 trigger2 = stateno = 106 ;Run-back land
 value = 40, 0
+
+;---------------------------------------------------------------------------
+; Rain - water specials
+; The dart volley is three darts on consecutive thrusts, each lighter than the
+; last, so the whole volley lands about as hard as one solid strike. The
+; Cloudburst is a single rolling wave that carries across the screen.
+;---------------------------------------------------------------------------
+[Statedef 1500]
+type    = S
+movetype= A
+physics = S
+juggle  = 4
+poweradd= 45
+velset = 0,0
+anim = 1210
+ctrl = 0
+sprpriority = 2
+
+[State 1500, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 12
+length = 12
+timegap = 1
+framegap = 2
+trans = add
+paladd = 8, 30, 52
+palmul = 1.0, 1.03, 1.14
+
+[State 1500, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1500, splash 1]
+type = Explod
+trigger1 = AnimElem = 4
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, splash 2]
+type = Explod
+trigger1 = AnimElem = 6
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, splash 3]
+type = Explod
+trigger1 = AnimElem = 8
+anim = 7001
+id = 1501
+pos = 40,-70
+postype = p1
+sprpriority = 4
+removetime = -2
+trans = add
+
+[State 1500, dart 1]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7000
+projhitanim = 7002
+velocity = 14, 0
+removetime = -1
+projshadow = -1
+damage = 37
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, dart 2]
+type = Projectile
+trigger1 = AnimElem = 6
+projanim = 7000
+projhitanim = 7002
+velocity = 14, 0
+removetime = -1
+projshadow = -1
+damage = 33
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, dart 3]
+type = Projectile
+trigger1 = AnimElem = 8
+projanim = 7000
+projhitanim = 7002
+velocity = 14, 0
+removetime = -1
+projshadow = -1
+damage = 30
+attr = S, SP
+guardflag = MA
+pausetime = 4, 10
+sparkno = 1
+sparkxy = -10,-58
+hitsound = 5,3
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 8
+ground.hittime = 12
+ground.velocity = -3
+air.velocity = -3,-2.5
+
+[State 1500, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+[Statedef 1600]
+type    = S
+movetype= A
+physics = S
+juggle  = 5
+poweradd= 55
+velset = 0,0
+anim = 1400
+ctrl = 0
+sprpriority = 2
+
+[State 1600, charged]
+type = AfterImage
+trigger1 = Time = 0
+time = 16
+length = 14
+timegap = 1
+framegap = 2
+trans = add
+paladd = 8, 30, 52
+palmul = 1.0, 1.03, 1.14
+
+[State 1600, sound]
+type = PlaySnd
+trigger1 = AnimElem = 3
+value = 0, 3
+
+[State 1600, cloudburst]
+type = Projectile
+trigger1 = AnimElem = 4
+projanim = 7010
+projhitanim = 7002
+velocity = 10, 0
+removetime = -1
+projshadow = -1
+damage = 86
+attr = S, SP
+guardflag = MA
+pausetime = 8, 14
+sparkno = 1
+sparkxy = -10,-62
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 16
+ground.velocity = -4
+air.velocity = -3.5,-3
+fall = 0
+
+[State 1600, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+; Rain Step - he comes down out of his own downpour.
+; Down, then up: rain closes over him where he stood, and he lands on the far
+; side of the opponent with the water still falling around him, and it hits.
+;---------------------------------------------------------------------------
+[Statedef 1700]
+type    = S
+movetype= A
+physics = N
+anim = 40
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+[State 1700, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 3
+
+; the curtain he turns into, standing where he was
+[State 1700, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1720
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 30
+trans = add
+ownpal = 1
+
+[State 1700, splash]
+type = Explod
+trigger1 = time = 2
+anim = 7001
+id = 1721
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = -2
+trans = add
+ownpal = 1
+
+; he IS the rain while he travels - nothing of the body shows
+[State 1700, gone]
+type = AssertSpecial
+trigger1 = time >= 4 && time < 26
+flag = invisible
+
+[State 1700, trail]
+type = AfterImage
+trigger1 = time = 4
+time = 20
+length = 8
+timegap = 1
+framegap = 1
+trans = add
+paladd = 8, 30, 52
+palmul = 1.0, 1.03, 1.14
+
+[State 1700, rise]
+type = VelSet
+trigger1 = time = 4
+y = -40
+
+; at the top, cross to the far side of the opponent
+[State 1700, cross]
+type = PosSet
+trigger1 = time = 20
+x = enemy, pos x + ifelse(facing = 1, 78, -78)
+
+[State 1700, apex]
+type = PosSet
+trigger1 = time = 20
+y = -540
+
+[State 1700, drop]
+type = VelSet
+trigger1 = time = 20
+y = 46
+
+[State 1700, land]
+type = ChangeState
+trigger1 = time > 20 && pos y >= 0
+value = 1702
+
+;---------------------------------------------------------------------------
+[Statedef 1702]
+type    = S
+movetype= A
+physics = N
+juggle  = 4
+anim = 1700
+ctrl = 0
+velset = 0,0
+sprpriority = 2
+
+; he came down behind the opponent, so turn and hit him
+[State 1702, turn]
+type = Turn
+trigger1 = time = 0
+trigger1 = p2bodydist X < 0
+
+[State 1702, column]
+type = Explod
+trigger1 = time = 0
+anim = 7020
+id = 1722
+postype = p1
+pos = 0,0
+sprpriority = 3
+removetime = 16
+trans = add
+ownpal = 1
+
+[State 1702, shake]
+type = EnvShake
+trigger1 = time = 0
+time = 8
+freq = 90
+ampl = -12
+
+[State 1702, thunder]
+type = PlaySnd
+trigger1 = time = 0
+value = 0, 4
+
+[State 1702, strike]
+type = HitDef
+trigger1 = time = 1
+attr = S, HA
+damage = 104
+guardflag = MA
+hitflag = MAF
+pausetime = 10, 14
+sparkno = 1
+sparkxy = -30,-174
+hitsound = 5,4
+guardsound = 6,0
+animtype = Hard
+ground.type = High
+ground.slidetime = 10
+ground.hittime = 18
+ground.velocity = -5,-5
+air.velocity = -4,-6
+fall = 1
+
+[State 1702, end]
+type = ChangeState
+trigger1 = AnimTime = 0
+value = 0
+ctrl = 1
+
+;---------------------------------------------------------------------------
+; The water is not part of him: it is laid over the sprite, so the rakes and
+; the cloak stay clean in every frame and the whole effect is one block here
+; that can be switched off.
+;---------------------------------------------------------------------------
+[Statedef -2]
+type = Explod
+trigger1 = !(time % 10)
+anim = 7030
+id = 7300
+postype = p1
+pos = 0,-186
+sprpriority = 4
+removetime = 14
+trans = add
+ownpal = 1

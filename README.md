@@ -70,10 +70,11 @@ sibling libraries — keep the release folder intact and only replace its
 | Fighter | Role | Life | ATK | DEF | Notes |
 |---|---|---|---|---|---|
 | Jack Burton | hero | 1050 | 108 | 100 | balanced, pistol and knife specials |
-| Wang Chi | hero | 950 | 108 | 95 | faster, lower defence |
-| Gracie Law | hero | 880 | 94 | 92 | fastest, lowest damage |
-| Egg Shen | hero | 900 | 115 | 88 | glass cannon sorcerer |
-| Rain | storm | 950 | 100 | 96 | first-tier ladder opponent |
+| Wang Chi | hero | 950 | 108 | 95 | faster, lower defence; painted rig |
+| Gracie Law | hero | 880 | 94 | 92 | fastest, lowest damage; painted rig |
+| Maio Yin | hero | 900 | 101 | 94 | Lo Pan's bride-to-be; painted rig |
+| Egg Shen | hero | 900 | 115 | 88 | glass cannon sorcerer; painted rig |
+| Rain | storm | 950 | 100 | 96 | water specials, twin claw rakes; painted rig |
 | Lightning | storm | 1000 | 105 | 100 | first-tier ladder opponent |
 | Thunder | storm | 1200 | 115 | 112 | heavy, scaled up 12% |
 | Lo Pan | boss | 1300 | 125 | 112 | final boss |
@@ -82,6 +83,13 @@ Each fighter has their own folder with a `.def`, `.cmd`, `.cns`, `.air`, `.sff`,
 `.snd` and a themed `movelist.dat`, plus movie-flavoured victory quotes in the
 CNS `[Quotes]` section. Stats, scale and colours are listed once in
 `tools/build_chars.py` (`ROSTER`) and regenerated from there.
+
+Gracie Law and Maio Yin are not recolours at all: `tools/women_art.py` paints
+their parts in code (vermilion wedding silk, a gold sunburst crown on Maio Yin,
+a silver
+filigree one on Gracie) and `tools/bake_char.py` bakes them into full fighters
+in `chars/gracielaw_rig` and `chars/jade_rig`, which is what `select.def`
+points at.
 
 Jack is the one fighter whose palette is hand-built rather than hue-shifted.
 `tools/jackburton.py` maps Kung Fu Man's colour ramps onto his costume — white

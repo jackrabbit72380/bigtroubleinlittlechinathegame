@@ -2506,3 +2506,50 @@ Clsn2Default: 1
 5300,3, 0,0, 8
 5300,2, 0,0, 8
 5300,1, 0,0, 8
+
+;---------------------------------------------------------------------------
+; Rain - water animation set (added by tools/rain.py)
+; The 7000-series frames carry the AIR blend flag A, so the dart, the splash
+; and the curtain composite additively wherever they are drawn. Projectiles
+; take no trans parameter in Ikemen, so this is the only way to make water
+; read as light on a dark stage.
+;---------------------------------------------------------------------------
+; Water dart (projectile)
+[Begin Action 7000]
+Clsn1: 1
+ Clsn1[0] = -10,-10, 10,10
+7000,0, 0,0, -1, , A
+
+; Splash at the hand
+[Begin Action 7001]
+7001,0, 0,0, 2, , A
+7001,1, 0,0, 2, , A
+7001,2, 0,0, -1, , A
+
+; Impact splash
+[Begin Action 7002]
+7002,0, 0,0, 3, , A
+7002,1, 0,0, 3, , A
+7002,2, 0,0, -1, , A
+
+; Cloudburst wave, rolling out
+[Begin Action 7010]
+Clsn1: 1
+ Clsn1[0] = -30,-14, 30,14
+7010,0, 0,0, 3, , A
+7010,1, 0,0, 3, , A
+7010,2, 0,0, 3, , A
+7010,3, 0,0, 3, , A
+
+; Curtain of rain, left standing where the step began
+[Begin Action 7020]
+7020,0, 0,0, 4, , A
+7020,1, 0,0, 4, , A
+7020,2, 0,0, -1, , A
+
+; Water at his hands - an effect laid over the body, never in it
+[Begin Action 7030]
+7030,0, 0,0, 3, , A
+7030,1, 0,0, 3, , A
+7030,2, 0,0, 3, , A
+7030,3, 0,0, -1, , A

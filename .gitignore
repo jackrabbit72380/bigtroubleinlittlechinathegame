@@ -15,3 +15,14 @@ Thumbs.db
 # local export
 *.bundle
 *.tar.gz
+
+# Release and historical build bundles: published as release assets, not source.
+# Each is ~100-190 MB, over GitHub's 100 MB per-file limit.
+artifacts/*.zip
+artifacts/release/
+
+# Scratch copies of older revisions and build output, not source.
+.r2/
+.r3/
+build/
+dist/

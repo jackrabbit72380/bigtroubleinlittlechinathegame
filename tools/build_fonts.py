@@ -17,6 +17,9 @@ anything typed into data/ikemen1/system.def by hand is lost:
    bitmap fonts.
 3. Every menu/select/scoreboard font spec in system.def is repointed at those
    two fonts.
+4. Options > Video > Resolution gains 1440p and 4K entries. Ikemen builds that
+   submenu from the motif's menu.itemname.menuvideo.resolution.<W>x<H> keys and
+   the stock list stops at 1920x1080, so a 4K display had nothing to pick.
 
 Run:  python3 tools/build_fonts.py
 """
@@ -37,6 +40,8 @@ import sff  # noqa: E402  (local helper import after sys.path)
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FONT_DIR = os.path.join(ROOT, "data", "ikemen1", "fonts")
 MOTIF = os.path.join(ROOT, "data", "ikemen1", "system.def")
+# The stock faces, kept as the width reference the rebake measures against.
+FONT_SRC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "font_src")
 
 # The palette taken from the wordmark: the gold the letters are gilded with, its
 # highlight, the shade at their foot, and the maroon they sit on (lifted a little
@@ -143,9 +148,65 @@ REWRITES = (
     ("keymenu.p2.playerno.font", f"{B}, 0, 0, {AMBER}"),
     ("movelist.title.font", f"{D}, 0, 0, {BRIGHT}"),
     ("movelist.text.font", f"{B}, 0, 1, {GOLD}"),
+    # TrueType faces are drawn in a single flat colour - src/font.go has no
+    # gradient or outline for them - so the last white/grey text (netplay
+    # "connecting", the text input line, the debug overlay) is moved onto the
+    # bitmap gradient face as well.
+    ("font5", "ikemen1/fonts/Body.def"),
+    ("font6", "ikemen1/fonts/Body.def"),
+    ("font7", "ikemen1/fonts/Body.def"),
     ("menu.boxcursor.col", BRIGHT),
     ("menu.boxbg.col", "40, 10, 14"),
 )
+
+# Layout numbers that only make sense on one screen. REWRITES above is global
+# (the same key lives in several menu blocks), but position and line pitch are
+# per-screen: the title menu carries nine items where the stock motif was laid
+# out for six, so at the stock 54px pitch the last two land at y=708 and 762 and
+# fall outside the 40..690 item window; and the pause list has to fit inside its
+# own highlight box, which starts at menu.pos.x and runs 462px to the right.
+# The bitmap face is 45px tall, so a pitch under 45 overlaps the rows.
+# Every "[* Pause Menu]" section is a separate motif block, and the engine tops
+# derived ones up from its own default motif instead of from our [Pause Menu].
+# Anything not written here renders with the stock layout, so they all share it.
+PAUSE_LAYOUT = (
+    ("menu.pos", "460, 140"),
+    ("menu.item.spacing", "0, 50"),
+    ("menu.window.visibleitems", "10"),
+    # The cursor band is drawn from menu.pos + coords[2] while the item text is
+    # drawn from menu.pos, so the stock -30 floated it 30px above every row and
+    # it flashed over the item above. 0..44 covers the 45px glyph cell.
+    ("menu.boxcursor.coords", "-15, 0, 462, 44"),
+    # Left-aligned so the items sit inside the box, which is drawn from
+    # menu.pos.x rightwards. The stock block right-aligned every item except
+    # the selected one, which is why the list read as ragged.
+    ("menu.item.font", f"{D},0,1, {GOLD}"),
+    ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
+    ("menu.item.selected.font", f"{D},0,1, {BRIGHT}"),
+    ("menu.item.selected.active.font", f"{DA},0,1, {BRIGHT}"),
+)
+
+SECTION_LAYOUT = {
+    "Title Info": (
+        ("menu.pos", "1240, 250"),
+        ("menu.item.spacing", "0, 46"),
+        ("menu.window.visibleitems", "10"),
+    ),
+    "Option Info": (
+        # thirteen rows at the stock 42px pitch overlapped by 3px under the 45px
+        # bitmap face; 46 is the smallest pitch that separates them and still
+        # ends the last row at y=696, inside the 21..718 item window
+        ("menu.item.spacing", "0, 46"),
+        # Same cursor defect as the pause menu: the stock band sat above its row.
+        ("menu.boxcursor.coords", "-15, 0, 462, 44"),
+    ),
+    "Replay Info": (
+        # 42px rows, so the band matches the pitch exactly.
+        ("menu.boxcursor.coords", "-15, 0, 462, 41"),
+    ),
+    "Pause Menu": PAUSE_LAYOUT,
+    "Training Pause Menu": PAUSE_LAYOUT,
+}
 
 # The wordmark's own layers, from tools/build_title.py.
 FACE = [(0.00, (255, 250, 208)), (0.34, (255, 233, 142)),
@@ -161,27 +222,45 @@ FACE_ACTIVE = [(0.00, (255, 255, 240)), (0.34, (255, 246, 190)),
 FONTS = (("Display", 34, 3, FACE), ("DisplayActive", 34, 3, FACE_ACTIVE),
          ("Body", 13, 2, FACE))
 
+# The screenpack's remaining bitmap faces. They are stock MUGEN fonts - white or
+# grey glyphs in eight palette banks - and they are what still showed through in
+# the scoreboard names, the round timer, the hit and combo counters, the win
+# quotes, the match number on the VS screen, the credits and the debug font.
+# They are rebaked from the same typeface with the wordmark's gradient, and
+# their .def files are left exactly as they are, so every Size/Spacing/Offset
+# the motif was laid out against still holds.
+#                 name          cell height, i.e. its .def Size.y   extrusion
+STOCK_FONTS = (("Menu1",           42, 3),
+               ("Menu2",           38, 3),
+               ("Menu2Small",      20, 2),
+               ("Pixel",           18, 2),
+               ("PixelFlat",       14, 2),
+               ("Timer",           49, 3),
+               ("HitNum",          38, 3),
+               ("PowerbarNum",     30, 2),
+               ("ComboCounter",    60, 3),
+               ("Round",          180, 6),
+               ("Action",          16, 1))
+
 
 def _gradient(size, stops):
     """Vertical gradient over a whole cell, so the face shades like the logo."""
     w, h = size
-    img = Image.new("RGBA", (w, h))
-    pix = img.load()
     stops = sorted(stops)
+    col = Image.new("RGBA", (1, h))
+    pix = col.load()
     for y in range(h):
         t = y / max(1, h - 1)
-        col = stops[-1][1]
+        c = stops[-1][1]
         for i in range(len(stops) - 1):
             t0, c0 = stops[i]
             t1, c1 = stops[i + 1]
             if t0 <= t <= t1:
                 k = (t - t0) / max(1e-6, t1 - t0)
-                col = tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
+                c = tuple(int(c0[j] + (c1[j] - c0[j]) * k) for j in range(3))
                 break
-        row = col + (255,)
-        for x in range(w):
-            pix[x, y] = row
-    return img
+        pix[0, y] = c + (255,)
+    return col.resize((w, h), Image.NEAREST)
 
 
 def _shift(mask, dx, dy):
@@ -190,13 +269,32 @@ def _shift(mask, dx, dy):
     return out
 
 
-def glyph(ch, font, cell_h, depth, face_stops=FACE):
-    """One glyph: maroon extrusion, gold face, cream lip along the top edge."""
+def glyph(ch, font, cell_h, depth, face_stops=FACE, base=None, cell_w=None):
+    """One glyph: maroon extrusion, gold face, cream lip along the top edge.
+
+    ``cell_w`` pins the sprite to the width the stock face gave that character.
+    Ikemen advances by the sprite's own width, not by the .def's Size
+    (src/font.go: CharWidth returns fci.w), so a narrower sprite silently
+    shortens every string the motif was laid out against.
+    """
     ascent, _descent = font.getmetrics()
+    if base is None:
+        base = ascent
     adv = max(1, int(round(font.getlength(ch))))
-    w = adv + depth + 1
-    mask = Image.new("L", (w, cell_h), 0)
-    ImageDraw.Draw(mask).text((0, ascent), ch, font=font, fill=255, anchor="ls")
+    ink = Image.new("L", (adv + 1, cell_h), 0)
+    ImageDraw.Draw(ink).text((0, base), ch, font=font, fill=255, anchor="ls")
+    if cell_w:
+        w = max(2, int(cell_w))
+        room = max(1, w - depth)
+        # only squeeze when the glyph genuinely would not fit the stock cell
+        if ink.width > room:
+            ink = ink.resize((room, cell_h), Image.LANCZOS)
+        mask = Image.new("L", (w, cell_h), 0)
+        mask.paste(ink, (0, 0))
+    else:
+        w = adv + depth + 1
+        mask = Image.new("L", (w, cell_h), 0)
+        mask.paste(ink, (0, 0))
 
     solid = mask
     for i in range(1, depth + 1):
@@ -246,6 +344,51 @@ def write_font(name, px, depth, ttf, face_stops=FACE):
             fh.write(body)
     print(f"  baked {name}: {len(sprites)} glyphs, {px}px face, "
           f"{depth}px extrusion, cell {space_w}x{cell_h}")
+    return len(sprites)
+
+
+def stock_cells(name):
+    """Per-character sprite width from the unmodified face.
+
+    Kept in tools/font_src/ because the shipped .sff files are the ones these
+    replace. The engine's advance is the glyph sprite's width, so reproducing
+    these numbers is what keeps every string exactly as wide as the menues were
+    drawn for - the scoreboard columns, the credits, the continue countdown and
+    the key config all measure text to place it.
+    """
+    path = os.path.join(FONT_SRC, name + ".sff")
+    if not os.path.isfile(path):
+        return {}
+    _n, sprites, _p = sff.read_sff(path)
+    return {chr(sp["number"]): sp["w"] for sp in sprites
+            if sp["group"] == 0 and 33 <= sp["number"] <= 126}
+
+
+def write_stock(name, cell_h, depth, ttf):
+    """Rebake a stock bitmap face in the gradient, leaving its .def alone.
+
+    A stock .def carries Offset = 0,0 and the engine draws each glyph at
+    y - Size.y + 1, so the cell height has to stay exactly Size.y or every row
+    of the scoreboard shifts; and because the engine advances by the sprite
+    width, each cell also keeps the stock width. Action.def is an RGBA font
+    whose banks are sprite groups, so all six of its banks get written.
+    """
+    px = max(6, int(round(cell_h * 0.74)))
+    font = ImageFont.truetype(ttf, px)
+    ascent, _descent = font.getmetrics()
+    base = min(cell_h - depth - 1, ascent)
+    banks = (0, 1, 2, 3, 4, 5) if name == "Action" else (0,)
+    cells = stock_cells(name)
+    sprites = []
+    for bank in banks:
+        for code in range(33, 127):
+            sprites.append({"group": bank, "number": code, "axis": (0, 0),
+                            "image": glyph(chr(code), font, cell_h, depth,
+                                           base=base,
+                                           cell_w=cells.get(chr(code)))})
+    with open(os.path.join(FONT_DIR, name + ".sff"), "wb") as fh:
+        fh.write(sff.write_sff(sprites))
+    print(f"  rebaked {name}: {len(sprites)} glyphs, {cell_h}px cell")
     return len(sprites)
 
 
@@ -303,6 +446,8 @@ def install_ttf():
         print(f"  {os.path.relpath(dst, ROOT)} already current")
     for name, px, depth, face_stops in FONTS:
         write_font(name, px, depth, dst, face_stops)
+    for name, cell_h, depth in STOCK_FONTS:
+        write_stock(name, cell_h, depth, dst)
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
@@ -326,6 +471,40 @@ def set_key(text, key, value):
     return pattern.subn(repl, text)
 
 
+def add_section_key(text, section, key, value):
+    """Insert `key = value` at the top of [section] when the key is absent.
+
+    Derived menu sections such as [Training Pause Menu] ship empty, and the
+    engine fills them from its own default motif rather than from our
+    [Pause Menu], so their keys have to be written out explicitly.
+    """
+    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*$",
+                      re.MULTILINE | re.IGNORECASE).search(text)
+    if not head:
+        return text, 0
+    start = head.end()
+    nxt = re.compile(r"^[ \t]*\[[^\]]*\]", re.MULTILINE).search(text, start)
+    end = nxt.start() if nxt else len(text)
+    if re.search(r"^[ \t]*" + re.escape(key) + r"[ \t]*=", text[start:end],
+                 re.MULTILINE | re.IGNORECASE):
+        return text, 0
+    nl = "\r\n" if "\r\n" in text else "\n"
+    return text[:start] + nl + f"{key} = {value}" + text[start:], 1
+
+
+def set_section_key(text, section, key, value):
+    """set_key, but only inside one [section] block."""
+    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*$",
+                      re.MULTILINE | re.IGNORECASE).search(text)
+    if not head:
+        return text, 0
+    start = head.end()
+    nxt = re.compile(r"^[ \t]*\[[^\]]*\]", re.MULTILINE).search(text, start)
+    end = nxt.start() if nxt else len(text)
+    body, count = set_key(text[start:end], key, value)
+    return text[:start] + body + text[end:], count
+
+
 def ensure_font_files(text):
     """Register Display, Body and DisplayActive as font10, font11, font12."""
     wanted = (("Display", 10), ("Body", 11), ("DisplayActive", 12))
@@ -346,6 +525,68 @@ def ensure_font_files(text):
     return text[:last.end()] + added + text[last.end():], len(missing)
 
 
+RESOLUTION_MENU = (
+    """; Options > Video > Resolution. The engine takes the size straight from the
+suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
+had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
+the motif's own 1280x720, so the art, the framing and the netplay handshake are
+all unaffected.
+"""
+    "menu.itemname.menuvideo.resolution = RESOLUTION\n"
+    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (HD)\n"
+    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (HD+)\n"
+    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (FULL HD)\n"
+    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (QHD)\n"
+    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K ULTRA HD)\n"
+    "menu.itemname.menuvideo.resolution.back = BACK\n"
+)
+
+RESOLUTION_ANCHOR = re.compile(r"^menu\.itemname\.options\s*=.*$", re.MULTILINE)
+
+# The engine's base text table still offers three 4:3 sizes next to our 16:9
+# ones. KeepAspect is on by default, so picking one pillarboxes the whole game
+# between black bars - and every stage, menu and character in this build is 16:9
+# end to end, so those entries can only break the picture.
+BASE_DEF = os.path.join(ROOT, "data", "system.base.def")
+FOUR_THREE = ("menu.itemname.menuvideo.resolution.320x240",
+              "menu.itemname.menuvideo.resolution.640x480",
+              "menu.itemname.menuvideo.resolution.960x720")
+
+
+def ensure_widescreen_resolutions():
+    """Comment out the 4:3 sizes in the engine's base text table."""
+    if not os.path.isfile(BASE_DEF):
+        return 0
+    with open(BASE_DEF, "r", encoding="utf-8", errors="surrogateescape",
+              newline="") as fh:
+        text = fh.read()
+    changed = 0
+    for key in FOUR_THREE:
+        pattern = re.compile(r"^([ \t]*)(" + re.escape(key) + r")([ \t]*=.*)$",
+                             re.MULTILINE)
+        text, n = pattern.subn(
+            lambda m: f"{m.group(1)};{m.group(2)}{m.group(3)}  ; 4:3 pillarboxes",
+            text)
+        changed += n
+    if changed:
+        with open(BASE_DEF, "w", encoding="utf-8", errors="surrogateescape",
+                  newline="") as fh:
+            fh.write(text)
+    return changed
+
+
+def ensure_resolution_menu(text):
+    """Add 1440p and 4K to the in-game video resolution list."""
+    if "menu.itemname.menuvideo.resolution.3840x2160" in text:
+        return text, 0
+    head = RESOLUTION_ANCHOR.search(text)
+    if not head:
+        return text, 0
+    nl = "\r\n" if "\r\n" in text else "\n"
+    block = nl + nl + RESOLUTION_MENU.replace("\n", nl).rstrip("\r\n")
+    return text[:head.end()] + block + text[head.end():], 1
+
+
 def main():
     if not os.path.isfile(MOTIF):
         print(f"missing motif: {MOTIF}", file=sys.stderr)
@@ -360,6 +601,16 @@ def main():
     if added:
         print(f"  registered font10/font11 in {os.path.basename(MOTIF)}")
 
+    text, res_added = ensure_resolution_menu(text)
+    if res_added:
+        print(f"  added 1440p and 4K to the video resolution list in "
+              f"{os.path.basename(MOTIF)}")
+
+    dropped = ensure_widescreen_resolutions()
+    if dropped:
+        print(f"  dropped {dropped} 4:3 size(s) from "
+              f"{os.path.basename(BASE_DEF)}")
+
     touched = 0
     for key, value in REWRITES:
         text, count = set_key(text, key, value)
@@ -367,6 +618,16 @@ def main():
             touched += count
         else:
             print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
+
+    for section, settings in SECTION_LAYOUT.items():
+        for key, value in settings:
+            text, count = set_section_key(text, section, key, value)
+            if not count:
+                text, count = add_section_key(text, section, key, value)
+            touched += count
+            if not count:
+                print(f"  warning: [{section}] {key} not found in "
+                      f"{os.path.basename(MOTIF)}")
 
     if text != original:
         with open(MOTIF, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
