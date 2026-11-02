@@ -22,6 +22,28 @@ import sff
 from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _roster_palette(char_id):
+    """The palette tools/build_chars.py grades this fighter to.
+
+    The roster specs hold each fighter's hue/saturation/value transform, and
+    build_chars applies it to the base palette. Baking used to ignore all that
+    and write one grey ramp, so every rig character shipped the same colours.
+    """
+    try:
+        import build_chars as roster
+        specs = {s["id"]: s for s in
+                 list(roster.ROSTER) + list(roster.gangs.ROSTER_SPECS)}
+        spec = specs.get(char_id)
+        if spec is None:
+            return None
+        _d, _s, base = sff.read_sff(os.path.join(ROOT, "chars", "kfm", "kfm.sff"))
+        if not base:
+            return None
+        return [roster.grade_palette(p["rgba"], spec) for p in base]
+    except Exception:
+        return None
 TARGET_HEIGHT = 318.0     # 3x the 106px base fighter
 BASE_HEIGHT = 106.0
 
@@ -330,10 +352,14 @@ def bake(char_id, target_height=TARGET_HEIGHT):
             air_out.append(f"{action},{local[pose]}, 0,0, {ticks}")
         air_out.append("")
 
+    # The sprite set is RGBA, so the palette is only what the engine's colour
+    # select shows - but it still has to be THIS fighter's palette. A flat grey
+    # ramp here gave every rig character the same colours, which is what the
+    # roster palette check in tools/validate.py exists to catch.
     palette = bytearray()
     for i in range(256):
         palette += bytes((i, i, i, 255))
-    data = sff.write_sff(sprites, [bytes(palette)])
+    data = sff.write_sff(sprites, _roster_palette(char_id) or [bytes(palette)])
     open(os.path.join(out, char_id + ".sff"), "wb").write(data)
     open(os.path.join(out, char_id + ".air"), "w", encoding="utf-8").write(
         "\n".join(air_out) + "\n")

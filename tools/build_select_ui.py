@@ -118,39 +118,44 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 
 
 
-# The stage card. Every stage's preview art (group 9000) is 1214x398 and its
-# axis is its centre, so at stage.portrait.scale 0.4 it is 486x159 on screen.
-# The window and the plate were 324x106, which cropped two thirds of it away and
-# is why the preview read as a thumbnail on a wide band rather than a picture of
-# the stage. The window is now the art's own size: with stage.pos 640,660 the
-# art's top is 660 - 120 - (199 * 0.4) = 460 and its left is
-# 640 - 1 - (607 * 0.4) = 396, so the card spans 396..884, 460..620 - above the
-# "Next Stage" caption and below the VS logo.
-STAGE_PORTRAIT = (
-    ("stage.portrait.spr", "9000,1"),
-    # the window is 580x190 and the art is 1215x398, so .4774 lands it exactly;
-    # the axis is the art's centre, put at 640,557 (stage.pos 640,660 + 0,-103)
-    ("stage.portrait.offset", "0, -103"),
-    ("stage.portrait.scale", "0.4774, 0.4774"),
-    ("stage.portrait.window", "350, 462, 930, 652"),
-)
+# The stage preview art (group 9000,1 on every stage) is 1215x398 with its axis
+# at its centre. The card used to be 580x190 at scale .4774 - a third of the
+# screen - so a picture of the whole stage read as a thumbnail. It is 760x249
+# now, and it is anchored per screen: [Select Info] puts stage.pos at 640,660
+# and [VS Screen] at 640,707, and both used the offsets computed for the first
+# one, so the VS card sat 47px low with its bottom cut off by its own window -
+# a small picture perched on a gold band.
+STAGE_ART = (1215, 398)
+CARD_W = 760
+PLATE_SPR = (324, 106)
 
-# The plate behind the preview is a 324x106 sprite with its axis at 0,0, so it
-# is scaled up to the window instead of repainted: 324 * 1.505 = 488 and
-# 106 * 1.505 = 160, drawn from 640-244, 660-200 = 396,460.
-PLATE = (
-    # 324x106 at 1.79 is the 580x190 window, drawn from 350,462
-    ("stage.portrait.bg.offset", "-290, -198"),
-    ("stage.portrait.bg.scale", "1.79, 1.79"),
-)
 
-# The select screen draws the plate as [Begin Action 110]; pin it to its first
-# sprite so the anim's own offsets cannot shift the scaled plate.
-SELECT_PLATE = PLATE + (
+def _card(centre_y, stage_y):
+    """Stage preview + its plate, anchored to a screen whose stage.pos is known."""
+    w = CARD_W
+    h = int(round(w * STAGE_ART[1] / float(STAGE_ART[0])))
+    left, top = 640 - w // 2, centre_y - h // 2
+    scale = w / float(STAGE_ART[0])
+    plate = w / float(PLATE_SPR[0])
+    return (
+        ("stage.portrait.spr", "9000,1"),
+        ("stage.portrait.offset", "0, %d" % (centre_y - stage_y)),
+        ("stage.portrait.scale", "%.4f, %.4f" % (scale, scale)),
+        ("stage.portrait.window",
+         "%d, %d, %d, %d" % (left, top, left + w, top + h)),
+        ("stage.portrait.bg.offset", "%d, %d" % (left - 640, top - stage_y)),
+        ("stage.portrait.bg.scale", "%.4f, %.4f" % (plate, plate)),
+    )
+
+
+STAGE_PORTRAIT = _card(500, 660)      # [Select Info]: clear of the stage name
+SELECT_PLATE = STAGE_PORTRAIT + (
+    # the select screen draws the plate as [Begin Action 110]; pin it to its
+    # first sprite so the anim's own offsets cannot shift the scaled plate
     ("stage.portrait.bg.anim", "-1"),
     ("stage.portrait.bg.spr", "110,0"),
 )
-VS_PLATE = PLATE + (
+VS_PLATE = _card(540, 707) + (
     ("stage.portrait.bg.spr", "112,0"),
 )
 
@@ -192,7 +197,7 @@ def layout(text):
     changed = []
     for section, extra in (("[Select Info]", SELECT_PLATE),
                            ("[VS Screen]", VS_PLATE + VS_TEXT)):
-        text, done = _apply_section(text, section, STAGE_PORTRAIT + extra)
+        text, done = _apply_section(text, section, extra)
         changed += done
     return text, changed
 

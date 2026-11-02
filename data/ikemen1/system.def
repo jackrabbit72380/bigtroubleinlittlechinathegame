@@ -630,12 +630,12 @@ stage.layerno = 2
 ;Stage portraits
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -103
-stage.portrait.scale = 0.4774, 0.4774
+stage.portrait.offset = 0, -160
+stage.portrait.scale = 0.6255, 0.6255
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -290, -198
-stage.portrait.bg.scale = 1.79, 1.79
+stage.portrait.bg.offset = -380, -284
+stage.portrait.bg.scale = 2.3457, 2.3457
 stage.portrait.bg.layerno = 2
 ;stage.portrait.random.anim = 113
 stage.portrait.random.spr = 111,0
@@ -647,7 +647,7 @@ stage.portrait.loading.anim = 113
 stage.portrait.loading.offset = -163, -144
 stage.portrait.loading.scale = 1.0, 1.0
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 350, 462, 930, 652
+stage.portrait.window = 260, 376, 1020, 625
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator
@@ -1078,11 +1078,11 @@ p2.done.anim = 181
 ;Names
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20,615      ;Position to put name
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 10, 0, 1, 255, 228, 140
 p1.name.spacing = 15,25      ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
 p2.name.offset = 1260,615
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 10, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 
 orderselect.enabled = 1
@@ -1256,17 +1256,17 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 640,707
 stage.text = Next Stage: %s
 stage.offset = 0, -10
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 255, 228, 140
 stage.scale = 0.6, 0.6
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -103
-stage.portrait.scale = 0.4774, 0.4774
+stage.portrait.offset = 0, -167
+stage.portrait.scale = 0.6255, 0.6255
 stage.portrait.bg.spr = 112,0
 ;stage.portrait.bg.spr = 
-stage.portrait.bg.offset = -290, -198
-stage.portrait.bg.scale = 1.79, 1.79
-stage.portrait.window = 350, 462, 930, 652
+stage.portrait.bg.offset = -380, -291
+stage.portrait.bg.scale = 2.3457, 2.3457
+stage.portrait.window = 260, 416, 1020, 665
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
