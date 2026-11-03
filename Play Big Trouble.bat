@@ -1,10 +1,11 @@
 @echo off
-rem Double-click this to start the game on the renderer that boots.
+rem Double-click this to start the game.
 rem
-rem The engine reads save\config.ini and nothing else (src/main.go fixes that
-rem path), so a config.ini sitting next to the exe is ignored unless the game is
-rem launched with -config. This copies it into save\ first, then starts the game
-rem from this folder, then shows the newest crash log if it did not come up.
+rem It writes save\config.ini from scratch - the engine opens that exact path at
+rem startup and panics if it is missing, so a deleted or corrupted file leaves
+rem the game unable to start at all. Nothing else in this folder is required,
+rem including config.ini: the settings are written here, with the renderer
+rem pinned to the OpenGL path that boots.
 setlocal
 cd /d "%~dp0"
 
@@ -23,36 +24,39 @@ if not defined EXE (
   exit /b 1
 )
 
-if not exist "config.ini" (
-  echo.
-  echo config.ini is missing from this folder:
-  echo   %~dp0
-  echo.
-  echo Save the config.ini text into this folder next to the exe, then run this again.
-  echo.
-  pause
-  exit /b 1
-)
-
 if not exist "save" mkdir "save"
-copy /y "config.ini" "save\config.ini" >nul
 if errorlevel 1 (
   echo.
-  echo Could not write save\config.ini. Is the folder read-only, or under Program Files?
-  echo Move the game somewhere like C:\Games\ and try again.
+  echo Could not create the save folder in %~dp0
+  echo Is it read-only, or inside Program Files? Move the game to C:\Games\ and retry.
   echo.
   pause
   exit /b 1
 )
 
+>  "save\config.ini" echo [Video]
+>> "save\config.ini" echo GameWidth = 1920
+>> "save\config.ini" echo GameHeight = 1080
+>> "save\config.ini" echo WindowWidth = 1920
+>> "save\config.ini" echo WindowHeight = 1080
+>> "save\config.ini" echo KeepAspect = true
+>> "save\config.ini" echo Fullscreen = false
+>> "save\config.ini" echo RenderMode = OpenGL 3.3
+>> "save\config.ini" echo.
+>> "save\config.ini" echo [Config]
+>> "save\config.ini" echo WindowTitle = Big Trouble in Little China: The Game
+>> "save\config.ini" echo RenderMode = OpenGL 3.3
+>> "save\config.ini" echo EnableModel = 1
+
 echo.
-echo Folder : %~dp0
-echo Engine : %EXE%
+echo Folder   : %~dp0
+echo Engine   : %EXE%
+echo Written  : save\config.ini
 if exist "VERSION.txt" type "VERSION.txt"
-echo Settings being used:
-findstr /i /c:"RenderMode" /c:"WindowTitle" "save\config.ini"
+findstr /i "RenderMode" "save\config.ini"
 echo.
-echo Starting the game...
+echo Starting the game - the window title should read
+echo "Big Trouble in Little China: The Game".
 echo.
 
 "%EXE%"
