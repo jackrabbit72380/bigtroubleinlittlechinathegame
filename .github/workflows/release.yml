@@ -69,10 +69,6 @@ jobs:
             if [ -d "$d" ]; then cp -rT "$d" "$out/$d"; fi
           done
 
-          # Our video defaults beat the engine's seed file, so a fresh install
-          # starts on OpenGL 3.3 instead of the Vulkan renderer that aborts at
-          # boot on some drivers with "device lost".
-          if [ -f config.ini ]; then cp config.ini "$out/config.ini"; fi
 
           # The stage-art dumper ships with the game so it can be used from the
           # installed folder: double-click "Dump Stage Art.bat" and the stage
@@ -133,8 +129,14 @@ jobs:
           # (printf, not a heredoc: a heredoc body at column 0 would end the
           # YAML block scalar this step is written as, and the whole workflow
           # fails to parse before it ever runs.)
-          printf '[Video]\nGameWidth = 1920\nGameHeight = 1080\nWindowWidth = 1920\nWindowHeight = 1080\nKeepAspect = true\nFullscreen = false\n\n[Config]\nWindowTitle = Big Trouble in Little China: The Game\n' \
-            > "$out/config.ini"
+          # The file is tracked at the repo root as config.ini, not printed
+          # here. It used to be a printf in this step, which is why every
+          # bundle shipped a config with no RenderMode key at all: the engine's
+          # own seed file only names a window size, so the renderer fell through
+          # to the engine default and the player's choice lived only in
+          # save/config.ini - unreachable once Vulkan aborts at boot with
+          # "device lost", because the menus never appear.
+          cp config.ini "$out/config.ini"
           test -s "$out/config.ini" || { echo "config.ini was not written"; exit 1; }
 
           # A stamp in the game folder, so a stale extracted copy is obvious.
