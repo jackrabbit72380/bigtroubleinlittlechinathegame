@@ -1567,7 +1567,7 @@ boundhigh = {boundhigh}
 boundlow = 0
 verticalfollow = .2
 floortension = 0
-tension = 60
+tension = {tension}
 overdrawhigh = 0
 overdrawlow = 0
 cuthigh = {cuthigh}
@@ -1820,7 +1820,8 @@ def build(sid):
         fh.write(interleave_wide(DEF_TEMPLATE.format(
             sid=sid, name=name,
             bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerbound=PLAYER_BOUND,
-            margin=SCREEN_MARGIN, zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
+            margin=SCREEN_MARGIN, tension=int(round(60 * S)),
+            zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
             boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
             startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,
             extra_bg=EXTRA_BG.get(sid, ""),
