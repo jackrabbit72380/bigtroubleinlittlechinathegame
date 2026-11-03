@@ -32,6 +32,7 @@ def main():
     scripts += ["build_stages.py", "stages_hd.py", "stage_throne.py",
                "stage_ceremony.py", "stage_hallway.py",
                "stage_upside_down.py", "stage_airport.py", "build_hd_stage.py",
+               "readme_cards.py",
                "build_chars.py", "build_music.py"]
     # The puppet rig: cut Jack's concept turnaround into parts, then bake those
     # parts into a complete character. Only the concept art is needed, which is
