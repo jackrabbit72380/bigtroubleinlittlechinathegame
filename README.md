@@ -11,10 +11,13 @@ engine binary is not committed here — the
 ship it bundled, so players just download and launch.
 
 ![Lo Pan's Throne](artifacts/lopans_throne_card.png)
+![Lo Pan's Ceremony](artifacts/lopans_ceremony_card.png)
+![Lo Pan's Hallway](artifacts/lopans_hallway_card.png)
 ![Wing Kong Exchange](artifacts/wingkong_exchange_card.png)
 ![Chinatown Back Alley](artifacts/chinatown_alley_card.png)
 ![Pork Chop Express](artifacts/porkchop_express_card.png)
 ![The Upside Down](artifacts/the_upside_down_card.png)
+![Airport Terminal](artifacts/airport_terminal_card.png)
 
 ## Download and play
 
@@ -118,13 +121,16 @@ recoloured base.
 | Stage | File | Setting |
 |---|---|---|
 | Lo Pan's Throne | `stages/lopans_throne.def` | skull gate, green neon, red temple glyphs |
+| Lo Pan's Ceremony | `stages/lopans_ceremony.def` | the other side of the hall: six-armed statue, lotus plinth, broad steps |
+| Lo Pan's Hallway | `stages/lopans_hallway.def` | long blue-lacquer corridor, rows of gold Buddhas, lanterns, carpet runner |
 | Wing Kong Exchange | `stages/wingkong_exchange.def` | loading bay, neon signage, rain |
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
-| The Upside Down | `stages/upside_down.def` | underground cavern, steel sump, dead tree, demon |
+| The Upside Down | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
+| Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners, security checkpoint |
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
-All five BTILC stages are drawn procedurally (no bitmaps committed as source),
+All eight BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1920×1080** (`localcoord = 1920, 1080`), which is the
 arcade layout at 4.5× — the engine no longer stretches a 240-line image across
@@ -168,11 +174,14 @@ filename if you want one track to run across them — the engine only restarts t
 music when the filename changes.
 
 Stage fight music is separate, per stage: the `[Music] bgmusic =` line of each
-`stages/*.def` (blank today), for example `bgmusic = sound/fight_throne.ogg`.
+`stages/*.def`, filled from the `MUSIC` table in `tools/stages_hd.py` (for
+example `bgmusic = sound/LoPansDemise.ogg` on Lo Pan's Throne and Lo Pan's
+Hallway). Lo Pan's Ceremony is the one arena still blank there, so it falls back
+to whatever the menu is playing; the training room is deliberately silent.
 
-Nothing in `sound/` is bundled in this repository yet, and release bundles now
-copy that folder along with the rest of the game, so a track you add there also
-ships in the downloads.
+The tracks in `sound/` are part of this repository now, and every release bundle
+copies that folder along with the rest of the game, so a track you add there
+also ships in the downloads.
 
 ## Rebuilding assets
 
