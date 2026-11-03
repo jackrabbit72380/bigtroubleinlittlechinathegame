@@ -70,11 +70,10 @@ START_X = -HALF_SPAN                     # -4096: canvas left edge in stage x
 PLAYER_BOUND = SCROLL + LOCAL_W // 2 - 68   # 4028: one screen margin in from the edge
 SCREEN_MARGIN = int(round(15 * S))       # 68
 VIEW_W = int(LOCAL_H * 16 / 9)           # 1920: what a 16:9 window shows
-# The VS / select stage card. Those screens draw it at stage.portrait.scale
-# = .4 inside a motif whose localcoord is 1280x720, and a stage sprite is
-# scaled by motif.localcoord[1] / stage.localcoord[1] = 1280/1920, so one art
-# pixel lands on .4 * 1280/1920 = .2667 screen pixels. The card window is
-# 477,516,801,622 - 324x106 - and wants 1215x398 of art to fill it exactly.
+# The VS / select stage card. The card's screen size is owned by
+# tools/build_select_ui.py (400x131 of art in a 400x159 frame with a name band
+# on top), so what matters here is only the art's aspect: 1215x398 is that
+# cell's shape, and build_select_ui.py's STAGE_ART must stay the same pair.
 PREVIEW_W, PREVIEW_H = 1215, 398
 
 

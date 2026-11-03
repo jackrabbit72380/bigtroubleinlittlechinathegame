@@ -63,7 +63,6 @@ GOLD_DIM = (126, 96, 42)
 GOLD_LIT = (244, 216, 120)
 INK = (9, 12, 12)
 ARENA_Y = 604
-STAGE_Y = 660
 
 # The screenpack's own select background: sky, cloud band, bars and the two
 # portrait gradients. The painted background below replaces all of it, so these
@@ -303,15 +302,15 @@ KEYS = (
     # centred rather than hard against the frame's top-left corner
     ("portrait.offset", "4,4"),
     ("portrait.scale", "1,1"),
-    ("stage.pos", "640,%d" % STAGE_Y),
-    # The engine fills the stage name in itself; only the face needs setting,
-    # and the stock brown was invisible against this backdrop.
+    # The stage card's position, scale, window and name band all belong to
+    # tools/build_select_ui.py, which runs after this one; stage.pos is
+    # deliberately not set here, because the card hangs from the band now and
+    # a pos written here would put the name somewhere else entirely.
     ("stage.font", "11, 0, 0, 236, 200, 120"),
     ("stage.active.font", "11, 0, 0, 255, 228, 140"),
     # The arena thumbnail. It was commented out by an older build, which left
     # the preview box showing nothing but its own frame.
     ("stage.portrait.spr", "9000,1"),
-    ("stage.portrait.scale", ".4, .4"),
     # VERSUS is drawn by the engine: same face as the stage caption (font 11),
     # on the top edge, so it matches PLAYER 1 / PLAYER 2 and the stage name.
     ("title.offset", "640, 2"),

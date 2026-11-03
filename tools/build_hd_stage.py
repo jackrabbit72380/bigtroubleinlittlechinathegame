@@ -287,9 +287,9 @@ def build_stage(sid):
     else:
         fg = Image.new("RGBA", (W, H), (0, 0, 0, 0))
 
-    # select / VS card: 1215x398 of art lands on the 324x106 window at the
-    # motif's stage.portrait.scale of .4 (see tools/stages_hd.py build() for
-    # the .4 * 1280/1920 arithmetic). A 320x240 thumb sat letterboxed in it.
+    # select / VS card: 1215x398 is the aspect of the card's picture window,
+    # whose screen size and scale live in tools/build_select_ui.py. A 320x240
+    # thumb sat letterboxed in it.
     preview = bg.crop((CX - PREVIEW_W // 2, H // 2 - PREVIEW_H // 2,
                        CX + PREVIEW_W // 2, H // 2 + PREVIEW_H // 2))
 
