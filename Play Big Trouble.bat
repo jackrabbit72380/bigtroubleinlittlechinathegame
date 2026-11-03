@@ -1,11 +1,12 @@
 @echo off
 rem Double-click this to start the game.
 rem
-rem It writes save\config.ini from scratch - the engine opens that exact path at
-rem startup and panics if it is missing, so a deleted or corrupted file leaves
-rem the game unable to start at all. Nothing else in this folder is required,
-rem including config.ini: the settings are written here, with the renderer
-rem pinned to the OpenGL path that boots.
+rem It writes save\config.ini from scratch, which is the only settings file the
+rem engine reads. A missing file is not fatal - the engine falls back to its own
+rem compiled defaults - but whatever renderer was last picked lives in that
+rem file, and a renderer that aborts at boot takes the menus with it. Writing it
+rem pins RenderMode to the OpenGL path on every run, and needs nothing that
+rem shipped alongside it.
 setlocal
 cd /d "%~dp0"
 
