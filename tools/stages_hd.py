@@ -862,30 +862,32 @@ def _cab(img):
     # weight carried the whole length of the rig read as a racing flag laid over
     # the door, which is not what the artwork does.
     band_x = px(196)                                   # the sleeper's front seam
-    # the banding sits in the top third of the hood, hard under its crown, with
-    # the long white flank below it left clear as the model leaves it
-    z.rectangle([grille1, belt + px(4), hood1, belt + px(8)], fill=BLUE)
-    z.rectangle([grille1, belt + px(13), hood1, belt + px(21)], fill=GOLD)
-    z.rectangle([grille1, belt + px(21), hood1, belt + px(35)], fill=BLUE)
-    z.rectangle([grille1, belt + px(35), hood1, belt + px(38)], fill=GOLD)
+    # the banding sits in the top third of the hood, clear of the crown so the
+    # rivet line has white above it: an indigo hairline, the gold, then the wide
+    # indigo, so the gold reads as one line with a blue either side of it. It
+    # stops at the cowl. Running it down the back of the hood at the cowl made an
+    # arrowhead at stage scale - that shape in the artwork is 3/4 shading, not
+    # paint, and it does not survive being flattened to a side elevation.
+    z.rectangle([grille1, belt + px(10), hood1, belt + px(14)], fill=BLUE)
+    z.rectangle([grille1, belt + px(18), hood1, belt + px(24)], fill=GOLD)
+    z.rectangle([grille1, belt + px(24), hood1, belt + px(38)], fill=BLUE)
     # the sill banding: a gold rule over a wide indigo skirt along the cab
     z.rectangle([hood1, hem - px(20), band_x, hem - px(17)], fill=GOLD)
     z.rectangle([hood1, hem - px(17), band_x, hem - px(8)], fill=BLUE)
     for gx in (hood1, door_x, door_r, px(196)):
         z.line([(gx, roof + px(4)), (gx, hem - px(6))], fill=(158, 162, 170), width=px(2))
 
-    # ---- the sleeper: the gold rule with an indigo line down each side of it,
-    # rising steeply off the sill band and running all the way up to the roof at
-    # the back, and the pig badge. The chequered rhombi that stood here made a
-    # dotted diagonal, and a gold band hanging off the edge of a wide indigo one
-    # read as a coloured block; the artwork is the gold line, edged in indigo.
-    bx, tx = band_x + px(10), back_x - px(8)            # foot and head of the run
-    z.polygon([(bx - px(14), hem - px(8)), (bx - px(7), hem - px(8)),
-               (tx - px(7), roof + px(3)), (tx - px(14), roof + px(3))], fill=BLUE)
-    z.polygon([(bx - px(7), hem - px(8)), (bx, hem - px(8)),
-               (tx, roof + px(3)), (tx - px(7), roof + px(3))], fill=GOLD)
-    z.polygon([(bx, hem - px(8)), (bx + px(7), hem - px(8)),
-               (tx + px(7), roof + px(3)), (tx, roof + px(3))], fill=BLUE)
+    # ---- the sleeper: the gold line with a wide indigo down each side of it,
+    # steep, running from the bottom edge under the badge all the way up to the
+    # rear edge at the roof, and the pig badge. Three bands of equal width read
+    # as a coloured block; the artwork weights the indigo either side of the gold
+    # and keeps the gold thin, the way the hood banding is weighted.
+    bx, tx = band_x + px(30), back_x + px(2)            # foot and head of the run
+    for lo, hi, fill in ((-px(34), -px(20), BLUE),
+                         (-px(20), -px(16), GOLD),
+                         (-px(16), -px(2), BLUE)):
+        z.polygon([(bx + lo, hem - px(8)), (bx + hi, hem - px(8)),
+                   (tx + hi, roof + px(6)), (tx + lo, roof + px(6))], fill=fill)
     bxc, byc = px(232), hem - px(26)
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)], fill=(240, 242, 246))
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)],
