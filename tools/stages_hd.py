@@ -68,14 +68,15 @@ W = 2 * HALF_SPAN                        # 8192: full stage canvas
 CX = W // 2                              # 4096
 FLOOR_Y = int(200 * S)                   # 900: ground line = zoffset
 START_X = -HALF_SPAN                     # -4096: canvas left edge in stage x
-# Where the fighters stop. It used to be SCROLL + LOCAL_W // 2 - 68 = 4028,
-# i.e. 892 px further out than the camera is allowed to follow, so the last
-# stretch of every stage was walked with the background frozen under an
-# invisible wall at the edge of the screen. Player and camera now stop at the
-# same place, so the level scrolls right up to the bumper of the arena.
-PLAYER_BOUND = SCROLL                       # 3136: the camera's own limit
 SCREEN_MARGIN = int(round(15 * S))       # 68
 VIEW_W = int(LOCAL_H * 16 / 9)           # 1920: what a 16:9 window shows
+# Where the fighters stop: SCREEN_MARGIN inside the painted edge, so at full pan
+# they can be walked to the border of the screen but never off the artwork. The
+# camera stops at +-SCROLL and its view reaches +-HALF_SPAN, so the 892 px
+# between the two is the strip past the left/right hand limit - and since the
+# rig now sits RIG_X in from the edge, that strip is open highway instead of the
+# nose of the truck.
+PLAYER_BOUND = HALF_SPAN - SCREEN_MARGIN    # 4028: the painted edge, less a margin
 # The VS / select stage card. The card's screen size is owned by
 # tools/build_select_ui.py (400x131 of art in a 400x159 frame with a name band
 # on top), so what matters here is only the art's aspect: 1215x398 is that
