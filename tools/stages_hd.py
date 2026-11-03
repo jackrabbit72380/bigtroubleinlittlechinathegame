@@ -874,16 +874,18 @@ def _cab(img):
     for gx in (hood1, door_x, door_r, px(196)):
         z.line([(gx, roof + px(4)), (gx, hem - px(6))], fill=(158, 162, 170), width=px(2))
 
-    # ---- the sleeper: the indigo swash rising off the sill band to the roof,
-    # with its gold companion along the leading edge, and the pig badge. The
-    # chequered rhombi that stood here made a dotted diagonal - a pattern, not
-    # the truck's artwork, which is one solid swash with a single gold line.
-    z.polygon([(band_x, hem - px(12)), (band_x + px(8), hem - px(12)),
-               (back_x - px(46), roof + px(30)), (back_x - px(54), roof + px(30))],
-              fill=GOLD)
-    z.polygon([(band_x + px(8), hem - px(12)), (band_x + px(38), hem - px(12)),
-               (back_x - px(16), roof + px(30)), (back_x - px(46), roof + px(30))],
-              fill=BLUE)
+    # ---- the sleeper: the gold rule with an indigo line down each side of it,
+    # rising steeply off the sill band and running all the way up to the roof at
+    # the back, and the pig badge. The chequered rhombi that stood here made a
+    # dotted diagonal, and a gold band hanging off the edge of a wide indigo one
+    # read as a coloured block; the artwork is the gold line, edged in indigo.
+    bx, tx = band_x + px(10), back_x - px(8)            # foot and head of the run
+    z.polygon([(bx - px(14), hem - px(8)), (bx - px(7), hem - px(8)),
+               (tx - px(7), roof + px(3)), (tx - px(14), roof + px(3))], fill=BLUE)
+    z.polygon([(bx - px(7), hem - px(8)), (bx, hem - px(8)),
+               (tx, roof + px(3)), (tx - px(7), roof + px(3))], fill=GOLD)
+    z.polygon([(bx, hem - px(8)), (bx + px(7), hem - px(8)),
+               (tx + px(7), roof + px(3)), (tx, roof + px(3))], fill=BLUE)
     bxc, byc = px(232), hem - px(26)
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)], fill=(240, 242, 246))
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)],
