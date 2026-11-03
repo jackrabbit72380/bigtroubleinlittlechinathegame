@@ -19,7 +19,8 @@ arcade stages exactly:
 
     canvas       8192 x 1080  (two 4096-wide halves, camera travel 6272)
     camera       boundleft/right +/-3136
-    players      leftbound/rightbound +/-4028, 68 px inside the painted edge
+    players      leftbound/rightbound +/-3136, the same wall as the camera, so
+                 the stage keeps scrolling for the whole of the walk
     floor        zoffset 900; art row 900 of 1080 is the ground line
     localcoord   1920, 1080
 
@@ -67,7 +68,12 @@ W = 2 * HALF_SPAN                        # 8192: full stage canvas
 CX = W // 2                              # 4096
 FLOOR_Y = int(200 * S)                   # 900: ground line = zoffset
 START_X = -HALF_SPAN                     # -4096: canvas left edge in stage x
-PLAYER_BOUND = SCROLL + LOCAL_W // 2 - 68   # 4028: one screen margin in from the edge
+# Where the fighters stop. It used to be SCROLL + LOCAL_W // 2 - 68 = 4028,
+# i.e. 892 px further out than the camera is allowed to follow, so the last
+# stretch of every stage was walked with the background frozen under an
+# invisible wall at the edge of the screen. Player and camera now stop at the
+# same place, so the level scrolls right up to the bumper of the arena.
+PLAYER_BOUND = SCROLL                       # 3136: the camera's own limit
 SCREEN_MARGIN = int(round(15 * S))       # 68
 VIEW_W = int(LOCAL_H * 16 / 9)           # 1920: what a 16:9 window shows
 # The VS / select stage card. The card's screen size is owned by
@@ -515,6 +521,11 @@ CAB_W = px(156)                          # 702 wide
 CAB_SPRITE_X = px(104)                   # 468
 TAIL_W = px(68)                          # 306: the bed's rear header board
 BED_X0 = px(300)                         # 1350: the flatbed starts here, behind the tractor
+# How far the rig stands in from the canvas' left edge. Painted hard against
+# x=0 the grille was the first thing in the picture, so the front of the truck
+# was the end of the stage and walking left stopped on the bumper. Pushed in by
+# this much there is highway in front of the nose to walk onto.
+RIG_X = px(288)                          # 1296: road painted ahead of the grille
 FAR_RAIL_TOP = FLOOR_Y - px(19)          # 814: the far stake rail
 FAR_RAIL_BOT = FLOOR_Y - px(15)          # 832: the deck runs from here to the near rail
 
@@ -1143,6 +1154,29 @@ def _highway_wall():
 
 
 
+def _truck_layer():
+    """The rig, standing RIG_X px in from the canvas' left edge.
+
+    Painted on a canvas RIG_X narrower and laid down at RIG_X: the tractor and
+    the deck behind it move right, while the trailer's tail still lands on the
+    canvas edge. That leaves real highway ahead of the grille instead of the
+    bumper being the first painted pixel of the stage.
+    """
+    global W
+    full_w = W
+    W = full_w - RIG_X
+    try:
+        rig = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        _deck(rig)
+        _cab(rig)
+        _trailer_end(rig)
+    finally:
+        W = full_w
+    layer = Image.new("RGBA", (full_w, H), (0, 0, 0, 0))
+    layer.alpha_composite(rig, (RIG_X, 0))
+    return layer
+
+
 def stage_highway():
     """The stormy highway, with the rig driving through it.
 
@@ -1151,11 +1185,7 @@ def stage_highway():
     stand on. Three planes, three speeds, one picture.
     """
     wall, fg = _highway_wall()
-    truck = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    _deck(truck)
-    _cab(truck)
-    _trailer_end(truck)
-    return [("bg", 0, 0, wall, 0), ("truck", 14, 0, truck, 0), ("fg", 3, 0, fg, 1)]
+    return [("bg", 0, 0, wall, 0), ("truck", 14, 0, _truck_layer(), 0), ("fg", 3, 0, fg, 1)]
 
 
 def _scene(sid, layers):
@@ -1230,7 +1260,9 @@ HALF = 1
 LIP_FADE_BY_STAGE = {"porkchop_express": int(px(7))}
 # Where the select-screen card looks: the stage centre, except on the highway,
 # where the cab is off the left edge and the card should still show the truck.
-PREVIEW_CX = {"porkchop_express": px(240)}
+# The rig moved RIG_X in from the edge, so the card follows it, minus a
+# little so the 4:3 docs shot keeps the whole nose in frame.
+PREVIEW_CX = {"porkchop_express": px(240) + RIG_X - px(60)}
 
 
 # What the far plate is made of, per stage: (sky top, sky bottom, haze,
