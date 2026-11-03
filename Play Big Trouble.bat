@@ -38,13 +38,49 @@ if exist "%~dp0save\.wtest" (
   if not exist "%LOCALAPPDATA%\BigTroubleInLittleChina" mkdir "%LOCALAPPDATA%\BigTroubleInLittleChina" 2>nul
 )
 
+rem Where the picture is drawn. Video.GameWidth/GameHeight is the size the game
+rem is actually rendered at - the art is painted at 1920x1080, so this is the
+rem honest one - and Video.WindowWidth/WindowHeight is the window it is drawn
+rem into. Options > Video > Resolution only sets the window. The values already
+rem on disk are kept, so a size chosen in the game's own menu survives the next
+rem launch; the defaults below apply only when there is nothing to keep. Two
+rem arguments override the render size:
+rem
+rem   "Play Big Trouble.bat" 2560 1440
+rem
+set "GW=1920"
+set "GH=1080"
+set "WW=1920"
+set "WH=1080"
+set "FS=false"
+if exist "%CFG%" (
+  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"GameWidth" "%CFG%" 2^>nul') do set "GW=%%v"
+  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"GameHeight" "%CFG%" 2^>nul') do set "GH=%%v"
+  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"WindowWidth" "%CFG%" 2^>nul') do set "WW=%%v"
+  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"WindowHeight" "%CFG%" 2^>nul') do set "WH=%%v"
+  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"Fullscreen" "%CFG%" 2^>nul') do set "FS=%%v"
+)
+if not "%~1"=="" set "GW=%~1"
+if not "%~2"=="" set "GH=%~2"
+rem "GameWidth = 1920" leaves the value with its leading space on it.
+set "GW=%GW: =%"
+set "GH=%GH: =%"
+set "WW=%WW: =%"
+set "WH=%WH: =%"
+set "FS=%FS: =%"
+if "%GW%"=="" set "GW=1920"
+if "%GH%"=="" set "GH=1080"
+if "%WW%"=="" set "WW=1920"
+if "%WH%"=="" set "WH=1080"
+if "%FS%"=="" set "FS=false"
+
 >  "%CFG%" echo [Video]
->> "%CFG%" echo GameWidth = 1920
->> "%CFG%" echo GameHeight = 1080
->> "%CFG%" echo WindowWidth = 1920
->> "%CFG%" echo WindowHeight = 1080
+>> "%CFG%" echo GameWidth = %GW%
+>> "%CFG%" echo GameHeight = %GH%
+>> "%CFG%" echo WindowWidth = %WW%
+>> "%CFG%" echo WindowHeight = %WH%
 >> "%CFG%" echo KeepAspect = true
->> "%CFG%" echo Fullscreen = false
+>> "%CFG%" echo Fullscreen = %FS%
 >> "%CFG%" echo RenderMode = OpenGL 3.3
 >> "%CFG%" echo.
 >> "%CFG%" echo [Config]
@@ -57,11 +93,16 @@ rem so a stale data\ folder shows the stock list - 320x240 up to 1080p and no
 rem 2K/4K rows - even though the build being played is new. Say which one this
 rem folder has, instead of leaving it to be guessed.
 if exist "%~dp0data\system.base.def" (
-  findstr /c:"menuvideo.resolution.2560x1440 = 2560x1440" "%~dp0data\system.base.def" >nul 2>nul
+  findstr /c:"menuvideo.resolution.11520x2160 = 11520x2160" "%~dp0data\system.base.def" >nul 2>nul
   if errorlevel 1 (
-    echo Data      : data\system.base.def is OLD - no 2K/4K menu rows in it
+    findstr /c:"menuvideo.resolution.3840x2160 = 3840x2160" "%~dp0data\system.base.def" >nul 2>nul
+    if errorlevel 1 (
+      echo Data      : data\system.base.def is OLD - no 2K/4K menu rows in it
+    ) else (
+      echo Data      : data\system.base.def carries 2K/4K but stops there
+    )
   ) else (
-    echo Data      : data\system.base.def carries the 2K/4K resolution rows
+    echo Data      : data\system.base.def carries the full 720p-8K resolution rows
   )
 ) else (
   echo Data      : data\system.base.def is missing from this folder
@@ -71,6 +112,8 @@ echo.
 echo Folder   : %~dp0
 echo Engine   : %EXE%
 echo Settings : %CFG%
+echo Render   : %GW% x %GH%  (internal resolution - "Play Big Trouble.bat" W H)
+echo Window   : %WW% x %WH%  (Options ^> Video ^> Resolution)
 if exist "%~dp0VERSION.txt" type "%~dp0VERSION.txt"
 findstr /i "RenderMode" "%CFG%"
 echo.
