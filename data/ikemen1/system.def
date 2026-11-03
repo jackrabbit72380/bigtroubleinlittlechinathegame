@@ -2098,7 +2098,7 @@ keymenu.p1.playerno.offset = 156, 0
 keymenu.p1.playerno.font = 11, 0, 0, 240, 196, 88
 keymenu.p1.playerno.scale = 1.0, 1.0
 ;P2 Key menu
-keymenu.p2.menuoffset = 836, 99
+keymenu.p2.menuoffset = 790, 99
 keymenu.p2.playerno.offset = 156, 0
 keymenu.p2.playerno.font = 11, 0, 0, 236, 158, 74
 keymenu.p2.playerno.scale = 1.0, 1.0
