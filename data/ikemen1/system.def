@@ -253,10 +253,17 @@ menu.itemname.menuwatch.back = BACK
 menu.itemname.options = OPTIONS
 
 ; Options > Video > Resolution. The engine takes the size straight from the
-suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
-had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
-the motif's own 1280x720, so the art, the framing and the netplay handshake are
-all unaffected.
+suffix, so this block IS the list.
+;
+; This is the WINDOW size, not the render size. Ikemen's render resolution is
+; Video.GameWidth/GameHeight in config.ini and it has no option-menu item at
+; all, so nothing in this list can add detail to the art - picking 4K here
+; draws the same sprites, scaled up, into a 4K window. The labels say so
+; rather than implying the picture gets sharper.
+;
+; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
+; the one window where every sprite lands on whole pixels; 2560x1440 and
+; 3840x2160 are clean 1.33x and 2x scales of that same art.
 	menu.itemname.menuvideo.resolution = RESOLUTION
 	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
 	menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
@@ -840,6 +847,7 @@ p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
+title.scale = 1,1
 cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
@@ -853,10 +861,9 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-title.scale = 1,1
-stage.scale = 0.588235, 0.588235
 stage.text = %s
 stage.active.text = %s
+stage.scale = 0.588235, 0.588235
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
