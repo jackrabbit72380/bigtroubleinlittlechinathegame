@@ -144,9 +144,11 @@ packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1920×1080** (`localcoord = 1920, 1080`), which is the
 arcade layout at 4.5× — the engine no longer stretches a 240-line image across
 a 1080p window, so a 16:9 display shows all 1920 units at 1:1. Each stage canvas
-is **8192×1080**, painted as two 4096-wide halves: the camera travels ±3136 and
-the art paints a full screen past each end, with players clamped to ±4028. The
-ground line is row 900 (`zoffset = 900`). Each stage ships a `9000,1`
+is **8192×1080**, painted as two 4096-wide halves: the camera travels ±3136 with
+the art reaching exactly to that stop, and the fighters are clamped to the same
+±3136 instead of 892 px beyond it, so the stage keeps scrolling for the whole of
+the walk rather than freezing under an invisible wall. The ground line is row
+900 (`zoffset = 900`). Each stage ships a `9000,1`
 select-screen preview sprite.
 
 To put real art in a stage, drop `backdrop.png` (and optionally

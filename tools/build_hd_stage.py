@@ -23,7 +23,7 @@ comes in this way lands in exactly the arena the shipped stages use:
 
     stage canvas      8192 x 1080  (two 4096-wide halves)
     camera            boundleft/right +/-3136
-    players           leftbound/rightbound +/-4028, 68 px inside the edge
+    players           leftbound/rightbound +/-3136, the camera's own wall
     floor             zoffset 900  (the art's floor line sits at row 900)
     localcoord        1920, 1080
 
@@ -73,7 +73,7 @@ W = hd.W                                      # 8192: full stage canvas
 CX = hd.CX                                    # 4096: canvas centre
 START_X = hd.START_X                          # -4096: canvas left edge in stage x
 ZOFFSET = hd.FLOOR_Y                          # 900: ground line
-PLAYER_BOUND = hd.PLAYER_BOUND                # 4028
+PLAYER_BOUND = hd.PLAYER_BOUND                # 3136: where the camera stops too
 SCREEN_MARGIN = hd.SCREEN_MARGIN              # 68
 MAX_TEX = hd.MAX_TEX                          # 4096: widest single sprite
 split_wide = hd.split_wide
