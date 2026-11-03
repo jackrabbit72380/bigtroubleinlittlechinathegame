@@ -52,6 +52,21 @@ if exist "%~dp0save\.wtest" (
 >> "%CFG%" echo RenderMode = OpenGL 3.3
 >> "%CFG%" echo EnableModel = 1
 
+rem The resolution menu is built from data\system.base.def, not from the motif,
+rem so a stale data\ folder shows the stock list - 320x240 up to 1080p and no
+rem 2K/4K rows - even though the build being played is new. Say which one this
+rem folder has, instead of leaving it to be guessed.
+if exist "%~dp0data\system.base.def" (
+  findstr /c:"menuvideo.resolution.2560x1440 = 2560x1440" "%~dp0data\system.base.def" >nul 2>nul
+  if errorlevel 1 (
+    echo Data      : data\system.base.def is OLD - no 2K/4K menu rows in it
+  ) else (
+    echo Data      : data\system.base.def carries the 2K/4K resolution rows
+  )
+) else (
+  echo Data      : data\system.base.def is missing from this folder
+)
+
 echo.
 echo Folder   : %~dp0
 echo Engine   : %EXE%
