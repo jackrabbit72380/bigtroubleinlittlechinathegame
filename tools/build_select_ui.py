@@ -129,18 +129,29 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # the band, so the stage name sits on the card instead of under it.
 STAGE_ART = (1215, 398)
 CARD_W = 460
-BAND_H = 32                              # the name band across the top
+BAND_H = 30                              # the name band, under the art
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
-CARD_H = ART_H + BAND_H                  # 183
+CARD_H = ART_H + BAND_H                  # 181
 CARD_CX = 640
+# A stage's 9000,1 is drawn at (motif localcoord / stage localcoord) of the
+# scale in the .def, which is 1280/1920 = 2/3 for these 1920-wide stages. At
+# the card's own scale the picture landed 307px wide inside a 460px window - a
+# postage stamp in a frame, which is what "the preview does not fill the box"
+# looked like. Overscaling by that ratio makes the art cover the window and the
+# window clip it, so the box is full whatever a stage's localcoord turns out
+# to be.
+MOTIF_LOCALCOORD = 1280
+STAGE_LOCALCOORD = 1920
+CARD_FILL = STAGE_LOCALCOORD / float(MOTIF_LOCALCOORD)
 # 20px of cap height. The name used to be font 11 (the 13px Body face) at
 # scale .5, i.e. six pixels tall: legible nowhere, least of all on a television.
 # It is the Display face now at 20/34, which is what the rest of the screenpack
 # draws its headings with, so the stage name reads at the same weight. The card
 # is 60px wider for it, and its bottom edge moved down to 660 to keep the top
 # clear of the portrait grid, which ends at y=460.
-NAME_PX = 20
-NAME_FONT = 10                           # Display, a 34px cell
+NAME_PX = 13
+NAME_FONT = 11                           # Body, a 13px cell: the face the
+                                         # engine sets VERSUS in
 
 
 def _card(bottom_y):
@@ -153,17 +164,20 @@ def _card(bottom_y):
     """
     left = CARD_CX - CARD_W // 2
     top = bottom_y - CARD_H
-    image_top = top + BAND_H
-    text_y = top + (BAND_H - NAME_PX) // 2 - 1
-    scale = CARD_W / float(STAGE_ART[0])
+    band_top = top + ART_H
+    text_y = band_top + (BAND_H - NAME_PX) // 2
+    scale = CARD_W / float(STAGE_ART[0]) * CARD_FILL
     # 9000,1's axis is the centre of the art, so place the art's centre
-    art_centre = image_top + ART_H / 2.0
+    art_centre = top + ART_H / 2.0
     return (
         ("stage.portrait.spr", "9000,1"),
         ("stage.portrait.offset", "0, %d" % int(round(art_centre - text_y))),
         ("stage.portrait.scale", "%.4f, %.4f" % (scale, scale)),
+        # inset inside the plate's own 2px gold rule, or the art paints over
+        # the frame and the card loses its outline
         ("stage.portrait.window",
-         "%d, %d, %d, %d" % (left, image_top, left + CARD_W, image_top + ART_H)),
+         "%d, %d, %d, %d" % (left + 3, top + 3,
+                             left + CARD_W - 3, band_top - 3)),
         ("stage.portrait.bg.offset", "%d, %d" % (left - CARD_CX, top - text_y)),
         ("stage.portrait.bg.scale", "1.0, 1.0"),
         ("stage.pos", "%d, %d" % (CARD_CX, text_y)),
@@ -173,7 +187,10 @@ def _card(bottom_y):
 # The stage name is in the card's band now, so the text is the bare name -
 # "Stage 7: Lo Pan's Hallway" does not fit across a 400px card - set in the
 # same gold as the rest of the screen and sized to the band.
-NAME_SCALE = "%g, %g" % (NAME_PX / 34.0, NAME_PX / 34.0)
+# font 11 is a 13px cell, so the name is set at 1:1 and reads at the size the
+# engine draws VERSUS in - the stage name used to be the only text on the row
+# that was set in another face and at another size.
+NAME_SCALE = "1, 1"
 SELECT_TEXT = (
     ("stage.font", f"{NAME_FONT}, 0, 0, 236, 200, 120"),
     ("stage.active.font", f"{NAME_FONT}, 0, 0, 255, 228, 140"),
@@ -288,10 +305,14 @@ def frame_plate(w, h, band=0):
                 outline=GOLD_DEEP + (255,), width=2)
     d.rectangle([2, 2, w - 3, h - 3], outline=GOLD + (140,), width=1)
     if band:
-        d.rectangle([2, 2, w - 3, band], fill=(9, 7, 12, 240))
-        d.line([(3, band + 1), (w - 4, band + 1)], fill=GOLD_DEEP + (255,),
-               width=2)
-        d.line([(3, band), (w - 4, band)], fill=GOLD + (150,), width=1)
+        # the band is under the art: a darker strip at the bottom of the plate
+        # with a gold rule above it, so the name never sits over the picture
+        band_top = h - 3 - band
+        d.rectangle([2, band_top, w - 3, h - 3], fill=(9, 7, 12, 240))
+        d.line([(3, band_top - 2), (w - 4, band_top - 2)],
+               fill=GOLD_DEEP + (255,), width=2)
+        d.line([(3, band_top - 1), (w - 4, band_top - 1)],
+               fill=GOLD + (150,), width=1)
     return img
 
 

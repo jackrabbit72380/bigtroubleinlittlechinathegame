@@ -319,7 +319,7 @@ def check_select_screen(chars):
                              re.M | re.I)
         localcoord = int(lc_match.group(1)) if lc_match else 320
         factor = 1280.0 / localcoord      # motif [Info] localcoord width
-        want = {(9000, 0): (100, 100), (9000, 1): (120, 140),
+        want = {(9000, 0): (84, 84), (9000, 1): (120, 140),
                 (9000, 2): (300, 520)}
         for key, size in want.items():
             hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)

@@ -31,8 +31,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The cell art is painted at the grid cell size so it can be drawn at scale 1
 # with the axis at the sprite corner, which is how the engine lays out its own
 # 25x25 portraits in a 24px cell.
-CELL = (100, 100)
-BUST = 84                  # the bust sits inside the cell bevel
+CELL = (84, 84)            # the grid's cell, in build_select_grid.py
+BUST = 76                  # the bust sits inside the cell bevel
 SIDE = (300, 520)          # the tall art shown beside the grid
 BIG = (120, 140)
 AXIS = (0, 0)
@@ -123,7 +123,9 @@ def cell_art(img, cell=CELL):
     bust = img.crop((0, 0, img.width, max(1, int(img.height * 0.52))))
     art = fit(bust, (bust_target, bust_target))
     # the sprite itself stays the size of the grid cell: the engine draws it at
-    # scale 1, so a 63px canvas would land 84px on screen instead of 100
+    # scale 1, so a 63px canvas would land 84px on screen instead of the 84 the
+    # cell is. It used to be 100, which is 16px wider than the cell it is
+    # clipped to and is why every portrait hung over its neighbour's frame.
     out = Image.new("RGBA", cell, (0, 0, 0, 0))
     out.alpha_composite(art, ((cell[0] - art.width) // 2,
                               (cell[1] - art.height) // 2))

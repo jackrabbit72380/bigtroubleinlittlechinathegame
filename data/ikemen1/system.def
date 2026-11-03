@@ -453,7 +453,7 @@ stage.move.snd = 100,0
 stage.done.snd = 100,1
 cancel.snd = 100,2
 portrait.spr = 9000,0
-portrait.offset = 4,4
+portrait.offset = 0,0
 portrait.scale = 1,1
 portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
@@ -643,21 +643,21 @@ p2.name.spacing = -15,25
 p2.name.layerno = 2
 
 ;Stage select
-stage.pos = 640, 482
-stage.font = 10, 0, 0, 236, 200, 120
-stage.active.font = 10, 0, 0, 255, 228, 140
-stage.active2.font = 10, 0, 0, 200, 168, 104
-stage.done.font = 10, 0, 0, 200, 168, 104
+stage.pos = 640, 638
+stage.font = 11, 0, 0, 236, 200, 120
+stage.active.font = 11, 0, 0, 255, 228, 140
+stage.active2.font = 11, 0, 0, 200, 168, 104
+stage.done.font = 11, 0, 0, 200, 168, 104
 stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, 102
-stage.portrait.scale = 0.3786, 0.3786
+stage.portrait.offset = 0, -84
+stage.portrait.scale = 0.5679, 0.5679
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -230, -5
+stage.portrait.bg.offset = -230, -159
 stage.portrait.bg.scale = 1.0, 1.0
 stage.portrait.bg.layerno = 2
 ;stage.portrait.random.anim = 113
@@ -670,7 +670,7 @@ stage.portrait.loading.anim = 113
 stage.portrait.loading.offset = -163, -144
 stage.portrait.loading.scale = 1.0, 1.0
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 410, 509, 870, 660
+stage.portrait.window = 413, 482, 867, 627
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator
@@ -854,7 +854,7 @@ p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
 title.scale = 1,1
-stage.scale = 0.588235, 0.588235
+stage.scale = 1, 1
 stage.text = %s
 stage.active.text = %s
 [Begin Action 110]
@@ -1279,19 +1279,19 @@ p8.value.icon.spr = 810, 5
 p8.value.empty.icon.spr = 810, 9
 
 ;Stage preview
-stage.pos = 640, 487
+stage.pos = 640, 643
 stage.text = %s
 stage.offset = 0, -10
-stage.font = 10, 0, 0, 255, 228, 140
-stage.scale = 0.588235, 0.588235
+stage.font = 11, 0, 0, 255, 228, 140
+stage.scale = 1, 1
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, 102
-stage.portrait.scale = 0.3786, 0.3786
+stage.portrait.offset = 0, -84
+stage.portrait.scale = 0.5679, 0.5679
 stage.portrait.bg.spr = 112,0
-stage.portrait.bg.offset = -230, -5
+stage.portrait.bg.offset = -230, -159
 stage.portrait.bg.scale = 1.0, 1.0
-stage.portrait.window = 410, 514, 870, 665
+stage.portrait.window = 413, 487, 867, 632
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer

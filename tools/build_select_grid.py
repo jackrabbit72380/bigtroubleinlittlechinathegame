@@ -298,9 +298,11 @@ KEYS = (
     ("cell.random.spr", "151,0"),
     ("cell.random.scale", "1.6,1.6"),
     ("portrait.spr", "9000,0"),
-    # the portrait art is 75px inside an 84px cell, so it is nudged in to sit
-    # centred rather than hard against the frame's top-left corner
-    ("portrait.offset", "4,4"),
+    # the portrait art is painted at the cell's own size (build_portraits.py
+    # CELL) and the bust is inset inside it, so it sits at the cell's origin -
+    # nudging it in again double-counted the inset and pushed the art 4px past
+    # the frame on two sides
+    ("portrait.offset", "0,0"),
     ("portrait.scale", "1,1"),
     # The stage card's position, scale, window and name band all belong to
     # tools/build_select_ui.py, which runs after this one; stage.pos is
