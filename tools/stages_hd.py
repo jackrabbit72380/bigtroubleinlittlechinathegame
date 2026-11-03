@@ -731,6 +731,7 @@ def _cab(img):
     back_x = px(284)                                        # 1278
     roof, hem = FLOOR_Y - px(98), FLOOR_Y + px(22)          # 459, 999
     belt = FLOOR_Y - px(57)                                 # 645: hood top, window sill
+    gy0, gy1 = belt - px(10), hem - px(11)                  # 600, 950: the grille frame
 
     # ---- frame and running gear on the canvas itself, so the tyres are exact
     d0 = ImageDraw.Draw(img)
@@ -751,9 +752,14 @@ def _cab(img):
         _stack(z, sxx, roof - px(13), hem - px(4), px(6))
 
     # ---- the body as one lit mass: bright under the roof, shading to grey at
-    # the sill, so the panels read as painted metal rather than paper
-    _vgrad(z, roof, hem, (250, 251, 252), (218, 220, 224), grille0, back_x)
-    z.rectangle([grille0, roof, back_x, roof + px(4)], fill=(253, 254, 255))
+    # the sill, so the panels read as painted metal rather than paper. Only the
+    # cab stands full height: forward of the cowl the coachwork stops at the
+    # hood, because the air over the nose has to stay transparent and let the
+    # sky behind the rig through. Painted as one roof-to-sill slab the nose was
+    # a blank white field hanging in front of the cab.
+    _vgrad(z, roof, hem, (250, 251, 252), (218, 220, 224), hood1, back_x)
+    z.rectangle([hood1, roof, back_x, roof + px(4)], fill=(253, 254, 255))
+    _vgrad(z, belt, hem, (250, 251, 252), (218, 220, 224), grille0, hood1)
     z.rectangle([grille0, hem - px(6), back_x, hem], fill=(178, 181, 188))
 
     # ---- the hood: a low slab, its top crowning forward to the grille
@@ -768,7 +774,6 @@ def _cab(img):
               fill=(208, 212, 222))
 
     # ---- the grille: a chrome-framed frontal plane standing proud of the nose
-    gy0, gy1 = belt - px(10), hem - px(11)                  # 600, 950
     z.rounded_rectangle([grille0, gy0, grille1, gy1], radius=px(4), fill=(190, 194, 204))
     z.rectangle([grille0 + px(3), gy0 + px(4), grille1 - px(3), gy1 - px(4)], fill=(34, 36, 43))
     slats = 14
@@ -794,11 +799,13 @@ def _cab(img):
                 fill=(106, 110, 120))
     z.rectangle([nose + px(2), gy1 + px(5), nose + px(13), gy1 + px(11)], fill=BLUE)
 
-    # ---- the blue light bar on the hood's leading edge, as on the model
-    z.rectangle([grille1 + px(2), belt - px(13), grille1 + px(34), belt - px(7)], fill=BLUE)
+    # ---- the blue light bar on the hood's leading edge, as on the model. It
+    # sits on the hood top rather than floating over it: with the sky behind the
+    # nose again, a bar hanging clear of the panel reads as a mistake.
+    z.rectangle([grille1 + px(2), belt - px(7), grille1 + px(34), belt - px(1)], fill=BLUE)
     for lamp_x in (grille1 + px(5), grille1 + px(20)):
-        z.ellipse([lamp_x, belt - px(19), lamp_x + px(9), belt - px(10)], fill=(206, 212, 224))
-        z.ellipse([lamp_x + px(2), belt - px(17), lamp_x + px(7), belt - px(12)],
+        z.ellipse([lamp_x, belt - px(13), lamp_x + px(9), belt - px(4)], fill=(206, 212, 224))
+        z.ellipse([lamp_x + px(2), belt - px(11), lamp_x + px(7), belt - px(6)],
                   fill=(250, 246, 214))
 
     # ---- cab and sleeper: the roof flat, the front raked back from the cowl
