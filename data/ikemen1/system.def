@@ -633,12 +633,12 @@ p2.face2.loading.yangle = -70
 p2.face2.loading.focallength = 400
 
 ;Name
-p1.name.offset = 50,620                   ;Position to put name
-p1.name.font = 10, 0, 1, 240, 196, 88 ;Set to -1 for no display
+p1.name.offset = 50, 690
+p1.name.font = 11, 0, 0, 255, 228, 140
 p1.name.spacing = 15,25                   ;Space between each name for players on the same team
 p1.name.layerno = 2
-p2.name.offset = 1230,620
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.offset = 1230, 690
+p2.name.font = 11, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 p2.name.layerno = 2
 
@@ -857,6 +857,8 @@ title.scale = 1,1
 stage.scale = 1, 1
 stage.text = %s
 stage.active.text = %s
+p1.name.scale = 0.25, 0.25
+p2.name.scale = 0.25, 0.25
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
