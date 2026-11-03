@@ -34,8 +34,8 @@ p1facing = 1
 p2startx = 315
 p2starty = 0
 p2facing = -1
-leftbound = -3136
-rightbound = 3136
+leftbound = -4028
+rightbound = 4028
 
 [Bound]
 screenleft = 68
