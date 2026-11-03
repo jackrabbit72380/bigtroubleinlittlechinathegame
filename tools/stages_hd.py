@@ -495,11 +495,14 @@ ROAD_TOP = FLOOR_Y - px(30)              # 765: the wall's road line
 # Painted from the concept art in concept_art/stages/porkchop_express: the
 # licensed model of the film's tractor. White coachwork, a blue cheat line
 # edged in gold, a blue-and-gold chequered chevron raking up the sleeper,
-# "BURTON TRUCKING" on the door, a ribbed chrome grille, ribbed chrome stacks,
-# and a black timber flatbed trailer on tandem axles.
+# "BURTON TRUCKING" on the door, the indigo-and-gold banding that rakes up the
+# sleeper, a ribbed chrome grille, ribbed chrome stacks, and a black timber
+# flatbed trailer on tandem axles.
 BODY, BODY_DK = (238, 238, 234), (198, 200, 203)
-BLUE, BLUE_DK = (32, 58, 134), (19, 36, 92)
-GOLD, GOLD_DK = (214, 168, 62), (146, 108, 32)
+# The film truck's livery is an indigo that reads almost purple, not a royal
+# blue: (52, 48, 116) is sampled off the swash on the concept art's sleeper.
+BLUE, BLUE_DK = (52, 48, 116), (28, 26, 68)
+GOLD, GOLD_DK = (226, 176, 62), (150, 108, 34)
 CHROME, CHROME_HI = (194, 198, 206), (240, 244, 250)
 DECK_LT, DECK = (96, 78, 61), (58, 46, 37)
 STEEL, STEEL_DK, STEEL_LT = (58, 60, 68), (26, 27, 33), (104, 107, 116)
@@ -713,10 +716,10 @@ def _deck(img):
 def _cab(img):
     """The tractor in side elevation, painted from the concept art in
     concept_art/stages/porkchop_express: a chrome grille and bumper standing
-    proud of the nose, the long white hood under the blue cheat line edged in
-    gold, an arch fender over the steer tyre, the door with its Burton Trucking
-    sign, the air cleaner on the flank, the twin stacks rising behind the cab,
-    and the sleeper carrying the chequered chevron and the pork chop badge.
+    proud of the nose, the long white hood under the banded livery the film
+    truck wears, an arch fender over the steer tyre, the door with its Burton
+    Trucking sign, the air cleaner on the flank, the twin stacks rising behind
+    the cab, and the sleeper carrying the indigo swash and the pork chop badge.
 
     The body is painted at 2x and resampled so arcs and diagonals are smooth,
     and each wheel well is cut out of it so the wheels drawn underneath sit in
@@ -842,35 +845,45 @@ def _cab(img):
                 outline=(204, 208, 216), width=px(2))
     z.rectangle([door_r - px(16), belt - px(34), door_r - px(4), belt - px(28)],
                 fill=(214, 218, 226))                       # handle
-    # the sign plate, its two lines of lettering picked out as small blue ticks
-    z.rectangle([door_x + px(4), hem - px(33), door_r - px(4), hem - px(12)],
+    # the sign plate, its two lines of lettering picked out as small blue ticks.
+    # It sits a little higher than it used to so the sill banding below it has
+    # the room the artwork gives it, instead of cutting through the second line.
+    z.rectangle([door_x + px(4), hem - px(44), door_r - px(4), hem - px(22)],
                 fill=(250, 251, 252), outline=(182, 186, 196), width=px(1))
     for row, count in ((0, 9), (1, 6)):
         for i in range(count):
             xx = door_x + px(7) + i * px(6)
-            yy = hem - px(29) + row * px(9)
+            yy = hem - px(40) + row * px(9)
             z.rectangle([xx, yy, xx + px(4), yy + px(6)], fill=BLUE_DK)
 
-    # ---- the cheat line, at hood height and carried the whole length
-    z.rectangle([grille1, belt + px(24), back_x, belt + px(31)], fill=GOLD)
-    z.rectangle([grille1, belt + px(31), back_x, belt + px(40)], fill=BLUE)
-    z.rectangle([grille1, belt + px(40), back_x, belt + px(47)], fill=GOLD)
-    z.line([(grille1, belt + px(31)), (back_x, belt + px(31))], fill=BLUE_DK, width=px(2))
-    z.line([(grille1, belt + px(40)), (back_x, belt + px(40))], fill=BLUE_DK, width=px(2))
-    z.rectangle([hood1, hem - px(18), back_x, hem - px(13)], fill=BLUE)
+    # ---- the livery, after the film truck: the banding belongs to the hood.
+    # It runs from the grille to the cowl and stops there, weighted - a hairline
+    # under the crown, the gold, then the wide indigo. Three stripes of equal
+    # weight carried the whole length of the rig read as a racing flag laid over
+    # the door, which is not what the artwork does.
+    band_x = px(196)                                   # the sleeper's front seam
+    # the banding sits in the top third of the hood, hard under its crown, with
+    # the long white flank below it left clear as the model leaves it
+    z.rectangle([grille1, belt + px(4), hood1, belt + px(8)], fill=BLUE)
+    z.rectangle([grille1, belt + px(13), hood1, belt + px(21)], fill=GOLD)
+    z.rectangle([grille1, belt + px(21), hood1, belt + px(35)], fill=BLUE)
+    z.rectangle([grille1, belt + px(35), hood1, belt + px(38)], fill=GOLD)
+    # the sill banding: a gold rule over a wide indigo skirt along the cab
+    z.rectangle([hood1, hem - px(20), band_x, hem - px(17)], fill=GOLD)
+    z.rectangle([hood1, hem - px(17), band_x, hem - px(8)], fill=BLUE)
     for gx in (hood1, door_x, door_r, px(196)):
         z.line([(gx, roof + px(4)), (gx, hem - px(6))], fill=(158, 162, 170), width=px(2))
 
-    # ---- the sleeper: the chequered chevron in real rhombi, and the pig badge
-    for row in range(2):
-        for i in range(13):
-            cxq = px(202) + i * px(7) + row * px(3.5)
-            cyq = roof + px(44) + i * px(7)
-            if cyq > hem - px(34):
-                continue
-            col = BLUE if (i + row) % 2 == 0 else GOLD
-            z.polygon([(cxq, cyq - px(3.5)), (cxq + px(3.5), cyq),
-                       (cxq, cyq + px(3.5)), (cxq - px(3.5), cyq)], fill=col)
+    # ---- the sleeper: the indigo swash rising off the sill band to the roof,
+    # with its gold companion along the leading edge, and the pig badge. The
+    # chequered rhombi that stood here made a dotted diagonal - a pattern, not
+    # the truck's artwork, which is one solid swash with a single gold line.
+    z.polygon([(band_x, hem - px(12)), (band_x + px(8), hem - px(12)),
+               (back_x - px(46), roof + px(30)), (back_x - px(54), roof + px(30))],
+              fill=GOLD)
+    z.polygon([(band_x + px(8), hem - px(12)), (band_x + px(38), hem - px(12)),
+               (back_x - px(16), roof + px(30)), (back_x - px(46), roof + px(30))],
+              fill=BLUE)
     bxc, byc = px(232), hem - px(26)
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)], fill=(240, 242, 246))
     z.ellipse([bxc - px(12), byc - px(12), bxc + px(12), byc + px(12)],
