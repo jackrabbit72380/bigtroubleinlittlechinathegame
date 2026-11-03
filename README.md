@@ -10,11 +10,11 @@ engine binary is not committed here — the
 [releases](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
 ship it bundled, so players just download and launch.
 
-![Lo Pan's Throne](artifacts/lopans_throne_preview.png)
-![Wing Kong Exchange](artifacts/wingkong_exchange_preview.png)
-![Chinatown Back Alley](artifacts/chinatown_alley_preview.png)
-![Pork Chop Express](artifacts/porkchop_express_preview.png)
-![The Upside Down](artifacts/upside_down_preview.png)
+![Lo Pan's Throne](artifacts/lopans_throne_card.png)
+![Wing Kong Exchange](artifacts/wingkong_exchange_card.png)
+![Chinatown Back Alley](artifacts/chinatown_alley_card.png)
+![Pork Chop Express](artifacts/porkchop_express_card.png)
+![The Upside Down](artifacts/the_upside_down_card.png)
 
 ## Download and play
 
