@@ -2093,26 +2093,34 @@ textinput.overlay.col = 0, 0, 0
 textinput.overlay.alpha = 0, 128
 
 ;P1 Key menu
-keymenu.p1.menuoffset = 276, 99
+keymenu.p1.menuoffset = 419, 99
 keymenu.p1.playerno.offset = 156, 0
 keymenu.p1.playerno.font = 11, 0, 0, 240, 196, 88
 keymenu.p1.playerno.scale = 1.0, 1.0
 ;P2 Key menu
-keymenu.p2.menuoffset = 693, 99
+keymenu.p2.menuoffset = 836, 99
 keymenu.p2.playerno.offset = 156, 0
 keymenu.p2.playerno.font = 11, 0, 0, 236, 158, 74
 keymenu.p2.playerno.scale = 1.0, 1.0
 
-; unassigned 'keymenu' parameters use corresponding 'menu' values
-
+; The key list is its own screen: every label row and its key must fit the
+; options panel, and the row pitch has to clear the glyph cell. Left alone it
+; inherited 'menu.item.font' - the 45px Display face - on a 36px pitch, so the
+; labels drew three times too tall, overlapped each other and ran off the panel
+; while the key names sat 303px away in a 20px Body face.
 keymenu.pos = 0, 0
-
-keymenu.item.spacing = 0, 36
-keymenu.item.value.offset = 303, 0
-keymenu.item.value.active.offset = 303, 0
-keymenu.item.value.conflict.offset = 303, 0
-keymenu.item.info.offset = 303, 0
-keymenu.item.info.active.offset = 303, 0
+keymenu.item.font = 11,0,-1, 240, 196, 88
+keymenu.item.active.font = 11,0,-1, 255, 228, 140
+keymenu.item.selected.font = 11,0,-1, 255, 228, 140
+keymenu.item.selected.active.font = 11,0,-1, 255, 228, 140
+keymenu.item.value.font = 11,0,1, 240, 196, 88
+keymenu.item.value.active.font = 11,0,1, 255, 228, 140
+keymenu.item.spacing = 0, 30
+keymenu.item.value.offset = 160, 0
+keymenu.item.value.active.offset = 160, 0
+keymenu.item.value.conflict.offset = 160, 0
+keymenu.item.info.offset = 160, 0
+keymenu.item.info.active.offset = 160, 0
 
 keymenu.window.margins.y = 0, 0
 keymenu.window.visibleitems = 0
@@ -2188,7 +2196,7 @@ menu.item.scale = 1.0, 1.0
 menu.item.active.offset = 0, 0
 menu.item.active.font = 12,0,-1, 255, 228, 140
 menu.item.active.scale = 1.0, 1.0
-menu.item.spacing = 0, 42
+menu.item.spacing = 0, 46
 menu.window.margins.y = 21, 2
 menu.window.visibleitems = 13
 menu.boxcursor.visible = 1
