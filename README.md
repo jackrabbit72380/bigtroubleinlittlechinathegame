@@ -17,6 +17,7 @@ ship it bundled, so players just download and launch.
 ![Chinatown Back Alley](artifacts/chinatown_alley_card.png)
 ![Pork Chop Express](artifacts/porkchop_express_card.png)
 ![The Upside Down](artifacts/the_upside_down_card.png)
+![Hell of the Upside-Down Sinners](artifacts/hell_sinners_card.png)
 ![Airport Terminal](artifacts/airport_terminal_card.png)
 
 ## Download and play
@@ -127,10 +128,11 @@ recoloured base.
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
 | The Upside Down | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
+| Hell of the Upside-Down Sinners | `stages/hell_sinners.def` | rusted steel works lit from the floor, furnace fires, victims hung by the ankles, flooded sumps |
 | Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners, security checkpoint |
 | Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
 
-All eight BTILC stages are drawn procedurally (no bitmaps committed as source),
+All nine BTILC stages are drawn procedurally (no bitmaps committed as source),
 packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
 paints them natively at **1920×1080** (`localcoord = 1920, 1080`), which is the
 arcade layout at 4.5× — the engine no longer stretches a 240-line image across
