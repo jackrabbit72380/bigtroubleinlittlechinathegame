@@ -156,14 +156,15 @@ def patch_character(path):
     source = None
     if os.path.isfile(front):
         source = Image.open(front).convert("RGBA")
-    base_sff = os.path.join(ROOT, "chars", "kfm", "kfm.sff")
-    if len(palettes) > 1 and os.path.isfile(base_sff) and \
-            os.path.abspath(base_sff) != os.path.abspath(path):
-        bd, base_sprites, _bp = sff.read_sff(base_sff)
-        rec = {(sp["group"], sp["number"]): sp
-               for sp in base_sprites}.get((9000, 1))
-        if rec is not None:
-            source = sff.decode_sprite(bd, rec, palettes).convert("RGBA")
+    # Every fighter paints its portraits from its own art now. There used to be
+    # a branch here that took Kung Fu Man's 9000,1 and decoded it with this
+    # fighter's palette, which was right while the roster *was* recoloured Kung
+    # Fu Man - the engine's portrait is pristine PNG8 art, better than a
+    # reassembled idle frame. It stopped being right when the roster was rebaked
+    # from the puppet rig, and nothing caught it because the branch fires for
+    # every fighter carrying more than one palette, i.e. all of them. Every cell
+    # in the grid was Kung Fu Man wearing a different outfit, which is what
+    # "all the character pictures are gone" looks like on screen.
     if source is None:
         source = standing
     box = source.getchannel("A").getbbox()

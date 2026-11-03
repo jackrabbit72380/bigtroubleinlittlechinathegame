@@ -41,6 +41,13 @@ publishes the zips.
 If a bundle trips SmartScreen (Windows) or Gatekeeper (macOS), that is because the
 downloads are unsigned: choose *More info → Run anyway*, or right-click → *Open*.
 
+If the game closes on boot with an **Engine error** box instead, the renderer is
+the usual cause. *Video Settings → Renderer* offers Vulkan as well as OpenGL, and
+`vk.QueueSubmit failed with vulkan error: device lost` is what a driver that
+cannot run it reports. Choose **OpenGL 3.3**. If the box appears before you can
+reach that menu, delete `save/config.ini`: the engine recreates it on the default
+renderer, and your other settings are the only thing in there.
+
 ## Run from source
 
 The rest of this README is for editing the game. If you only want to play, use a
