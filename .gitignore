@@ -34,3 +34,6 @@ dist/
 
 # prototype gang art from tools/gang_kfm.py --build, never shipped
 chars/*_kfm/
+
+# our shipped renderer defaults; the engine seed file is regenerated, ours is not
+!config.ini
