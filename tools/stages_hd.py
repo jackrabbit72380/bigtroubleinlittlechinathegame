@@ -526,7 +526,7 @@ BED_X0 = px(300)                         # 1350: the flatbed starts here, behind
 # x=0 the grille was the first thing in the picture, so the front of the truck
 # was the end of the stage and walking left stopped on the bumper. Pushed in by
 # this much there is highway in front of the nose to walk onto.
-RIG_X = px(288)                          # 1296: road painted ahead of the grille
+RIG_X = px(600)                          # 2700: road painted ahead of the grille
 FAR_RAIL_TOP = FLOOR_Y - px(19)          # 814: the far stake rail
 FAR_RAIL_BOT = FLOOR_Y - px(15)          # 832: the deck runs from here to the near rail
 
