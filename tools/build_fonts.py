@@ -576,6 +576,24 @@ def ensure_font_files(text):
     return text[:last.end()] + added + text[last.end():], len(missing)
 
 
+# The one ordered copy of the size ladder. Both tables that can drive
+# Options > Video > Resolution are written from it: RESOLUTION_MENU for the
+# motif, and ensure_widescreen_resolutions() for data/system.base.def.
+RESOLUTION_LADDER = (
+    ("1280x720", "(720p)"),
+    ("1366x768", "(768p)"),
+    ("1600x900", "(900p)"),
+    ("1920x1080", "(1080p)"),
+    ("2560x1440", "(2K)"),
+    ("3840x2160", "(4K)"),
+    ("5120x2880", "(5K)"),
+    ("6016x3384", "(6K)"),
+    ("7168x4032", "(7K)"),
+    ("7680x4320", "(8K)"),
+    ("7680x2160", "(2x 4K)"),
+    ("11520x2160", "(3x 4K)"),
+)
+
 RESOLUTION_MENU = (
     """; Options > Video > Resolution. The engine takes the size straight from the
 suffix, so this block IS the list.
@@ -668,33 +686,33 @@ def ensure_widescreen_resolutions():
             text)
         changed += n
 
-    # The submenu is whatever keys exist, in file order, so the widescreen sizes
-    # go straight after 1920x1080 and before the spacer/custom/back rows.
-    # 1366x768 is the most common laptop panel there is, and it was the one
-    # 16:9 size missing from the ladder; it goes after 1280x720, keeping the
-    # list in ascending order.
-    anchor = re.search(
-        r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\.1280x720[ \t]*=[^\r\n]*",
-        text, re.MULTILINE)
-    if anchor and "resolution.1366x768" not in text:
-        indent = anchor.group(1)
-        text = (text[:anchor.end()]
-                + f"\n{indent}menu.itemname.menuvideo.resolution.1366x768 = 1366x768  (768p)"
-                + text[anchor.end():])
-        changed += 1
-
-    anchor = re.search(
-        r"^([ \t]*)menu\.itemname\.menuvideo\.resolution\.1920x1080[ \t]*=[^\r\n]*",
-        text, re.MULTILINE)
-    if anchor:
-        indent = anchor.group(1)
-        add = [f"{indent}menu.itemname.menuvideo.resolution.{size} = {size}  {label}"
-               for size, label in (("2560x1440", "(2K)"),
-                                   ("3840x2160", "(4K)"))
-               if f"resolution.{size}" not in text]
-        if add:
-            text = text[:anchor.end()] + "\n" + "\n".join(add) + text[anchor.end():]
-            changed += len(add)
+    # The submenu is whatever keys exist, in file order, so the ladder is
+    # rewritten as one block on every run: a row per size, ascending, labelled
+    # from RESOLUTION_LADDER. Inserting only the sizes that were missing parked
+    # each new one wherever its anchor happened to be - the list came out 720p,
+    # 768p, 900p, 1080p, 5K, 6K, 7K, 8K, 2K, 4K, ordered by the history of the
+    # edits rather than by size.
+    size_row = re.compile(
+        r"^[ \t]*menu\.itemname\.menuvideo\.resolution\.\d+x\d+[ \t]*=[^\r\n]*\r?\n",
+        re.MULTILINE)
+    rows = size_row.findall(text)
+    if rows:
+        indent = re.match(r"[ \t]*", rows[0]).group(0)
+        nl = "\r\n" if rows[0].endswith("\r\n") else "\n"
+        known = {size for size, _label in RESOLUTION_LADDER}
+        extra = "".join(row for row in rows
+                        if re.search(r"resolution\.(\d+x\d+)", row).group(1)
+                        not in known)
+        block = "".join(
+            "%smenu.itemname.menuvideo.resolution.%s = %s   %s%s"
+            % (indent, size, size, label, nl)
+            for size, label in RESOLUTION_LADDER) + extra
+        start = size_row.search(text).start()
+        stripped = size_row.sub("", text)
+        candidate = stripped[:start] + block + stripped[start:]
+        if candidate != text:
+            text = candidate
+            changed += 1
 
     # Same short labels here as in the motif, so the submenu reads the same
     # whichever table the engine resolves last: the size, then its everyday

@@ -3905,6 +3905,12 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
 	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
 	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
+	menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
+	menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
+	menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
+	menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
+	menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
+	menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
 	menu.itemname.menuvideo.resolution.spacer1 = -
 	menu.itemname.menuvideo.resolution.customres = Custom
 	menu.itemname.menuvideo.resolution.back = Back
