@@ -144,8 +144,8 @@ loading.text = NOW LOADING...
 ; its version string) is off. The strip is drawn by the overlay below and the
 ; three text fields by their offsets, so the overlay is made fully transparent
 ; and the fields are parked below the 1280x720 screen - nothing is drawn there.
-; The build number is still on the launcher banner, in VERSION.txt beside the
-; exe, and in Options > Video, which reports the engine version it is running.
+; The build number is still on the launcher banner and in VERSION.txt beside the
+; exe, so nothing is lost - it just stops sitting under every menu.
 footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
 footer.title.offset = 5, 5000
 footer.title.scale = 1,1
