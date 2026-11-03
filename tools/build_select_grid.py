@@ -330,6 +330,21 @@ KEYS = (
     ("p2.face2.offset", "1266,150"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
+    # The fighter names under the panels are engine text and were still the
+    # stock face at the stock size - the largest type on the screen, which is
+    # backwards: the panel exists to show the portrait, and the name was set
+    # bigger than the PLAYER 1 / VERSUS captions above it. They are font 11 now
+    # like the rest of the captions, and 0.25 because name text is drawn in a
+    # 320x240 space inside a 1280x720 motif (x4), so a quarter scale lands it at
+    # the font's own size.
+    ("p1.name.font", "11, 0, 0, 255, 228, 140"),
+    ("p1.name.scale", "0.25, 0.25"),
+    ("p1.name.offset", "50, 690"),
+    ("p1.name.layerno", "2"),
+    ("p2.name.font", "11, 0, -1, 255, 170, 96"),
+    ("p2.name.scale", "0.25, 0.25"),
+    ("p2.name.offset", "1230, 690"),
+    ("p2.name.layerno", "2"),
     # The "?" and the loading art stand in for the portrait, so they are drawn
     # inside the same rect and clipped by the same window. Left at the stock
     # 5x scale and a 476px-wide window they spilled past the panel and showed
