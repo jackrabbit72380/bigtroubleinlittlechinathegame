@@ -146,6 +146,12 @@ REWRITES = (
     # key config, movelist, menu chrome
     ("keymenu.p1.playerno.font", f"{B}, 0, 0, {GOLD}"),
     ("keymenu.p2.playerno.font", f"{B}, 0, 0, {AMBER}"),
+    # the key list had no fonts of its own and inherited the 45px Display face
+    # on a 36px pitch; it is a 15-row table, so it gets the 20px Body face
+    ("keymenu.item.font", f"{B},0,-1, {GOLD}"),
+    ("keymenu.item.active.font", f"{B},0,-1, {BRIGHT}"),
+    ("keymenu.item.selected.font", f"{B},0,-1, {BRIGHT}"),
+    ("keymenu.item.selected.active.font", f"{B},0,-1, {BRIGHT}"),
     ("movelist.title.font", f"{D}, 0, 0, {BRIGHT}"),
     ("movelist.text.font", f"{B}, 0, 1, {GOLD}"),
     # TrueType faces are drawn in a single flat colour - src/font.go has no
