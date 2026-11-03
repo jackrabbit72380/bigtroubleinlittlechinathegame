@@ -128,12 +128,19 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # to the frame below that band, and the engine's stage text is moved up into
 # the band, so the stage name sits on the card instead of under it.
 STAGE_ART = (1215, 398)
-CARD_W = 400
-BAND_H = 28                              # the name band across the top
-ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 131
-CARD_H = ART_H + BAND_H                  # 159
+CARD_W = 460
+BAND_H = 32                              # the name band across the top
+ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
+CARD_H = ART_H + BAND_H                  # 183
 CARD_CX = 640
-NAME_PX = 22                             # font 11 at scale .5
+# 20px of cap height. The name used to be font 11 (the 13px Body face) at
+# scale .5, i.e. six pixels tall: legible nowhere, least of all on a television.
+# It is the Display face now at 20/34, which is what the rest of the screenpack
+# draws its headings with, so the stage name reads at the same weight. The card
+# is 60px wider for it, and its bottom edge moved down to 660 to keep the top
+# clear of the portrait grid, which ends at y=460.
+NAME_PX = 20
+NAME_FONT = 10                           # Display, a 34px cell
 
 
 def _card(bottom_y):
@@ -166,20 +173,21 @@ def _card(bottom_y):
 # The stage name is in the card's band now, so the text is the bare name -
 # "Stage 7: Lo Pan's Hallway" does not fit across a 400px card - set in the
 # same gold as the rest of the screen and sized to the band.
-NAME_SCALE = "%g, %g" % (NAME_PX / 44.0, NAME_PX / 44.0)
+NAME_SCALE = "%g, %g" % (NAME_PX / 34.0, NAME_PX / 34.0)
 SELECT_TEXT = (
-    ("stage.font", "11, 0, 0, 236, 200, 120"),
-    ("stage.active.font", "11, 0, 0, 255, 228, 140"),
-    ("stage.active2.font", "11, 0, 0, 200, 168, 104"),
-    ("stage.done.font", "11, 0, 0, 200, 168, 104"),
+    ("stage.font", f"{NAME_FONT}, 0, 0, 236, 200, 120"),
+    ("stage.active.font", f"{NAME_FONT}, 0, 0, 255, 228, 140"),
+    ("stage.active2.font", f"{NAME_FONT}, 0, 0, 200, 168, 104"),
+    ("stage.done.font", f"{NAME_FONT}, 0, 0, 200, 168, 104"),
     ("stage.text", "%s"),
     ("stage.active.text", "%s"),
     ("stage.scale", NAME_SCALE),
 )
 
 
-# the card's bottom edge is where both screens had it before
-STAGE_PORTRAIT = _card(625)           # [Select Info]
+# The select card hangs lower than it used to: the taller name band needs the
+# room, and the grid above it ends at y=460, so the card's top is at 477.
+STAGE_PORTRAIT = _card(660)           # [Select Info]
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate
@@ -197,7 +205,7 @@ VS_PLATE = _card(665) + (
 VS_TEXT = (
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
-    ("stage.font", "11, 0, 0, 255, 228, 140"),
+    ("stage.font", f"{NAME_FONT}, 0, 0, 255, 228, 140"),
     ("stage.text", "%s"),
     ("stage.scale", NAME_SCALE),
 )
