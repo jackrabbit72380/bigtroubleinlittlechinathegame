@@ -69,6 +69,11 @@ jobs:
             if [ -d "$d" ]; then cp -rT "$d" "$out/$d"; fi
           done
 
+          # Our video defaults beat the engine's seed file, so a fresh install
+          # starts on OpenGL 3.3 instead of the Vulkan renderer that aborts at
+          # boot on some drivers with "device lost".
+          if [ -f config.ini ]; then cp config.ini "$out/config.ini"; fi
+
           # The stage-art dumper ships with the game so it can be used from the
           # installed folder: double-click "Dump Stage Art.bat" and the stage
           # sprites are unpacked next to the game as PNGs.
