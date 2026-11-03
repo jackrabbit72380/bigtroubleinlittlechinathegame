@@ -84,18 +84,18 @@ REWRITES = (
     ("menu.item.info.active.font", f"{B},0,-1, {BRIGHT}"),
     ("title.font", f"{D},0,0, {BRIGHT}"),
     ("loading.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
-    # the black bar under the title screen
+    # the engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is switched off:
+    # the fields are parked below the 1280x720 screen and the motif's overlay
+    # strip is left transparent, so no bar is drawn in any menu.
     ("footer.title.font", f"{B}, 0, 1, {GOLD}, 255, -1"),
     ("footer.info.font", f"{B}, 0, 0, {GOLD}, 255, -1"),
     ("footer.version.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
     ("footer.title.scale", "1,1"),
     ("footer.info.scale", "1,1"),
     ("footer.version.scale", "1,1"),
-    # The bar is rows 700-719; a 15px face at the engine's 715 clipped its
-    # descenders, so centre the three fields inside the bar instead.
-    ("footer.title.offset", "5, 700"),
-    ("footer.info.offset", "640, 700"),
-    ("footer.version.offset", "1275, 700"),
+    ("footer.title.offset", "5, 5000"),
+    ("footer.info.offset", "640, 5000"),
+    ("footer.version.offset", "1275, 5000"),
     # infobox, game over text, story text
     ("text.font", f"{B}, 0, 1, {GOLD}"),
     # select screen

@@ -140,20 +140,26 @@ loading.scale = 1.5, 1.5
 loading.xshear = 0.25
 loading.text = NOW LOADING...
 	
+; The engine's own bar across the bottom of every menu ("I.K.E.M.E.N. GO" and
+; its version string) is off. The strip is drawn by the overlay below and the
+; three text fields by their offsets, so the overlay is made fully transparent
+; and the fields are parked below the 1280x720 screen - nothing is drawn there.
+; The build number is still on the launcher banner, in VERSION.txt beside the
+; exe, and in Options > Video, which reports the engine version it is running.
 footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
-footer.title.offset = 5, 700
+footer.title.offset = 5, 5000
 footer.title.scale = 1,1
 
 footer.info.font = 11, 0, 0, 240, 196, 88, 255, -1
-footer.info.offset = 640, 700
+footer.info.offset = 640, 5000
 footer.info.scale = 1,1
 
 footer.version.font = 11, 0, -1, 176, 126, 44, 255, -1
-footer.version.offset = 1275, 700
+footer.version.offset = 1275, 5000
 footer.version.scale = 1,1
 
 footer.overlay.col = 0, 0, 64
-footer.overlay.alpha = 255, 100
+footer.overlay.alpha = 0, 0
 footer.overlay.window = 0, 700, 1280, 720
 
 ;Network menu
