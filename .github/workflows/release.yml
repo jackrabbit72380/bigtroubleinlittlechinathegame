@@ -139,6 +139,17 @@ jobs:
           cp config.ini "$out/config.ini"
           test -s "$out/config.ini" || { echo "config.ini was not written"; exit 1; }
 
+          # The engine opens save/config.ini and nothing else (src/main.go, the
+          # day the config path was fixed: configPath := "save/config.ini"). A
+          # config.ini at the root is only read when launched as
+          # "-config config.ini", so the copy that actually decides the renderer
+          # has to live in save/, and it has to exist before the first launch or
+          # the game starts on the engine default with no way back once a
+          # renderer fails.
+          mkdir -p "$out/save"
+          cp config.ini "$out/save/config.ini"
+          test -s "$out/save/config.ini" || { echo "save/config.ini was not written"; exit 1; }
+
           # A stamp in the game folder, so a stale extracted copy is obvious.
           printf 'Big Trouble in Little China: The Game\nversion: %s\ncommit: %s\nbuilt: %s\n' \
             "${{ github.event.inputs.tag || github.ref_name }}" \
