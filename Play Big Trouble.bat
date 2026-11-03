@@ -1,12 +1,13 @@
 @echo off
 rem Double-click this to start the game.
 rem
-rem It writes save\config.ini from scratch, which is the only settings file the
-rem engine reads. A missing file is not fatal - the engine falls back to its own
-rem compiled defaults - but whatever renderer was last picked lives in that
-rem file, and a renderer that aborts at boot takes the menus with it. Writing it
-rem pins RenderMode to the OpenGL path on every run, and needs nothing that
-rem shipped alongside it.
+rem It does not care where the game lives. The engine reads its settings from
+rem save\config.ini next to the exe unless it is told otherwise with -config,
+rem so this script writes that file when the folder allows it, and falls back to
+rem %LOCALAPPDATA%\BigTroubleInLittleChina\config.ini when it does not - Program
+rem Files, a read-only drive, a network share. Either way the game is started
+rem with -config pointing at the file just written, so a stale, missing or
+rem unwritable save\config.ini cannot be what the game reads.
 setlocal
 cd /d "%~dp0"
 
@@ -25,42 +26,44 @@ if not defined EXE (
   exit /b 1
 )
 
-if not exist "save" mkdir "save"
-if errorlevel 1 (
-  echo.
-  echo Could not create the save folder in %~dp0
-  echo Is it read-only, or inside Program Files? Move the game to C:\Games\ and retry.
-  echo.
-  pause
-  exit /b 1
+rem Write the settings where they are allowed to live: beside the exe if that
+rem folder is writable, otherwise per-user.
+set "CFG=%~dp0save\config.ini"
+if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
+2>nul > "%~dp0save\.wtest" echo x
+if exist "%~dp0save\.wtest" (
+  del "%~dp0save\.wtest" 2>nul
+) else (
+  set "CFG=%LOCALAPPDATA%\BigTroubleInLittleChina\config.ini"
+  if not exist "%LOCALAPPDATA%\BigTroubleInLittleChina" mkdir "%LOCALAPPDATA%\BigTroubleInLittleChina" 2>nul
 )
 
->  "save\config.ini" echo [Video]
->> "save\config.ini" echo GameWidth = 1920
->> "save\config.ini" echo GameHeight = 1080
->> "save\config.ini" echo WindowWidth = 1920
->> "save\config.ini" echo WindowHeight = 1080
->> "save\config.ini" echo KeepAspect = true
->> "save\config.ini" echo Fullscreen = false
->> "save\config.ini" echo RenderMode = OpenGL 3.3
->> "save\config.ini" echo.
->> "save\config.ini" echo [Config]
->> "save\config.ini" echo WindowTitle = Big Trouble in Little China: The Game
->> "save\config.ini" echo RenderMode = OpenGL 3.3
->> "save\config.ini" echo EnableModel = 1
+>  "%CFG%" echo [Video]
+>> "%CFG%" echo GameWidth = 1920
+>> "%CFG%" echo GameHeight = 1080
+>> "%CFG%" echo WindowWidth = 1920
+>> "%CFG%" echo WindowHeight = 1080
+>> "%CFG%" echo KeepAspect = true
+>> "%CFG%" echo Fullscreen = false
+>> "%CFG%" echo RenderMode = OpenGL 3.3
+>> "%CFG%" echo.
+>> "%CFG%" echo [Config]
+>> "%CFG%" echo WindowTitle = Big Trouble in Little China: The Game
+>> "%CFG%" echo RenderMode = OpenGL 3.3
+>> "%CFG%" echo EnableModel = 1
 
 echo.
 echo Folder   : %~dp0
 echo Engine   : %EXE%
-echo Written  : save\config.ini
-if exist "VERSION.txt" type "VERSION.txt"
-findstr /i "RenderMode" "save\config.ini"
+echo Settings : %CFG%
+if exist "%~dp0VERSION.txt" type "%~dp0VERSION.txt"
+findstr /i "RenderMode" "%CFG%"
 echo.
 echo Starting the game - the window title should read
 echo "Big Trouble in Little China: The Game".
 echo.
 
-"%EXE%"
+"%EXE%" -config "%CFG%"
 
 set "LOG="
 for /f "delims=" %%f in ('dir /b /o-d "save\logs\*.log" 2^>nul') do if not defined LOG set "LOG=save\logs\%%f"
