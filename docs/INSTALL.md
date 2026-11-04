@@ -72,8 +72,8 @@ It needs Python 3.9+ and leaves engine files, `save/` and `.test/` untracked.
 ### Already playing a downloaded folder?
 
 Drop `Update and Play.bat` into that folder and double-click it instead of the
-game's own exe. Each run fetches whatever is newest on `main`, copies `data/`,
-`chars/`, `stages/`, `font/`, `external/` and `sound/` over the folder, leaves
+game's own exe. Each run fetches whatever is newest on `main`, copies only the files that changed inside `data/`,
+`chars/`, `stages/`, `font/`, `external/` and `sound/`, and leaves
 your `save/` and the engine files alone, prints which HUD it copied, and starts
 the game. With Git installed the update moves only the changed files; without git
 it reads the public commit feed (a few tens of KB, no token, no API quota) and

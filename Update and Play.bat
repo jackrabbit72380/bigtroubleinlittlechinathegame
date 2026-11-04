@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v10
+rem  BIG TROUBLE IN LITTLE CHINA - updater v11
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v10
+echo                        updater v11
 echo.
 echo   ==============================================================
 echo.
@@ -77,6 +77,10 @@ set "WHICH="
 set "ZIPOK=0"
 set "PREVCAND="
 set "PREVSZ="
+set "CHANGED="
+set "BASE="
+set "NCOP=0"
+set "NDEL=0"
 set "FOUNDZIP="
 
 echo   [ 1/4 ]  looking for the newest files
@@ -139,6 +143,21 @@ if errorlevel 1 goto gitfail
 git -C "%CACHE%\repo" reset --hard --quiet FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 for /f %%s in ('git -C "%CACHE%\repo" rev-parse FETCH_HEAD 2^>nul') do set "NEWSHA=%%s"
 if not defined NEWSHA goto gitdone
+rem What differs, so the copy can be as small as the fix. The base is the
+rem revision this folder last applied, not what the local clone had: the
+rem folder can be further behind than the clone, and copying only the
+rem clone's own delta would leave those commits unapplied. A shallow clone
+rem usually cannot resolve an older base, which just means a whole copy.
+set "CHANGED="
+set "BASE="
+if exist "%CACHE%\applied.txt" set /p BASE=<"%CACHE%\applied.txt"
+if not defined BASE set "BASE=%OLDSHA%"
+if not defined BASE goto gitdiffdone
+if /i "%BASE%"=="%NEWSHA%" goto gitdiffdone
+git -C "%CACHE%\repo" diff --name-only --no-renames "%BASE%" "%NEWSHA%" >"%CACHE%\changed.txt" 2>nul
+if errorlevel 1 goto gitdiffdone
+set "CHANGED=%CACHE%\changed.txt"
+:gitdiffdone
 if "%OLDSHA%"=="%NEWSHA%" echo            main has not moved - nothing to download
 if not "%OLDSHA%"=="%NEWSHA%" echo            fetched only the files that changed
 
@@ -147,16 +166,23 @@ if not exist "%CACHE%\repo\data\fight.def" goto gitfail
 set "SRC=%CACHE%\repo"
 set "WHICH=git"
 for /f %%s in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%s"
-if not defined VER goto sync
+if not defined VER goto gitapply
 rem if this exact revision is already in the game folder, do not copy 340 MB
 rem over the top of itself just to launch
 set "APPLIED="
 if exist "%CACHE%\applied.txt" set /p APPLIED=<"%CACHE%\applied.txt"
-if not "%APPLIED%"=="%VER%" goto sync
-if not exist "%~dp0data\fight.def" goto sync
+if not "%APPLIED%"=="%VER%" goto gitapply
+if not exist "%~dp0data\fight.def" goto gitapply
 echo   files  : main @ %VER%
 echo            already up to date - launching what is here
 goto launch
+
+:gitapply
+rem The clone holds main; this is the step that puts it into the game folder.
+rem It was missing: with git installed the launcher fetched and then went
+rem straight on to launching, so the copy only ever happened on the zip path.
+call :synctree
+goto copied
 
 :gitfail
 echo            git could not fetch. it said:
@@ -321,10 +347,7 @@ mkdir "%CACHE%\unpack" 2>nul
 for /d %%D in ("%CACHE%\unpack\*") do set "SRC=%%~fD"
 if not defined SRC goto downloadfailed
 if not "%WHICH%"=="git" set "WHICH=zip"
-for %%F in (data chars stages font external sound) do (
-  if exist "%SRC%\%%F" echo            %%F
-  if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
-)
+call :synctree
 if not exist "%SRC%\config.ini" goto copied
 copy /Y "%SRC%\config.ini" "%~dp0config.ini" >nul
 if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
@@ -440,6 +463,63 @@ exit /b 0
 rem ===========================================================================
 rem  helpers
 rem ===========================================================================
+rem ===========================================================================
+rem  copying: only the files main says changed
+rem ===========================================================================
+:synctree
+rem %CHANGED% lists repo-relative paths that differ. Writing only those keeps
+rem a one-line fix to a one-file copy; the whole-tree copy stays underneath
+rem as the fallback, because it is always correct even when it is slow.
+set "NCOP=0"
+set "NDEL=0"
+if not defined CHANGED goto synctree_full
+if not exist "%CHANGED%" goto synctree_full
+for /f "usebackq delims=" %%p in ("%CHANGED%") do call :syncfile "%%p"
+echo            %NCOP% file(s) updated, %NDEL% removed
+exit /b 0
+
+:synctree_full
+rem No list means no git history to diff - a first run, or a folder updated
+rem from the archive. robocopy still skips every file whose size and time
+rem already match, so only the files that changed are actually written; the
+rem scan is the cost, not the bytes.
+for %%F in (data chars stages font external sound) do (
+  if exist "%SRC%\%%F" echo            %%F
+  if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
+)
+exit /b 0
+
+:syncfile
+rem %1 = path relative to the repo root. Only the folders this launcher owns
+rem are written: artifacts, tools and art_src stay out, and so do the
+rem player's save and the engine files.
+set "REL=%~1"
+if not defined REL exit /b 0
+set "REL=%REL:/=\%"
+for /f "tokens=1 delims=\" %%t in ("%REL%") do set "TOP=%%t"
+if /i "%TOP%"=="data" goto syncfile_go
+if /i "%TOP%"=="chars" goto syncfile_go
+if /i "%TOP%"=="stages" goto syncfile_go
+if /i "%TOP%"=="font" goto syncfile_go
+if /i "%TOP%"=="external" goto syncfile_go
+if /i "%TOP%"=="sound" goto syncfile_go
+exit /b 0
+
+:syncfile_go
+if not exist "%SRC%\%REL%" goto syncfile_gone
+rem a new build can add folders, so the parent has to exist first
+for %%d in ("%~dp0%REL%") do if not exist "%%~dpd" mkdir "%%~dpd" 2>nul
+copy /Y "%SRC%\%REL%" "%~dp0%REL%" >nul 2>&1
+if not errorlevel 1 set /a NCOP+=1
+exit /b 0
+
+:syncfile_gone
+rem a path main no longer has was deleted there: drop the local copy too
+if not exist "%~dp0%REL%" exit /b 0
+del /q "%~dp0%REL%" >nul 2>&1
+if not errorlevel 1 set /a NDEL+=1
+exit /b 0
+
 :dragonbar
 rem %1 = done, %2 = total -> BAR: 32 cells, a body of = and a head at the tip
 rem The head must not be a redirect character: cmd parses redirection after
