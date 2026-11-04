@@ -221,9 +221,9 @@ def check_select_screen(chars):
             key, value = line.split("=", 1)
             opts[key.strip().lower()] = value.split(";")[0].strip()
 
-    if opts.get("rows") != "4" or opts.get("columns") != "7":
-        err("select screen: grid is %s rows by %s columns, expected 4 by 7 "
-            "(28 cells for a 25-line roster)"
+    if opts.get("rows") != "5" or opts.get("columns") != "7":
+        err("select screen: grid is %s rows by %s columns, expected 5 by 7 "
+            "(35 cells for a 25-line roster)"
             % (opts.get("rows"), opts.get("columns")))
     if opts.get("cell.size") != "84,84":
         err("select screen: cell.size is %r, expected 84,84" % opts.get("cell.size"))
