@@ -72,7 +72,7 @@ H = hd.H                                      # 1080 painted height
 W = hd.W                                      # 8192: full stage canvas
 CX = hd.CX                                    # 4096: canvas centre
 START_X = hd.START_X                          # -4096: canvas left edge in stage x
-ZOFFSET = hd.FLOOR_Y                          # 900: ground line
+ZOFFSET = hd.FLOOR_Y + 60                          # 960: the line y=0 is drawn on
 PLAYER_BOUND = hd.PLAYER_BOUND                # 4028: painted edge less the margin
 SCREEN_MARGIN = hd.SCREEN_MARGIN              # 68
 MAX_TEX = hd.MAX_TEX                          # 4096: widest single sprite
@@ -84,12 +84,12 @@ PREVIEW_W, PREVIEW_H = hd.PREVIEW_W, hd.PREVIEW_H
 # lip only needs the strip the fighters stand in.
 SKY_DELTA = 0.35
 SKY_W = int(LOCAL_W + SKY_DELTA * 2 * SCROLL)   # 4115 px, 4096 + 19 once split
-LIP_TOP = ZOFFSET                                # the lip starts at the ground line
+LIP_TOP = ZOFFSET                                # the lip starts at the feet
 # Cutting the lip 40px above the ground line pasted the wall/floor junction
 # (luma 8-21) in front of the fighters' feet, which stand on a lit floor
 # plate: their feet vanished into a dark strip and they read as floating.
 LIP_H = H - LIP_TOP                             # 180 px
-LIP_FADE = 70                                   # soft edge, so no hard cut
+LIP_FADE = 8                                    # soft edge, so no hard cut
 # Layers are written at full size and drawn 1:1. They used to be painted at
 # half size and blown back up with `scale = 2,2` in the .def, but that
 # scale is not applied to BG sprites: the floor lip went down at 2800px

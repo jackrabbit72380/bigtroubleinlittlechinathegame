@@ -1236,9 +1236,16 @@ STAGES = {
 # strip the fighters stand in.
 SKY_DELTA = 0.35
 SKY_W = int(LOCAL_W + SKY_DELTA * 2 * SCROLL)   # 3172 px on screen
-LIP_TOP = FLOOR_Y                                # 900: the lip starts at the ground line
-LIP_H = H - LIP_TOP                             # 180 px
-LIP_FADE = 70                                   # soft top edge, no hard cut
+# Fighters stand on stage y=0, which the engine draws on the zoffset line. With
+# zoffset sitting on the wall/floor seam (900) they stood on the seam itself:
+# there was no painted floor behind them and the plane only began under their
+# feet, which reads as hovering in front of the wall. The line is dropped 60px
+# into the floor plane, and the lip follows it, so floor runs behind the
+# fighters up to the wall and starts in front of them at their feet.
+ZOFFSET = FLOOR_Y + 60                           # 960: where y=0 is drawn
+LIP_TOP = ZOFFSET                                # the lip starts at the feet
+LIP_H = H - LIP_TOP                             # 120 px
+LIP_FADE = 8                                    # soft top edge, no hard cut
 # Stages whose near foreground art genuinely reaches above the ground line keep
 # their own top edge. Pork Chop Express builds a near side wall from y=666 down
 # to RAIL_TOP (860), and that wall has to stay in front of the fighters all the
@@ -1246,7 +1253,7 @@ LIP_FADE = 70                                   # soft top edge, no hard cut
 # 900 is wall/floor junction paint: cutting it there pasted the junction (luma
 # 8-21) in front of the fighters' feet, which sat on a lit floor plate (luma
 # 9-27), so their feet vanished into a dark strip and they read as floating.
-LIP_TOP_BY_STAGE = {"porkchop_express": FLOOR_Y - 40}
+LIP_TOP_BY_STAGE = {"porkchop_express": ZOFFSET - 40}
 # Layers ship at the size they are drawn. They used to be painted at half
 # size and blown back up with `scale = 2,2` in the .def, but that scale is
 # not honoured for BG sprites: the floor lip went down 2800px wide from
@@ -1821,7 +1828,7 @@ def build(sid):
             sid=sid, name=name,
             bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerbound=PLAYER_BOUND,
             margin=SCREEN_MARGIN, tension=int(round(60 * S)),
-            zoffset=FLOOR_Y, localw=LOCAL_W, localh=LOCAL_H,
+            zoffset=ZOFFSET, localw=LOCAL_W, localh=LOCAL_H,
             boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
             startx=-int(70 * S), p2startx=int(70 * S), start_x=START_X,
             extra_bg=EXTRA_BG.get(sid, ""),

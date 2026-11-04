@@ -42,7 +42,7 @@ screenleft = 68
 screenright = 68
 
 [StageInfo]
-zoffset = 900
+zoffset = 960
 autoturn = 1
 resetBG = 1
 localcoord = 1920, 1080
@@ -210,7 +210,7 @@ tile = 0,0
 type = normal
 spriteno = 11,0
 layerno = 1
-start = -4096,860
+start = -4096,920
 delta = 1,1
 scale = 1,1
 trans = none
@@ -222,7 +222,7 @@ tile = 0,0
 type = normal
 spriteno = 11,1
 layerno = 1
-start = 0,860
+start = 0,920
 delta = 1,1
 trans = none
 mask = 1
