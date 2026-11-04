@@ -32,6 +32,25 @@ Each stage canvas is **8192×1080**, painted as two 4096-wide halves:
 - the ground line is row 900 (`zoffset = 900`);
 - every stage ships a `9000,1` select-screen preview sprite.
 
+## The rig on the Pork Chop Express is solid
+
+The truck's own surfaces are the stage walls. `tools/stages_hd.py` computes them
+from the painting constants, so they move with the artwork:
+
+| | world x | what it is |
+|---|---|---|
+| `leftbound` | **-2602** | the cab's rear face, so a fighter cannot walk through the cab |
+| `rightbound` | **3790** | the trailer's tail board, so a fighter cannot walk off the bed |
+
+The cab is painted behind the play plane and cannot stop anyone by itself, and a
+MUGEN/Ikemen stage definition carries no collision geometry — these bounds are the
+only stage-level solidity the format offers.
+
+Standing on the cab roof, and being run over for dropping off the front or the
+back of the bed, are **not** expressible in a stage file: the deck is a single
+flat floor plane with no ledges, and the engine has no per-stage match script. That
+needs per-fighter state logic (CNS/ZSS) or an engine feature, not a background.
+
 ## Using your own art
 
 Drop `backdrop.png` (and optionally `foreground.png`) into `art_src/<stage id>/`
