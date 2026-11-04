@@ -120,7 +120,12 @@ def main():
     if os.path.isfile(title_sff):
         scripts.append("build_select_ui.py")
     # The power meters are painted into the engine's fight.sff.
-    scripts += ["build_powerbar.py", "validate.py"]
+    # The VS HUD: one dragon per side whose back is the health bar, whose belly
+    # is the audacity bar, and whose heads frame the yin-yang timer. It repaints
+    # [Lifebar], [Powerbar] and [Time] in data/fight.def and the sprites in
+    # data/fight.sff, both of which the engine copy above starts from stock, so
+    # it has to run here or a rebuild would put the old bars back.
+    scripts += ["build_banner.py", "build_powerbar.py", "validate.py"]
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry
         code = run(script, *args)

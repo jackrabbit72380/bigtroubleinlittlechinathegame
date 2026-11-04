@@ -363,7 +363,10 @@ def _band(sil, w, h, pal, kind, lit, right, y0, label=None):
     img.putalpha(_mask_for(sil, right, y0, w, h))
     if label:
         d = ImageDraw.Draw(img)
-        font = ImageFont.truetype(FONT, int(h * 0.46))
+        try:
+            font = ImageFont.truetype(FONT, int(h * 0.46))
+        except OSError:
+            font = ImageFont.load_default()
         box = d.textbbox((0, 0), label, font=font)
         d.text(((w - (box[2] - box[0])) / 2, h * 0.52 - box[1]), label,
                font=font, fill=(18, 24, 14, 235))
