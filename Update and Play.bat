@@ -343,6 +343,7 @@ exit /b 0
 rem A download that stopped early still has a plausible size, so the archive
 rem itself is listed and data/fight.def has to be inside it.
 set "ZIPOK=0"
+set "ZS=0"
 if not defined ZIP exit /b 0
 if not exist "%ZIP%" exit /b 0
 for %%A in ("%ZIP%") do set "ZS=%%~zA"
