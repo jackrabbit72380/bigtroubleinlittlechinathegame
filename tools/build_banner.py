@@ -319,12 +319,21 @@ def paint_timer():
 
 
 # ------------------------------------------------------- the bars as body parts
-def _band(w, h, pal, kind, lit, label=None):
-    """One bar sprite shaped as part of the dragon's body."""
+def body_silhouette():
+    """Alpha mask of the dragon's own outline, 640x60 at 1:1."""
+    img = Image.new("L", (HALF * SS, H * SS), 0)
+    d = ImageDraw.Draw(img)
+    line = _spine(SS)
+    d.polygon([(x, y - r) for x, y, r in line]
+              + [(x, y + r) for x, y, r in reversed(line)], fill=255)
+    return img.resize((HALF, H), Image.LANCZOS)
+
+
+def _gradient(w, h, pal, kind, lit):
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     for y in range(h):
-        k = y / float(h - 1)
+        k = y / float(max(1, h - 1))
         if kind == "back":
             if lit:
                 col = _mix(pal["rim"], pal["light"], k * 0.7)
@@ -338,28 +347,22 @@ def _band(w, h, pal, kind, lit, label=None):
             col = _mix(pal["belly_lit"], pal["belly"], k) if lit else \
                 _mix(pal["belly"], pal["dark"], k)
         d.line([(0, y), (w - 1, y)], fill=col + (255,))
-    mask = Image.new("L", (w, h), 0)
-    md = ImageDraw.Draw(mask)
-    if kind == "back":
-        md.rounded_rectangle([0, 0, w - 1, h * 2 - 1], radius=h, fill=255)
-    else:
-        md.rounded_rectangle([0, -h + 1, w - 1, h - 1], radius=h, fill=255)
-    if kind == "back":
-        fade = max(1, int(w * 0.14))
-        px = mask.load()
-        for x in range(fade):
-            f = (x / float(fade)) ** 0.7
-            for y in range(h):
-                px[x, y] = int(px[x, y] * f)
-    img.putalpha(mask)
-    d = ImageDraw.Draw(img)
-    if kind == "back":
-        for x in range(int(w * 0.16), w - 6, 15):
-            d.line([(x, 3), (x + 6, h * 0.55)], fill=pal["ink"] + (55,))
-        d.line([(0, 1), (w, 1)], fill=pal["ink"] + (170,), width=1)
-    else:
-        d.line([(0, h - 2), (w, h - 2)], fill=pal["ink"] + (150,), width=1)
+    return img
+
+
+def _mask_for(sil, right, y0, w, h):
+    """The slice of the dragon's own outline that this bar covers."""
+    x0 = max(0, min(sil.width - w, right - w))
+    y0 = max(0, min(sil.height - h, y0))
+    return sil.crop((x0, y0, x0 + w, y0 + h))
+
+
+def _band(sil, w, h, pal, kind, lit, right, y0, label=None):
+    """A bar sprite cut to the dragon's shape - no rectangle anywhere."""
+    img = _gradient(w, h, pal, kind, lit)
+    img.putalpha(_mask_for(sil, right, y0, w, h))
     if label:
+        d = ImageDraw.Draw(img)
         font = ImageFont.truetype(FONT, int(h * 0.46))
         box = d.textbbox((0, 0), label, font=font)
         d.text(((w - (box[2] - box[0])) / 2, h * 0.52 - box[1]), label,
@@ -367,7 +370,14 @@ def _band(w, h, pal, kind, lit, label=None):
     return img
 
 
-def build_bigbars(by_key):
+def _sheen(sil, w, h, pal, right, y0):
+    """A light rim along the back, shaped like the back."""
+    img = _gradient(w, h, pal, "back", True)
+    img.putalpha(_mask_for(sil, right, y0, w, h).point(lambda v: int(v * 0.45)))
+    return img
+
+
+def build_bigbars(by_key, sil):
     def meta(key, fallback):
         sp = by_key.get(key)
         return ((sp["w"], sp["h"]), sp["axis"]) if sp else (fallback, None)
@@ -375,21 +385,19 @@ def build_bigbars(by_key):
     out = {}
     for key, fallback in (((10, 0), (435, 24)), ((12, 0), (435, 24))):
         (w, h), axis = meta(key, fallback)
-        out[key] = (_band(w, h, RED, "back", False), axis or (w, 0))
+        out[key] = (_band(sil, w, h, RED, "back", False, 595, LIFE_Y),
+                    axis or (w, 0))
     (w, h), axis = meta((11, 0), (439, 28))
-    frame = _band(w, h, RED, "back", False)
-    ImageDraw.Draw(frame).rounded_rectangle(
-        [0, 0, w - 1, h - 1], radius=max(2, h // 2 - 2),
-        outline=RED["ink"] + (255,), width=2)
-    out[(11, 0)] = (frame, axis or (w, 0))
+    out[(11, 0)] = (_sheen(sil, w, h, RED, 595, LIFE_Y), axis or (w, 0))
     for i in range(4):
         key = (13, i)
         (w, h), axis = meta(key, (435, 24))
-        out[key] = (_band(w, h, RED, "back", True), axis or (w, 0))
+        out[key] = (_band(sil, w, h, RED, "back", True, 591, LIFE_Y),
+                    axis or (w, 0))
     return out
 
 
-def build_meters(by_key):
+def build_meters(by_key, sil):
     def axis(key, fallback):
         sp = by_key.get(key)
         return sp["axis"] if sp else fallback
@@ -399,14 +407,17 @@ def build_meters(by_key):
         return (sp["w"], sp["h"]) if sp else fallback
 
     out = {}
-    out[(40, 0)] = (_band(*size((40, 0), (METER_W + 4, BAND)), RED, "belly",
-                          False), axis((40, 0), (METER_W + 4, 0)))
+    out[(40, 0)] = (_band(sil, *size((40, 0), (METER_W + 4, BAND)), RED, "belly",
+                          False, BAR_X1, BAR_Y),
+                    axis((40, 0), (METER_W + 4, 0)))
     out[(41, 0)] = (Image.new("RGBA", size((41, 0), (METER_W + 4, BAND)),
                               (0, 0, 0, 0)), axis((41, 0), (METER_W + 4, 0)))
-    out[(43, 0)] = (_band(*size((43, 0), (METER_W, BAND)), RED, "belly", True),
+    out[(43, 0)] = (_band(sil, *size((43, 0), (METER_W, BAND)), RED, "belly",
+                          True, BAR_X1 - 4, BAR_Y),
                     axis((43, 0), (METER_W, 0)))
-    out[(44, 0)] = (_band(*size((44, 0), (METER_W, BAND)), RED, "belly", True,
-                          label="AUDACITY"), axis((44, 0), (METER_W, 0)))
+    out[(44, 0)] = (_band(sil, *size((44, 0), (METER_W, BAND)), RED, "belly",
+                          True, BAR_X1 - 4, BAR_Y, label="AUDACITY"),
+                    axis((44, 0), (METER_W, 0)))
     return out
 
 
@@ -547,8 +558,9 @@ def main():
 
     painted = {(GROUP, 0): (paint_body_half(RED, False), (0, 0)),
                (GROUP, 1): (paint_body_half(GREEN, True), (0, 0))}
-    painted.update(build_bigbars(by_key))
-    painted.update(build_meters(by_key))
+    sil = body_silhouette()
+    painted.update(build_bigbars(by_key, sil))
+    painted.update(build_meters(by_key, sil))
     timer, axis = paint_timer()
     painted[(TIMER_GROUP, 0)] = (timer, axis)
     written = _write_sprites(painted)
