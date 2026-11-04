@@ -78,18 +78,24 @@ your `save/` and the engine files alone, prints which HUD it copied, and starts
 the game. With Git installed the update is a few megabytes; otherwise it downloads
 the `main` zip once per run. Nothing to install or copy by hand.
 
-If the download fails on a machine that cannot reach GitHub with a system
-certificate store it trusts (Git's `curl` is the usual culprit: it looks for a
-CA bundle at a path that only exists inside Git Bash), the launcher will say so.
-Save the zip from
-[codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame](https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame/zip/refs/heads/main)
-next to the launcher as `main.zip` and run it again — it uses that file and
-skips the network entirely.
+The launcher gets the files four ways before it gives up, and it counts the
+bytes as they arrive, so a slow line looks slow rather than broken:
 
-If the launcher's own download cannot reach GitHub at all (a proxy or antivirus
-that only lets browsers out, for example), use `Apply main.zip.bat`: download the
-zip in your browser, save it in the game folder, and double-click that file. It
-contains no download code, so there is nothing to hang or fail on.
+1. **git**, forced onto the Windows certificate store (`http.sslBackend=schannel`)
+   so a broken CA path from a Git Bash install cannot stop it. This one only
+   fetches what changed.
+2. **curl**, with `CURL_CA_BUNDLE`/`SSL_CERT_FILE` cleared for that window and
+   `--ssl-no-revoke`, printing `112 of about 190 MB` as it goes.
+3. **PowerShell**, which uses the .NET and Windows proxy settings.
+4. **BITS**, the Windows download service, when a corporate proxy only allows it.
+
+If all four are refused, it opens the zip in your browser, watches `Downloads`
+for the finished file, and starts the game itself — no second script, no coming
+back to the window. `main.zip` sitting next to the launcher is used first and
+skips the network completely.
+
+`Apply main.zip.bat` remains for the case where you would rather do the download
+by hand: save the zip in the game folder and double-click it.
 
 ## Run from source
 
