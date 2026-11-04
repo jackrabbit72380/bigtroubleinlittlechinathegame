@@ -35,17 +35,18 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-# 7x5 = 35 cells, one per roster line plus the random box.
+# 9x5 = 45 cells, one per roster line plus the random box.
 #
-# It was 6x4 at a 100px cell for a 21-line roster, then 7x4 at 84px once the
-# roster outgrew that. The grid had 60px of unused screen above it, which is
-# where the fifth row comes from: the grid starts at y=34 instead of y=100, so
-# the four rows that ended at 460 become five that end at 486, with the stage
-# card still beginning at 509. The 84px cell and its 8px gap are untouched, so
-# the portrait art baked at that size still lands 1:1 in its frame.
+# The cell is unchanged at 84px with its 8px gap, and the seven boxes the grid
+# already had do not move: 9 * 84 + 8 * 8 = 820, so the nine-wide row runs from
+# x=230 to x=1050 and its middle seven cells land exactly on the old 322..958.
+# The two extra cells are one at each end of every row, which is what fills the
+# empty strip either side of the top row - the arcade screen this chases keeps
+# its roster wall at the widest row it can and lets the portrait columns sit at
+# its edges.
 CELL = 84
 GAP = 8
-COLS, ROWS = 7, 5
+COLS, ROWS = 9, 5
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 34)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
@@ -55,8 +56,11 @@ CELL_SPR = (222, 0)
 CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
 # Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
-FACE2_WIN_P1 = "0,86,320,712"
-FACE2_WIN_P2 = "962,86,1276,712"
+# The grid's frame padding ends at x=222 and x=1058, so each window stops 4px
+# inside that and the portrait art bleeds off the screen edge rather than being
+# cut by the frame's gold rule.
+FACE2_WIN_P1 = "0,86,218,712"
+FACE2_WIN_P2 = "1062,86,1276,712"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
@@ -335,12 +339,12 @@ KEYS = (
     # each other no matter how tall the fighter is in play.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "8,150"),
+    ("p1.face2.offset", "-82,150"),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1266,150"),
+    ("p2.face2.offset", "1362,150"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are engine text and were still the
@@ -366,19 +370,19 @@ KEYS = (
     # The random card is painted at panel size, so it draws at 1:1 from the
     # panel's corner instead of a 62px glyph blown up 4.8x.
     ("p1.face2.random.spr", "151,10"),
-    ("p1.face2.random.offset", "8, 150"),
+    ("p1.face2.random.offset", "-82, 150"),
     ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "8, 235"),
+    ("p1.face2.loading.offset", "-82, 235"),
     ("p1.face2.loading.scale", ".625, .625"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
 # panel's right edge and the card lands back on 966-1266.
-    ("p2.face2.random.offset", "1266, 150"),
+    ("p2.face2.random.offset", "1362, 150"),
     ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1266, 235"),
+    ("p2.face2.loading.offset", "1362, 235"),
     ("p2.face2.loading.scale", ".625, .625"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
