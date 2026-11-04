@@ -36,6 +36,32 @@ If the box appears before you can reach that menu, delete `save/config.ini`: the
 engine recreates it on the default renderer, and your other settings are the only
 thing in there.
 
+## Try the latest changes in one step
+
+When you want to play whatever is newest on `main` — a HUD tweak, a stage fix —
+there is nothing to download by hand and nothing to copy:
+
+| Platform | Do this |
+|---|---|
+| Windows | double-click `Test Big Trouble.bat` |
+| Linux / macOS | `python3 tools/test_local.py` |
+
+The first run fetches the official engine nightly for your platform into
+`.test/engine/` and keeps it. Every run after that pulls the latest commit, drops
+the engine binary in beside this folder's own `data/`, `chars/` and `stages/`, and
+starts the game from here — so what you play is exactly the files in this checkout,
+never an old copy. It prints the commit it is running and whether `data/fight.def`
+is the dragon HUD, which is the quickest way to tell a stale folder from a broken
+change.
+
+```sh
+python3 tools/test_local.py --no-pull      # play what is on disk, no pull
+python3 tools/test_local.py --no-launch    # set up or refresh only
+python3 tools/test_local.py -- 2560 1440   # render size for this run
+```
+
+It needs Python 3.9+ and leaves engine files, `save/` and `.test/` untracked.
+
 ## Run from source
 
 Everything below is for editing the game. If you only want to play, use a release.
