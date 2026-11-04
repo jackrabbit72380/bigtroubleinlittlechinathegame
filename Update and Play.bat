@@ -109,23 +109,54 @@ if "%ZIPOK%"=="1" goto havezip
 echo            that zip is incomplete - downloading instead
 goto download
 
-rem ---- transport 1: git, with the Windows certificate store --------------
+rem ---- transport 1: git, which moves only the objects that differ ---------
+rem Depth 1 plus a blob filter: the first run still has to bring the art, but
+rem every run after that transfers only what a commit touched, usually a few
+rem small files. Sparse checkout also leaves out the folders the game never
+rem copies - artifacts, concept_art, art_src, tools - which is 128 MB of the
+rem committed tree.
 :trygit
-echo            git found - fetching only what has changed
+echo            git found - comparing with main
 if exist "%CACHE%\repo\.git" goto gitpull
 if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
+echo            first run: building the local copy. this one is the big one
+git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -c http.version=HTTP/1.1 clone --depth 1 --filter=blob:none --sparse --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitplain
+git -C "%CACHE%\repo" sparse-checkout set data chars stages font external sound >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 git -C "%CACHE%\repo" checkout --quiet >>"%CACHE%\git.log" 2>&1
+goto gitdone
+
+:gitplain
+rem older git, or a server without partial clone: take the whole tree once
 git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -c http.version=HTTP/1.1 clone --depth 1 --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfail
 goto gitdone
 
 :gitpull
-git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -C "%CACHE%\repo" fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
-git -C "%CACHE%\repo" reset --hard --quiet origin/main >>"%CACHE%\git.log" 2>&1
+for /f %%s in ('git -C "%CACHE%\repo" rev-parse HEAD 2^>nul') do set "OLDSHA=%%s"
+git -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -C "%CACHE%\repo" fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfail
+git -C "%CACHE%\repo" reset --hard --quiet FETCH_HEAD >>"%CACHE%\git.log" 2>&1
+for /f %%s in ('git -C "%CACHE%\repo" rev-parse FETCH_HEAD 2^>nul') do set "NEWSHA=%%s"
+if not defined NEWSHA goto gitdone
+if "%OLDSHA%"=="%NEWSHA%" echo            main has not moved - nothing to download
+if not "%OLDSHA%"=="%NEWSHA%" echo            fetched only the files that changed
 
 :gitdone
 if not exist "%CACHE%\repo\data\fight.def" goto gitfail
 set "SRC=%CACHE%\repo"
 set "WHICH=git"
-goto sync
+for /f %%s in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%s"
+if not defined VER goto sync
+rem if this exact revision is already in the game folder, do not copy 340 MB
+rem over the top of itself just to launch
+set "APPLIED="
+if exist "%CACHE%\applied.txt" set /p APPLIED=<"%CACHE%\applied.txt"
+if not "%APPLIED%"=="%VER%" goto sync
+if not exist "%~dp0data\fight.def" goto sync
+echo   files  : main @ %VER%
+echo            already up to date - launching what is here
+goto launch
 
 :gitfail
 echo            git could not fetch. it said:
@@ -239,6 +270,7 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 set "VER="
 if not "%WHICH%"=="git" goto skipver
 for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
+if defined VER (>"%CACHE%\applied.txt" echo %VER%)
 
 :sync
 if not "%WHICH%"=="git" goto skipver2
@@ -251,6 +283,8 @@ if not errorlevel 1 echo   HUD    : dragon - back is health, belly is audacity
 if defined VER echo   files  : main @ %VER%
 if not defined VER echo   files  : main, from the zip
 echo.
+
+:launch
 echo   [ 4/4 ]  starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
