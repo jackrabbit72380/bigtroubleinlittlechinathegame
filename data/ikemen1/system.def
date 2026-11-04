@@ -140,12 +140,6 @@ loading.scale = 1.5, 1.5
 loading.xshear = 0.25
 loading.text = NOW LOADING...
 	
-; The engine's own bar across the bottom of every menu ("I.K.E.M.E.N. GO" and
-; its version string) is off. The strip is drawn by the overlay below and the
-; three text fields by their offsets, so the overlay is made fully transparent
-; and the fields are parked below the 1280x720 screen - nothing is drawn there.
-; The build number is still on the launcher banner and in VERSION.txt beside the
-; exe, so nothing is lost - it just stops sitting under every menu.
 footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
 footer.title.offset = 5, 5000
 footer.title.scale = 1,1
@@ -159,7 +153,7 @@ footer.version.offset = 1275, 5000
 footer.version.scale = 1,1
 
 footer.overlay.col = 0, 0, 64
-footer.overlay.alpha = 0, 0
+footer.overlay.alpha = 255, 100
 footer.overlay.window = 0, 700, 1280, 720
 
 ;Network menu
@@ -259,40 +253,47 @@ menu.itemname.menuwatch.back = BACK
 menu.itemname.options = OPTIONS
 
 ; Options > Video > Resolution. The engine takes the size straight from the
-suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
-had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
-the motif's own 1280x720, so the art, the framing and the netplay handshake are
-all unaffected.
-menu.itemname.menuvideo.resolution = RESOLUTION
-menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
-menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
-menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
-menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
-menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
-menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
-menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
-menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
-menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
-menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
-menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
-menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
-menu.itemname.menuvideo.resolution.back = BACK
+suffix, so this block IS the list.
+;
+; This is the WINDOW size, not the render size. Ikemen's render resolution is
+; Video.GameWidth/GameHeight in config.ini and it has no option-menu item at
+; all, so nothing in this list can add detail to the art - picking 4K here
+; draws the same sprites, scaled up, into a 4K window. The labels say so
+; rather than implying the picture gets sharper.
+;
+; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
+; the one window where every sprite lands on whole pixels; 2560x1440 and
+; 3840x2160 are clean 1.33x and 2x scales of that same art.
+	menu.itemname.menuvideo.resolution = RESOLUTION
+	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
+	menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
+	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
+	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
+	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
+	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
+	menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
+	menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
+	menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
+	menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
+	menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
+	menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
+	menu.itemname.menuvideo.resolution.back = BACK
 
-menu.itemname.menuvideo.window = WINDOW SIZE
-menu.itemname.menuvideo.window.windowauto = Match Render Size
-menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)
-menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)
-menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)
-menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)
-menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)
-menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)
-menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)
-menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)
-menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)
-menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)
-menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
-menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
-menu.itemname.menuvideo.window.back = BACK
+	menu.itemname.menuvideo.window = WINDOW SIZE
+	menu.itemname.menuvideo.window.windowauto = Match Render Size
+	menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)
+	menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)
+	menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)
+	menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)
+	menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)
+	menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)
+	menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)
+	menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)
+	menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)
+	menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)
+	menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
+	menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
+	menu.itemname.menuvideo.window.back = BACK
 
 ; Exit Game
 menu.itemname.exit = EXIT
@@ -465,7 +466,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
 title.offset = 640, 2
-title.font = 10,0,0, 255, 228, 140
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -640,20 +641,20 @@ p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 50, 690
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 11, 0, 0, 255, 228, 140
 p1.name.spacing = 15,25                   ;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1230, 690
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 11, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 640, 638
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.active.font = 11, 0, 0, 255, 228, 140
-stage.active2.font = 11, 0, 0, 176, 126, 44
-stage.done.font = 11, 0, 0, 176, 126, 44
+stage.active2.font = 11, 0, 0, 200, 168, 104
+stage.done.font = 11, 0, 0, 200, 168, 104
 stage.layerno = 2
 
 ;Stage portraits
@@ -846,6 +847,9 @@ p2.palmenu.done.snd = 100, 1
 p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
+title.scale = 1,1
+p1.name.scale = 0.25, 0.25
+p2.name.scale = 0.25, 0.25
 cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
@@ -859,12 +863,9 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-title.scale = 1,1
-stage.scale = 1, 1
 stage.text = %s
 stage.active.text = %s
-p1.name.scale = 0.25, 0.25
-p2.name.scale = 0.25, 0.25
+stage.scale = 1, 1
 [Begin Action 110]
 110,0, 0,0, 8
 110,1, 0,0, 8
@@ -1112,11 +1113,11 @@ p2.done.anim = 181
 ;Names
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20,615      ;Position to put name
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 10, 0, 1, 255, 228, 140
 p1.name.spacing = 15,25      ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
 p2.name.offset = 1260,615
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 10, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 
 orderselect.enabled = 1
@@ -1290,7 +1291,7 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 640, 643
 stage.text = %s
 stage.offset = 0, -10
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 255, 228, 140
 stage.scale = 1, 1
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
@@ -2093,34 +2094,26 @@ textinput.overlay.col = 0, 0, 0
 textinput.overlay.alpha = 0, 128
 
 ;P1 Key menu
-keymenu.p1.menuoffset = 419, 99
+keymenu.p1.menuoffset = 276, 99
 keymenu.p1.playerno.offset = 156, 0
 keymenu.p1.playerno.font = 11, 0, 0, 240, 196, 88
 keymenu.p1.playerno.scale = 1.0, 1.0
 ;P2 Key menu
-keymenu.p2.menuoffset = 790, 99
+keymenu.p2.menuoffset = 693, 99
 keymenu.p2.playerno.offset = 156, 0
 keymenu.p2.playerno.font = 11, 0, 0, 236, 158, 74
 keymenu.p2.playerno.scale = 1.0, 1.0
 
-; The key list is its own screen: every label row and its key must fit the
-; options panel, and the row pitch has to clear the glyph cell. Left alone it
-; inherited 'menu.item.font' - the 45px Display face - on a 36px pitch, so the
-; labels drew three times too tall, overlapped each other and ran off the panel
-; while the key names sat 303px away in a 20px Body face.
+; unassigned 'keymenu' parameters use corresponding 'menu' values
+
 keymenu.pos = 0, 0
-keymenu.item.font = 11,0,-1, 240, 196, 88
-keymenu.item.active.font = 11,0,-1, 255, 228, 140
-keymenu.item.selected.font = 11,0,-1, 255, 228, 140
-keymenu.item.selected.active.font = 11,0,-1, 255, 228, 140
-keymenu.item.value.font = 11,0,1, 240, 196, 88
-keymenu.item.value.active.font = 11,0,1, 255, 228, 140
-keymenu.item.spacing = 0, 30
-keymenu.item.value.offset = 160, 0
-keymenu.item.value.active.offset = 160, 0
-keymenu.item.value.conflict.offset = 160, 0
-keymenu.item.info.offset = 160, 0
-keymenu.item.info.active.offset = 160, 0
+
+keymenu.item.spacing = 0, 36
+keymenu.item.value.offset = 303, 0
+keymenu.item.value.active.offset = 303, 0
+keymenu.item.value.conflict.offset = 303, 0
+keymenu.item.info.offset = 303, 0
+keymenu.item.info.active.offset = 303, 0
 
 keymenu.window.margins.y = 0, 0
 keymenu.window.visibleitems = 0
@@ -2196,7 +2189,7 @@ menu.item.scale = 1.0, 1.0
 menu.item.active.offset = 0, 0
 menu.item.active.font = 12,0,-1, 255, 228, 140
 menu.item.active.scale = 1.0, 1.0
-menu.item.spacing = 0, 46
+menu.item.spacing = 0, 42
 menu.window.margins.y = 21, 2
 menu.window.visibleitems = 13
 menu.boxcursor.visible = 1
