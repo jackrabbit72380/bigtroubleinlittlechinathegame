@@ -762,6 +762,19 @@ def ensure_widescreen_resolutions():
     return changed
 
 
+# The engine keys the video submenus on the itemname line as written, so a row
+# that starts with a tab is a different key ("\tmenu.itemname...") and never
+# matches: the resolution list came up empty however many sizes it held. Every
+# menuvideo row is therefore forced flush left on each build, whatever wrote it.
+MENUVIDEO_ROW = re.compile(r"^[ \t]+(menu\.itemname\.menuvideo\.[^\r\n]*)$",
+                           re.MULTILINE)
+
+
+def dedent_menuvideo(text):
+    """Strip leading whitespace from every menu.itemname.menuvideo row."""
+    return MENUVIDEO_ROW.subn(r"\1", text)
+
+
 def ensure_resolution_menu(text):
     """Write the video resolution list, and keep its labels current.
 
@@ -791,7 +804,7 @@ def ensure_resolution_menu(text):
         pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=[^;\r\n]*",
                              re.MULTILINE)
         if pattern.search(text):
-            new = pattern.sub("\t%s = %s" % (key, value), text, count=1)
+            new = pattern.sub("%s = %s" % (key, value), text, count=1)
             if new != text:
                 changed += 1
                 text = new
@@ -822,7 +835,7 @@ def ensure_resolution_menu(text):
         anchor = anchor or header.search(text)
         if not anchor:
             continue
-        text = text[:anchor.end()] + nl + "\t%s = %s" % (key, value) + text[anchor.end():]
+        text = text[:anchor.end()] + nl + "%s = %s" % (key, value) + text[anchor.end():]
         prev = key
         changed += 1
     return text, changed
@@ -844,7 +857,7 @@ def ensure_window_menu(text):
             text, re.MULTILINE)
         if not anchor:
             return text, 0
-        block = nl + nl.join("\t" + row for row in rows)
+        block = nl + nl.join(row for row in rows)
         return text[:anchor.end()] + nl + block + text[anchor.end():], 1
 
     # An existing block keeps whatever sizes it has, so new ones go in after
@@ -863,7 +876,7 @@ def ensure_window_menu(text):
                                text, re.MULTILINE)
         if not anchor:
             continue
-        text = text[:anchor.end()] + nl + "\t%s = %s" % (key, value) + text[anchor.end():]
+        text = text[:anchor.end()] + nl + "%s = %s" % (key, value) + text[anchor.end():]
         prev = key
         changed += 1
     return text, changed
@@ -890,6 +903,11 @@ def main():
     text, win_added = ensure_window_menu(text)
     if win_added:
         print(f"  wrote the window-size submenu in {os.path.basename(MOTIF)}")
+
+    text, dedented = dedent_menuvideo(text)
+    if dedented:
+        print(f"  un-indented {dedented} video menu row(s): an indented row "
+              f"never matches its itemname, so the submenu stayed empty")
 
     dropped = ensure_widescreen_resolutions()
     if dropped:
