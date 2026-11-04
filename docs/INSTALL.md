@@ -79,6 +79,11 @@ Save the zip from
 next to the launcher as `main.zip` and run it again — it uses that file and
 skips the network entirely.
 
+If the launcher's own download cannot reach GitHub at all (a proxy or antivirus
+that only lets browsers out, for example), use `Apply main.zip.bat`: download the
+zip in your browser, save it in the game folder, and double-click that file. It
+contains no download code, so there is nothing to hang or fail on.
+
 ## Run from source
 
 Everything below is for editing the game. If you only want to play, use a release.
