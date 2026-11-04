@@ -148,20 +148,6 @@ def _scales(d, line):
             x += step
 
 
-def _spines(d, line, unit):
-    """Small fins along the top of the back."""
-    n = len(line)
-    for i in range(2, n - 4, 9):
-        x, y, half = line[i]
-        nx, ny, _ = line[i + 3]
-        dx = (nx - x) / max(1.0, half)
-        lift = half * 0.62
-        d.polygon([(x - half * 0.55, y - half * 0.86),
-                   (x + dx * half * 0.25, y - half - lift),
-                   (x + half * 0.70, y - half * 0.80)],
-                  fill=GOLD_HI, outline=INK)
-
-
 def _head(d, line, unit):
     """The head at the left end, facing left, as in the concept."""
     x0, y0, half = line[0]
@@ -286,7 +272,6 @@ def _dragon_raw(kind):
                              mask))
 
     d = ImageDraw.Draw(img)
-    _spines(d, line, h / 76.0)
     _head(d, line, (h / 76.0) * 1.0)
     _tail_fin(d, line)
 
