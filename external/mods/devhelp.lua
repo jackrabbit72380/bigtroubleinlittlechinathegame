@@ -183,9 +183,23 @@ local function put(ti, font, idx, text, col, x, y, scale)
 end
 
 -- The always-available screen: the pause menu's own text sprite, one column,
--- drawn exactly the way the working version drew it.
-local function drawPlain(sec, lh)
+-- drawn exactly the way the working version drew it. It sets its own pitch from
+-- the motif's font and scale - the two-column pitch is far too tall for a single
+-- column of every row.
+local function plainPitch(sec)
+	local h = 26
+	pcall(function()
+		local f = motif.files.font['font' .. sec.movelist.text.font[1]]
+		h = math.floor((f.size[2] + f.spacing[2]) * sec.movelist.text.scale[2]
+			+ sec.movelist.text.spacing[2])
+	end)
+	if h < 8 then h = 8 end
+	return h
+end
+
+local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
+	local lh = plainPitch(sec)
 	local i = 0
 	for _, col in ipairs({LEFT, RIGHT}) do
 		for _, row in ipairs(col) do
@@ -232,10 +246,11 @@ local function devhelpDraw(sec)
 
 	local drawn = false
 	if not devhelp.failed then
-		drawn = pcall(drawTwoColumns, sec, font, idx, scale, lh)
+		local okDraw, drew = pcall(drawTwoColumns, sec, font, idx, scale, lh)
+		drawn = okDraw and drew == true
 		if not drawn then
-			-- the big path failed for a reason the probe did not catch: keep it
-			-- off for the rest of the session instead of retrying every frame
+			-- either it raised or the probe said no: keep the big path off for the
+			-- rest of the session instead of retrying every frame
 			devhelp.failed = true
 		end
 	end
@@ -245,7 +260,7 @@ local function devhelpDraw(sec)
 			print('devhelp: big key list unavailable in this build, using the ' ..
 				'plain list from the pause menu')
 		end
-		drawPlain(sec, lh)
+		drawPlain(sec)
 	end
 
 	if esc() or getInput(-1, sec.menu.cancel.key, sec.menu.done.key) then
