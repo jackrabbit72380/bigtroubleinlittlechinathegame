@@ -130,6 +130,8 @@ def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror,
     frame, _fw2, _fh2 = pic(d, by_key, pals, (41, 0))
     key = (44, 0) if frac >= 1.0 else (43, 0)
     front, fw, fh = pic(d, by_key, pals, key)
+    if mirror:
+        bg, frame, front = (_tint(x, P2_ADD) for x in (bg, frame, front))
 
     if not mirror:
         blit(canvas, bg, px - bw * S, py, S)

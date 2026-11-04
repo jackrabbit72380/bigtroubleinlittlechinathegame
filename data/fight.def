@@ -1860,6 +1860,19 @@ levelMax.snd = 21, 1
 ;==================================================================================================
 p1.bg1.offset = 0,0
 p2.bg1.offset = 0,0
+p2.bg0.palfx.add = -150, 90, -10
+p2.front500.palfx.add = -150, 90, -10
+p2.front1000.palfx.add = -150, 90, -10
+p2.front2000.palfx.add = -150, 90, -10
+p2.front3000.palfx.add = -150, 90, -10
+p2.front4000.palfx.add = -150, 90, -10
+p2.front5000.palfx.add = -150, 90, -10
+p2.front6000.palfx.add = -150, 90, -10
+p2.front7000.palfx.add = -150, 90, -10
+p2.front8000.palfx.add = -150, 90, -10
+p2.front9000.palfx.add = -150, 90, -10
+p2.front10000.palfx.add = -150, 90, -10
+p2.frontMax.palfx.add = -150, 90, -10
 [Guardbar]
 ;Player 1
 p1.pos = 16, 16
@@ -2710,7 +2723,7 @@ p*.teammate.ko.hide = 1
 
 ;-----------------------------------------------------------
 [Time]
-pos = 640,24
+pos = 640,26
 ; Uncomment the following line to use a bg component
 bg.spr = 30,0
 bg.offset = 0,0
@@ -3786,12 +3799,12 @@ enabled.timechallenge = 1
 
 ;-----------------------------------------------------------
 [Score]
-p1.pos = 586,34
+p1.pos = 586,60
 ;p1.bg.spr = 
 p1.text.font = 8,0, -1
 p1.text.text = %s
 
-p2.pos = 696,34
+p2.pos = 696,60
 ;p2.bg.spr = 
 p2.text.font = 8,0, 1
 p2.text.text = %s
