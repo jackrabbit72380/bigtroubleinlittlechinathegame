@@ -102,3 +102,10 @@ where the +Chi reward on damaging hits lives.
 2. Character-specific specials.
 3. Intro and ending storyboards for arcade mode.
 4. Original music and voice stings.
+
+## Debug keys
+
+`Ctrl`+`D` shows the debug readout in-game and `Shift`+`F4` reloads the engine
+after a code change. The full list, including speed control, frame stepping and
+per-player AI toggles, is in [DEV_KEYS.md](DEV_KEYS.md) — or press `Ctrl`+`F1`
+in-game to print it into the console.

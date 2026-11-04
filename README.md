@@ -96,6 +96,7 @@ while you work.
 
 Talk to us before starting anything large: the [Discord](https://discord.gg/bY6NJ35c6P)
 is where the work is coordinated. Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+is where the work is coordinated. Read [docs/DEV_KEYS.md](docs/DEV_KEYS.md)
 for the pipeline, the art rules and the review expectations.
 
 ## Repository map
