@@ -3779,14 +3779,14 @@ useiconupto = 4
 
 ;-----------------------------------------------------------
 [WinCount]
-p1.pos = 586,24
+p1.pos = 70, 112
 ;p1.bg.spr = 
-p1.text.font = 8,0, -1, 255, 228, 140
+p1.text.font = 8, 0, 0, 255, 228, 140
 p1.text.text = WINS %s
 
-p2.pos = 696,24
+p2.pos = 1210, 112
 ;p2.bg.spr = 
-p2.text.font = 8,0, 1, 255, 228, 140
+p2.text.font = 8, 0, 0, 255, 228, 140
 p2.text.text = WINS %s
 
 p1.enabled.netplayversus = 1
@@ -3798,6 +3798,8 @@ p2.enabled.versus = 1
 p2.enabled.versuscoop = 1
 
 ;-----------------------------------------------------------
+p1.layerno = 2
+p2.layerno = 2
 [Timer]
 pos = 1080,24
 ;bg.spr = 

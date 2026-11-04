@@ -35,17 +35,17 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-# 15x5 = 75 cells, one per roster line plus the random box.
+# 7x5 = 35 cells, one per roster line plus the random box.
 #
-# The row grew from seven to fifteen: the roster is 25 lines, so 15 across puts
-# it in two rows instead of four, and the stage card below can then be as wide
-# as the grid. The band between the side portraits is 642px, so the cell is 38
-# with a 4px gap - 15 * 38 + 14 * 4 = 626, centred at x=327. Cell art and the
-# cursor frames are baked at that size; the 84px portrait art is drawn at
-# CELL / 84 of its size (portrait.scale), so it still fills its frame.
-CELL = 38
-GAP = 4
-COLS, ROWS = 15, 5
+# It was 6x4 at a 100px cell for a 21-line roster, then 7x4 at 84px once the
+# roster outgrew that. The grid had 60px of unused screen above it, which is
+# where the fifth row comes from: the grid starts at y=34 instead of y=100, so
+# the four rows that ended at 460 become five that end at 486, with the stage
+# card still beginning at 509. The 84px cell and its 8px gap are untouched, so
+# the portrait art baked at that size still lands 1:1 in its frame.
+CELL = 84
+GAP = 8
+COLS, ROWS = 7, 5
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 34)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
@@ -112,7 +112,7 @@ def background():
     d = ImageDraw.Draw(img)
 
     # The frame the grid sits in: a plate, a double gold rule, corner diamonds.
-    pad = 8
+    pad = 10
     box = [GRID[0] - pad, GRID[1] - pad,
            GRID[0] + GRID_W + pad, GRID[1] + GRID_H + pad]
     d.rectangle(box, fill=(6, 9, 9, 176), outline=GOLD_DIM + (255,), width=2)
@@ -309,14 +309,14 @@ KEYS = (
     ("cell.bg.scale", "1,1"),
     ("cell.bg.offset", "0,0"),
     ("cell.random.spr", "151,0"),
-    ("cell.random.scale", "%.3f, %.3f" % (CELL / 95.0, CELL / 95.0)),
+    ("cell.random.scale", "1.3,1.3"),
     ("portrait.spr", "9000,0"),
     # the portrait art is painted at the cell's own size (build_portraits.py
     # CELL) and the bust is inset inside it, so it sits at the cell's origin -
     # nudging it in again double-counted the inset and pushed the art 4px past
     # the frame on two sides
     ("portrait.offset", "0,0"),
-    ("portrait.scale", "%.4f, %.4f" % (CELL / 84.0, CELL / 84.0)),
+    ("portrait.scale", "1,1"),
     # The stage card's position, scale, window and name band all belong to
     # tools/build_select_ui.py, which runs after this one; stage.pos is
     # deliberately not set here, because the card hangs from the band now and
@@ -383,7 +383,7 @@ KEYS = (
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
     # the cells beside it.
-    ("cell.random.offset", "-13,-10"),
+    ("cell.random.offset", "-30,-24"),
     ("cell.random.scale", "1.5, 1.5"),
     # The stock screen re-rolls the random portrait every 4 ticks and plays
     # pX.random.move.snd on every roll, which stacked voices into a continuous

@@ -364,14 +364,14 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 fadein.time = 10
 fadeout.time = 10
 rows = 5
-columns = 15
+columns = 7
 wrapping = 1
-pos = 327,34
+pos = 322,34
 showemptyboxes = 0
 moveoveremptyboxes = 0
 coopqueue = 1                      ;1 to allow character selection queuing in coop modes
-cell.size = 38,38
-cell.spacing = 4
+cell.size = 84,84
+cell.spacing = 8
 cell.bg.spr = 222,0
 cell.bg.scale = 1,1
 cell.random.spr = 151,0
@@ -420,7 +420,7 @@ stage.done.snd = 100,1
 cancel.snd = 100,2
 portrait.spr = 9000,0
 portrait.offset = 0,0
-portrait.scale = 0.4524, 0.4524
+portrait.scale = 1,1
 portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
@@ -619,24 +619,24 @@ stage.layerno = 2
 ;Stage portraits
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -132
-stage.portrait.scale = 0.7728, 0.7728
+stage.portrait.offset = 0, -106
+stage.portrait.scale = 0.5679, 0.5679
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -313, -235
+stage.portrait.bg.offset = -230, -181
 stage.portrait.bg.scale = 1.0, 1.0
 stage.portrait.bg.layerno = 2
 ;stage.portrait.random.anim = 113
 stage.portrait.random.spr = 111,0
-stage.portrait.random.offset = -313, -235
+stage.portrait.random.offset = -230, -181
 stage.portrait.random.scale = 1, 1
 stage.portrait.random.layerno = 2
 ; stage.portrait.loading.spr = 
 stage.portrait.loading.anim = -1
-stage.portrait.loading.offset = -313, -235
+stage.portrait.loading.offset = -230, -181
 stage.portrait.loading.scale = 1, 1
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 330, 458, 950, 657
+stage.portrait.window = 413, 512, 867, 657
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator
@@ -809,7 +809,7 @@ cell.bg.offset = 0,0
 title.scale = 1,1
 p1.name.scale = 0.25, 0.25
 p2.name.scale = 0.25, 0.25
-cell.random.offset = -13,-10
+cell.random.offset = -30,-24
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
 p1.cursor.done.offset = 0,0
@@ -822,8 +822,8 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-stage.portrait.random.window = 330, 458, 950, 657
-stage.portrait.loading.window = 330, 458, 950, 657
+stage.portrait.random.window = 413, 512, 867, 657
+stage.portrait.loading.window = 413, 512, 867, 657
 stage.text = %s
 stage.active.text = %s
 stage.scale = 1, 1
@@ -1257,12 +1257,12 @@ stage.font = 11, 0, 0, 236, 200, 120
 stage.scale = 1, 1
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -128
-stage.portrait.scale = 0.7728, 0.7728
+stage.portrait.offset = 0, -100
+stage.portrait.scale = 0.5679, 0.5679
 stage.portrait.bg.spr = 112,0
-stage.portrait.bg.offset = -313, -230
+stage.portrait.bg.offset = -230, -176
 stage.portrait.bg.scale = 1.0, 1.0
-stage.portrait.window = 330, 463, 950, 662
+stage.portrait.window = 413, 517, 867, 662
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
@@ -1297,13 +1297,13 @@ loading.wait.scale = 1.0, 1.0
 loading.storyboard = 
 
 ; Loading
-stage.portrait.random.offset = -313, -230
+stage.portrait.random.offset = -230, -176
 stage.portrait.random.scale = 1, 1
-stage.portrait.random.window = 330, 463, 950, 662
+stage.portrait.random.window = 413, 517, 867, 662
 stage.portrait.loading.anim = -1
-stage.portrait.loading.offset = -313, -230
+stage.portrait.loading.offset = -230, -176
 stage.portrait.loading.scale = 1, 1
-stage.portrait.loading.window = 330, 463, 950, 662
+stage.portrait.loading.window = 413, 517, 867, 662
 [Begin Action 600]
 600,0, 0,0, 3
 600,1, 0,0, 3
