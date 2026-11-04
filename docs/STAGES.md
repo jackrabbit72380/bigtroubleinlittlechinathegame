@@ -46,10 +46,11 @@ The cab is painted behind the play plane and cannot stop anyone by itself, and a
 MUGEN/Ikemen stage definition carries no collision geometry — these bounds are the
 only stage-level solidity the format offers.
 
-Standing on the cab roof, and being run over for dropping off the front or the
-back of the bed, are **not** expressible in a stage file: the deck is a single
-flat floor plane with no ledges, and the engine has no per-stage match script. That
-needs per-fighter state logic (CNS/ZSS) or an engine feature, not a background.
+That is the whole mechanic, by design: no standing on the cab roof and no run-over
+death. The deck is a single flat floor plane, and a stage definition has no ledges,
+hazards or per-stage match script, so a wall at each end of the bed is what the
+format can honestly give. A fighter stops at the cab's back, 72 px of coupling
+before it, and at the trailer's tail board with the end of the stage behind it.
 
 ## Using your own art
 
