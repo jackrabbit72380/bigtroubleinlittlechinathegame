@@ -35,18 +35,18 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-# 7x4 = 28 cells, one per roster line plus the random box.
+# 7x5 = 35 cells, one per roster line plus the random box.
 #
-# It was 6x4 at a 100px cell for a 21-line roster; the roster has grown past
-# that, and the validator refuses a roster line with no cell, which is exactly
-# the case it exists for. A seventh 100px column would run under the side
-# portrait panels (they start at x=320 and x=962), so the cell is 84px: the
-# grid is then 636 wide and centres at x=322..958, clear of both panels, and
-# the four rows end at y=460, clear of the stage preview at y=516.
+# It was 6x4 at a 100px cell for a 21-line roster, then 7x4 at 84px once the
+# roster outgrew that. The grid had 60px of unused screen above it, which is
+# where the fifth row comes from: the grid starts at y=34 instead of y=100, so
+# the four rows that ended at 460 become five that end at 486, with the stage
+# card still beginning at 509. The 84px cell and its 8px gap are untouched, so
+# the portrait art baked at that size still lands 1:1 in its frame.
 CELL = 84
 GAP = 8
-COLS, ROWS = 7, 4
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 100)
+COLS, ROWS = 7, 5
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 34)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
 
@@ -112,7 +112,7 @@ def background():
     d = ImageDraw.Draw(img)
 
     # The frame the grid sits in: a plate, a double gold rule, corner diamonds.
-    pad = 26
+    pad = 10
     box = [GRID[0] - pad, GRID[1] - pad,
            GRID[0] + GRID_W + pad, GRID[1] + GRID_H + pad]
     d.rectangle(box, fill=(6, 9, 9, 176), outline=GOLD_DIM + (255,), width=2)

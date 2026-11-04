@@ -27,6 +27,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import art
+import build_select_grid as select_grid
 import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -118,20 +119,23 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 
 
 
-# The stage card. Every stage bakes a 1215x398 establishing shot as sprite
-# 9000,1 and both the select screen and the VS screen draw it. The card had
-# grown to 760x249 and its window no longer matched its scale (the art was
-# drawn at .4 = 486x159 inside a 760-wide clip), so the picture sat in a box of
-# empty plate and overlapped the fourth row of the portrait grid, which ends at
-# y=460. The card is 400x159 now - it clears the grid - and it carries its own
-# name: the plate behind it has a dark band across the top, the art is clipped
-# to the frame below that band, and the engine's stage text is moved up into
-# the band, so the stage name sits on the card instead of under it.
+# The stage card: the preview picture and nothing else. The stage name used to
+# be drawn inside a band at the bottom of the plate, which read as the name
+# sitting in the preview box; the name is drawn under the card now, on the same
+# row as the fighters' names, so the box only ever holds the picture.
+#
+# Every stage bakes a 1215x398 establishing shot as sprite 9000,1 and both the
+# select screen and the VS screen draw it. A stage's 9000,1 is drawn at
+# (motif localcoord / stage localcoord) of the .def scale, which is 1280/1920 =
+# 2/3 for these 1920-wide stages; at the card's own scale the picture would
+# land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
+# the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
 CARD_W = 460
-BAND_H = 30                              # the name band, under the art
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
-CARD_H = ART_H + BAND_H                  # 181
+CARD_H = ART_H
+CARD_CX = 640
+NAME_ROW_Y = 690                        # the row the fighter names sit on
 CARD_CX = 640
 # A stage's 9000,1 is drawn at (motif localcoord / stage localcoord) of the
 # scale in the .def, which is 1280/1920 = 2/3 for these 1920-wide stages. At
@@ -154,56 +158,69 @@ NAME_FONT = 11                           # Body, a 13px cell: the face the
                                          # engine sets VERSUS in
 
 
-def _card(bottom_y):
-    """The stage card and its name band, hung from a given bottom edge.
+def _card(bottom_y, text_y=NAME_ROW_Y):
+    """The stage card, and the point its name is drawn from.
 
-    The card is anchored by its bottom edge because that is where both screens
-    had it before, so nothing else on either screen moves. Offsets are
-    measured from ``stage.pos``, which now points at the name band rather than
-    at a caption under the card, so every offset is computed from that point.
+    Everything the .def measures from ``stage.pos`` hangs off the name, and the
+    name is under the card now, so every offset is computed from there: the art
+    sits ``art_centre - text_y`` above the name, and the plate's own corner goes
+    the same way. The window is inset inside the plate's 2px gold rule, or the
+    picture paints over the frame and the card loses its outline.
     """
     left = CARD_CX - CARD_W // 2
-    top = bottom_y - CARD_H
-    band_top = top + ART_H
-    text_y = band_top + (BAND_H - NAME_PX) // 2
+    top = bottom_y - ART_H
     scale = CARD_W / float(STAGE_ART[0]) * CARD_FILL
-    # 9000,1's axis is the centre of the art, so place the art's centre
     art_centre = top + ART_H / 2.0
+    window = "%d, %d, %d, %d" % (left + 3, top + 3, left + CARD_W - 3, bottom_y - 3)
+    corner = "%d, %d" % (left - CARD_CX, top - text_y)
     return (
         ("stage.portrait.spr", "9000,1"),
         ("stage.portrait.offset", "0, %d" % int(round(art_centre - text_y))),
         ("stage.portrait.scale", "%.4f, %.4f" % (scale, scale)),
-        # inset inside the plate's own 2px gold rule, or the art paints over
-        # the frame and the card loses its outline
-        ("stage.portrait.window",
-         "%d, %d, %d, %d" % (left + 3, top + 3,
-                             left + CARD_W - 3, band_top - 3)),
-        ("stage.portrait.bg.offset", "%d, %d" % (left - CARD_CX, top - text_y)),
+        ("stage.portrait.window", window),
+        ("stage.portrait.bg.offset", corner),
         ("stage.portrait.bg.scale", "1.0, 1.0"),
+        # the "random" and "loading" placeholders are drawn over the same
+        # picture area, so they take the plate's corner and its clip
+        ("stage.portrait.random.offset", corner),
+        ("stage.portrait.random.scale", "1, 1"),
+        ("stage.portrait.random.window", window),
+        # the loading anim draws a scrolling grid over the picture while the
+        # preview loads; over a card this size it read as a stray tile in the
+        # corner, so the plate is what shows instead
+        ("stage.portrait.loading.anim", "-1"),
+        ("stage.portrait.loading.offset", corner),
+        ("stage.portrait.loading.scale", "1, 1"),
+        ("stage.portrait.loading.window", window),
         ("stage.pos", "%d, %d" % (CARD_CX, text_y)),
     )
 
 
-# The stage name is in the card's band now, so the text is the bare name -
-# "Stage 7: Lo Pan's Hallway" does not fit across a 400px card - set in the
-# same gold as the rest of the screen and sized to the band.
-# font 11 is a 13px cell, so the name is set at 1:1 and reads at the size the
-# engine draws VERSUS in - the stage name used to be the only text on the row
-# that was set in another face and at another size.
+# The name is under the card now, on the fighters' row, so it is the same 13px
+# cell as their names - font 11 at 1:1, which is the face and size the engine
+# sets VERSUS and the fighter names in.
+#
+# The engine cycles the stage name through three states while the stage menu is
+# open: stage, active and active2, swapping every ``stage.active.switchtime``
+# frames. The stock motif sets that to 2 and gives all three a different gold,
+# which is a 30Hz strobe. One colour and a switchtime longer than anyone will
+# sit on this screen makes the name hold still.
 NAME_SCALE = "1, 1"
+NAME_GOLD = "236, 200, 120"
 SELECT_TEXT = (
-    ("stage.font", f"{NAME_FONT}, 0, 0, 236, 200, 120"),
-    ("stage.active.font", f"{NAME_FONT}, 0, 0, 255, 228, 140"),
-    ("stage.active2.font", f"{NAME_FONT}, 0, 0, 200, 168, 104"),
-    ("stage.done.font", f"{NAME_FONT}, 0, 0, 200, 168, 104"),
+    ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
+    ("stage.active.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
+    ("stage.active2.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
+    ("stage.done.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
     ("stage.text", "%s"),
     ("stage.active.text", "%s"),
     ("stage.scale", NAME_SCALE),
+    ("stage.active.switchtime", "300000"),
 )
 
 
-# The select card hangs lower than it used to: the taller name band needs the
-# room, and the grid above it ends at y=460, so the card's top is at 477.
+# The card hangs from its bottom edge, which is where both screens had it
+# before, so nothing else on either screen moves.
 STAGE_PORTRAIT = _card(660)           # [Select Info]
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
@@ -217,12 +234,11 @@ VS_PLATE = _card(665) + (
 
 # Text on the VS screen. The two names were within a few units of each other,
 # so both sides looked like the same orange: P1 is the motif's bright cream and
-# P2 a warmer amber. The "Next Stage" caption used to sit under the card; it is
-# the stage name in the card's band now, like the select screen.
+# P2 a warmer amber. The stage name is under the card here as well.
 VS_TEXT = (
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
-    ("stage.font", f"{NAME_FONT}, 0, 0, 255, 228, 140"),
+    ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
     ("stage.text", "%s"),
     ("stage.scale", NAME_SCALE),
 )
@@ -320,6 +336,60 @@ def frame_plate(w, h, band=0):
 # own size, so the card's .def scale is 1 and its offsets are screen pixels;
 # the other frame sprites keep whatever size the engine shipped them at.
 CARD_PLATES = ((110, 0), (112, 0))
+# 111 is the random slot: the grey question-mark card, at the picture's size.
+RANDOM_PLATES = ((111, 0),)
+
+
+STAGE_PREVIEW_SFFS = (os.path.join(ROOT, "stages", "stage0.sff"),)
+
+
+def _cover(img, size):
+    """Scale to fill `size` without distortion, then centre-crop."""
+    tw, th = size
+    ratio = max(tw / img.width, th / img.height)
+    new = (max(tw, int(round(img.width * ratio))),
+           max(th, int(round(img.height * ratio))))
+    img = img.resize(new, Image.LANCZOS)
+    left, top = (img.width - tw) // 2, (img.height - th) // 2
+    return img.crop((left, top, left + tw, top + th))
+
+
+def normalise_stage_previews():
+    """Rebake any stage preview that is not the size the card expects.
+
+    The card draws a stage's 9000,1 at the motif's scale, and the engine also
+    scales it by (motif localcoord / stage localcoord): two thirds for the
+    1920-wide stages here, four for the engine's 320x240 training room. The HD
+    stages all bake the same 1215x398 shot, so they land identically whatever
+    that ratio turns out to be. The training room shipped a 240x100 arcade
+    crop, which is why its picture was a small tile in a corner of the box
+    instead of filling it - rebaked at the size the others use, it fills the
+    window the same way and the window clips it.
+    """
+    fixed = 0
+    for path in STAGE_PREVIEW_SFFS:
+        if not os.path.isfile(path):
+            continue
+        raw, sprites, palettes = sff.read_sff(path)
+        out, changed = [], False
+        for sp in sprites:
+            if (sp["group"], sp["number"]) == (9000, 1) and (sp["w"], sp["h"]) != STAGE_ART:
+                img = _cover(sff.decode_sprite(raw, sp, palettes), STAGE_ART)
+                out.append({"group": 9000, "number": 1, "image": img,
+                            "axis": (STAGE_ART[0] // 2, STAGE_ART[1] // 2)})
+                changed = True
+                continue
+            out.append(sp)
+        if not changed:
+            continue
+        blob = sff.write_sff(out, [p["rgba"] for p in palettes])
+        if blob[:12] != sff.SIG:
+            raise SystemExit("refusing to write: rebuilt stage sff has no signature")
+        with open(path + ".tmp", "wb") as f:
+            f.write(blob)
+        os.replace(path + ".tmp", path)
+        fixed += 1
+    return fixed
 
 
 def clean_frames():
@@ -329,7 +399,13 @@ def clean_frames():
     for sp in sprites:
         if sp["group"] in FRAME_GROUPS:
             if (sp["group"], sp["number"]) in CARD_PLATES:
-                img = frame_plate(CARD_W, CARD_H, band=BAND_H)
+                img = frame_plate(CARD_W, CARD_H)
+                axis = (0, 0)
+            elif (sp["group"], sp["number"]) in RANDOM_PLATES:
+                # the stand-in the roster grid uses, at the card's own size -
+                # repainting it as an empty frame left the random stage with
+                # nothing in the box at all
+                img = select_grid.random_card((CARD_W - 6, CARD_H - 6))
                 axis = (0, 0)
             else:
                 img = frame_plate(sp["w"], sp["h"])
@@ -474,6 +550,7 @@ def build():
     strip = hint_strip()
     total = write_sprite(strip)
     frames = clean_frames()
+    centred = normalise_stage_previews()
     tinted = retint_vs_art()
     added = patch_def()
 
@@ -491,6 +568,7 @@ def build():
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
     print(f"stage-select hint: sprite {SPRITE[0]},{SPRITE[1]} "
           f"({'added' if total else 'kept'}), frame repaints {frames}, "
+          f"stage previews centred {centred}, "
           f"VS art retinted {tinted}, "
           f"SelectBG layer {'added' if added else 'already present'}")
 
