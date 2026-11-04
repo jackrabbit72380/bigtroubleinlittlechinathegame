@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v11
+rem  BIG TROUBLE IN LITTLE CHINA - updater v12
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v11
+echo                        updater v12
 echo.
 echo   ==============================================================
 echo.
@@ -330,6 +330,8 @@ echo   ==============================================================
 echo.
 echo   [ 3/4 ]  copying the game files over this folder
 echo.
+call :ziptree
+if "%PSOK%"=="1" goto copied
 if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
 mkdir "%CACHE%\unpack" 2>nul
 if not defined TAR goto un_ps
@@ -466,6 +468,24 @@ rem ===========================================================================
 rem ===========================================================================
 rem  copying: only the files main says changed
 rem ===========================================================================
+:ziptree
+rem The archive is ~190 MB of art, but a fix changes a handful of files. Rather
+rem than expand all of it and then compare, let PowerShell open the zip and write
+rem only the entries that differ from the folder: no unpack tree, and no walking
+rem the whole game afterwards. Anything unexpected - no PowerShell, an error
+rem inside it, an apostrophe in the folder path - drops to unpack-and-copy.
+set "PSOK=0"
+if not defined POWERSHELL goto ziptree_done
+if not defined ZIP goto ziptree_done
+if not exist "%ZIP%" goto ziptree_done
+echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
+if not errorlevel 1 goto ziptree_done
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $n=0; $shown=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($tops -notcontains ($rel -split '/')[0]) { continue }; $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; if ($shown -lt 25) { Write-Host ('             ' + $rel); $shown++ } } } finally { $zip.Dispose() }; Write-Host ('            ' + $n + ' file(s) written')"
+if errorlevel 1 goto ziptree_done
+set "PSOK=1"
+:ziptree_done
+exit /b 0
+
 :synctree
 rem %CHANGED% lists repo-relative paths that differ. Writing only those keeps
 rem a one-line fix to a one-file copy; the whole-tree copy stays underneath
@@ -510,6 +530,7 @@ if not exist "%SRC%\%REL%" goto syncfile_gone
 rem a new build can add folders, so the parent has to exist first
 for %%d in ("%~dp0%REL%") do if not exist "%%~dpd" mkdir "%%~dpd" 2>nul
 copy /Y "%SRC%\%REL%" "%~dp0%REL%" >nul 2>&1
+if not errorlevel 1 echo              %REL%
 if not errorlevel 1 set /a NCOP+=1
 exit /b 0
 

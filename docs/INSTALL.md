@@ -78,7 +78,9 @@ your `save/` and the engine files alone, prints which HUD it copied, and starts
 the game. With Git installed the update moves only the changed files; without git
 it reads the public commit feed (a few tens of KB, no token, no API quota) and
 only downloads the `main` zip when that feed shows `main` has moved, so a launch
-with nothing new behind it costs one small request. Nothing to install or copy
+with nothing new behind it costs one small request. When it does download, the
+archive is opened in place and only the entries that differ are written into the
+folder, so an update no longer expands and recopies the whole game. Nothing to
 by hand.
 
 The launcher gets the files four ways before it gives up, and it counts the
