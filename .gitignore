@@ -4,6 +4,17 @@ save/
 Ikemen_GO.log
 config.ini
 
+# The engine that tools/test_local.py caches for playing this checkout
+/.test/
+/Ikemen_GO*
+/*.exe
+/*.dll
+/*.so
+/*.dylib
+/*.app/
+/*.command
+/lib/
+
 # Python tooling
 __pycache__/
 *.pyc
