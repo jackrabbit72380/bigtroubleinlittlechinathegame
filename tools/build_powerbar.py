@@ -404,12 +404,18 @@ def patch_fight_def():
 
 
 def main():
+    if os.environ.get("PAINT_METER_DRAGON") != "1":
+        print("meter art left alone: the HUD uses its original 206x18 bar.\n"
+              "Set PAINT_METER_DRAGON=1 to repaint the oversized dragon.")
+        return
+
     if not os.path.isfile(FIGHT_SFF):
         raise SystemExit("data/fight.sff is missing - fetch the engine data first")
 
     mine = _concept_path()
     if mine:
-        painted = _from_concept(mine)
+        painted = {k: v.transpose(Image.FLIP_LEFT_RIGHT)
+                   for k, v in _from_concept(mine).items()}
         note = "cut from " + os.path.relpath(mine, ROOT)
     else:
         raws = [_dragon_raw(kind) for kind in
@@ -421,8 +427,12 @@ def main():
                 raise SystemExit(f"{kind} art reaches the canvas edge - widen "
                                  f"the padding in _dragon_raw")
         fitted, box = _fit(raws)
+        # the head belongs on the inside of the screen: p1's meter is on the
+        # left and p2's is the same art mirrored, so both faces point at the
+        # middle of the fight
+        fitted = [img.transpose(Image.FLIP_LEFT_RIGHT) for img in fitted]
         painted = dict(zip(((40, 0), (41, 0), (43, 0), (44, 0)), fitted))
-        note = (f"painted on the concept's path (head left, arch, trough, "
+        note = (f"painted on the concept's path (head right, arch, trough, "
                 f"curled tail right), crop {box[2] - box[0]}x{box[3] - box[1]}")
 
     raw, sprites, palettes = sff.read_sff(FIGHT_SFF)
