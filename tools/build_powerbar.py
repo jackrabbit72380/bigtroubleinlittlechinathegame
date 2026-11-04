@@ -85,7 +85,13 @@ def _curve(ctrl, n=16):
 
 
 def _spine(w, h):
-    line = _curve([(x * w, y * h) for x, y in PATH])
+    # The path fractions are the concept's, but the head reaches ~38px past its
+    # first point and the fin ~30px past its last, so the path is inset: that
+    # keeps the snout and the fin inside the sprite instead of clipping them.
+    def inset(fx):
+        return 0.10 + (fx - PATH[0][0]) * 0.86
+
+    line = _curve([(inset(fx) * w, fy * h) for fx, fy in PATH])
     out = []
     for i, (x, y) in enumerate(line):
         t = i / float(len(line) - 1)
