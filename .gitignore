@@ -6,6 +6,8 @@ config.ini
 
 # The engine that tools/test_local.py caches for playing this checkout
 /.test/
+# What "Update and Play.bat" keeps inside a game folder it updates
+.update-cache/
 /Ikemen_GO*
 /*.exe
 /*.dll

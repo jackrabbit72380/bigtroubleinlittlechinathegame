@@ -62,6 +62,15 @@ python3 tools/test_local.py -- 2560 1440   # render size for this run
 
 It needs Python 3.9+ and leaves engine files, `save/` and `.test/` untracked.
 
+### Already playing a downloaded folder?
+
+Drop `Update and Play.bat` into that folder and double-click it instead of the
+game's own exe. Each run fetches whatever is newest on `main`, copies `data/`,
+`chars/`, `stages/`, `font/`, `external/` and `sound/` over the folder, leaves
+your `save/` and the engine files alone, prints which HUD it copied, and starts
+the game. With Git installed the update is a few megabytes; without it the file
+downloads the `main` zip once per run instead. Nothing to install or copy by hand.
+
 ## Run from source
 
 Everything below is for editing the game. If you only want to play, use a release.
