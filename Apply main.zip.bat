@@ -7,14 +7,23 @@ rem     https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathega
 rem  2. save the zip in this folder
 rem  3. double-click this file
 rem
-rem  It unpacks that zip, copies data\ chars\ stages\ font\ external\ sound\
-rem  over this folder, leaves save\ and the engine alone, and starts the game.
-rem  There is no download code here, so nothing can hang on a proxy.
+rem  Windows tools are called by full path: a Git for Windows install that puts
+rem  its usr\bin on PATH shadows System32, and its tar reads H:\... as a remote
+rem  host ("Cannot connect to H:").
 rem ===========================================================================
-setlocal
+setlocal EnableExtensions DisableDelayedExpansion
 color 0E
 cd /d "%~dp0"
 title Big Trouble in Little China - apply update
+
+set "SYS=%SystemRoot%\System32"
+set "TAR=%SYS%\tar.exe"
+set "FINDSTR=%SYS%\findstr.exe"
+set "TASKLIST=%SYS%\tasklist.exe"
+set "ROBOCOPY=%SYS%\robocopy.exe"
+set "POWERSHELL=%SYS%\WindowsPowerShell\v1.0\powershell.exe"
+if not exist "%TAR%" set "TAR="
+if not exist "%POWERSHELL%" set "POWERSHELL="
 
 echo.
 echo   ==============================================================
@@ -35,8 +44,10 @@ if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 set "ZIP="
 if exist "%~dp0main.zip" set "ZIP=%~dp0main.zip"
 if not defined ZIP if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" set "ZIP=%~dp0bigtroubleinlittlechinathegame-main.zip"
+rem a zip the browser dropped in Downloads is used too, newest first
+if not defined ZIP call :fromdownloads
 if defined ZIP goto unzip
-echo   [ ! ]  no main.zip in this folder
+echo   [ ! ]  no zip found
 echo.
 echo   download it in your browser from:
 echo     https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame/zip/refs/heads/main
@@ -48,27 +59,30 @@ exit /b 1
 :unzip
 echo   [ 1/3 ]  unpacking
 echo            %ZIP%
+set "SRC="
 set "TMP=%~dp0.update-cache"
-if not exist "%TMP%" mkdir "%TMP%"
-if exist "%TMP%\unpack" rd /s /q "%TMP%\unpack"
+if not exist "%TMP%" mkdir "%TMP%" 2>nul
+if exist "%TMP%\unpack" rd /s /q "%TMP%\unpack" >nul 2>&1
 mkdir "%TMP%\unpack" 2>nul
-where tar >nul 2>nul
+if not defined TAR goto unzip_ps
+"%TAR%" -xf "%ZIP%" -C "%TMP%\unpack"
 if errorlevel 1 goto unzip_ps
-tar -xf "%ZIP%" -C "%TMP%\unpack"
 goto unpacked
 
 :unzip_ps
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%TMP%\unpack'"
+if not defined POWERSHELL goto badzip
+if exist "%TMP%\unpack" rd /s /q "%TMP%\unpack" >nul 2>&1
+mkdir "%TMP%\unpack" 2>nul
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%TMP%\unpack'"
 
 :unpacked
-set "SRC="
 for /d %%D in ("%TMP%\unpack\*") do set "SRC=%%~fD"
 if not defined SRC goto badzip
 echo.
 echo   [ 2/3 ]  copying the game files over this folder
 for %%F in (data chars stages font external sound) do (
   if exist "%SRC%\%%F" echo            %%F
-  if exist "%SRC%\%%F" robocopy "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
+  if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if not exist "%SRC%\config.ini" goto copied
 copy /Y "%SRC%\config.ini" "%~dp0config.ini" >nul
@@ -77,18 +91,19 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 
 :copied
 echo.
-findstr /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
+"%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
 if errorlevel 1 echo   HUD    : OLD - the copy did not land
 if not errorlevel 1 echo   HUD    : dragon - back is health, belly is audacity
+"%FINDSTR%" /c:"'Ctrl+Alt+1..9'" "%~dp0external\mods\devhelp.lua" >nul 2>nul
+if errorlevel 1 echo   keys   : OLD developer keys screen
+if not errorlevel 1 echo   keys   : two columns, no scrolling
 echo.
 if not defined EXE goto noexe
 echo   [ 3/3 ]  starting the game
 echo.
-"%EXE%" -config "save\config.ini"
-echo.
-echo   the game has closed.
-echo.
-pause
+start "" "%EXE%" -config "save\config.ini"
+echo   started. have fun.
+call :sleep 3
 exit /b 0
 
 :noexe
@@ -104,3 +119,15 @@ echo   delete it, download it again, and run this file.
 echo.
 pause
 exit /b 1
+
+:sleep
+set /a "P=%~1+1"
+"%SYS%\ping.exe" -n %P% 127.0.0.1 >nul 2>&1
+exit /b 0
+
+:fromdownloads
+for /f "delims=" %%Z in ('dir /b /a-d /o-d "%USERPROFILE%\Downloads\*bigtrouble*.zip" 2^>nul') do (
+  if not defined ZIP set "ZIP=%USERPROFILE%\Downloads\%%Z"
+)
+if defined ZIP echo            using %ZIP%
+exit /b 0
