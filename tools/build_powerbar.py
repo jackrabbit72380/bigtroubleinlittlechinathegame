@@ -9,14 +9,22 @@ neck rising into one big arch, the body falling into a trough in the middle,
 then rising again into a curled tail that ends in a flared fin at the RIGHT. The
 whole animal is covered in big overlapping plates.
 
-This is a single serpent drawn on that path. Nothing else is added: no ring, no
-spikes, no second body.
+Two ways to get the art:
+
+1. Drop the concept picture in as ``concept_art/ui/powerbar.png`` (or .jpg /
+   .webp). If that file exists it is cut to the meter's shape and used as-is, so
+   the bar is literally the concept art. Nothing is painted over it.
+2. Otherwise the dragon is painted here on the concept's own silhouette.
+
+Either way the finished art is fitted into the 460x76 sprite, so nothing is ever
+cut off at an edge.
 
 Run:  python3 tools/build_powerbar.py
 """
 
 from __future__ import annotations
 
+import glob
 import math
 import os
 import re
@@ -32,6 +40,7 @@ import sff
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FIGHT_SFF = os.path.join(ROOT, "data", "fight.sff")
 FIGHT_DEF = os.path.join(ROOT, "data", "fight.def")
+CONCEPT_GLOB = os.path.join(ROOT, "concept_art", "ui", "powerbar.*")
 
 W, H = 460, 76            # matches the meter range the def already uses
 AXIS = (W, 0)
@@ -62,9 +71,6 @@ PATH = ((0.020, 0.700), (0.075, 0.640), (0.140, 0.470), (0.215, 0.300),
         (0.830, 0.265), (0.880, 0.300), (0.905, 0.400), (0.935, 0.360),
         (0.950, 0.280))
 
-HEAD_AT = 0.0      # index into the path where the head sits (the left end)
-TAIL_FIN_AT = -1   # the right end
-
 
 def _curve(ctrl, n=16):
     """Catmull-Rom through the control points."""
@@ -85,19 +91,14 @@ def _curve(ctrl, n=16):
 
 
 def _spine(w, h):
-    # The path fractions are the concept's, but the head reaches ~38px past its
-    # first point and the fin ~30px past its last, so the path is inset: that
-    # keeps the snout and the fin inside the sprite instead of clipping them.
-    def inset(fx):
-        return 0.10 + (fx - PATH[0][0]) * 0.86
-
-    line = _curve([(inset(fx) * w, fy * h) for fx, fy in PATH])
+    """Centre line and half-thickness, in the un-padded meter's coordinates."""
+    line = _curve([(fx * w, fy * h) for fx, fy in PATH])
     out = []
     for i, (x, y) in enumerate(line):
         t = i / float(len(line) - 1)
         # thickest through the arch and the trough, tapering to the tail
-        half = h * (0.100 + 0.045 * math.sin(math.pi * min(1.0, t * 0.85))
-                    - 0.045 * max(0.0, t - 0.75) / 0.25)
+        half = h * (0.180 + 0.045 * math.sin(math.pi * min(1.0, t * 0.85))
+                    - 0.060 * max(0.0, t - 0.75) / 0.25)
         out.append((x, y, max(h * 0.035, half)))
     return out
 
@@ -123,14 +124,16 @@ def _taper(d, pts, w0, w1, fill, outline=None):
             d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
 
 
-def _scales(d, w, h, line):
-    """Big overlapping plates across the whole animal, following its curve."""
+def _scales(d, line):
+    """Big overlapping plates across the animal, following its curve."""
     n = len(line)
-    step = w / 44.0
+    left, right = line[0][0], line[-1][0]
+    step = (right - left) / 46.0
     for r in range(3):
-        x = step * (0.5 if r % 2 else 0.0)
-        while x < w * 0.99:
-            idx = min(n - 1, max(0, int(round(x / float(w) * (n - 1)))))
+        x = left + step * (0.5 if r % 2 else 0.0)
+        while x < right:
+            f = (x - left) / max(1.0, right - left)
+            idx = min(n - 1, max(0, int(round(f * (n - 1)))))
             _x, cy, half = line[idx]
             yy = cy + (-0.60 + 0.60 * r) * half
             rr = step * 0.72
@@ -138,76 +141,73 @@ def _scales(d, w, h, line):
                   188, 352, fill=CREVICE + (238,), width=int(max(2, step * 0.30)))
             d.arc([x - rr, yy - rr * 1.06, x + rr, yy + rr * 0.84],
                   194, 346, fill=GOLD_HI + (200,), width=int(max(1, step * 0.11)))
-            if int(x / step) % 6 == 2:
+            if int((x - left) / step) % 6 == 2:
                 d.arc([x - rr * 0.72, yy - rr * 0.55, x + rr * 0.72,
                        yy + rr * 0.62], 205, 335, fill=GREEN + (195,),
                       width=int(max(2, step * 0.20)))
             x += step
 
 
-def _head(d, w, h, line, bright=False):
+def _head(d, line, unit):
     """The head at the left end, facing left, as in the concept."""
     x0, y0, half = line[0]
-    s = (h / 76.0) * 1.05
-    body = GOLD_LO if bright else GOLD
-    hi = GOLD_HI
-    hx = x0 + 6 * s
+    s = unit * 1.30
+    hx = x0 + 8 * s
     hy = y0 - 2 * s
 
     # neck into the skull
-    _taper(d, [(hx + 26 * s, hy + 6 * s), (hx + 12 * s, hy + 1 * s),
-               (hx - 2 * s, hy - 2 * s)], 24 * s, 20 * s, body, INK)
+    _taper(d, [(hx + 30 * s, hy + 8 * s), (hx + 14 * s, hy + 2 * s),
+               (hx - 2 * s, hy - 2 * s)], 30 * s, 24 * s, GOLD_LO, INK)
     # skull
-    d.ellipse([hx - 16 * s, hy - 12 * s, hx + 10 * s, hy + 10 * s], fill=body,
+    d.ellipse([hx - 18 * s, hy - 14 * s, hx + 12 * s, hy + 12 * s], fill=GOLD_LO,
               outline=INK, width=max(1, int(1.2 * s)))
     # snout and upper jaw, pointing left
-    _taper(d, [(hx - 8 * s, hy - 6 * s), (hx - 24 * s, hy - 6 * s),
-               (hx - 38 * s, hy - 2 * s)], 16 * s, 6 * s, hi, INK)
+    _taper(d, [(hx - 8 * s, hy - 7 * s), (hx - 26 * s, hy - 7 * s),
+               (hx - 40 * s, hy - 2 * s)], 18 * s, 7 * s, GOLD, INK)
     # lower jaw, open
-    _taper(d, [(hx - 8 * s, hy + 6 * s), (hx - 24 * s, hy + 10 * s),
-               (hx - 34 * s, hy + 7 * s)], 12 * s, 5 * s, body, INK)
-    d.polygon([(hx - 10 * s, hy - 1 * s), (hx - 36 * s, hy + 1 * s),
-               (hx - 34 * s, hy + 8 * s), (hx - 10 * s, hy + 6 * s)], fill=MOUTH)
+    _taper(d, [(hx - 8 * s, hy + 7 * s), (hx - 26 * s, hy + 11 * s),
+               (hx - 36 * s, hy + 7 * s)], 14 * s, 5 * s, GOLD_LO, INK)
+    d.polygon([(hx - 10 * s, hy - 1 * s), (hx - 38 * s, hy + 1 * s),
+               (hx - 36 * s, hy + 8 * s), (hx - 10 * s, hy + 6 * s)], fill=MOUTH)
     for i in range(3):
-        tx = hx - (14 + i * 6) * s
+        tx = hx - (15 + i * 7) * s
         d.polygon([(tx, hy + 1 * s), (tx - 3 * s, hy + 1 * s),
-                   (tx - 1.5 * s, hy + 4.5 * s)], fill=hi)
+                   (tx - 1.5 * s, hy + 5 * s)], fill=GOLD_HI)
     # horns sweeping back to the right, over the mane
-    _taper(d, [(hx - 2 * s, hy - 10 * s, ), (hx + 16 * s, hy - 20 * s),
-               (hx + 34 * s, hy - 18 * s), (hx + 46 * s, hy - 8 * s)],
-           7.5 * s, 1.6 * s, hi, INK)
-    _taper(d, [(hx + 6 * s, hy - 10 * s), (hx + 20 * s, hy - 16 * s),
-               (hx + 32 * s, hy - 12 * s)], 4.5 * s, 1.3 * s, body, INK)
+    _taper(d, [(hx - 2 * s, hy - 12 * s), (hx + 16 * s, hy - 22 * s),
+               (hx + 34 * s, hy - 20 * s), (hx + 46 * s, hy - 9 * s)],
+           8 * s, 1.6 * s, GOLD_HI, INK)
+    _taper(d, [(hx + 6 * s, hy - 12 * s), (hx + 20 * s, hy - 18 * s),
+               (hx + 32 * s, hy - 13 * s)], 5 * s, 1.3 * s, GOLD_LO, INK)
     # mane flowing back along the neck
-    for i, (dy, ln, lift) in enumerate(((-8, 26, -12), (-1, 30, -4), (6, 24, 6))):
+    for i, (dy, ln, lift) in enumerate(((-7, 34, -16), (3, 30, 8))):
         base = (hx + 4 * s, hy + dy * s)
         pts = [base, (base[0] + ln * 0.4 * s, base[1] + lift * 0.6 * s),
                (base[0] + ln * 0.75 * s, base[1] + lift * 1.1 * s),
                (base[0] + ln * s, base[1] + (lift + 4) * s)]
-        _taper(d, _curve(pts, 12), 5.5 * s, 1.2 * s,
-               hi if i % 2 else GOLD_LO, INK)
+        _taper(d, _curve(pts, 12), 9 * s, 2.0 * s,
+               GOLD_HI if i % 2 else GOLD, INK)
     # eye, nostril, whiskers trailing back
-    d.ellipse([hx - 12 * s, hy - 7 * s, hx - 4 * s, hy - 1 * s], fill=RED,
+    d.ellipse([hx - 14 * s, hy - 9 * s, hx - 3 * s, hy + 1 * s], fill=RED,
               outline=INK)
-    d.ellipse([hx - 9 * s, hy - 5.4 * s, hx - 6.4 * s, hy - 2.6 * s], fill=INK)
-    d.ellipse([hx - 34 * s, hy + 1 * s, hx - 31.5 * s, hy + 3 * s], fill=INK)
-    for dy, dirn in ((-2, -1.0), (4, 1.0)):
-        base = (hx - 36 * s, hy + dy * s)
-        pts = [base, (base[0] + 8 * s, base[1] + dirn * 6 * s),
-               (base[0] + 18 * s, base[1] + dirn * 2 * s),
-               (base[0] + 24 * s, base[1] + dirn * 8 * s)]
-        _taper(d, _curve(pts, 10), 1.8 * s, 0.8 * s, hi)
+    d.ellipse([hx - 10 * s, hy - 6.5 * s, hx - 6 * s, hy - 1.5 * s], fill=INK)
+    d.ellipse([hx - 36 * s, hy + 1 * s, hx - 33 * s, hy + 3 * s], fill=INK)
+    for dy, dirn in ((-6, -1.0), (9, 1.0)):
+        base = (hx - 34 * s, hy + dy * s)
+        pts = [base, (base[0] + 12 * s, base[1] + dirn * 4 * s),
+               (base[0] + 26 * s, base[1] + dirn * 7 * s),
+               (base[0] + 38 * s, base[1] + dirn * 5 * s)]
+        _taper(d, _curve(pts, 12), 2.0 * s, 0.6 * s, GOLD_HI)
 
 
-def _tail_fin(d, w, h, line):
+def _tail_fin(d, line):
     """The flared fin where the tail lifts at the right end."""
     x, y, half = line[-1]
-    s = (h / 76.0) * 1.0
-    for dy, ln in ((-1.0, 20), (0.0, 24), (1.0, 18)):
-        pts = [(x - half * 0.4, y + dy * half * 0.55),
-               (x + ln * 0.5 * s, y + dy * half * 1.1),
-               (x + ln * 0.95 * s, y + dy * half * 1.5),
-               (x + ln * 1.25 * s, y + dy * half * 1.15)]
+    for dy, ln in ((-1.0, 22), (0.0, 26), (1.0, 20)):
+        pts = [(x - half * 1.2, y + dy * half * 0.55),
+               (x + ln * 0.5, y + dy * half * 1.1),
+               (x + ln * 0.95, y + dy * half * 1.5),
+               (x + ln * 1.25, y + dy * half * 1.15)]
         _taper(d, _curve(pts, 10), half * 1.2, half * 0.45, GOLD_LO, INK)
 
 
@@ -231,56 +231,128 @@ def _gradient(w, h, stops):
     return img
 
 
-def _dragon(kind):
+def _dragon_raw(kind):
+    """Paint one meter sprite on a canvas padded well past the sprite edges.
+
+    The padding is what stops the craftsmanship being cut off: the head, the
+    mane and the fin all reach outside the meter's 460x76 box, so they are drawn
+    here and the finished art is fitted back into the box afterwards.
+    """
     w, h = W * SS, H * SS
-    line = _spine(w, h)
+    pad_x, pad_y = int(w * 0.14), int(h * 0.55)
+    cw, ch = w + 2 * pad_x, h + 2 * pad_y
+
+    line = [(x + pad_x, y + pad_y, r) for x, y, r in _spine(w, h)]
     top = [(x, y - half) for x, y, half in line]
     bot = [(x, y + half) for x, y, half in reversed(line)]
-    mask = Image.new("L", (w, h), 0)
+    mask = Image.new("L", (cw, ch), 0)
     ImageDraw.Draw(mask).polygon([(round(x), round(y)) for x, y in top + bot],
                                  fill=255)
 
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    img = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
     if kind == "trough":
-        img.paste(_gradient(w, h, [(0.0, (14, 10, 4)), (0.45, (42, 30, 10)),
-                                   (0.75, (56, 40, 14)), (1.0, (12, 9, 3))]),
+        img.paste(_gradient(cw, ch, [(0.0, (14, 10, 4)), (0.45, (42, 30, 10)),
+                                     (0.75, (56, 40, 14)), (1.0, (12, 9, 3))]),
                   (0, 0), mask)
     elif kind == "frame":
-        img.paste(_gradient(w, h, [(0.0, BRONZE), (0.30, GOLD), (0.55, GOLD_LO),
-                                   (0.80, GOLD), (1.0, BRONZE)]), (0, 0), mask)
+        img.paste(_gradient(cw, ch, [(0.0, BRONZE), (0.30, GOLD),
+                                     (0.55, GOLD_LO), (0.80, GOLD),
+                                     (1.0, BRONZE)]), (0, 0), mask)
     else:
-        img.paste(_gradient(w, h, [(0.0, (152, 120, 36)), (0.30, GOLD),
-                                   (0.60, GOLD_LO), (0.86, GOLD_HI),
-                                   (1.0, GOLD)]), (0, 0), mask)
+        img.paste(_gradient(cw, ch, [(0.0, (152, 120, 36)), (0.30, GOLD),
+                                     (0.60, GOLD_LO), (0.86, GOLD_HI),
+                                     (1.0, GOLD)]), (0, 0), mask)
+
+    # the plates are painted on their own layer and clipped to the body, so no
+    # piece of them can float in the empty corners
+    sc = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    _scales(ImageDraw.Draw(sc), line)
+    img = Image.alpha_composite(
+        img, Image.composite(sc, Image.new("RGBA", (cw, ch), (0, 0, 0, 0)),
+                             mask))
 
     d = ImageDraw.Draw(img)
-    _scales(d, w, h, line)
-    _head(d, w, h, line, bright=(kind == "front_max"))
-    _tail_fin(d, w, h, line)
+    _head(d, line, (h / 76.0) * 1.0)
+    _tail_fin(d, line)
 
     if kind == "trough":
-        dim = Image.new("RGBA", (w, h), (0, 0, 0, 136))
+        dim = Image.new("RGBA", (cw, ch), (0, 0, 0, 136))
         img = Image.alpha_composite(img, Image.composite(
-            dim, Image.new("RGBA", (w, h), (0, 0, 0, 0)), mask))
+            dim, Image.new("RGBA", (cw, ch), (0, 0, 0, 0)), mask))
 
     if kind == "front_max":
         img = Image.alpha_composite(img.filter(ImageFilter.GaussianBlur(2.0 * SS)),
                                     img)
-        d = ImageDraw.Draw(img)
-        text = "AUDACITY"
-        font = art.font(int(h * 0.20))
-        tw = d.textlength(text, font=font)
-        box = d.textbbox((0, 0), text, font=font)
-        tx = w * 0.46 - tw / 2.0
-        ty = h * 0.80 - (box[3] - box[1]) / 2.0 - box[1]
-        glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-        ImageDraw.Draw(glow).text((tx, ty), text, font=font, fill=GOLD_HI + (140,))
-        img = Image.alpha_composite(img, glow.filter(
-            ImageFilter.GaussianBlur(1.5 * SS)))
-        ImageDraw.Draw(img).text((tx, ty), text, font=font,
-                                 fill=(255, 246, 206, 255))
+        _label(img, cw, ch, w, h, pad_x, pad_y)
+    return img
 
-    return img.resize((W, H), Image.LANCZOS)
+
+def _label(img, cw, ch, w, h, pad_x, pad_y):
+    """AUDACITY, sitting on the body with no outline."""
+    d = ImageDraw.Draw(img)
+    text = "AUDACITY"
+    font = art.font(int(h * 0.21))
+    tw = d.textlength(text, font=font)
+    box = d.textbbox((0, 0), text, font=font)
+    tx = pad_x + w * 0.52 - tw / 2.0
+    ty = pad_y + h * 0.52 - (box[3] - box[1]) / 2.0 - box[1]
+    glow = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    ImageDraw.Draw(glow).text((tx, ty), text, font=font, fill=GOLD_HI + (140,))
+    img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(1.5 * SS)))
+    ImageDraw.Draw(img).text((tx, ty), text, font=font, fill=(255, 246, 206, 255))
+
+
+def _fit(raws):
+    """Crop the painted canvases to their shared artwork and size to the sprite.
+
+    One box for all four, so the trough, frame and fill stay line for line in
+    step with each other.
+    """
+    boxes = [img.split()[3].getbbox() for img in raws]
+    boxes = [b for b in boxes if b]
+    left = min(b[0] for b in boxes)
+    top = min(b[1] for b in boxes)
+    right = max(b[2] for b in boxes)
+    bottom = max(b[3] for b in boxes)
+    w, h = raws[0].size
+    # a hair of breathing room so nothing lands hard on the sprite edge
+    px = max(1, int((right - left) * 0.012))
+    py = max(1, int((bottom - top) * 0.030))
+    box = (max(0, left - px), max(0, top - py),
+           min(w, right + px), min(h, bottom + py))
+    return [img.crop(box).resize((W, H), Image.LANCZOS) for img in raws], box
+
+
+def _concept_path():
+    for ext in ("png", "PNG", "jpg", "JPG", "jpeg", "JPEG", "webp", "WEBP"):
+        p = os.path.join(ROOT, "concept_art", "ui", "powerbar." + ext)
+        if os.path.isfile(p):
+            return p
+    hits = sorted(h for h in glob.glob(CONCEPT_GLOB) if os.path.isfile(h))
+    return hits[0] if hits else None
+
+
+def _from_concept(path):
+    """Cut the dropped-in concept picture to the meter's shape, unchanged."""
+    src = Image.open(path).convert("RGBA")
+    box = src.split()[3].getbbox() or (0, 0, src.width, src.height)
+    art_img = src.crop(box).resize((W, H), Image.LANCZOS)
+
+    def shade(img, mul, alpha=255):
+        r, g, b, a = img.split()
+        return Image.merge("RGBA", (
+            r.point(lambda v: min(255, int(v * mul))),
+            g.point(lambda v: min(255, int(v * mul))),
+            b.point(lambda v: min(255, int(v * mul))),
+            a.point(lambda v: v * alpha // 255)))
+
+    trough = shade(art_img, 0.42)
+    frame = art_img
+    front = shade(art_img, 1.06)
+    front_max = front.copy()
+    _label(front_max, W, H, W, H, 0, 0)
+    return {(40, 0): trough, (41, 0): frame, (43, 0): front,
+            (44, 0): front_max}
 
 
 def patch_fight_def():
@@ -306,30 +378,41 @@ def main():
     if not os.path.isfile(FIGHT_SFF):
         raise SystemExit("data/fight.sff is missing - fetch the engine data first")
 
-    painted = {}
-    for (group, number, w, h, axis), kind in (
-            (TROUGH, "trough"), (FRAME, "frame"), (FRONT, "front"),
-            (FRONT_MAX, "front_max")):
-        painted[(group, number)] = (_dragon(kind), axis)
+    mine = _concept_path()
+    if mine:
+        painted = _from_concept(mine)
+        note = "cut from " + os.path.relpath(mine, ROOT)
+    else:
+        raws = [_dragon_raw(kind) for kind in
+                ("trough", "frame", "front", "front_max")]
+        for kind, img in zip(("trough", "frame", "front", "front_max"), raws):
+            bb = img.split()[3].getbbox()
+            if bb and (bb[0] <= 0 or bb[1] <= 0
+                       or bb[2] >= img.width or bb[3] >= img.height):
+                raise SystemExit(f"{kind} art reaches the canvas edge - widen "
+                                 f"the padding in _dragon_raw")
+        fitted, box = _fit(raws)
+        painted = dict(zip(((40, 0), (41, 0), (43, 0), (44, 0)), fitted))
+        note = (f"painted on the concept's path (head left, arch, trough, "
+                f"curled tail right), crop {box[2] - box[0]}x{box[3] - box[1]}")
 
     raw, sprites, palettes = sff.read_sff(FIGHT_SFF)
     out, done = [], set()
     for sp in sprites:
         key = (sp["group"], sp["number"])
         if key in painted:
-            image, axis = painted[key]
-            out.append({"group": key[0], "number": key[1], "image": image,
-                        "axis": axis})
+            out.append({"group": key[0], "number": key[1],
+                        "image": painted[key], "axis": AXIS})
             done.add(key)
         else:
             out.append({"group": sp["group"], "number": sp["number"],
                         "raw": sp["raw"], "format": sp["format"],
                         "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
                         "axis": sp["axis"], "pal": sp["pal"], "link": sp["link"]})
-    for key, (image, axis) in painted.items():
+    for key, image in painted.items():
         if key not in done:
             out.append({"group": key[0], "number": key[1], "image": image,
-                        "axis": axis})
+                        "axis": AXIS})
 
     blob = sff.write_sff(out, [p["rgba"] for p in palettes])
     if blob[:12] != sff.SIG:
@@ -355,14 +438,13 @@ def main():
                       (13, 15, 20, 255))
     y = 4
     for key in ((41, 0), (43, 0), (44, 0), (40, 0)):
-        image, _axis = painted[key]
-        sheet.alpha_composite(image.resize((W * scale, H * scale), Image.LANCZOS),
-                              (12, y))
+        sheet.alpha_composite(
+            painted[key].resize((W * scale, H * scale), Image.LANCZOS),
+            (12, y))
         y += H * scale + 12
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     sheet.convert("RGB").save(os.path.join(ROOT, "artifacts", "powerbar.png"))
-    print(f"power bar: {W}x{H}, one serpent on the concept's path "
-          f"(head left, arch, trough, curled tail and fin right), {SS}x")
+    print(f"power bar: {W}x{H}, {note}")
     return 0
 
 
