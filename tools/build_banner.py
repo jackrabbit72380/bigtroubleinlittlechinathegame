@@ -1,20 +1,24 @@
-"""Paint the VS banner: two dragons across the top of the screen.
+"""Build the top strip: dragons that *are* the power meter, and the timer.
 
-The VS lifebars in data/fight.def get a background layer of dragon art - red on
-the left, green on the right - with their heads turned in towards the green and
-red yin-yang and the round timer in the middle.
+Everything lives in the first ~60 pixels of the 1280x720 fight screen:
 
-It is drawn as two halves, one per player, anchored on the screen centre:
+    y  0..20   the dragon's back and head - this band is the metre itself
+               top half   = skin   -> the power meter ([Powerbar])
+               bottom half = belly -> the audacity (underbelly) meter
+    y 30..58   the health bars, moved up under the dragons
+    y  0..52   the glowing green/red yin-yang at dead centre, timer on top
 
-    20,0   left half, 640x260, axis on its bottom right corner  -> p1.bg1
-    20,1   right half, green, axis on its bottom left corner    -> p2.bg1
+The dragon bodies are painted straight into [Powerbar]'s own sprites, so the
+meter is not laid over the dragon - the meter *is* the dragon's midsection. The
+head, tail and backdrop are one background sprite per player, anchored under
+that player's lifebar and covering only the top sliver of the screen:
 
-Two halves rather than one wide sprite keeps each half under its own lifebar, so
-neither can end up covering the other player's bars whatever order the engine
-draws them in. Only [Lifebar] is touched, so VS gets the dragons and the simul,
-tag and turns HUDs are left exactly as they were.
+    20,0   left half, 640x260, axis top-left -> p1.bg1
+    20,1   right half, green, mirror of the left -> p2.bg1
 
-Run:  python3 tools/build_banner.py
+No legs, no arms: just back, head, horns, mane and tail.
+
+    python3 tools/build_banner.py
 """
 
 import math
@@ -22,7 +26,7 @@ import os
 import re
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -32,37 +36,44 @@ import sff  # noqa: E402
 
 FIGHT_SFF = os.path.join(ROOT, "data", "fight.sff")
 FIGHT_DEF = os.path.join(ROOT, "data", "fight.def")
+FONT = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.ttf")
 
 GROUP = 20
 HALF, H = 640, 260          # one half of the 1280x720 fight screen
-SS = 3                      # supersample factor
-SCREEN = 640                # screen centre: where the two halves meet
+SS = 4                      # supersample factor
+SCREEN = 640                # screen centre
+
+BAND = 20                   # the metre band, and the dragon's body, tall
+BAR_Y = 0                   # [Powerbar] sits right at the top
+LIFE_Y = 30                 # health bars tuck in underneath
+TIME_Y = 26                 # yin-yang centre
+METER_W = 202               # fillable length of the metre ([Powerbar] range)
+BAR_X1 = 568                # p1.pos.x: the metre's inner end
+METER_X0 = BAR_X1 - METER_W - 4     # outer end of the metre (range -4..-206)
 
 RED = {
-    "dark": (64, 10, 8), "mid": (146, 30, 20), "light": (198, 66, 40),
-    "rim": (244, 138, 96), "belly": (222, 162, 112),
-    "plate": (250, 236, 210), "horn": (240, 224, 182), "eye": (255, 214, 74),
-    "mouth": (52, 8, 6), "ink": (26, 5, 4), "glow": (255, 84, 48),
-    "whisker": (255, 208, 148),
+    "ink": (24, 5, 4), "dark": (86, 14, 10), "mid": (152, 34, 22),
+    "skin": (188, 56, 34), "light": (214, 88, 54), "rim": (248, 152, 108),
+    "belly": (224, 172, 124), "belly_lit": (246, 206, 158),
+    "horn": (242, 226, 186), "eye": (255, 216, 78), "mouth": (46, 6, 4),
+    "glow": (255, 84, 48), "whisker": (255, 212, 156),
 }
 GREEN = {
-    "dark": (20, 38, 14), "mid": (84, 118, 36), "light": (144, 178, 64),
-    "rim": (204, 234, 136), "belly": (204, 196, 128),
-    "plate": (246, 242, 214), "horn": (236, 230, 192), "eye": (255, 214, 74),
-    "mouth": (18, 26, 10), "ink": (12, 20, 6), "glow": (96, 255, 120),
-    "whisker": (230, 248, 180),
+    "ink": (10, 18, 6), "dark": (34, 58, 22), "mid": (92, 128, 38),
+    "skin": (124, 160, 52), "light": (156, 190, 72), "rim": (212, 240, 146),
+    "belly": (206, 198, 132), "belly_lit": (238, 234, 178),
+    "horn": (238, 232, 194), "eye": (255, 216, 78), "mouth": (16, 24, 10),
+    "glow": (96, 255, 120), "whisker": (232, 250, 186),
 }
 
-# centre line of the animal: tail at the outer edge, one hump, a trough, then the
-# neck rising towards the middle of the screen where the head takes over
-PATH = ((0.020, 0.560), (0.052, 0.650), (0.108, 0.622), (0.168, 0.508),
-        (0.242, 0.408), (0.322, 0.398), (0.406, 0.472), (0.488, 0.542),
-        (0.566, 0.506), (0.628, 0.418), (0.670, 0.356))
-
-HEAD_JOINT = (0.670, 0.356)     # where the neck meets the skull
+# centre line of the animal across the 640-wide half: snout at the inner end,
+# back running outward, tail tapering off to the left
+SPINE = ((566, 10), (540, 10), (500, 9), (460, 9), (420, 10), (380, 10),
+         (350, 10), (320, 9), (290, 7), (262, 6), (242, 5))
+SPINE_R = (10.0, 9.8, 9.6, 9.4, 9.2, 9.0, 8.2, 6.6, 4.4, 2.4, 1.0)
 
 
-def _curve(ctrl, n=26):
+def _curve(ctrl, n=14):
     """Catmull-Rom through the control points."""
     pts = [ctrl[0]] + list(ctrl) + [ctrl[-1]]
     out = []
@@ -80,211 +91,191 @@ def _curve(ctrl, n=26):
     return out
 
 
-def _spine(w, h):
-    """Centre line plus half-thickness: heavy body, thick shoulder, thin tail."""
-    line = _curve([(fx * w, fy * h) for fx, fy in PATH])
+def _spine(s):
+    """Screen-space centre line with a half-thickness, scaled by s."""
+    pts = [SPINE[0]] + list(SPINE) + [SPINE[-1]]
+    rad = [SPINE_R[0]] + list(SPINE_R) + [SPINE_R[-1]]
     out = []
-    for i, (x, y) in enumerate(line):
-        t = i / float(len(line) - 1)
-        base = 0.030 + 0.066 * math.sin(math.pi * min(1.0, t * 1.04)) ** 0.5
-        shoulder = 1.0 + 0.30 * math.exp(-((t - 0.88) / 0.14) ** 2)
-        half = h * base * shoulder
-        out.append((x, y, max(h * 0.014, half)))
+    for i in range(len(pts) - 3):
+        p0, p1, p2, p3 = pts[i:i + 4]
+        r0, r1, r2, r3 = rad[i:i + 4]
+        for k in range(14):
+            t = k / 14.0
+            t2, t3 = t * t, t * t * t
+            cr = lambda a, b, c, d: 0.5 * (2 * b + (-a + c) * t
+                                           + (2 * a - 5 * b + 4 * c - d) * t2
+                                           + (-a + 3 * b - 3 * c + d) * t3)
+            out.append((cr(p0[0], p1[0], p2[0], p3[0]) * s,
+                        cr(p0[1], p1[1], p2[1], p3[1]) * s,
+                        max(0.6, cr(r0, r1, r2, r3)) * s))
     return out
 
 
-def _taper(d, pts, w0, w1, fill, outline=None):
+def _taper(d, pts, w0, w1, fill, outline=None, ow=2):
     """Stroke a tapered limb along a polyline."""
     segs = max(1, len(pts) - 1)
-    for i in range(segs):
-        (x0, y0), (x1, y1) = pts[i], pts[i + 1]
-        steps = max(4, int(math.hypot(x1 - x0, y1 - y0) * 0.8))
-        for s in range(steps + 1):
-            t = s / float(steps)
-            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
-            r = (w0 + (w1 - w0) * ((i + t) / segs)) / 2.0
-            if outline:
-                d.ellipse([x - r - 1, y - r - 1, x + r + 1, y + r + 1],
-                          fill=outline)
-        for s in range(steps + 1):
-            t = s / float(steps)
-            x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
-            r = (w0 + (w1 - w0) * ((i + t) / segs)) / 2.0
-            d.ellipse([x - r, y - r, x + r, y + r], fill=fill)
+    for pass_no in (0, 1):
+        for i in range(segs):
+            (x0, y0), (x1, y1) = pts[i], pts[i + 1]
+            steps = max(4, int(math.hypot(x1 - x0, y1 - y0) * 0.9))
+            for k in range(steps + 1):
+                t = k / float(steps)
+                x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
+                r = (w0 + (w1 - w0) * ((i + t) / segs)) / 2.0
+                if pass_no == 0:
+                    if not outline:
+                        continue
+                    r += ow
+                d.ellipse([x - r, y - r, x + r, y + r],
+                          fill=outline if pass_no == 0 else fill)
 
 
-def _tangent(line, i):
-    a = line[max(0, i - 2)]
-    b = line[min(len(line) - 1, i + 2)]
-    dx, dy = b[0] - a[0], b[1] - a[1]
-    n = math.hypot(dx, dy) or 1.0
-    return dx / n, dy / n
-
-
-def _body(img, line, pal):
-    """Heavy shaded tube: dark underside, belly band, lit spine ridge."""
+def _body(img, pal, s):
+    """Back of the dragon: ink outline, skin on top, belly underneath."""
+    line = _spine(s)
     d = ImageDraw.Draw(img)
-    for x, y, r in line:
-        d.ellipse([x - r, y - r, x + r, y + r], fill=pal["dark"])
-    for x, y, r in line:
-        d.ellipse([x - r * 0.95, y - r * 0.93 + r * 0.06,
-                   x + r * 0.95, y + r * 0.93 + r * 0.06], fill=pal["mid"])
-    for x, y, r in line:
-        d.ellipse([x - r * 0.70, y + r * 0.10, x + r * 0.70, y + r * 0.94],
-                  fill=pal["belly"])
-    ridge = [(x, y - r * 0.68) for x, y, r in line]
-    _taper(d, ridge, 5 * SS, 2 * SS, pal["rim"])
-
-
-def _plates(img, line, pal):
-    """Outlined crest scales sunk into the back of the body."""
-    d = ImageDraw.Draw(img)
-    n = len(line)
-    step = max(4, n // 16)
-    for i in range(4, n - 6, step):
+    top = [(x, y - r) for x, y, r in line]
+    bot = [(x, y + r) for x, y, r in reversed(line)]
+    poly = top + bot
+    d.polygon(poly, fill=pal["ink"])
+    d.line(poly + [poly[0]], fill=pal["ink"], width=int(1.5 * s), joint="curve")
+    inner = [(x, y - r + 1.6 * s) for x, y, r in line]
+    inner += [(x, y + r - 1.6 * s) for x, y, r in reversed(line)]
+    d.polygon(inner, fill=pal["skin"])
+    # belly: the whole lower half, lighter, with a lit edge along the split
+    split = [(x, y + r * 0.06) for x, y, r in line]
+    belly = [(x, y + r - 1.6 * s) for x, y, r in reversed(line)]
+    d.polygon(split + belly, fill=pal["belly"])
+    _taper(d, [(x, y + r * 0.08) for x, y, r in line], 2.6 * s, 1.4 * s,
+           pal["belly_lit"])
+    # dorsal spines, outside the metre so they never sit on the bar
+    for fx, height in ((0.42, 4.2), (0.30, 3.6), (0.20, 2.8)):
+        i = int(fx * (len(line) - 1))
         x, y, r = line[i]
-        rr = r * 0.42
-        cy = y - r * 0.18
-        d.ellipse([x - rr, cy - rr, x + rr, cy + rr],
-                  fill=pal["dark"] + (90,), outline=pal["plate"] + (170,),
-                  width=int(max(1, 1.3 * SS)))
-        d.arc([x - rr * 0.55, cy - rr * 0.55, x + rr * 0.55, cy + rr * 0.55],
-              210, 330, fill=pal["rim"] + (140,), width=int(max(1, 0.9 * SS)))
+        d.polygon([(x - r * 0.9, y - r + 1.5 * s),
+                   (x - r * 0.1, y - r - height * s),
+                   (x + r * 0.9, y - r + 1.5 * s)], fill=pal["mid"])
 
 
-def _spikes(img, line, pal):
-    """Small dorsal fins along the arch of the back."""
+def _head(img, pal, s):
+    """A bold little profile head at the inner end, looking at the timer."""
     d = ImageDraw.Draw(img)
-    n = len(line)
-    for i in range(5, n - 8, max(4, n // 14)):
-        x, y, r = line[i]
-        d.polygon([(x - r * 0.40, y - r * 0.86), (x - r * 0.04, y - r * 1.34),
-                   (x + r * 0.44, y - r * 0.86)],
-                  fill=pal["mid"], outline=pal["ink"])
 
+    def P(x, y):
+        return (x * s, y * s)
 
-def _leg(img, line, t, length, forward, pal):
-    """One thick leg with a clawed foot, hanging off the body."""
-    d = ImageDraw.Draw(img)
-    i = int(t * (len(line) - 1))
-    x, y, r = line[i]
-    tx, ty = _tangent(line, i)
-    nx, ny = -ty, tx
-    if ny < 0:
-        nx, ny = -nx, -ny
-    hip = (x + nx * r * 0.50, y + ny * r * 0.30)
-    knee = (hip[0] + nx * length * 0.52 + tx * forward * length * 0.34,
-            hip[1] + ny * length * 0.52 + ty * forward * length * 0.34)
-    foot = (knee[0] + nx * length * 0.44 - tx * forward * length * 0.26,
-            knee[1] + ny * length * 0.44 - ty * forward * length * 0.26)
-    _taper(d, [hip, knee], r * 1.05, r * 0.70, pal["mid"], pal["ink"])
-    _taper(d, [knee, foot], r * 0.70, r * 0.46, pal["mid"], pal["ink"])
-    for k in (-1, 0, 1):
-        tip = (foot[0] + (nx + k * tx * 0.85) * length * 0.32,
-               foot[1] + (ny + k * ty * 0.85) * length * 0.32)
-        _taper(d, [foot, tip], r * 0.26, r * 0.08, pal["horn"], pal["ink"])
-
-
-def _head(img, line, pal):
-    """The head, drawn facing right so it looks in towards the timer."""
-    s = SS
-    jx, jy, jr = line[int(0.96 * (len(line) - 1))]
-    d = ImageDraw.Draw(img)
-    # a solid neck first, so the skull never reads as floating next to the body
-    _taper(d, [(jx - 46 * s, jy + 8 * s), (jx - 8 * s, jy + 2 * s)],
-           jr * 1.9, jr * 1.7, pal["mid"], pal["ink"])
-
-    def P(dx, dy):
-        return (jx + dx * s, jy + dy * s)
-
-    # neck thickening under the skull
-    _taper(d, [P(-40, 16), P(-14, 6), P(4, 2)], 40 * s, 44 * s, pal["mid"],
-           pal["ink"])
-    # skull
-    d.ellipse([P(-6, -32)[0], P(-6, -32)[1], P(60, 30)[0], P(60, 30)[1]],
-              fill=pal["light"], outline=pal["ink"], width=int(1.8 * s))
-    # brow ridge
-    d.polygon([P(4, -30), P(58, -24), P(52, -6), P(2, -12)],
-              fill=pal["mid"], outline=pal["ink"])
-    # muzzle and upper jaw
-    _taper(d, [P(44, -8), P(88, -6), P(116, 4)], 26 * s, 14 * s, pal["mid"],
-           pal["ink"])
-    # lower jaw, open
-    _taper(d, [P(42, 14), P(84, 30), P(110, 22)], 20 * s, 10 * s,
-           pal["light"], pal["ink"])
-    # mouth
-    d.polygon([P(46, 2), P(114, 6), P(106, 22), P(46, 16)], fill=pal["mouth"])
-    for i in range(4):
-        tx = 54 + i * 15
-        d.polygon([P(tx, 2), P(tx + 8, 2), P(tx + 4, 13)], fill=pal["horn"])
+    # neck, so the head grows out of the back rather than sitting on it
+    d.polygon([P(540, 0), P(566, 0), P(566, 24), P(540, 24)], fill=pal["skin"])
+    # skull and snout
+    d.polygon([P(558, 2), P(592, 1), P(604, 5), P(610, 10), P(602, 22),
+               P(558, 22)], fill=pal["skin"], outline=pal["ink"],
+              width=int(1.4 * s))
+    d.polygon([P(596, 5), P(613, 9), P(613, 14), P(596, 16)],
+              fill=pal["light"], outline=pal["ink"])
+    # brow over the eye
+    d.polygon([P(558, 3), P(590, 2), P(592, 8), P(558, 9)], fill=pal["mid"])
+    # open mouth with a row of teeth
+    d.polygon([P(558, 15), P(610, 13), P(602, 20), P(558, 20)],
+              fill=pal["mouth"])
+    for x in (562, 572, 582, 592):
+        d.polygon([P(x, 15), P(x + 7, 14.5), P(x + 3.5, 20.5)],
+                  fill=pal["horn"])
+    # lower jaw
+    d.polygon([P(556, 19), P(602, 19), P(594, 24), P(556, 24)],
+              fill=pal["belly"], outline=pal["ink"])
     # eye
-    d.ellipse([P(12, -26)[0], P(12, -26)[1], P(34, -2)[0], P(34, -2)[1]],
-              fill=pal["eye"], outline=pal["ink"], width=int(1.3 * s))
-    d.ellipse([P(21, -19)[0], P(21, -19)[1], P(32, -7)[0], P(32, -7)[1]],
+    d.ellipse([P(570, 5)[0], P(570, 5)[1], P(583, 14)[0], P(583, 14)[1]],
+              fill=pal["eye"], outline=pal["ink"])
+    d.ellipse([P(575, 7)[0], P(575, 7)[1], P(581, 12)[0], P(581, 12)[1]],
               fill=pal["ink"])
-    # horns sweeping back over the mane
-    _taper(d, _curve([P(10, -30), P(-26, -64), P(-62, -60), P(-84, -38)], 16),
-           9 * s, 1.6 * s, pal["horn"], pal["ink"])
-    _taper(d, _curve([P(2, -20), P(-30, -46), P(-58, -38)], 16),
-           6 * s, 1.2 * s, pal["horn"], pal["ink"])
-    # mane flowing back along the neck
-    for dy, ln, lift in ((-24, 62, -22), (-4, 58, 6), (16, 46, 20), (30, 34, 28)):
-        base = P(-2, dy)
-        pts = [base, (base[0] - ln * 0.45 * s, base[1] + lift * 0.55 * s),
-               (base[0] - ln * 0.78 * s, base[1] + lift * 1.05 * s),
-               (base[0] - ln * s, base[1] + (lift + 6) * s)]
-        _taper(d, _curve(pts, 14), 13 * s, 2 * s, pal["light"], pal["ink"])
     # nostril
-    d.ellipse([P(98, 0)[0], P(98, 0)[1], P(106, 8)[0], P(106, 8)[1]],
+    d.ellipse([P(605, 10)[0], P(605, 10)[1], P(609, 13)[0], P(609, 13)[1]],
               fill=pal["ink"])
-    # beard
-    _taper(d, _curve([P(80, 24), P(68, 48), P(42, 58)], 14), 10 * s, 1.6 * s,
-           pal["light"], pal["ink"])
-    # whiskers trailing back
-    for dy, dirn in ((-10, -1.0), (14, 1.0)):
-        base = P(112, dy)
-        pts = [base, (base[0] - 34 * s, base[1] + dirn * 12 * s),
-               (base[0] - 70 * s, base[1] + dirn * 22 * s),
-               (base[0] - 104 * s, base[1] + dirn * 16 * s)]
-        _taper(d, _curve(pts, 16), 3.4 * s, 0.8 * s, pal["whisker"])
+    # horns swept back along the top of the back
+    _taper(d, _curve([P(566, 2), P(550, -1), P(534, 1), P(524, 5)], 10),
+           4.2 * s, 1.0 * s, pal["horn"], pal["ink"])
+    _taper(d, _curve([P(576, 1.5), P(560, -1.5), P(546, 1)], 10),
+           2.6 * s, 0.8 * s, pal["horn"], pal["ink"])
+    # mane
+    for dy, ln, lift in ((2, 20, -1.5), (7, 22, 1.0), (13, 18, 2.5)):
+        base = P(556, dy)
+        pts = [base, (base[0] - ln * 0.5 * s, base[1] + lift * 0.7 * s),
+               (base[0] - ln * s, base[1] + lift * 1.4 * s)]
+        _taper(d, _curve(pts, 10), 4.4 * s, 0.9 * s, pal["light"], pal["ink"])
+    # whisker trailing back over the body
+    _taper(d, _curve([P(613, 12), P(600, 17), P(586, 20)], 10),
+           1.6 * s, 0.4 * s, pal["whisker"])
 
 
-def _backdrop(w, h, pal):
-    """Storm-dark wash that fades out before the bottom of the banner."""
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    px = img.load()
-    for y in range(h):
-        k = y / float(h - 1)
-        alpha = int(226 * (1.0 - k) ** 1.5)
-        col = (int(7 + 14 * k), int(9 + 18 * k), int(22 + 26 * k), alpha)
-        for x in range(w):
-            px[x, y] = col
-    glow = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+def _backdrop(img, pal, s):
+    """Dark wash behind the band only, so the strip cannot eat the screen."""
+    d = ImageDraw.Draw(img)
+    for y in range(int(26 * s)):
+        k = y / (26.0 * s)
+        alpha = int(232 * (1.0 - k) ** 1.4)
+        d.rectangle([0, y, img.width, y], fill=(6, 8, 20, alpha))
+    glow = Image.new("RGBA", img.size, (0, 0, 0, 0))
     gd = ImageDraw.Draw(glow)
-    gd.ellipse([w * 0.68, -h * 0.18, w * 1.12, h * 0.60],
-               fill=pal["glow"] + (48,))
-    glow = glow.filter(ImageFilter.GaussianBlur(w * 0.05))
-    return Image.alpha_composite(img, glow)
+    gd.ellipse([(SCREEN - 150) * s, -30 * s, (SCREEN + 150) * s, 22 * s],
+               fill=pal["glow"] + (46,))
+    glow = glow.filter(ImageFilter.GaussianBlur(9 * s))
+    img.alpha_composite(glow)
 
 
-def paint(pal, flip):
+def paint_half(pal, flip):
     w, h = HALF * SS, H * SS
-    img = _backdrop(w, h, pal)
-    line = _spine(w, h)
-    _body(img, line, pal)
-    _plates(img, line, pal)
-    _spikes(img, line, pal)
-    _leg(img, line, 0.34, h * 0.28, 1.0, pal)
-    _leg(img, line, 0.62, h * 0.24, -1.0, pal)
-    _leg(img, line, 0.86, h * 0.26, 1.0, pal)
-    _head(img, line, pal)
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    _backdrop(img, pal, SS)
+    _body(img, pal, SS)
+    _head(img, pal, SS)
     if flip:
         img = img.transpose(Image.FLIP_LEFT_RIGHT)
     return img.resize((HALF, H), Image.LANCZOS)
 
 
+def paint_meter(pal, lit, label=None):
+    """One metre sprite: skin on the top half, belly on the bottom half."""
+    w, h = METER_W + 4, BAND
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    top = 1 if lit else 0
+    for y in range(h):
+        k = y / float(h - 1)
+        if k < 0.5:
+            t = k / 0.5
+            a = pal["rim"] if lit else pal["mid"]
+            b = pal["light"] if lit else pal["skin"]
+            col = tuple(int(a[c] + (b[c] - a[c]) * t) for c in range(3))
+        else:
+            t = (k - 0.5) / 0.5
+            a = pal["belly_lit"] if lit else pal["belly"]
+            b = pal["belly"] if lit else pal["dark"]
+            col = tuple(int(a[c] + (b[c] - a[c]) * t) for c in range(3))
+        d.rectangle([0, y, w - 1, y], fill=col + (255,))
+    # ink rim, and the line where the skin meets the belly
+    d.rectangle([0, 0, w - 1, h - 1], outline=pal["ink"] + (255,), width=top)
+    d.rectangle([0, h // 2, w - 1, h // 2],
+                fill=pal["ink"] + (150,) if not lit else pal["ink"] + (90,))
+    if label:
+        font = ImageFont.truetype(FONT, int(h * 0.44))
+        box = d.textbbox((0, 0), label, font=font)
+        d.text(((w - (box[2] - box[0])) / 2, h * 0.56 - box[1]), label,
+               font=font, fill=(16, 22, 12, 235))
+    return img
+
+
+def build_meters():
+    """The four [Powerbar] sprites, all BAND pixels tall."""
+    out = {}
+    out[(40, 0)] = (paint_meter(RED, lit=False), (METER_W + 4, 0))
+    out[(41, 0)] = (Image.new("RGBA", (METER_W + 4, BAND), (0, 0, 0, 0)),
+                    (METER_W + 4, 0))
+    out[(43, 0)] = (paint_meter(RED, lit=True), (METER_W, 0))
+    out[(44, 0)] = (paint_meter(RED, lit=True, label="AUDACITY"), (METER_W, 0))
+    return out
+
+
 def _write_sprites(painted):
-    """Put both halves into fight.sff, keeping every other sprite untouched."""
     raw, sprites, palettes = sff.read_sff(FIGHT_SFF)
     out, done = [], set()
     for sp in sprites:
@@ -324,47 +315,73 @@ def _section(lines, name):
     return start, end
 
 
-def _pos(body, side):
-    m = re.search(r"(?m)^\s*%s\.pos\s*=\s*(-?\d+)\s*,\s*(-?\d+)" % side, body)
-    return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+def _set(body, key, value):
+    pat = re.compile(r"(?m)^(\s*)%s\s*=.*$" % re.escape(key))
+    if pat.search(body):
+        return pat.sub(lambda m: "%s%s = %s" % (m.group(1), key, value), body)
+    return body.rstrip("\n") + "\n%s = %s" % (key, value)
 
 
-def patch_lifebar():
-    """Give the VS lifebars the banner as a background layer."""
+def patch_def():
+    """Move the whole top strip up and hand the metres to the dragons."""
     with open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape",
               newline="") as f:
-        lines = f.read().split("\n")
-    start, end = _section(lines, "Lifebar")
-    body = "\n".join(lines[start:end])
-    p1 = _pos(body, "p1")
-    p2 = _pos(body, "p2")
-    # each half's axis sits on the screen centre, one bar's height down
-    want = {
-        "p1.bg1.spr": "%d,0" % GROUP,
-        "p1.bg1.offset": "%d,%d" % (SCREEN - p1[0], H - p1[1]),
-        "p1.bg1.xshear": "0",
-        "p2.bg1.spr": "%d,1" % GROUP,
-        "p2.bg1.offset": "%d,%d" % (SCREEN - p2[0], H - p2[1]),
-        "p2.bg1.xshear": "0",
-    }
-    kept = [ln for ln in lines[start:end]
-            if ln.split("=")[0].strip().lower() not in want]
-    out = []
-    for ln in kept:
-        out.append(ln)
-        key = ln.split("=")[0].strip().lower()
-        for side in ("p1", "p2"):
-            if key == "%s.bg0.offset" % side:
-                out.extend("%s.%s = %s" % (side, k, want["%s.%s" % (side, k)])
-                           for k in ("bg1.spr", "bg1.offset", "bg1.xshear"))
-    if not any("bg1.spr" in ln for ln in out):
-        out.extend("%s = %s" % (k, v) for k, v in want.items())
-    lines[start:end] = out
+        text = f.read()
+    lines = text.split("\n")
+
+    # --- health bars: up under the dragons, banner halves anchored at 0,0 ---
+    s, e = _section(lines, "Lifebar")
+    body = "\n".join(lines[s:e])
+    for side, x in (("p1", 595), ("p2", 684)):
+        body = _set(body, "%s.pos" % side, "%d,%d" % (x, LIFE_Y))
+        body = _set(body, "%s.bg1.spr" % side, "%d,%d" % (GROUP, 0 if side == "p1" else 1))
+        body = _set(body, "%s.bg1.offset" % side,
+                    "%d,%d" % ((0 if side == "p1" else 640) - x, -LIFE_Y))
+        body = _set(body, "%s.bg1.xshear" % side, "0")
+    lines[s:e] = body.split("\n")
+
+    # --- the metre band: no vertical offsets, everything on the same 0..20 ---
+    s, e = _section(lines, "Powerbar")
+    body = "\n".join(lines[s:e])
+    for side, x in (("p1", BAR_X1), ("p2", 712)):
+        body = _set(body, "%s.pos" % side, "%d,%d" % (x, BAR_Y))
+        body = _set(body, "%s.bg0.offset" % side, "0,0")
+        body = _set(body, "%s.bg1.offset" % side, "0,0")
+        for name in ("front", "front500", "front1000", "front2000", "front3000",
+                     "front4000", "front5000", "front6000", "front7000",
+                     "front8000", "front9000", "front10000"):
+            body = _set(body, "%s.%s.offset" % (side, name),
+                        "%d,0" % (4 if side == "p2" else -4))
+        body = _set(body, "%s.frontMax.offset" % side,
+                    "%d,0" % (208 if side == "p2" else -4))
+    # the level readout tucks under the metre instead of the health bar
+    body = re.sub(r"(?m)^(\s*p[12]\.counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
+                  lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
+    lines[s:e] = body.split("\n")
+
+    # --- yin-yang and digits, small, at dead centre ---
+    s, e = _section(lines, "Time")
+    body = "\n".join(lines[s:e])
+    body = _set(body, "pos", "%d,%d" % (SCREEN, TIME_Y))
+    body = re.sub(r"(?m)^(\s*pos\s*=\s*).*$", r"\g<1>%d,%d" % (SCREEN, TIME_Y), body)
+    body = _set(body, "bg.offset", "0,0")
+    body = re.sub(r"(?m)^(\s*counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
+                  lambda m: "%s%s,%d" % (m.group(1), m.group(2), -4), body)
+    body = re.sub(r"(?m)^(\s*counter\w*\.scale\s*=\s*)\d+\s*,\s*\d+\s*$",
+                  r"\g<1>0.55, 0.55", body)
+    lines[s:e] = body.split("\n")
+
+    # --- the score readout sat where the health bars now are ---
+    s, e = _section(lines, "Score")
+    body = "\n".join(lines[s:e])
+    body = _set(body, "p1.pos", "586,%d" % (LIFE_Y + BAND + 10))
+    body = _set(body, "p2.pos", "696,%d" % (LIFE_Y + BAND + 10))
+    lines[s:e] = body.split("\n")
+
     with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
               errors="surrogateescape", newline="") as f:
         f.write("\n".join(lines))
     os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
-    return want
 
 
 def _concept_path():
@@ -380,14 +397,12 @@ def _concept_path():
 
 
 def _from_concept(path):
-    """Split the concept picture down the middle, unchanged."""
     src = Image.open(path).convert("RGBA")
     box = src.split()[3].getbbox() or (0, 0, src.width, src.height)
     art_img = src.crop(box).resize((HALF * 2, H), Image.LANCZOS)
-    left = art_img.crop((0, 0, HALF, H))
-    right = art_img.crop((HALF, 0, HALF * 2, H))
     print("banner cut from %s" % os.path.relpath(path, ROOT))
-    return left, right
+    return (art_img.crop((0, 0, HALF, H)),
+            art_img.crop((HALF, 0, HALF * 2, H)))
 
 
 def main():
@@ -398,29 +413,31 @@ def main():
     if concept:
         left, right = _from_concept(concept)
     else:
-        left = paint(RED, flip=False)
-        right = paint(GREEN, flip=True)
-    written = _write_sprites({(GROUP, 0): (left, (HALF, H)),
-                              (GROUP, 1): (right, (0, H))})
-    want = patch_lifebar()
+        left = paint_half(RED, flip=False)
+        right = paint_half(GREEN, flip=True)
+
+    painted = {(GROUP, 0): (left, (0, 0)), (GROUP, 1): (right, (0, 0))}
+    painted.update(build_meters())
+    written = _write_sprites(painted)
+    patch_def()
 
     _d, check, _p = sff.read_sff(FIGHT_SFF)
     have = {(s["group"], s["number"]): s for s in check}
-    for number in (0, 1):
-        sp = have.get((GROUP, number))
+    for key, (img, _axis) in painted.items():
+        sp = have.get(key)
         if sp is None:
-            raise SystemExit("banner sprite %d,%d went missing" % (GROUP, number))
-        if (sp["w"], sp["h"]) != (HALF, H):
-            raise SystemExit("banner sprite %d,%d is %dx%d, expected %dx%d" % (
-                GROUP, number, sp["w"], sp["h"], HALF, H))
+            raise SystemExit("sprite %d,%d went missing" % key)
+        if (sp["w"], sp["h"]) != (img.width, img.height):
+            raise SystemExit("sprite %d,%d is %dx%d, expected %dx%d" % (
+                key[0], key[1], sp["w"], sp["h"], img.width, img.height))
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
-    full = Image.new("RGBA", (HALF * 2, H), (0, 0, 0, 0))
-    full.alpha_composite(left, (0, 0))
-    full.alpha_composite(right, (HALF, 0))
-    full.convert("RGB").save(os.path.join(ROOT, "artifacts", "vs_banner.png"))
-    print("banner: %dx%d, sprites %s, [Lifebar] %s" % (
-        HALF * 2, H, written, ", ".join("%s=%s" % kv for kv in want.items())))
+    strip = Image.new("RGBA", (HALF * 2, 64), (0, 0, 0, 0))
+    strip.alpha_composite(left.crop((0, 0, HALF, 64)), (0, 0))
+    strip.alpha_composite(right.crop((0, 0, HALF, 64)), (HALF, 0))
+    strip.convert("RGB").save(os.path.join(ROOT, "artifacts", "vs_banner.png"))
+    print("top strip: sprites %s, band %dpx, health y %d, timer y %d" % (
+        written, BAND, LIFE_Y, TIME_Y))
 
 
 if __name__ == "__main__":
