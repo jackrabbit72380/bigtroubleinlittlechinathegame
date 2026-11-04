@@ -658,7 +658,7 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	cell.random.window = 
 	cell.random.localcoord = 320, 240
 
-	cell.random.switchtime = 32
+	cell.random.switchtime = 4
 
 	; <col>-<row> cell variants replace standard ones on per cell basis.
 	; Asterisk <col-*> or <*-row> can be used as a wildcard to apply changes to entire columns or rows.
@@ -1910,7 +1910,7 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	palmenu.random.switchtime = 4
 	palmenu.random.applypal = 1
 
-	random.move.snd.cancel = 1
+	random.move.snd.cancel = 0
 
 	stage.pos = 0, 0
 
