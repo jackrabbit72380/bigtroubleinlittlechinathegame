@@ -109,3 +109,29 @@ where the +Chi reward on damaging hits lives.
 after a code change. The full list, including speed control, frame stepping and
 per-player AI toggles, is in [DEV_KEYS.md](DEV_KEYS.md) — or press `Ctrl`+`F1`
 in-game to print it into the console.
+
+## Proving the Developer Keys screen in the real engine
+
+`tools/engine_linux.sh` builds the whole stack on a headless Linux box with no
+root: the X/GL library closure is unpacked into a private sysroot (resolved with
+`apt-get --print-uris`, nothing installed), Xvfb runs on Mesa llvmpipe, and the
+official Ikemen GO **nightly** is pointed at this checkout by symlink. Use the
+nightly, not a tagged release: a tagged build starts the attract demo and dies
+with `Invalid data: inrunstate`, which has nothing to do with this game.
+
+```sh
+bash tools/engine_linux.sh --script tools/engine_drive/devkeys-pause.txt --out artifacts/engine
+```
+
+Drive commands are `wait N`, `key <xdotool key>`, `shot <name>` and `log`; captures
+are written as PNG. `save/config.ini` keeps `AllowDebugKeys = 1`, which the screen's
+Ctrl+F1 list hotkey needs.
+
+`tools/test_devhelp.py` is the fast regression net for the same screen: it runs the
+mod against a stub engine behaving like each build we might meet (font as a table
+or an index, no `textImgNew`, no `textImgSetScale`) and asserts the screen opens and
+draws in all four. Install `lupa` first; it exits 77 when lupa is missing.
+
+Two things are easy to get wrong when driving the engine headless: `[Demo Mode]
+enabled = 1` in the motif starts the attract demo, which swallows menu keystrokes,
+and Escape at the title quits the game instead of opening the pause menu.
