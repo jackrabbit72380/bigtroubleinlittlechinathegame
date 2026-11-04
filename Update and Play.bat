@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v12
+rem  BIG TROUBLE IN LITTLE CHINA - updater v13
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v12
+echo                        updater v13
 echo.
 echo   ==============================================================
 echo.
@@ -182,6 +182,11 @@ rem The clone holds main; this is the step that puts it into the game folder.
 rem It was missing: with git installed the launcher fetched and then went
 rem straight on to launching, so the copy only ever happened on the zip path.
 call :synctree
+
+rem what the folder should contain once this copy is done: the archive path
+rem reads the same list, so a later archive update deletes exactly the files
+rem main dropped, and never a file the player added
+git -C "%CACHE%\repo" ls-files data chars stages font external sound >"%CACHE%\applied.files" 2>nul
 goto copied
 
 :gitfail
@@ -480,9 +485,11 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $n=0; $shown=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($tops -notcontains ($rel -split '/')[0]) { continue }; $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; if ($shown -lt 25) { Write-Host ('             ' + $rel); $shown++ } } } finally { $zip.Dispose() }; Write-Host ('            ' + $n + ' file(s) written')"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; $shown=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; if ($shown -lt 25) { Write-Host ('             ' + $rel); $shown++ } } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
+if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
+if exist "%~dp0config.ini" if not exist "%~dp0save\config.ini" copy /Y "%~dp0config.ini" "%~dp0save\config.ini" >nul
 :ziptree_done
 exit /b 0
 
