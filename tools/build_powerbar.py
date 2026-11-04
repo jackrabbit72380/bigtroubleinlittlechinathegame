@@ -146,13 +146,13 @@ def _scale_field(w, h, line, plates):
     d = ImageDraw.Draw(layer)
     n = len(line)
     step = w / float(plates)
-    for r in range(2):
+    for r in range(3):
         x = step * (0.5 if r % 2 else 0.0)
         while x < HEAD_AT[0] * w:
             idx = min(n - 1, max(0, int(round(x / float(w) * (n - 1)))))
             _x, cy, half = line[idx]
-            yy = cy + (-0.35 + 0.7 * r) * half
-            rr = step * (0.62 - 0.06 * r)
+            yy = cy + (-0.58 + 0.58 * r) * half
+            rr = step * (0.70 - 0.05 * r)
             d.arc([x - rr, yy - rr * 0.9, x + rr, yy + rr * 0.9],
                   190, 350, fill=CREVICE + (240,), width=int(max(2, step * 0.30)))
             d.arc([x - rr, yy - rr * 1.02, x + rr, yy + rr * 0.78],
@@ -168,22 +168,14 @@ def _scale_field(w, h, line, plates):
 def _tail_fin(d, w, h, line):
     """The flared fin at the tail end, as in the reference."""
     x, y, half = line[0]
+    s = (h / 76.0) * 0.9
     for dy, ln in ((-1.5, 34), (-0.4, 40), (0.7, 32)):
+        ln *= s
         pts = [(x + half * 0.6, y + dy * half * 0.5),
                (x - ln * 0.35, y + dy * half),
                (x - ln * 0.8, y + dy * half * 1.25),
                (x - ln, y + dy * half * 0.9)]
         _taper(d, _curve(pts, 10), half * 1.3, half * 0.5, GOLD_LO, INK)
-
-
-def _coil(d, w, h, line):
-    """The single coil where the body loops, drawn as a ring the body passes."""
-    idx = int(len(line) * 0.21)
-    x, y, half = line[idx]
-    r = half * 1.5
-    d.ellipse([x - r, y - r, x + r, y + r], outline=GOLD, width=int(max(2, half * 0.55)))
-    d.ellipse([x - r, y - r, x + r, y + r], outline=INK,
-              width=int(max(1, half * 0.18)))
 
 
 def _head(d, w, h):
@@ -213,8 +205,8 @@ def _head(d, w, h):
     _taper(d, [(hx + 8 * s, hy - 11 * s), (hx - 4 * s, hy - 18 * s),
                (hx - 16 * s, hy - 15 * s)], 5 * s, 1.4 * s, body, INK)
     # mane strands behind the neck
-    for i, (dy, ln, lift) in enumerate(((-10, 30, -12), (-4, 34, -6),
-                                        (2, 30, 4), (8, 26, 10))):
+    for i, (dy, ln, lift) in enumerate(((-9, 18, -10), (-2, 20, -4),
+                                        (5, 16, 6))):
         base = (hx - 2 * s, hy + dy * s)
         pts = [base, (base[0] - ln * 0.45 * s, base[1] + lift * 0.6 * s),
                (base[0] - ln * 0.8 * s, base[1] + lift * 1.1 * s),
@@ -227,11 +219,11 @@ def _head(d, w, h):
     d.ellipse([hx + 9 * s, hy - 6.4 * s, hx + 11.6 * s, hy - 3.6 * s], fill=INK)
     d.ellipse([hx + 34 * s, hy - 5 * s, hx + 36.5 * s, hy - 3 * s], fill=INK)
     for dy, dirn in ((-3, -1.0), (3, 1.0)):
-        base = (hx + 36 * s, hy + dy * s)
-        pts = [base, (base[0] - 8 * s, base[1] + dirn * 7 * s),
-               (base[0] - 20 * s, base[1] + dirn * 3 * s),
-               (base[0] - 28 * s, base[1] + dirn * 10 * s)]
-        _taper(d, _curve(pts, 12), 2.0 * s, 0.9 * s, hi)
+        base = (hx + 34 * s, hy + dy * s)
+        pts = [base, (base[0] - 5 * s, base[1] + dirn * 5 * s),
+               (base[0] - 13 * s, base[1] + dirn * 2 * s),
+               (base[0] - 18 * s, base[1] + dirn * 7 * s)]
+        _taper(d, _curve(pts, 10), 1.5 * s, 0.7 * s, hi)
 
 
 def _gradient(w, h, stops):
@@ -270,7 +262,6 @@ def _dragon(kind):
             _scale_field(w, h, line, plates=22),
             Image.new("RGBA", (w, h), (0, 0, 0, 0)), mask))
         d = ImageDraw.Draw(img)
-        _coil(d, w, h, line)
         _head(d, w, h)
         dim = Image.new("RGBA", (w, h), (0, 0, 0, 128))
         img = Image.alpha_composite(img, Image.composite(
@@ -288,7 +279,6 @@ def _dragon(kind):
             _scale_field(w, h, line, plates=22),
             Image.new("RGBA", (w, h), (0, 0, 0, 0)), mask))
         d = ImageDraw.Draw(img)
-        _coil(d, w, h, line)
         _head(d, w, h)
 
         if kind == "front_max":
