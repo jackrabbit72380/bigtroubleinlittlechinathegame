@@ -1,4 +1,4 @@
-; Rain - command file
+; Rain Storm - command file
 ;
 ; Two parts: 1. Command definition and  2. State entry
 ; (state entry is after the commands def section)

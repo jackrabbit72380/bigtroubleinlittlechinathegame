@@ -1,0 +1,28 @@
+[Info]
+name = "Red Viper (rig)"
+displayname = "Red Viper"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 960, 720
+
+[Files]
+cmd      = viper_f.cmd
+cns      = viper_f.cns
+st       = viper_f.cns
+stcommon = common1.cns
+sprite   = viper_f.sff
+anim     = viper_f.air
+sound    = viper_f.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480

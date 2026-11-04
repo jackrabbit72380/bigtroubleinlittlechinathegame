@@ -57,24 +57,35 @@ GANG = {
 }
 
 # id suffix, display name, head style, weapon, build (torso/limb scale)
+#
+# The names are the ones the film's own credits give these men - the nicknames
+# the gangs go by in the alley, keyed to the member number each one carries.
+# Nothing here credits the stunt performers or actors who played them: the
+# select screen names fighters, not people.
 MEMBERS = [
     ("changsing", [
-        ("bo", "Bo the Doorman", "flat", "staff", 1.00),
-        ("lin", "Lin the Runner", "ponytail", "staff", 1.00),
-        ("shi", "Shi the Brawler", "spike", "staff", 1.00),
-        ("han", "Han the Elder", "topknot", "staff", 1.00),
-        ("wei", "Wei the Quiet", "long", "staff", 1.00),
-        ("tam", "Tam Longarm", "bandana", "staff", 1.00),
+        ("bo", "Dragon Chief", "flat", "staff", 1.00),          # member #1
+        ("lin", "Stone Lion", "ponytail", "staff", 1.00),        # member #2
+        ("shi", "Viper Strike", "spike", "staff", 1.00),         # member #3
+        ("han", "Silver Ghost", "topknot", "staff", 1.00),       # member #4
+        ("wei", "Toy Man", "long", "staff", 1.00),              # member #5
+        ("tam", "Hardline Cheung", "bandana", "staff", 1.00),    # member #6
+        ("rift", "Shadow Rift", "topknot", "staff", 1.00),       # member #7
+        ("fang", "Iron Fang", "shaved", "staff", 1.00),          # member #8
+        ("wounded", "Wounded Dragon", "long", "staff", 1.00),     # member #9
     ]),
     ("wingkong", [
-        ("gou", "Gou the Enforcer", "shaved", "machete", 1.00),
-        ("ma", "Ma Redhand", "bandana", "machete", 1.00),
-        ("zhao", "Zhao the Butcher", "bald", "machete", 1.00),
-        ("lu", "Lu the Wire", "topknot", "machete", 1.00),
-        ("gerald", "Gold Gun Gerald", "shaved", "pistols", 1.00),
-        ("hatchet", "Hatchet Man", "long", "hatchet", 1.00),
-        ("bai", "Bai the Lookout", "bandana", "machete", 1.00),
-        ("shen", "Shen the Bruiser", "topknot", "staff", 1.00),
+        ("gou", "Razor Wind", "shaved", "machete", 1.00),        # member #1
+        ("shen", "Grave Hand", "topknot", "machete", 1.00),      # member #2
+        ("bai", "Silent Shuriken", "bandana", "machete", 1.00),  # member #3
+        ("zhao", "Ghost Reaper", "bald", "machete", 1.00),       # member #4
+        ("gerald", "Dark Danny", "shaved", "pistols", 1.00),     # member #5
+        ("hatchet", "Shadow Breaker", "long", "hatchet", 1.00),  # member #6
+        ("ma", "Six Shooter", "bandana", "pistols", 1.00),       # member #7
+        ("lu", "Stone Ox", "topknot", "machete", 1.00),          # member #8
+        ("venom", "Nine Venoms", "spike", "machete", 1.00),      # member #9
+        ("wicked", "Wicked Willie", "ponytail", "machete", 1.00),  # member #10
+        ("yukio", "Voodio Yukio", "flat", "machete", 1.00),      # member #11
     ]),
 ]
 
@@ -145,7 +156,7 @@ def _pelvis(g):
     return img
 
 
-def _head(style, g, side, skin=(SKIN, SKIN_LIT, SKIN_DK)):
+def _head(style, g, side, skin=(SKIN, SKIN_LIT, SKIN_DK), beard=True):
     """62 x 48 head, neck at the bottom centre, facing +x when side."""
     W, H = 62, 48
     m = Image.new("L", (W, H), 0)
@@ -197,7 +208,7 @@ def _head(style, g, side, skin=(SKIN, SKIN_LIT, SKIN_DK)):
         d.line([(31, 24), (29, 31)], fill=skin[2] + (160,), width=2)
         d.line([(24, 36), (38, 36)], fill=(110, 58, 46, 230), width=2)
 
-    if style in ("bald", "shaved", "topknot"):
+    if beard and style in ("bald", "shaved", "topknot"):
         d.arc([22, 30, 44, 46], 200, 340, fill=(40, 30, 24, 170), width=2)   # beard
     return img
 
@@ -472,8 +483,16 @@ for _gang, _members in MEMBERS:
 
 def main(argv):
     made = []
+    # --only a,b,c repaints just those members. A full pass retints everyone
+    # from his index in the table, so adding a member would otherwise repaint
+    # and re-bake the whole gang for someone else's colour.
+    only = None
+    if "--only" in argv:
+        only = set(argv[argv.index("--only") + 1].split(","))
     for gang, members in MEMBERS:
         for i, (slug, name, style, weapon, build) in enumerate(members):
+            if only is not None and f"{gang}_{slug}" not in only:
+                continue
             cid = f"{gang}_{slug}"
             write_member(gang, slug, name, style, weapon, build,
                          tint=1.0 + (i - 2.5) * 0.07)

@@ -5,44 +5,71 @@
 ; Each line is:  character, stage, optional params
 ; The "order" param feeds the arcade ladder: arcade.maxmatches in [Options]
 ; lists how many opponents to take from order=1, order=2, and so on.
+;
+; Fifty lines, in the order the film's cast list runs, so the select wall fills
+; its ten-by-five page exactly: forty-nine fighters and the random box. Names
+; are the characters' - no performer is credited anywhere in the game.
 ;-------------------------------------------------------------------------------
 
 [Characters]
- ; --- playable roster -------------------------------------------------------
-jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
-wangchi_rig/wangchi.def, stages/wingkong_exchange.def, order=2
-gracielaw_rig/gracielaw.def, stages/chinatown_alley.def, order=1
-jade_rig/jade.def, stages/lopans_throne.def, order=1
-eggshen_rig/eggshen.def, stages/wingkong_exchange.def, order=3
-eddilee_rig/eddilee.def, stages/chinatown_alley.def, order=1
-sewermonster_rig/sewermonster.def, stages/the_upside_down.def, order=3
-margo_rig/margo.def, stages/chinatown_alley.def, order=2
+ ; --- the gangs: Wing Kong and the Chang Sing, at the airport ---------------
+wingkong_gerald_rig/wingkong_gerald.def, stages/chinatown_alley.def, order=2
+dawn_vd_rig/dawn_vd.def, stages/wingkong_exchange.def, order=1
+changsing_bo_rig/changsing_bo.def, stages/chinatown_alley.def, order=1
+wingkong_zhao_rig/wingkong_zhao.def, stages/chinatown_alley.def, order=2
+wingkong_shen_rig/wingkong_shen.def, stages/wingkong_exchange.def, order=2
+changsing_tam_rig/changsing_tam.def, stages/chinatown_alley.def, order=1
+changsing_fang_rig/changsing_fang.def, stages/chinatown_alley.def, order=1
+lotus_rig/lotus.def, stages/lopans_hallway.def, order=1
+wingkong_venom_rig/wingkong_venom.def, stages/wingkong_exchange.def, order=2
+wingkong_gou_rig/wingkong_gou.def, stages/wingkong_exchange.def, order=2
+viper_f_rig/viper_f.def, stages/wingkong_exchange.def, order=1
+wingkong_hatchet_rig/wingkong_hatchet.def, stages/chinatown_alley.def, order=2
+changsing_rift_rig/changsing_rift.def, stages/chinatown_alley.def, order=1
+silk_rig/silk.def, stages/lopans_hallway.def, order=1
+wingkong_bai_rig/wingkong_bai.def, stages/chinatown_alley.def, order=2
+changsing_han_rig/changsing_han.def, stages/chinatown_alley.def, order=1
+wingkong_ma_rig/wingkong_ma.def, stages/wingkong_exchange.def, order=2
+changsing_lin_rig/changsing_lin.def, stages/chinatown_alley.def, order=1
+wingkong_lu_rig/wingkong_lu.def, stages/wingkong_exchange.def, order=2
+changsing_wei_rig/changsing_wei.def, stages/chinatown_alley.def, order=1
+changsing_shi_rig/changsing_shi.def, stages/wingkong_exchange.def, order=1
+wingkong_yukio_rig/wingkong_yukio.def, stages/wingkong_exchange.def, order=2
+wingkong_wicked_rig/wingkong_wicked.def, stages/chinatown_alley.def, order=2
+changsing_wounded_rig/changsing_wounded.def, stages/chinatown_alley.def, order=1
 
- ; --- the Three Storms ------------------------------------------------------
-rain_rig/rain.def, stages/porkchop_express.def, order=1
-lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
-thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
-
- ; --- final boss ------------------------------------------------------------
+ ; --- Chinatown: the police and the people on the street ---------------------
+police_rig/police.def, stages/chinatown_alley.def, order=2
 lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
- ; --- the Chang Sing: tan gi over black, staff in hand ----------------------
-changsing_bo_rig/changsing_bo.def, stages/chinatown_alley.def, order=1
-changsing_lin_rig/changsing_lin.def, stages/chinatown_alley.def, order=1
-changsing_shi_rig/changsing_shi.def, stages/wingkong_exchange.def, order=1
-changsing_han_rig/changsing_han.def, stages/chinatown_alley.def, order=1
-changsing_wei_rig/changsing_wei.def, stages/wingkong_exchange.def, order=1
-changsing_tam_rig/changsing_tam.def, stages/chinatown_alley.def, order=1
+ ; --- the heroes ------------------------------------------------------------
+eddilee_rig/eddilee.def, stages/chinatown_alley.def, order=1
+eggshen_rig/eggshen.def, stages/wingkong_exchange.def, order=3
+gracielaw_rig/gracielaw.def, stages/chinatown_alley.def, order=1
+jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
 
- ; --- the Wing Kong: black gi with red trim, machete in hand -----------------
-wingkong_gou_rig/wingkong_gou.def, stages/wingkong_exchange.def, order=2
-wingkong_ma_rig/wingkong_ma.def, stages/wingkong_exchange.def, order=2
-wingkong_zhao_rig/wingkong_zhao.def, stages/chinatown_alley.def, order=2
-wingkong_lu_rig/wingkong_lu.def, stages/wingkong_exchange.def, order=2
-wingkong_gerald_rig/wingkong_gerald.def, stages/wingkong_exchange.def, order=2
-wingkong_hatchet_rig/wingkong_hatchet.def, stages/chinatown_alley.def, order=2
-wingkong_bai_rig/wingkong_bai.def, stages/chinatown_alley.def, order=2
-wingkong_shen_rig/wingkong_shen.def, stages/wingkong_exchange.def, order=2
+ ; --- the Lords of Death ----------------------------------------------------
+joe_lucky_rig/joe_lucky.def, stages/chinatown_alley.def, order=2
+junk_rig/junk.def, stages/chinatown_alley.def, order=1
+lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
+jade_rig/jade.def, stages/lopans_throne.def, order=1
+margo_rig/margo.def, stages/chinatown_alley.def, order=2
+
+ ; --- the Wing Kong's muscle ------------------------------------------------
+minion1_rig/minion1.def, stages/wingkong_exchange.def, order=2
+minion2_rig/minion2.def, stages/wingkong_exchange.def, order=2
+otoole_rig/otoole.def, stages/chinatown_alley.def, order=1
+needles_rig/needles.def, stages/chinatown_alley.def, order=2
+one_ear_rig/one_ear.def, stages/chinatown_alley.def, order=2
+rain_rig/rain.def, stages/porkchop_express.def, order=1
+sewermonster_rig/sewermonster.def, stages/the_upside_down.def, order=3
+tara_rig/tara.def, stages/chinatown_alley.def, order=1
+guardian_rig/guardian.def, stages/lopans_ceremony.def, order=3
+thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
+uncle_chu_rig/uncle_chu.def, stages/porkchop_express.def, order=1
+wangchi_rig/wangchi.def, stages/wingkong_exchange.def, order=2
+security1_rig/security1.def, stages/wingkong_exchange.def, order=2
+security2_rig/security2.def, stages/lopans_hallway.def, order=2
 
 randomselect
 

@@ -13,6 +13,7 @@ TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 
 import gangs
+import street
 
 
 def run(script, *args):
@@ -96,6 +97,11 @@ def main():
     gang_ids = [f"{gang}_{member[0]}"
                 for gang, members in gangs.MEMBERS for member in members]
     scripts += [("bake_char.py", cid) for cid in gang_ids]
+    # Everyone around the tongs - the Wing Kong's guard detail, the Lords of
+    # Death, the police, the security men and the old Chinatown - is painted by
+    # tools/street.py on the same puppet skeleton, then baked the same way.
+    scripts.append("street.py")
+    scripts += [("bake_char.py", cid) for cid in street.ids()]
     # Select-screen portraits: the pre-match screens read each fighter's 9000,0
     # and 9000,1 out of its own SFF, and a character baked from the rig has
     # neither, so they are rendered from its own art after the bake.
