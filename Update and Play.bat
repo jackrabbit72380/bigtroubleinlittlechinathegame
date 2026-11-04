@@ -334,7 +334,10 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 set "VER="
 if "%WHICH%"=="git" for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
 rem a zip run knows the version from the probe, and a fresh one asks now;
-rem without recording it the next launch cannot tell it is current
+rem without recording it the next launch cannot tell it is current. The feed
+rem is asked first: on a first run applied.txt is missing, so the probe never
+rem got this far and the API fallback could 403 and leave nothing recorded.
+if not defined VER if not defined RSHA7 call :atoms
 if not defined VER if not defined RSHA7 call :headsha
 if not defined VER if defined RSHA7 set "VER=%RSHA7%"
 if defined VER (>"%CACHE%\applied.txt" echo %VER%)
