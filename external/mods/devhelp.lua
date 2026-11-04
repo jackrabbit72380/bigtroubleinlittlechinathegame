@@ -10,12 +10,22 @@
 -- The screen draws with its own text sprite rather than the motif's movelist
 -- one, for two reasons: the size can be picked here (big, two columns, no
 -- scrolling) and changing it does not make the pause menu's Move List bigger as
--- a side effect. textImgNew/textImgSetScale are probed once; if a build lacks
--- them the screen falls back to the movelist sprite instead of failing. Every
--- startup step is inside a pcall because this module loads before the window
--- exists, and an error there would stop the game from starting at all.
+-- a side effect.
+--
+-- Everything the engine is asked to do with that sprite is PROBED, not assumed.
+-- A previous version set the font with the motif's font table and the whole
+-- screen vanished: the call raised, the frame handler caught it, and the handler
+-- closes the screen when drawing fails. So each engine call is tried, the call
+-- that works is remembered, and if the fancy path cannot work at all the screen
+-- falls back to the motif's own text sprite - smaller, but it always opens.
 
-local devhelp = { body = nil, sub = nil, failed = false }
+local devhelp = {
+	body = nil,        -- big two-column sprite
+	sub = nil,         -- the small note above the list
+	failed = false,    -- the big path is out; stay on the plain list
+	warned = false,    -- only print the fallback reason once
+	fontMode = nil,    -- 'object' | 'index' | 'none', decided by probing
+}
 
 -- Colour groups: display and view, time and speed, match, players.
 local PALE  = {246, 222, 158}
@@ -115,20 +125,46 @@ local function fit(adv, cell, gap)
 	return scale, math.floor((cell + gap) * scale + 4)
 end
 
--- One sprite per role, built on first use and reused every frame.
+-- textImgSetFont takes the font table in some builds and its index in others,
+-- and raises on the wrong one. Try once, remember what worked, and if neither
+-- does, leave the sprite on its own font rather than losing the screen.
+local function applyFont(ti, font, idx)
+	if devhelp.fontMode == 'none' then return end
+	if devhelp.fontMode == 'object' then
+		pcall(textImgSetFont, ti, font)
+		return
+	end
+	if devhelp.fontMode == 'index' then
+		pcall(textImgSetFont, ti, idx)
+		return
+	end
+	if font ~= nil and pcall(textImgSetFont, ti, font) then
+		devhelp.fontMode = 'object'
+		return
+	end
+	if idx ~= nil and pcall(textImgSetFont, ti, idx) then
+		devhelp.fontMode = 'index'
+		return
+	end
+	devhelp.fontMode = 'none'
+end
+
+-- One sprite per role, built on first use and reused every frame. The probe
+-- covers every call the draw path makes, so a build missing any of them fails
+-- here once instead of raising in the middle of a frame.
 local function ensure(name)
 	if devhelp[name] ~= nil then return devhelp[name] end
 	if devhelp.failed then return nil end
-	local okn, ti = pcall(function()
+	local ok, ti = pcall(function()
 		local t = textImgNew()
 		textImgSetAlign(t, 1)
-		textImgSetScale(t, 1.0, 1.0)   -- older builds raise here; probe it once
+		textImgSetScale(t, 1.0, 1.0)
 		textImgSetColor(t, 255, 255, 255)
 		textImgSetPos(t, 0, 0)
 		textImgSetText(t, '')
 		return t
 	end)
-	if okn and ti ~= nil then
+	if ok and ti ~= nil then
 		devhelp[name] = ti
 		return ti
 	end
@@ -136,8 +172,8 @@ local function ensure(name)
 	return nil
 end
 
-local function put(ti, font, text, col, x, y, scale)
-	if font ~= nil then textImgSetFont(ti, font) end
+local function put(ti, font, idx, text, col, x, y, scale)
+	applyFont(ti, font, idx)
 	textImgSetAlign(ti, 1)
 	textImgSetText(ti, text)
 	textImgSetColor(ti, col[1], col[2], col[3])
@@ -146,8 +182,8 @@ local function put(ti, font, text, col, x, y, scale)
 	textImgDraw(ti)
 end
 
--- Used only if the engine has no textImgNew: the old one-column drawing from the
--- movelist sprite, which still shows every key, just smaller.
+-- The always-available screen: the pause menu's own text sprite, one column,
+-- drawn exactly the way the working version drew it.
 local function drawPlain(sec, lh)
 	local txt = sec.movelist.text.TextSpriteData
 	local i = 0
@@ -163,8 +199,26 @@ local function drawPlain(sec, lh)
 	end
 end
 
+local function drawTwoColumns(sec, font, idx, scale, lh)
+	local ti = ensure('body')
+	if ti == nil then return false end
+	local sub = ensure('sub')
+	if sub ~= nil then
+		put(sub, font, idx, NOTE, DIM, LEFT_X, TOP - 30, math.max(0.7, scale * 0.55))
+	end
+	for i, row in ipairs(LEFT) do
+		put(ti, font, idx, lineOf(row), row[3], LEFT_X, TOP + lh * (i - 1), scale)
+	end
+	for i, row in ipairs(RIGHT) do
+		put(ti, font, idx, lineOf(row), row[3], RIGHT_X, TOP + lh * (i - 1), scale)
+	end
+	return true
+end
+
 local function devhelpDraw(sec)
 	local font = sceneFont(sec)
+	local idx = nil
+	pcall(function() idx = sec.movelist.text.font[1] end)
 	local adv, cell, gap = metrics(font)
 	local scale, lh = fit(adv, cell, gap)
 
@@ -176,20 +230,22 @@ local function devhelpDraw(sec)
 	textImgAddPos(sec.movelist.title.TextSpriteData, 0, -34)
 	textImgDraw(sec.movelist.title.TextSpriteData)
 
-	local ti = ensure('body')
-	if ti == nil then
+	local drawn = false
+	if not devhelp.failed then
+		drawn = pcall(drawTwoColumns, sec, font, idx, scale, lh)
+		if not drawn then
+			-- the big path failed for a reason the probe did not catch: keep it
+			-- off for the rest of the session instead of retrying every frame
+			devhelp.failed = true
+		end
+	end
+	if not drawn then
+		if not devhelp.warned then
+			devhelp.warned = true
+			print('devhelp: big key list unavailable in this build, using the ' ..
+				'plain list from the pause menu')
+		end
 		drawPlain(sec, lh)
-	else
-		local sub = ensure('sub')
-		if sub ~= nil then
-			put(sub, font, NOTE, DIM, LEFT_X, TOP - 30, math.max(0.7, scale * 0.55))
-		end
-		for i, row in ipairs(LEFT) do
-			put(ti, font, lineOf(row), row[3], LEFT_X, TOP + lh * (i - 1), scale)
-		end
-		for i, row in ipairs(RIGHT) do
-			put(ti, font, lineOf(row), row[3], RIGHT_X, TOP + lh * (i - 1), scale)
-		end
 	end
 
 	if esc() or getInput(-1, sec.menu.cancel.key, sec.menu.done.key) then
@@ -218,14 +274,16 @@ local ok, err = pcall(function()
 	end
 
 	-- menu.f_run draws keyboard/gamepad/commandlist screens itself; this adds
-	-- ours to that list. Wrapped so a drawing error closes the screen instead of
-	-- taking the pause menu with it.
+	-- ours to that list. Our own drawing never raises: if the two-column path
+	-- cannot work it uses the plain list, so this stays open instead of closing
+	-- the moment something in the engine disagrees with a call.
 	local baseRun = menu.f_run
 	menu.f_run = function()
 		if menu.itemname == 'devkeys' then
 			local drawn, drawErr = pcall(devhelpDraw, motif.pause_menu.pause_menu)
 			if not drawn then
 				print('devhelp: could not draw the key list: ' .. tostring(drawErr))
+				devhelp.failed = true
 				menu.itemname = ''
 			end
 			return main.pauseMenuActive
