@@ -126,6 +126,12 @@ def main():
     # data/fight.sff, both of which the engine copy above starts from stock, so
     # it has to run here or a rebuild would put the old bars back.
     scripts += ["build_banner.py", "build_powerbar.py"]
+    # The pause menu's Developer Keys entry is declared in the motif, which the
+    # engine copy above resets, so it is re-applied here rather than edited by
+    # hand. external/mods/devhelp.lua supplies the screen it opens.
+    devhelp_motif = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "system.def")
+    if os.path.isfile(devhelp_motif):
+        scripts.append("build_devhelp.py")
     # The in-game HUD render shown on the project page. Compositing it here
     # means the picture cannot drift from the HUD that ships in data/, and a
     # push refreshes it without anyone opening the engine.

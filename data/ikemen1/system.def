@@ -2346,6 +2346,7 @@ movelist.arrow.down.scale = 1.0, 1.0
 
 ;-------------------
 ;Pause menu screen background
+menu.itemname.devkeys = Developer Keys
 [PauseBGdef]
 
 ;-------------------------------------------------------------------
@@ -2371,6 +2372,7 @@ menu.pos = 460, 140
 
 ;-------------------------------------------------------------------
 ;Attract mode definition
+menu.itemname.devkeys = Developer Keys
 [Attract Mode]
 enabled = 0
 fadein.time = 10

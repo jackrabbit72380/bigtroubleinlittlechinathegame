@@ -8,6 +8,19 @@ enabled: **Options → Engine → Debug Keys**, stored as `Debug.AllowDebugKeys`
 If a key does nothing, check that line first: with debug keys off every shortcut
 below is inert.
 
+## In the game
+
+Pause the match and choose **Developer Keys** to see the list as a screen you
+can scroll with up/down; cancel closes it and returns to the pause menu. It
+sits in both the normal and the training pause menu.
+
+`Ctrl`+`F1` prints the same list into the debug console if you would rather not
+leave the fight. `F8` clears the console.
+
+The entry is re-applied by `tools/build_devhelp.py` on every asset build, because
+the build replaces `data/` with the engine's stock motif; the screen itself lives
+in [`external/mods/devhelp.lua`](../external/mods/devhelp.lua).
+
 ## On screen
 
 | Keys | What it shows |
