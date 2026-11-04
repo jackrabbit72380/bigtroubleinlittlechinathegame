@@ -17,7 +17,7 @@ rem ===========================================================================
 setlocal
 cd /d "%~dp0"
 
-echo Update and Play v3 - newest files, one double-click
+echo Update and Play v4 - newest files, one double-click
 echo launcher : %~f0
 echo folder   : %~dp0
 echo.
@@ -96,14 +96,28 @@ goto download
 
 :download
 echo Downloading the newest files ...
+echo Checking this window can reach GitHub at all ...
+"%SystemRoot%\System32\curl.exe" -sS -o nul --max-time 20 "https://raw.githubusercontent.com/jackrabbit72380/bigtroubleinlittlechinathegame/main/README.md"
+if errorlevel 1 goto dl_blocked
+echo   reachable.
 if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip"
+goto dl_start
+
+:dl_blocked
+echo   Not reachable from this window - a proxy or antivirus is blocking it.
+echo   Use the browser route instead: save the zip in this folder and run
+echo   "Apply main.zip.bat".
+goto downloadfailed
+
+:dl_start
 echo This is a one-off download of about 190 MB and can take a few minutes
 echo on a slow connection. A progress bar appears in a moment.
 echo.
 if not exist "%SystemRoot%\System32\curl.exe" goto dl_powershell
 echo   trying Windows curl ...
 echo   "%SystemRoot%\System32\curl.exe" -L --fail --progress-bar -o main.zip "%ZIPURL%"
-"%SystemRoot%\System32\curl.exe" -L --fail --progress-bar --connect-timeout 30 -o "%CACHE%\main.zip" "%ZIPURL%"
+"%SystemRoot%\System32\curl.exe" -L --fail --progress-bar --connect-timeout 30 --speed-time 60 --speed-limit 1024 -o "%CACHE%\main.zip" "%ZIPURL%"
+echo   curl finished with exit code %ERRORLEVEL%
 call :zipok
 if "%ZIPOK%"=="1" goto havezip
 
