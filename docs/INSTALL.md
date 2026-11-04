@@ -82,8 +82,15 @@ The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
 
 1. **git**, forced onto the Windows certificate store (`http.sslBackend=schannel`)
-   so a broken CA path from a Git Bash install cannot stop it. This one only
-   fetches what changed.
+   so a broken CA path from a Git Bash install cannot stop it. This is the small
+   one: a depth-1 clone with `--filter=blob:none` and a sparse checkout of only
+   `data chars stages font external sound`, so the first run brings the art
+   (about 150 MB, unavoidable) and every run after it transfers just the objects
+   a commit touched - recent updates have been 3 to 8 files, around 0.01 MB. The
+   skipped folders (`artifacts`, `concept_art`, `art_src`, `tools`) are 128 MB of
+   the committed tree that the game never copies. If the revision in the game
+   folder already matches `main`, it also skips the 340 MB local copy and just
+   launches.
 2. **curl**, with `CURL_CA_BUNDLE`/`SSL_CERT_FILE` cleared for that window and
    `--ssl-no-revoke`, printing `112 of about 190 MB` as it goes.
 3. **PowerShell**, which uses the .NET and Windows proxy settings.
