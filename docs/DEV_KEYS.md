@@ -1,9 +1,9 @@
 # Developer keys
 
 In-game shortcuts for testing. They are registered by
-[`external/script/debug.lua`](../external/script/debug.lua) and need
-`Debug.AllowDebugKeys = true` in `save/config.ini` — the shipped config already
-sets it, and **Options → Engine → Debug Keys** toggles it at runtime.
+[`external/script/debug.lua`](../external/script/debug.lua) and need debug keys
+enabled: **Options → Engine → Debug Keys**, stored as `Debug.AllowDebugKeys` in
+`save/config.ini`.
 
 If a key does nothing, check that line first: with debug keys off every shortcut
 below is inert.
