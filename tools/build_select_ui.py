@@ -34,11 +34,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
-# The hint sits just above the stage name, which the motif draws at 640,707 in
-# its 1280x720 select-screen space.
+# The hint sits above the card, centred on the screen: the stage name moved
+# down to the fighters' row, and the strip used to be pinned to the left edge.
 SPRITE = (221, 0)
 STRIP = (300, 30)
-POS = (0, 700)
+POS = (640, 430)
 
 GOLD = (255, 214, 96)
 GOLD_DEEP = (120, 78, 16)
@@ -131,7 +131,7 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
 # the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
-CARD_W = 460
+CARD_W = select_grid.GRID_W   # the card is as wide as the roster grid
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
 CARD_H = ART_H
 CARD_CX = 640
