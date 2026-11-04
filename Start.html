@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Big Trouble in Little China: The Game - update</title>
+<style>
+  :root {
+    --ink: #0b0705;
+    --gold: #e8bf5c;
+    --gold-dim: #a98c3e;
+    --red: #8c1f1f;
+    --red-dim: #4a1010;
+    --paper: #f0e2c0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; padding: 40px 20px 64px;
+    background:
+      radial-gradient(circle at 20% 0%, #2a1410 0%, transparent 55%),
+      radial-gradient(circle at 85% 15%, #33170f 0%, transparent 50%),
+      var(--ink);
+    color: var(--paper);
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.55;
+  }
+  .frame {
+    max-width: 780px; margin: 0 auto; padding: 34px 34px 40px;
+    border: 1px solid var(--gold-dim);
+    box-shadow: 0 0 0 6px var(--ink), 0 0 0 7px var(--red-dim), 0 24px 60px rgba(0,0,0,.7);
+    background: linear-gradient(180deg, rgba(74,16,16,.35), rgba(11,7,5,.9) 55%);
+  }
+  h1 {
+    margin: 0 0 6px; text-align: center; color: var(--gold);
+    font-size: clamp(22px, 4.2vw, 34px); letter-spacing: .16em; text-transform: uppercase;
+    text-shadow: 0 2px 0 #3a0f0f, 0 0 26px rgba(232,191,92,.35);
+  }
+  .sub {
+    text-align: center; color: var(--gold-dim); letter-spacing: .42em;
+    text-transform: uppercase; font-size: 12px; margin-bottom: 6px;
+  }
+  .rule { height: 2px; margin: 18px 0 26px; background: linear-gradient(90deg, transparent, var(--gold-dim), transparent); }
+  h2 { color: var(--gold); font-size: 17px; letter-spacing: .1em; text-transform: uppercase; margin: 30px 0 10px; }
+  p { margin: 0 0 14px; }
+  ol, ul { margin: 0 0 16px; padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  code { color: var(--gold); background: rgba(232,191,92,.09); padding: 1px 5px; border-radius: 3px; }
+  a.btn {
+    display: block; margin: 10px 0 18px; padding: 15px 18px; text-align: center;
+    color: #1a0d07; text-decoration: none; font-weight: bold; letter-spacing: .09em;
+    text-transform: uppercase; font-size: 14px;
+    background: linear-gradient(180deg, #f2d27a, #c99a33);
+    border: 1px solid #6b4a12; box-shadow: 0 3px 0 #6b4a12, 0 8px 22px rgba(0,0,0,.5);
+  }
+  a.btn:hover { background: linear-gradient(180deg, #ffe79a, #d7a63c); }
+  a.btn.alt { background: linear-gradient(180deg, #b53030, #7a1b1b); color: var(--paper); border-color: #3a0f0f; box-shadow: 0 3px 0 #3a0f0f, 0 8px 22px rgba(0,0,0,.5); }
+  a.btn.alt:hover { background: linear-gradient(180deg, #cd3c3c, #8d2020); }
+  .note { border-left: 3px solid var(--red); padding: 10px 0 10px 14px; color: #d8c9a8; }
+  .check { border: 1px dashed var(--gold-dim); padding: 14px 16px; margin: 14px 0 0; }
+  .check strong { color: var(--gold); }
+  footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--red-dim); font-size: 13px; color: #b7a986; text-align: center; }
+  footer a { color: var(--gold-dim); }
+  pre { background: rgba(0,0,0,.5); border: 1px solid var(--red-dim); padding: 10px 12px; overflow-x: auto; color: var(--gold); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<main class="frame">
+  <div class="sub">the game</div>
+  <h1>Big Trouble in Little China</h1>
+  <div class="sub">update &amp; play</div>
+  <div class="rule"></div>
+
+  <p>This page is for updating a copy you already play. Everything here is a normal
+  browser download, so it works even when a proxy or antivirus blocks the little
+  black command window.</p>
+
+  <h2>Install the newest build</h2>
+  <ol>
+    <li><strong>Download the game files</strong> — about 190&nbsp;MB, saves as a zip.</li>
+    <li><strong>Put that zip in your game folder</strong> — the folder with
+        <code>BigTroubleInLittleChinaTheGame.exe</code> in it. Leave the name as it arrives.</li>
+    <li><strong>Download the applier below</strong> into the same folder, then double-click it.</li>
+  </ol>
+
+  <a class="btn" href="https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame/zip/refs/heads/main">
+    Download the game files (.zip)
+  </a>
+
+  <a class="btn alt" href="https://raw.githubusercontent.com/jackrabbit72380/bigtroubleinlittlechinathegame/main/Apply%20main.zip.bat">
+    Download Apply main.zip.bat
+  </a>
+
+  <p class="note">The applier has no download code in it. It unpacks the zip, copies
+  <code>data</code>, <code>chars</code>, <code>stages</code>, <code>font</code>,
+  <code>external</code> and <code>sound</code> over your folder, leaves your
+  <code>save</code> and the engine alone, and starts the game. Nothing in it can hang.</p>
+
+  <h2>If you would rather have one click</h2>
+  <p>Use the updater instead. It fetches only what changed when Git works, and falls
+  back to the zip otherwise. It needs the command window to be able to reach GitHub;
+  if a proxy blocks it, it now says so straight away instead of sitting silent.</p>
+  <a class="btn alt" href="https://raw.githubusercontent.com/jackrabbit72380/bigtroubleinlittlechinathegame/main/Update%20and%20Play.bat">
+    Download Update and Play.bat
+  </a>
+
+  <div class="check">
+    <strong>How to tell it worked.</strong> The top of the screen in a match is the
+    dragon strip &mdash; its back is health, its belly is audacity, its head turns in to
+    the yin-yang timer. Pause during a match and there is a <strong>Developer Keys</strong>
+    entry that opens the shortcut list. The applier prints
+    <code>HUD : dragon</code> before the game starts.
+  </div>
+
+  <h2>Two things that trip people up</h2>
+  <ul>
+    <li>Browsers often save a <code>.bat</code> as <code>.bat.txt</code>. Rename it so it
+        ends in exactly <code>.bat</code>, and turn on file name extensions in Explorer if
+        you cannot see them.</li>
+    <li>Windows may block a downloaded script: right-click it, choose Properties, tick
+        <strong>Unblock</strong>, then run it.</li>
+  </ul>
+
+  <footer>
+    <a href="https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame">repository</a> &middot;
+    <a href="https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/blob/main/docs/INSTALL.md">install notes</a> &middot;
+    <a href="https://discord.gg/bY6NJ35c6P">Discord</a>
+  </footer>
+</main>
+</body>
+</html>
