@@ -61,33 +61,33 @@ scale = 4
 [Lifebar]
 
 ;Player 1
-p1.pos = 595,30
+p1.pos = 595,2
 p1.bg0.spr = 10,0
 p1.bg0.offset = 0,0
 p1.bg1.spr = 20,0
-p1.bg1.offset = -595,-30
+p1.bg1.offset = -595,-2
 p1.bg1.xshear = 0
-p1.bg0.xshear = 3
+p1.bg0.xshear = 0
 p1.top.spr = 11,0
-p1.top.xshear = 3
+p1.top.xshear = 0
 p1.mid.spr = 12, 0
 p1.mid.offset = 0,0
-p1.mid.xshear = 3
+p1.mid.xshear = 0
 p1.mid.palfx.mul = 200, 200, 200
 p1.mid.palfx.sinmul = 32, 32, 32, 5
 p1.front100.spr = 13,0
 p1.front100.offset = 0,0
-p1.front100.xshear = 3
+p1.front100.xshear = 0
 p1.front50.spr = 13,1
 p1.front50.offset = 0,0
-p1.front50.xshear = 3
+p1.front50.xshear = 0
 p1.front25.spr = 13,2
 p1.front25.offset = 0,0
-p1.front25.xshear = 3
+p1.front25.xshear = 0
 p1.front.spr = 13, 3
 p1.front.offset = 0,0
 p1.front.palfx.sinmul = 128, 128, 128, 15
-p1.front.xshear = 3
+p1.front.xshear = 0
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
@@ -95,39 +95,39 @@ p1.range.x  = -4, -456
 p1.scalefill = 1
 
 ;Player 2
-p2.pos = 684,30
+p2.pos = 684,2
 p2.bg0.spr = 10,0
 p2.bg0.offset = 0,0
 p2.bg1.spr = 20,1
-p2.bg1.offset = -44,-30
+p2.bg1.offset = -44,-2
 p2.bg1.xshear = 0
-p2.bg0.xshear = -3
+p2.bg0.xshear = 0
 p2.bg0.facing = -1
 p2.top.spr = 11,0
 p2.top.facing = -1
-p2.top.xshear = -3
+p2.top.xshear = 0
 p2.mid.spr = 12, 0
 p2.mid.offset = 0,0
 p2.mid.facing = -1
-p2.mid.xshear = -3
+p2.mid.xshear = 0
 p2.mid.palfx.mul = 200, 200, 200
 p2.mid.palfx.sinmul = 32, 32, 32, 5
 p2.front100.spr = 13,0
 p2.front100.offset = 0,0
-p2.front100.xshear = -3
+p2.front100.xshear = 0
 p2.front100.facing = -1
 p2.front50.spr = 13,1
 p2.front50.offset = 0,0
-p2.front50.xshear = -3
+p2.front50.xshear = 0
 p2.front50.facing = -1
 p2.front25.spr = 13,2
 p2.front25.offset = 0,0
-p2.front25.xshear = -3
+p2.front25.xshear = 0
 p2.front25.facing = -1
 p2.front.spr = 13, 3
 p2.front.offset = 0,0
 p2.front.palfx.sinmul = 128, 128, 128, 15
-p2.front.xshear = -3
+p2.front.xshear = 0
 p2.front.facing = -1
 ;p2.shift.spr = 13,2          
 ;p2.shift.offset = 0,0        
@@ -135,7 +135,13 @@ p2.front.facing = -1
 ;p2.shift.facing = -1         
 p2.range.x  = 4, 456
 p2.scalefill = 1
-
+p2.bg0.palfx.add = -150, 90, -10
+p2.top.palfx.add = -150, 90, -10
+p2.mid.palfx.add = -150, 90, -10
+p2.front100.palfx.add = -150, 90, -10
+p2.front50.palfx.add = -150, 90, -10
+p2.front25.palfx.add = -150, 90, -10
+p2.front.palfx.add = -150, 90, -10
 [Simul Lifebar]
 ;Player 1
 p1.pos    = 595,46
@@ -1574,7 +1580,7 @@ p2.scalefill = 1
 ;-----------------------------------------------------------
 [Powerbar]
 ;Player 1
-p1.pos = 568,0
+p1.pos = 568,30
 p1.bg0.spr = 40,0
 p1.bg0.offset = 0,0
 p1.bg1.spr = 41,0
@@ -1699,7 +1705,7 @@ p1.counter.font = 4, 0, 0
 p1.levelbars = 1             
 
 ;Player 2
-p2.pos = 712,0
+p2.pos = 712,30
 p2.bg0.spr = 40,0
 p2.bg0.offset = 0,0
 p2.bg0.facing = -1
@@ -2704,7 +2710,7 @@ p*.teammate.ko.hide = 1
 
 ;-----------------------------------------------------------
 [Time]
-pos = 640,26
+pos = 640,24
 ; Uncomment the following line to use a bg component
 bg.spr = 30,0
 bg.offset = 0,0
@@ -3780,12 +3786,12 @@ enabled.timechallenge = 1
 
 ;-----------------------------------------------------------
 [Score]
-p1.pos = 586,60
+p1.pos = 586,34
 ;p1.bg.spr = 
 p1.text.font = 8,0, -1
 p1.text.text = %s
 
-p2.pos = 696,60
+p2.pos = 696,34
 ;p2.bg.spr = 
 p2.text.font = 8,0, 1
 p2.text.text = %s
