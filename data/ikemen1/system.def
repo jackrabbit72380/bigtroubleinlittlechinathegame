@@ -822,11 +822,11 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
+stage.portrait.random.window = 330, 458, 950, 657
+stage.portrait.loading.window = 330, 458, 950, 657
 stage.text = %s
 stage.active.text = %s
 stage.scale = 1, 1
-stage.portrait.random.window = 330, 458, 950, 657
-stage.portrait.loading.window = 330, 458, 950, 657
 stage.active.switchtime = 300000
 [Begin Action 110]
 110,0, 0,0, 8
@@ -1031,7 +1031,7 @@ mask = 1
 [SelectBG Stage Hint]
 type = normal
 spriteno = 221, 0
-start = 0, 700
+start = 640, 430
 layerno = 2
 mask = 1
 
@@ -1300,10 +1300,10 @@ loading.storyboard =
 stage.portrait.random.offset = -313, -230
 stage.portrait.random.scale = 1, 1
 stage.portrait.random.window = 330, 463, 950, 662
+stage.portrait.loading.anim = -1
 stage.portrait.loading.offset = -313, -230
 stage.portrait.loading.scale = 1, 1
 stage.portrait.loading.window = 330, 463, 950, 662
-stage.portrait.loading.anim = -1
 [Begin Action 600]
 600,0, 0,0, 3
 600,1, 0,0, 3
