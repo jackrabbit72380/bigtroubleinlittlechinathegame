@@ -2723,7 +2723,7 @@ p*.teammate.ko.hide = 1
 
 ;-----------------------------------------------------------
 [Time]
-pos = 640,26
+pos = 640,34
 ; Uncomment the following line to use a bg component
 bg.spr = 30,0
 bg.offset = 0,0
