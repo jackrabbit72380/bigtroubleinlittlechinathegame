@@ -1,280 +1,129 @@
 # Big Trouble in Little China: The Game
 
-A fan-made 2D fighting game built on [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO),
-the open-source engine that runs M.U.G.E.N resources. Inspired by John Carpenter's
-1986 film *Big Trouble in Little China*: truckers, sorcerers, the Three Storms,
-and an emperor who has been waiting two thousand years for a wedding.
+A fan-made 2D fighting game for [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO) —
+truckers, sorcerers, the Three Storms, and an emperor who has waited two thousand
+years for a wedding. Nine fighters, nine arenas painted at 1920×1080, and a HUD
+where the dragons *are* the meters.
 
-This repository is the **game** (roster, stages, screenpack config, tooling). The
-engine binary is not committed here — the
-[releases](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
-ship it bundled, so players just download and launch.
+[![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/bY6NJ35c6P)
+[![Latest release](https://img.shields.io/github/v/release/jackrabbit72380/bigtroubleinlittlechinathegame?label=latest%20release&color=brightgreen)](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
+![Engine](https://img.shields.io/badge/engine-Ikemen%20GO-blue)
+![Roster](https://img.shields.io/badge/roster-9%20fighters-red)
+![Stages](https://img.shields.io/badge/stages-9%20arenas-orange)
+![Status](https://img.shields.io/badge/status-in%20development-yellow)
 
-![Lo Pan's Throne](artifacts/lopans_throne_card.png)
-![Lo Pan's Ceremony](artifacts/lopans_ceremony_card.png)
-![Lo Pan's Hallway](artifacts/lopans_hallway_card.png)
-![Wing Kong Exchange](artifacts/wingkong_exchange_card.png)
-![Chinatown Back Alley](artifacts/chinatown_alley_card.png)
-![Pork Chop Express](artifacts/porkchop_express_card.png)
-![The Upside Down](artifacts/the_upside_down_card.png)
-![Hell of the Upside-Down Sinners](artifacts/hell_sinners_card.png)
-![Airport Terminal](artifacts/airport_terminal_card.png)
+> **We are looking for people to build this with.** Coders, pixel and HD artists,
+> musicians, and anyone who will play it and tell us what feels wrong — all of it
+> is useful. Start with [Join development](#join-development) or just say hello in
+> the [Discord](https://discord.gg/bY6NJ35c6P).
 
-## Download and play
+## The arenas
 
-Nothing to install — every release zip already contains the Ikemen GO engine with
-this game's fighters, stages and screenpack in place.
+| ![Lo Pan's Throne](artifacts/lopans_throne_card.png) | ![Lo Pan's Ceremony](artifacts/lopans_ceremony_card.png) | ![Lo Pan's Hallway](artifacts/lopans_hallway_card.png) |
+|:---:|:---:|:---:|
+| **Lo Pan's Throne** | **Lo Pan's Ceremony** | **Lo Pan's Hallway** |
+| ![Wing Kong Exchange](artifacts/wingkong_exchange_card.png) | ![Chinatown Back Alley](artifacts/chinatown_alley_card.png) | ![Pork Chop Express](artifacts/porkchop_express_card.png) |
+| **Wing Kong Exchange** | **Chinatown Back Alley** | **Pork Chop Express** |
+| ![The Upside Down](artifacts/the_upside_down_card.png) | ![Hell of the Upside-Down Sinners](artifacts/hell_sinners_card.png) | ![Airport Terminal](artifacts/airport_terminal_card.png) |
+| **The Upside Down** | **Hell of the Upside-Down Sinners** | **Airport Terminal** |
 
-| Platform | File | Launch |
+## Play it
+
+Every release zip already contains the Ikemen GO engine with this game's fighters,
+stages and screenpack in place. Nothing to install.
+
+| Platform | File | Get going |
 |---|---|---|
-| Windows | `BigTroubleInLittleChina-Windows.zip` | unzip, double-click `BigTroubleInLittleChinaTheGame.exe` |
-| Linux | `BigTroubleInLittleChina-Linux.zip` | unzip, `chmod +x BigTroubleInLittleChinaTheGame && ./BigTroubleInLittleChinaTheGame` |
+| Windows | `BigTroubleInLittleChina-Windows.zip` | unzip, run `BigTroubleInLittleChinaTheGame.exe` |
+| Linux | `BigTroubleInLittleChina-Linux.zip` | unzip, `chmod +x BigTroubleInLittleChinaTheGame`, run it |
 | macOS | `BigTroubleInLittleChina-macOS.zip` | unzip, right-click the app → **Open** the first time |
 
-Grab them from the
-[latest release](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest).
-Releases are produced by the `Build release bundles` workflow, which downloads the
-official engine build for each platform, copies this game's files over it, checks
-that the executable, roster, stages and engine licence are all present, then
-publishes the zips.
+Grab them from the [latest release](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest).
+SmartScreen or Gatekeeper warnings are just the usual unsigned-download prompt;
+a renderer crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
 
-If a bundle trips SmartScreen (Windows) or Gatekeeper (macOS), that is because the
-downloads are unsigned: choose *More info → Run anyway*, or right-click → *Open*.
+## What is in the build
 
-If the game closes on boot with an **Engine error** box instead, the renderer is
-the usual cause. *Video Settings → Renderer* offers Vulkan as well as OpenGL, and
-`vk.QueueSubmit failed with vulkan error: device lost` is what a driver that
-cannot run it reports. Choose **OpenGL 3.3**. If the box appears before you can
-reach that menu, delete `save/config.ini`: the engine recreates it on the default
-renderer, and your other settings are the only thing in there.
+- **Nine fighters** with their own stats, palettes, movelists and victory quotes.
+- **Nine arenas**, procedurally painted at **1920×1080** and packed into SFF v2,
+  plus the engine's training room. Custom art drops straight in.
+- **A custom screenpack** with a dragon HUD: the health bar is the dragon's back
+  and the audacity meter is its underside, with the round timer on a glowing
+  green and red yin-yang.
+- **A +Chi reward** on every hit that lands, tracked per player.
+- **An asset pipeline** in `tools/`: characters, stages, HUD art, music wiring and
+  a validator, all reproducible from source — no hand-edited binaries.
 
-## Community
+## Join development
 
-Questions, feedback, or want to help build the game? Come talk to us on the
-[Big Trouble in Little China: The Game Discord](https://discord.gg/bY6NJ35c6P) —
-players and anyone who wants to join development are welcome.
+The game is built from code, not from a pile of opaque binary files: `tools/`
+paints the stage backdrops, the HUD, the dragons and the character palettes, then
+writes them into the engine's formats. That means a change starts as a small,
+reviewable Python edit.
 
-## Run from source
+**Where help is wanted most:**
 
-The rest of this README is for editing the game. If you only want to play, use a
-release above.
+1. **Original fighter sprites** to replace the Kung Fu Man silhouettes — the
+   biggest and most valuable job on the board. `docs/DESIGN.md` has the folder
+   layout and animation list.
+2. **Character-specific specials**, once fighters stop sharing one animation set.
+3. **Intro and ending storyboards** for arcade mode.
+4. **Music and voice stings** — `sound/` slots are wired and waiting.
+5. **Playtesting**: tell us which move feels wrong, which stage reads badly at
+   1080p, where the HUD fights the action.
 
-1. Download an Ikemen GO build (Windows/Linux/macOS) from the
-   [releases page](https://github.com/ikemen-engine/Ikemen-GO/releases) — the
-   nightly is what the bundled screenpack targets.
-2. Copy the engine executable into this folder, next to `data/`.
-
-   ```
-   bigtroubleinlittlechinathegame/
-     Ikemen_GO.exe          <- drop the engine here
-     data/                  <- screenpack + system config (this repo)
-     chars/                 <- fighters (this repo)
-     stages/                <- arenas (this repo)
-     font/ external/        <- engine support files (this repo)
-     tools/                 <- asset generators + validator (this repo)
-   ```
-
-3. Run the engine. The default motif reads `data/ikemen1/system.def`, which
-   points at `data/select.def` — the roster in this repo.
-
-On Linux, `chmod +x Ikemen_GO_Linux` first. If the engine reports a missing
-`.dll`/`.so`, you copied the binary out of its release archive without the
-sibling libraries — keep the release folder intact and only replace its
-`data/`, `chars/` and `stages/` with these.
-
-## Roster
-
-| Fighter | Role | Life | ATK | DEF | Notes |
-|---|---|---|---|---|---|
-| Jack Burton | hero | 1050 | 108 | 100 | balanced, pistol and knife specials |
-| Wang Chi | hero | 950 | 108 | 95 | faster, lower defence; painted rig |
-| Gracie Law | hero | 880 | 94 | 92 | fastest, lowest damage; painted rig |
-| Maio Yin | hero | 900 | 101 | 94 | Lo Pan's bride-to-be; painted rig |
-| Egg Shen | hero | 900 | 115 | 88 | glass cannon sorcerer; painted rig |
-| Rain | storm | 950 | 100 | 96 | water specials, twin claw rakes; painted rig |
-| Lightning | storm | 1000 | 105 | 100 | first-tier ladder opponent |
-| Thunder | storm | 1200 | 115 | 112 | heavy, scaled up 12% |
-| Lo Pan | boss | 1300 | 125 | 112 | final boss |
-
-Each fighter has their own folder with a `.def`, `.cmd`, `.cns`, `.air`, `.sff`,
-`.snd` and a themed `movelist.dat`, plus movie-flavoured victory quotes in the
-CNS `[Quotes]` section. Stats, scale and colours are listed once in
-`tools/build_chars.py` (`ROSTER`) and regenerated from there.
-
-Gracie Law and Maio Yin are not recolours at all: `tools/women_art.py` paints
-their parts in code (vermilion wedding silk, a gold sunburst crown on Maio Yin,
-a silver
-filigree one on Gracie) and `tools/bake_char.py` bakes them into full fighters
-in `chars/gracielaw_rig` and `chars/jade_rig`, which is what `select.def`
-points at.
-
-Jack is the one fighter whose palette is hand-built rather than hue-shifted.
-`tools/jackburton.py` maps Kung Fu Man's colour ramps onto his costume — white
-tank top, denim jeans, brown hair, tanned skin, leather boots — and adds his
-weapon art, animations and states, so a rebuild cannot drift back to a
-recoloured base.
-
-### Moves (shared command set)
-
-| Input | Move |
-|---|---|
-| `F + X` / `DF + X` | high / low guard |
-| `B or F + Y` | throw |
-| `QCF + P` | palm special (light/strong/fast on x/y/xy) |
-| `D-S-F + P` | rising upper |
-| `QCB + P` | blow |
-| `QDF + K` | kick special |
-| `F, F + K` | dash kick |
-| `QCB + K` | Jack only: Six Shooter, a three-round pistol burst |
-| `QDBF + K` | Jack only: Knife Toss, a spinning thrown blade |
-| `QCF, QCF + P` | super (1000 power) |
-| `QCB, QCB + P` | super (1000 power) |
-
-## Stages
-
-| Stage | File | Setting |
-|---|---|---|
-| Lo Pan's Throne | `stages/lopans_throne.def` | skull gate, green neon, red temple glyphs |
-| Lo Pan's Ceremony | `stages/lopans_ceremony.def` | the other side of the hall: six-armed statue, lotus plinth, broad steps |
-| Lo Pan's Hallway | `stages/lopans_hallway.def` | long blue-lacquer corridor, rows of gold Buddhas, lanterns, carpet runner |
-| Wing Kong Exchange | `stages/wingkong_exchange.def` | loading bay, neon signage, rain |
-| Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
-| Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
-| The Upside Down | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
-| Hell of the Upside-Down Sinners | `stages/hell_sinners.def` | rusted steel works lit from the floor, furnace fires, victims hung by the ankles, flooded sumps |
-| Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners, security checkpoint |
-| Training Room | `stages/stage0.def` | the engine's training stage, kept for training mode |
-
-All nine BTILC stages are drawn procedurally (no bitmaps committed as source),
-packed into SFF v2, and named for the film's locations. `tools/stages_hd.py`
-paints them natively at **1920×1080** (`localcoord = 1920, 1080`), which is the
-arcade layout at 4.5× — the engine no longer stretches a 240-line image across
-a 1080p window, so a 16:9 display shows all 1920 units at 1:1. Each stage canvas
-is **8192×1080**, painted as two 4096-wide halves: the camera travels ±3136 and
-the art reaches ±4096, so the view always lands on painted artwork, and the
-fighters may walk to ±4028 — 68 px short of the art edge — so the whole of the
-canvas is playable and the background never freezes under an invisible wall. The
-ground line is row 900 (`zoffset = 900`). Each stage ships a `9000,1`
-select-screen preview sprite.
-
-To put real art in a stage, drop `backdrop.png` (and optionally
-`foreground.png`) into `art_src/<stage id>/` and rebuild —
-`tools/build_hd_stage.py` replaces that stage with your image cover-fitted to the
-its own canvas and layer layout (`localcoord = 1920, 1080`), no code changes. That is the same HD
-stage model a high-resolution commercial fan remake uses, applied to art you own.
-
-## Music
-
-Menu music is read from `sound/` at the game root. `tools/build_music.py` writes
-the paths into the `[Music]` block of `data/ikemen1/system.def` from the files it
-finds there, so you drop a track in and the wiring is done for you:
-
-| File | Screen |
-|---|---|
-| `sound/Title.ogg` | title screen |
-| `sound/Select.ogg` | character select |
-| `sound/Versus.ogg` | versus screen |
-| `sound/Winner.ogg` | victory screen |
-| `sound/Continue.ogg` | continue screen |
-| `sound/Options.ogg`, `Replay.ogg`, `Results.ogg`, `Hiscore.ogg` | those screens |
-
-Names are matched case-insensitively, but the file has to sit in `sound/` and use
-an extension the engine can decode: **`.ogg` (Vorbis), `.mp3`, `.wav`, `.flac`,
-or `.mid`/`.midi`** (MIDI needs a soundfont). The engine picks its decoder from
-the extension, so `.opus`, `.m4a` and `.aac` files are ignored — renaming one to
-`.ogg` will not help either. OGG is the best pick for menu loops: smallest and
-gapless, and it wins when several encodings of the same track are present.
-
-Each key keeps its `.volume`, `.loop`, `.loopstart` and `.loopend` siblings, which
-the generator never touches; menus loop by default. Give several slots the same
-filename if you want one track to run across them — the engine only restarts the
-music when the filename changes.
-
-Stage fight music is separate, per stage: the `[Music] bgmusic =` line of each
-`stages/*.def`, filled from the `MUSIC` table in `tools/stages_hd.py` (for
-example `bgmusic = sound/LoPansDemise.ogg` on Lo Pan's Throne and Lo Pan's
-Hallway). Lo Pan's Ceremony is the one arena still blank there, so it falls back
-to whatever the menu is playing; the training room is deliberately silent.
-
-The tracks in `sound/` are part of this repository now, and every release bundle
-copies that folder along with the rest of the game, so a track you add there
-also ships in the downloads.
-
-## Rebuilding assets
+**Get running in three commands** (Python 3.9+ and Pillow):
 
 ```sh
-python3 tools/build_all.py        # every generator, then the validator
+git clone https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame.git
+cd bigtroubleinlittlechinathegame
+python3 tools/build_all.py     # regenerate everything, then validate
 ```
 
-Or one at a time:
+`python3 tools/validate.py` runs 44 offline checks — roster, frames, stage layers,
+previews, palettes — with no engine required, so it is the fastest feedback loop
+while you work.
 
-```sh
-python3 tools/build_stages.py     # arcade-resolution stages (320-space)
-python3 tools/stages_hd.py        # the same four arenas at 1920x1080 (shipped)
-python3 tools/build_hd_stage.py   # replaces any stage that has art_src/ art
-python3 tools/dump_stage_art.py   # unpack stage sprites to PNG (or double-click
-                                 # "Dump Stage Art.bat" on Windows)
-python3 tools/build_chars.py      # regenerate the roster folders
-python3 tools/build_music.py      # menu music paths in data/ikemen1/system.def
-python3 tools/validate.py         # offline checks (no engine needed)
-```
+Talk to us before starting anything large: the [Discord](https://discord.gg/bY6NJ35c6P)
+is where the work is coordinated. Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+for the pipeline, the art rules and the review expectations.
 
-`tools/build_stages.py` accepts `STAGE_DEBUG=1` to dump each layer as PNG into
-`artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to
-save 4:3 and 16:9 crops of each arena for eyeballing. Requirements: Python 3.9+
-and Pillow (only the tooling needs it; the game itself does not).
+## Repository map
 
-`tools/validate.py` verifies that every roster entry resolves, every character's
-`.air` frame exists in its `.sff`, every stage layer sprite exists, select-screen
-previews are present, and the roster is not accidentally all one palette. Run it
-after any roster or stage edit.
+| Path | What lives there |
+|---|---|
+| `chars/` | nine fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
+| `stages/` | nine arena definitions and their SFF art |
+| `data/` | screenpack, `fight.def` HUD, motif, system and select definitions |
+| `tools/` | every asset generator plus `validate.py` |
+| `art_src/` | source art and drop-in folders for stages and characters |
+| `sound/` | menu and stage music |
+| `docs/` | design, install, roster, stages, music and contribution notes |
+| `artifacts/` | generated previews and screenshots used by this README |
 
-On GitHub the `Build game assets` workflow does exactly this on every push that
-touches the sources: it fetches the Ikemen GO release for the screenpack, fonts
-and Kung Fu Man base, runs `tools/build_all.py`, and commits the resulting
-`chars/`, `stages/`, `data/` and `artifacts/` output back to `main`.
+## Documentation
 
-## What is placeholder art, and what is original
+| Document | Covers |
+|---|---|
+| [docs/INSTALL.md](docs/INSTALL.md) | playing, troubleshooting, running from source |
+| [docs/ROSTER.md](docs/ROSTER.md) | fighters, stats and the shared movelist |
+| [docs/STAGES.md](docs/STAGES.md) | the arenas, the HD stage model, custom art |
+| [docs/MUSIC.md](docs/MUSIC.md) | menu and stage music wiring |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | pipeline, workflow, roadmap |
+| [docs/DESIGN.md](docs/DESIGN.md) | character design and sprite replacement plan |
 
-Original to this repo:
+## Credits and legal
 
-* all four stage backdrops and their SFF files
-* per-fighter palettes, stats, move lists, victory quotes
-* the asset pipeline (`tools/`) and the validator
-* `data/select.def` roster, arcade ladder and screenpack naming
-
-Placeholder:
-
-* **fighter sprites** are Kung Fu Man's (Elecbyte's sample character that ships
-  with Ikemen GO) recoloured per fighter through graded palette tables. The
-  silhouettes and animations are therefore all Kung Fu Man. `docs/DESIGN.md`
-  explains the replacement path and why the palettes are baked into each SFF.
-* **portraits** in the select screen are the same base character's portraits,
-  recoloured the same way.
-* audio — no music or voice is bundled. `sound/` and the stage `bgmusic` lines
-  are yours to fill in; see [Music](#music).
-
-Nothing in this repository is taken from the film: no stills, posters, music or
-actor likenesses. Character names and move names are used as fan fiction.
-
-## Legal
-
-* Ikemen GO is licensed separately under the MIT licence — see its
-  [LICENCE](https://github.com/ikemen-engine/Ikemen-GO/blob/develop/LICENCE.txt).
-  The release bundles redistribute an unmodified engine build, and keep the
-  engine's `LICENCE.txt` inside every zip as the licence requires.
-* The IKEMEN1 screenpack in `data/ikemen1/` is by Ohmga Shironeko, redistributed
+- **Ikemen GO** is MIT licensed — [its licence](https://github.com/ikemen-engine/Ikemen-GO/blob/develop/LICENCE.txt).
+  Release bundles ship an unmodified engine build and keep its `LICENCE.txt` inside
+  every zip.
+- **IKEMEN1 screenpack** in `data/ikemen1/` is by Ohmga Shironeko, redistributed
   under the terms of the Ikemen GO release it ships with.
-* Kung Fu Man sprites are Elecbyte's sample assets.
-* *Big Trouble in Little China* is a trademark of its rights holders. This is a
-  non-commercial fan project; nothing here is licensed by or endorsed by them.
-  If you plan to publish, replace the placeholder character art and audio.
-
-## Roadmap
-
-1. Replace Kung Fu Man silhouettes with original per-character sprite sets
-   (see `docs/DESIGN.md` for the expected folder layout and animation list).
-2. Character-specific specials — the shared command set is deliberate while all
-   fighters share one animation set.
-3. Intro/ending storyboards for arcade mode per fighter.
-4. Original music and voice stings in `sound/`.
+- **Kung Fu Man** sprites are Elecbyte's sample assets, recoloured here as
+  placeholders.
+- Everything else — stage backdrops, HUD art, palettes, stats, movelists, quotes
+  and the whole `tools/` pipeline — is original to this project.
+- *Big Trouble in Little China* is a trademark of its rights holders. This is a
+  non-commercial fan project, not licensed or endorsed by them. Nothing here is
+  taken from the film: no stills, posters, music or actor likenesses. If you plan
+  to publish, replace the placeholder character art and audio first.
