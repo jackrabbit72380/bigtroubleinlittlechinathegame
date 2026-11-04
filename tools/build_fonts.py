@@ -815,6 +815,26 @@ def place_video_menu(text):
     return out, (1 if out != text else 0)
 
 
+def strip_base_footer():
+    """Drop the footer rows from the engine's base text table as well.
+
+    The black strip's backdrop rect is drawn from these keys. Leaving them in
+    the base table while the motif has none is the half-fixed state that kept a
+    bar at the bottom of the menus, so both tables are cleared together.
+    """
+    if not os.path.isfile(BASE_DEF):
+        return 0
+    with open(BASE_DEF, "r", encoding="utf-8", errors="surrogateescape",
+              newline="") as fh:
+        text = fh.read()
+    new, dropped = drop_keys(text, DROP_KEYS)
+    if dropped:
+        with open(BASE_DEF, "w", encoding="utf-8", errors="surrogateescape",
+                  newline="") as fh:
+            fh.write(new)
+    return dropped
+
+
 def ensure_resolution_menu(text):
     """Write the video resolution list, and keep its labels current.
 
@@ -948,6 +968,11 @@ def main():
     if dedented:
         print(f"  un-indented {dedented} video menu row(s): an indented row "
               f"never matches its itemname, so the submenu stayed empty")
+
+    base_dropped = strip_base_footer()
+    if base_dropped:
+        print(f"  removed {base_dropped} footer key(s) from "
+              f"{os.path.basename(BASE_DEF)} as well")
 
     text, moved = place_video_menu(text)
     if moved:
