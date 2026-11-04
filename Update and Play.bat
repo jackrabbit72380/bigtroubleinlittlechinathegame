@@ -30,6 +30,15 @@ if not defined EXE (
   exit /b 1
 )
 
+rem Something on this machine points git and curl at /usr/ssl/certs/ca-bundle.crt,
+rem an MSYS path that only exists inside Git Bash, so both fail before they
+rem connect. Clearing the variables and ignoring the system gitconfig for this
+rem window gives git its own correct bundle path.
+set "GIT_SSL_CAINFO="
+set "CURL_CA_BUNDLE="
+set "SSL_CERT_FILE="
+set "GIT_CONFIG_NOSYSTEM=1"
+
 set "CACHE=%~dp0.update-cache"
 if not exist "%CACHE%" mkdir "%CACHE%"
 set "ZIPURL=https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame/zip/refs/heads/main"
@@ -58,6 +67,7 @@ goto havezip
 :trygit
 echo Checking for new files with git ...
 if exist "%CACHE%\repo\.git" goto gitpull
+if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo"
 git clone --depth 1 "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
 goto gitdone
 
@@ -82,10 +92,20 @@ goto download
 :download
 echo Downloading the newest files ...
 if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip"
+echo This is a one-off download of about 190 MB and can take a few minutes
+echo on a slow connection. A progress bar appears in a moment.
+echo.
+if not exist "%SystemRoot%\System32\curl.exe" goto dl_powershell
+echo   trying Windows curl ...
+"%SystemRoot%\System32\curl.exe" -L --fail --progress-bar --connect-timeout 30 -o "%CACHE%\main.zip" "%ZIPURL%"
+call :zipok
+if "%ZIPOK%"=="1" goto havezip
+
+:dl_powershell
 where powershell >nul 2>nul
 if errorlevel 1 goto dl_certutil
 echo   trying Windows PowerShell ...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $ProgressPreference = 'SilentlyContinue'; [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -Uri '%ZIPURL%' -OutFile '%CACHE%\main.zip'; exit 0 } catch { Write-Host ('     ' + $_.Exception.Message); exit 1 }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -UseBasicParsing -TimeoutSec 900 -Uri '%ZIPURL%' -OutFile '%CACHE%\main.zip'; exit 0 } catch { Write-Host ('     ' + $_.Exception.Message); exit 1 }"
 call :zipok
 if "%ZIPOK%"=="1" goto havezip
 
