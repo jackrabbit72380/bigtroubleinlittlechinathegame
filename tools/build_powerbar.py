@@ -283,7 +283,6 @@ def _dragon_raw(kind):
     if kind == "front_max":
         img = Image.alpha_composite(img.filter(ImageFilter.GaussianBlur(2.0 * SS)),
                                     img)
-        _label(img, cw, ch, w, h, pad_x, pad_y)
     return img
 
 
@@ -350,7 +349,6 @@ def _from_concept(path):
     frame = art_img
     front = shade(art_img, 1.06)
     front_max = front.copy()
-    _label(front_max, W, H, W, H, 0, 0)
     return {(40, 0): trough, (41, 0): frame, (43, 0): front,
             (44, 0): front_max}
 
