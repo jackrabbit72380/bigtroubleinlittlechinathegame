@@ -68,8 +68,16 @@ Drop `Update and Play.bat` into that folder and double-click it instead of the
 game's own exe. Each run fetches whatever is newest on `main`, copies `data/`,
 `chars/`, `stages/`, `font/`, `external/` and `sound/` over the folder, leaves
 your `save/` and the engine files alone, prints which HUD it copied, and starts
-the game. With Git installed the update is a few megabytes; without it the file
-downloads the `main` zip once per run instead. Nothing to install or copy by hand.
+the game. With Git installed the update is a few megabytes; otherwise it downloads
+the `main` zip once per run. Nothing to install or copy by hand.
+
+If the download fails on a machine that cannot reach GitHub with a system
+certificate store it trusts (Git's `curl` is the usual culprit: it looks for a
+CA bundle at a path that only exists inside Git Bash), the launcher will say so.
+Save the zip from
+[codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame](https://codeload.github.com/jackrabbit72380/bigtroubleinlittlechinathegame/zip/refs/heads/main)
+next to the launcher as `main.zip` and run it again — it uses that file and
+skips the network entirely.
 
 ## Run from source
 
