@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater  v9
+rem  BIG TROUBLE IN LITTLE CHINA - updater v10
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater  v9
+echo                        updater v10
 echo.
 echo   ==============================================================
 echo.
@@ -177,12 +177,41 @@ if not exist "%~dp0data\fight.def" goto download
 set "APPLIED="
 set /p APPLIED=<"%CACHE%\applied.txt"
 if not defined APPLIED goto download
+call :atoms
+if not defined RSHA7 goto probe_api
+if not "%RSHA7%"=="%APPLIED%" goto download
+echo   files  : main @ %APPLIED%
+echo            main has not moved - nothing to download
+goto launch
+
+:probe_api
+rem Fallback only. The API answers the same question but counts against an
+rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto download
 if not "%RSHA7%"=="%APPLIED%" goto download
 echo   files  : main @ %APPLIED%
 echo            main has not moved - nothing to download
 goto launch
+
+:atoms
+rem Sets RSHA7 to main's head commit from the public commit feed. The feed
+rem is a few tens of KB, needs no token, and is not counted against the hourly
+rem quota api.github.com enforces - that quota is what answered 403 and sent a
+rem one-line fix through the whole 190 MB archive on every launch.
+set "RSHA7="
+set "ASHA="
+if not defined CURL exit /b 0
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\main.atom" "https://github.com/%REPO%/commits/main.atom" >nul 2>&1
+if errorlevel 1 exit /b 0
+if not exist "%CACHE%\main.atom" exit /b 0
+for /f "tokens=2 delims=/" %%a in ('"%FINDSTR%" /c:"Grit::Commit/" "%CACHE%\main.atom"') do if not defined ASHA set "ASHA=%%a"
+if not defined ASHA exit /b 0
+set "ASHA=%ASHA:</id>=%"
+set "ASHA=%ASHA:~0,40%"
+if not defined ASHA exit /b 0
+set "RSHA7=%ASHA:~0,7%"
+exit /b 0
 
 :headsha
 rem Sets RSHA7 to the short head commit of main. Left empty on any doubt, so

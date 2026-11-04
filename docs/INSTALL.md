@@ -75,8 +75,11 @@ Drop `Update and Play.bat` into that folder and double-click it instead of the
 game's own exe. Each run fetches whatever is newest on `main`, copies `data/`,
 `chars/`, `stages/`, `font/`, `external/` and `sound/` over the folder, leaves
 your `save/` and the engine files alone, prints which HUD it copied, and starts
-the game. With Git installed the update is a few megabytes; otherwise it downloads
-the `main` zip once per run. Nothing to install or copy by hand.
+the game. With Git installed the update moves only the changed files; without git
+it reads the public commit feed (a few tens of KB, no token, no API quota) and
+only downloads the `main` zip when that feed shows `main` has moved, so a launch
+with nothing new behind it costs one small request. Nothing to install or copy
+by hand.
 
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
