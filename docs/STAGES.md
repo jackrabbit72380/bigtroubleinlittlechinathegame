@@ -39,7 +39,7 @@ from the painting constants, so they move with the artwork:
 
 | | world x | what it is |
 |---|---|---|
-| `leftbound` | **-2602** | the cab's rear face, so a fighter cannot walk through the cab |
+| `leftbound` | **-2422** | the head of the bed at the cab's back, so a fighter cannot walk through the cab |
 | `rightbound` | **3790** | the trailer's tail board, so a fighter cannot walk off the bed |
 
 The cab is painted behind the play plane and cannot stop anyone by itself, and a

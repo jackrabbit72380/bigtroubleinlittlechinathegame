@@ -533,15 +533,17 @@ FAR_RAIL_BOT = FLOOR_Y - px(15)          # 832: the deck runs from here to the n
 # The rig's own surfaces are the walls of the fight. World x is canvas x +
 # START_X, so both come out of the painting constants above and cannot drift away
 # from the artwork if the truck is repainted or moved:
-#   RIG_FRONT_WALL = -2602, the cab's rear face. Without it a fighter walks
-#     straight through the cab, which is painted behind the play plane and cannot
-#     stop anyone by itself.
-#   RIG_TAIL_WALL = 3790, the trailer's tail board. Without it a fighter walks off
-#     the end of the bed and stands on the highway.
+#   RIG_FRONT_WALL = -2422, the head of the bed, right at the cab's back (the
+#     sleeper ends at _cab's back_x = px(284), the deck starts at BED_X0). Without
+#     it a fighter walks straight through the cab, which is painted behind the
+#     play plane and cannot stop anyone by itself.
+#   RIG_TAIL_WALL = 3790, the trailer's tail board, which always lands on the
+#     canvas' right edge however far the rig is pushed in. Without it a fighter
+#     walks off the end of the bed and stands on the highway.
 # A MUGEN/Ikemen stage carries no collision geometry, so these bounds are the
 # only stage-level solidity the format offers.
-RIG_FRONT_WALL = RIG_X + CAB_X + CAB_W + START_X      # -2602
-RIG_TAIL_WALL = 2 * HALF_SPAN - TAIL_W + START_X      # 3790
+RIG_FRONT_WALL = RIG_X + BED_X0 + START_X             # -2422
+RIG_TAIL_WALL = W - TAIL_W + START_X                  # 3790
 PLAYER_WALLS = {"porkchop_express": (RIG_FRONT_WALL, RIG_TAIL_WALL)}
 
 
