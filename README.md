@@ -48,6 +48,12 @@ cannot run it reports. Choose **OpenGL 3.3**. If the box appears before you can
 reach that menu, delete `save/config.ini`: the engine recreates it on the default
 renderer, and your other settings are the only thing in there.
 
+## Community
+
+Questions, feedback, or want to help build the game? Come talk to us on the
+[Big Trouble in Little China: The Game Discord](https://discord.gg/bY6NJ35c6P) —
+players and anyone who wants to join development are welcome.
+
 ## Run from source
 
 The rest of this README is for editing the game. If you only want to play, use a
