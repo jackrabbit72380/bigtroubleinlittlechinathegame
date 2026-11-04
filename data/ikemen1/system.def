@@ -263,36 +263,36 @@ suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
 had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
 the motif's own 1280x720, so the art, the framing and the netplay handshake are
 all unaffected.
-	menu.itemname.menuvideo.resolution = RESOLUTION
-	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
-	menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
-	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
-	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
-	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
-	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
-	menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
-	menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
-	menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
-	menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
-	menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
-	menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
-	menu.itemname.menuvideo.resolution.back = BACK
+menu.itemname.menuvideo.resolution = RESOLUTION
+menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
+menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
+menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
+menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
+menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
+menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
+menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
+menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
+menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
+menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
+menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
+menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
+menu.itemname.menuvideo.resolution.back = BACK
 
-	menu.itemname.menuvideo.window = WINDOW SIZE
-	menu.itemname.menuvideo.window.windowauto = Match Render Size
-	menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)
-	menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)
-	menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)
-	menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)
-	menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)
-	menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)
-	menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)
-	menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)
-	menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)
-	menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)
-	menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
-	menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
-	menu.itemname.menuvideo.window.back = BACK
+menu.itemname.menuvideo.window = WINDOW SIZE
+menu.itemname.menuvideo.window.windowauto = Match Render Size
+menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)
+menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)
+menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)
+menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)
+menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)
+menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)
+menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)
+menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)
+menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)
+menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)
+menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
+menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
+menu.itemname.menuvideo.window.back = BACK
 
 ; Exit Game
 menu.itemname.exit = EXIT
