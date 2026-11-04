@@ -17,6 +17,16 @@ where the dragons *are* the meters.
 > is useful. Start with [Join development](#join-development) or just say hello in
 > the [Discord](https://discord.gg/bY6NJ35c6P).
 
+## The HUD
+
+![The dragon HUD in a match](artifacts/hud_ingame.png)
+
+One dragon per side: its back is that player's health, its belly is audacity, and
+its head turns in to the yin-yang timer. Red for player one, green for player two.
+This render is composited from `data/fight.def` and `data/fight.sff` on every
+build, so the picture above is always the HUD that actually ships — you can check
+a change here without opening the engine.
+
 ## The arenas
 
 | ![Lo Pan's Throne](artifacts/lopans_throne_card.png) | ![Lo Pan's Ceremony](artifacts/lopans_ceremony_card.png) | ![Lo Pan's Hallway](artifacts/lopans_hallway_card.png) |

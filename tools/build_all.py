@@ -125,7 +125,15 @@ def main():
     # [Lifebar], [Powerbar] and [Time] in data/fight.def and the sprites in
     # data/fight.sff, both of which the engine copy above starts from stock, so
     # it has to run here or a rebuild would put the old bars back.
-    scripts += ["build_banner.py", "build_powerbar.py", "validate.py"]
+    scripts += ["build_banner.py", "build_powerbar.py"]
+    # The in-game HUD render shown on the project page. Compositing it here
+    # means the picture cannot drift from the HUD that ships in data/, and a
+    # push refreshes it without anyone opening the engine.
+    preview_stage = os.path.join(TOOLS, os.pardir, "artifacts",
+                                 "lopans_throne_preview.png")
+    if os.path.isfile(preview_stage):
+        scripts.append("preview_hud.py")
+    scripts.append("validate.py")
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry
         code = run(script, *args)
