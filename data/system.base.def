@@ -485,53 +485,9 @@
 	; Footer parameters control rendering of engine version info. Separated into
 	; 3 elements to allow left/center/right text align at the same time.
 	; Unless overridden, offsets and version text are set when loading the motif.
-	footer.title.font = default-3x5.def, 0, 1, 191, 191, 191, 255, -1
-	footer.title.offset = 
-	footer.title.scale = 1.0, 1.0
-	footer.title.xshear = 0
-	footer.title.angle = 0
-	footer.title.xangle = 0
-	footer.title.yangle = 0
-	footer.title.projection = orthographic
-	footer.title.focallength = 2048
-	footer.title.text = I.K.E.M.E.N. GO
-	footer.title.layerno = 0
-	footer.title.window = 
-	footer.title.localcoord = 
 
-	footer.info.font = default-3x5.def, 0, 0, 191, 191, 191, 255, -1
-	footer.info.offset = 
-	footer.info.scale = 1.0, 1.0
-	footer.info.xshear = 0
-	footer.info.angle = 0
-	footer.info.xangle = 0
-	footer.info.yangle = 0
-	footer.info.projection = orthographic
-	footer.info.focallength = 2048
-	footer.info.text = Press F1 or hold Menu for info
-	footer.info.layerno = 0
-	footer.info.window = 
-	footer.info.localcoord = 
 
-	footer.version.font = default-3x5.def, 0, -1, 191, 191, 191, 255, -1
-	footer.version.offset = 
-	footer.version.scale = 1.0, 1.0
-	footer.version.xshear = 0
-	footer.version.angle = 0
-	footer.version.xangle = 0
-	footer.version.yangle = 0
-	footer.version.projection = orthographic
-	footer.version.focallength = 2048
-	footer.version.text = 
-	footer.version.layerno = 0
-	footer.version.window = 
-	footer.version.localcoord = 
 
-	footer.overlay.col = 0, 0, 64
-	footer.overlay.alpha = 255, 100
-	footer.overlay.layerno = 0
-	footer.overlay.window = 
-	footer.overlay.localcoord = 
 
 	; Controls screen rendered during establishing connection with other player
 	connecting.font = f-6x9.def, 0, 0, 255, 255, 255, 255, -1
