@@ -118,17 +118,17 @@ def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror,
     front, fw, fh = pic(d, by_key, pals, key)
 
     if not mirror:
-        blit(canvas, bg, px - bw * S, py + 3 * S, S)
+        blit(canvas, bg, px - bw * S, py, S)
         blit(canvas, frame, px - bw * S, py, S)
         span = max(1, round(fw * min(1.0, frac)))
         piece = front.crop((fw - span, 0, fw, fh))
-        blit(canvas, piece, px - 4 * S - piece.width * S, py + 4 * S, S)
+        blit(canvas, piece, px - 4 * S - piece.width * S, py, S)
     else:
-        blit(canvas, bg, px, py + 3 * S, S, mirror=True)
+        blit(canvas, bg, px, py, S, mirror=True)
         blit(canvas, frame, px, py, S, mirror=True)
         span = max(1, round(fw * min(1.0, frac)))
         piece = front.crop((0, 0, span, fh)).transpose(Image.FLIP_LEFT_RIGHT)
-        blit(canvas, piece, px + 4 * S, py + 4 * S, S)
+        blit(canvas, piece, px + 4 * S, py, S)
 
     # the level readout sits under the meter: number, or MAXIMUM / AUDACITY
     if glyphs and text:
@@ -148,12 +148,22 @@ def draw_text(canvas, glyphs, text, x, y, scale, centre=True):
         x += round(gw * scale)
 
 
-def draw_timer(canvas, d, by_key, pals, pos, glyphs, seconds, offset=(0, -12)):
+def draw_timer(canvas, d, by_key, pals, pos, glyphs, seconds):
+    """[Time]: the yin-yang at pos, with the digits counting down inside it."""
     px, py = pos[0] * S, pos[1] * S
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[Time]", 1)[1].split("\n[", 1)[0]
+    m = re.search(r"(?m)^\s*bg\.offset\s*=\s*(-?\d+)\s*,\s*(-?\d+)", body)
+    bg_off = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+    m = re.search(r"(?m)^\s*counter\.offset\s*=\s*(-?\d+)\s*,\s*(-?\d+)", body)
+    c_off = (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+    m = re.search(r"(?m)^\s*counter\.scale\s*=\s*([\d.]+)\s*,\s*([\d.]+)", body)
+    c_scale = float(m.group(1)) if m else 1.0
     img, _w, _h = pic(d, by_key, pals, (30, 0))
-    blit(canvas, img, px - img.width * S / 2,
-         py + offset[1] * S - img.height * S / 2, S)
-    draw_text(canvas, glyphs, str(seconds), px, py + 30 * S, 2 * S)
+    blit(canvas, img, px + bg_off[0] * S - img.width * S / 2,
+         py + bg_off[1] * S - img.height * S / 2, S)
+    draw_text(canvas, glyphs, str(seconds), px + c_off[0] * S,
+              py + c_off[1] * S, c_scale * S)
 
 
 def load_glyphs(name):
@@ -217,7 +227,7 @@ def main():
     draw_powerbar(shot, d, by_key, pals, power["p1"], 1.0, False)
     draw_lifebar(shot, d, by_key, pals, life["p1"], 0.82, False)
     draw_lifebar(shot, d, by_key, pals, life["p2"], 0.55, True)
-    draw_timer(shot, d, by_key, pals, time_pos, timer_glyphs, 60, bg_offset)
+    draw_timer(shot, d, by_key, pals, time_pos, timer_glyphs, 60)
 
     shot.convert("RGB").save(os.path.join(OUT, "hud_ingame.png"))
     print("wrote artifacts/hud_ingame.png")
