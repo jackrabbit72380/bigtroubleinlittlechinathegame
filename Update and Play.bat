@@ -17,6 +17,11 @@ rem ===========================================================================
 setlocal
 cd /d "%~dp0"
 
+echo Update and Play v3 - newest files, one double-click
+echo launcher : %~f0
+echo folder   : %~dp0
+echo.
+
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
@@ -97,6 +102,7 @@ echo on a slow connection. A progress bar appears in a moment.
 echo.
 if not exist "%SystemRoot%\System32\curl.exe" goto dl_powershell
 echo   trying Windows curl ...
+echo   "%SystemRoot%\System32\curl.exe" -L --fail --progress-bar -o main.zip "%ZIPURL%"
 "%SystemRoot%\System32\curl.exe" -L --fail --progress-bar --connect-timeout 30 -o "%CACHE%\main.zip" "%ZIPURL%"
 call :zipok
 if "%ZIPOK%"=="1" goto havezip
