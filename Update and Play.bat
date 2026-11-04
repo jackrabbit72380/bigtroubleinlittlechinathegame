@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater  v6
+rem  BIG TROUBLE IN LITTLE CHINA - updater  v7
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -9,16 +9,43 @@ rem  Double-click it. It gets the newest files on main, copies data\ chars\
 rem  stages\ font\ external\ sound\ over this folder, leaves save\ and the
 rem  engine alone, then starts the game and closes.
 rem
-rem  It tries, in order: git (smallest download), curl, PowerShell, BITS. If
-rem  every one is blocked, it opens the download in your browser and finishes
-rem  by itself the moment the zip lands in Downloads.
-rem
-rem  A copy of main.zip in this folder is used first and needs no network.
+rem  Every Windows tool below is called by full path on purpose. A Git for
+rem  Windows install that puts its usr\bin on PATH shadows System32 with MSYS
+rem  builds, and those are not the same programs: `timeout /t` answers
+rem  "invalid time interval", tar reads H:\... as a remote host and answers
+rem  "Cannot connect to H:", and curl looks for its CA bundle at
+rem  /usr/ssl/certs/ca-bundle.crt. Full paths avoid all three.
 rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
 color 0E
 cd /d "%~dp0"
 title Big Trouble in Little China - updater
+
+set "SYS=%SystemRoot%\System32"
+set "PING=%SYS%\ping.exe"
+set "TAR=%SYS%\tar.exe"
+set "CURL=%SYS%\curl.exe"
+set "FINDSTR=%SYS%\findstr.exe"
+set "TASKLIST=%SYS%\tasklist.exe"
+set "ROBOCOPY=%SYS%\robocopy.exe"
+set "WHERE=%SYS%\where.exe"
+set "POWERSHELL=%SYS%\WindowsPowerShell\v1.0\powershell.exe"
+if not exist "%TAR%" set "TAR="
+if not exist "%CURL%" set "CURL="
+if not exist "%POWERSHELL%" set "POWERSHELL="
+if not exist "%WHERE%" set "WHERE="
+
+rem Git Bash can also leave these set, pointing at a path that only exists
+rem inside its own filesystem. They are cleared for this window only.
+set "CURL_CA_BUNDLE="
+set "CURL_CA_PATH="
+set "SSL_CERT_FILE="
+set "SSL_CERT_DIR="
+set "GIT_SSL_CAINFO="
+set "GIT_SSL_CAPATH="
+set "GIT_CONFIG_NOSYSTEM=1"
+set "GIT_TERMINAL_PROMPT=0"
+set "GIT_CONFIG_PARAMETERS="
 
 echo.
 echo   ==============================================================
@@ -26,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater  v6
+echo                        updater  v7
 echo.
 echo   ==============================================================
 echo.
@@ -38,29 +65,13 @@ if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTh
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto wrongfolder
 
-rem ---- certificate hygiene ----------------------------------------------
-rem A machine that has run Git Bash or a dev tool can carry CURL_CA_BUNDLE
-rem or SSL_CERT_FILE pointing at /usr/ssl/certs/ca-bundle.crt. Windows curl
-rem then refuses every https request with "(77) error setting certificate
-rem file" and never downloads a byte. Clearing them for this window only
-rem makes curl fall back to the Windows certificate store.
-set "CURL_CA_BUNDLE="
-set "CURL_CA_PATH="
-set "SSL_CERT_FILE="
-set "SSL_CERT_DIR="
-set "GIT_SSL_CAINFO="
-set "GIT_SSL_CAPATH="
-set "GIT_CONFIG_NOSYSTEM=1"
-set "GIT_TERMINAL_PROMPT=0"
-set "GIT_CONFIG_PARAMETERS="
-
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
 set "ZIPURL2=https://github.com/%REPO%/archive/refs/heads/main.zip"
 set "GITURL=https://github.com/%REPO%.git"
 set "CACHE=%~dp0.update-cache"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
-set "ZIP=%CACHE%\main.zip"
+set "ZIP="
 set "SRC="
 set "WHICH="
 set "ZIPOK=0"
@@ -71,19 +82,32 @@ set "FOUNDZIP="
 echo   [ 1/4 ]  looking for the newest files
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
-where git >nul 2>nul
+rem nothing left over from an interrupted run may be mistaken for an archive
+if exist "%CACHE%\main-1.zip" del /q "%CACHE%\main-1.zip" >nul 2>&1
+if exist "%CACHE%\main-2.zip" del /q "%CACHE%\main-2.zip" >nul 2>&1
+if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip" >nul 2>&1
+if not exist "%WHERE%" goto download
+"%WHERE%" git >nul 2>&1
 if errorlevel 1 goto download
 goto trygit
 
 :manualzip
 echo            using main.zip from this folder - no download needed
+set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0main.zip" "%ZIP%" >nul
-goto havezip
+call :zipcheck
+if "%ZIPOK%"=="1" goto havezip
+echo            that main.zip is incomplete - downloading instead
+goto download
 
 :manualzip2
 echo            using bigtroubleinlittlechinathegame-main.zip here
+set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0bigtroubleinlittlechinathegame-main.zip" "%ZIP%" >nul
-goto havezip
+call :zipcheck
+if "%ZIPOK%"=="1" goto havezip
+echo            that zip is incomplete - downloading instead
+goto download
 
 rem ---- transport 1: git, with the Windows certificate store --------------
 :trygit
@@ -106,7 +130,7 @@ goto sync
 :gitfail
 echo            git could not fetch. it said:
 if not exist "%CACHE%\git.log" goto download
-findstr /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
+"%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
 echo            trying a direct download instead
 goto download
 
@@ -114,35 +138,38 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  downloading the game files
-echo            about 190 MB. the count below is what has arrived.
+echo            about 190 MB. the count below only goes up.
 echo.
-if exist "%SystemRoot%\System32\curl.exe" goto dl_curl
-goto dl_ps
+set "ATT=0"
 
-:dl_curl
-call :cfetch "%ZIPURL%"
+:curl_try
+set /a ATT+=1
+if %ATT% GTR 2 goto dl_ps
+if not defined CURL goto dl_ps
+set "ZIP=%CACHE%\main-%ATT%.zip"
+if %ATT%==2 (call :cfetch "%ZIPURL2%") else (call :cfetch "%ZIPURL%")
+call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-call :cfetch "%ZIPURL2%"
-if "%ZIPOK%"=="1" goto havezip
+goto curl_try
 
 :dl_ps
-where powershell >nul 2>nul
-if errorlevel 1 goto dl_bits
-echo            trying PowerShell. this step is silent, so it may sit a while:
+if not defined POWERSHELL goto dl_bits
+set "ZIP=%CACHE%\main-ps.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $c = New-Object Net.WebClient; $c.Headers.Add('User-Agent','btilc-updater'); $c.DownloadFile('%ZIPURL%','%ZIP%'); exit 0 } catch { Write-Host ('             ' + $_.Exception.Message); exit 1 }"
-call :zipok
+echo            trying PowerShell. this step is silent, so it may sit a while:
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $c = New-Object Net.WebClient; $c.Headers.Add('User-Agent','btilc-updater'); $c.DownloadFile('%ZIPURL%','%ZIP%'); exit 0 } catch { Write-Host ('             ' + $_.Exception.Message); exit 1 }"
+call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 
 :dl_bits
-where bitsadmin >nul 2>nul
-if errorlevel 1 goto dl_browser
+if not exist "%SYS%\bitsadmin.exe" goto dl_browser
+set "ZIP=%CACHE%\main-bits.zip"
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 echo            trying BITS, the Windows download service
 echo            it uses the same proxy settings as your browser
-if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-bitsadmin /reset >nul 2>&1
-bitsadmin /transfer BTILCupdate /download /priority normal "%ZIPURL%" "%ZIP%" >nul 2>&1
-call :zipok
+"%SYS%\bitsadmin.exe" /reset >nul 2>&1
+"%SYS%\bitsadmin.exe" /transfer BTILCupdate /download /priority normal "%ZIPURL%" "%ZIP%" >nul 2>&1
+call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 
 rem ---- last resort: the browser does the download, this finishes it ------
@@ -159,7 +186,7 @@ start "" "%ZIPURL%"
 echo            waiting for the zip ...
 set /a WAIT=0
 :bwait
-timeout /t 5 /nobreak >nul
+call :sleep 5
 set /a WAIT+=5
 call :findzip
 if defined FOUNDZIP goto bapply
@@ -169,8 +196,9 @@ goto downloadfailed
 
 :bapply
 echo            got it: %FOUNDZIP%
+set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%FOUNDZIP%" "%ZIP%" >nul
-call :zipok
+call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 goto downloadfailed
 
@@ -180,23 +208,24 @@ echo.
 echo   [ 3/4 ]  copying the game files over this folder
 if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
 mkdir "%CACHE%\unpack" 2>nul
-where tar >nul 2>nul
-if errorlevel 1 goto unzip_ps
-tar -xf "%ZIP%" -C "%CACHE%\unpack"
+if not defined TAR goto un_ps
+"%TAR%" -xf "%ZIP%" -C "%CACHE%\unpack"
+if errorlevel 1 goto un_ps
 goto unpacked
 
-:unzip_ps
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%CACHE%\unpack'"
+:un_ps
+if not defined POWERSHELL goto unpacked
+if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
+mkdir "%CACHE%\unpack" 2>nul
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%CACHE%\unpack'"
 
 :unpacked
 for /d %%D in ("%CACHE%\unpack\*") do set "SRC=%%~fD"
 if not defined SRC goto downloadfailed
 if not "%WHICH%"=="git" set "WHICH=zip"
-
-:sync
 for %%F in (data chars stages font external sound) do (
   if exist "%SRC%\%%F" echo            %%F
-  if exist "%SRC%\%%F" robocopy "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
+  if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
 )
 if not exist "%SRC%\config.ini" goto copied
 copy /Y "%SRC%\config.ini" "%~dp0config.ini" >nul
@@ -208,9 +237,12 @@ set "VER="
 if not "%WHICH%"=="git" goto skipver
 for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
 
+:sync
+if not "%WHICH%"=="git" goto skipver2
+
 :skipver
 echo.
-findstr /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
+"%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
 if errorlevel 1 echo   HUD    : OLD - the copy did not land
 if not errorlevel 1 echo   HUD    : dragon - back is health, belly is audacity
 if defined VER echo   files  : main @ %VER%
@@ -219,12 +251,15 @@ echo.
 echo   [ 4/4 ]  starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
-timeout /t 8 /nobreak >nul
-tasklist /fi "imagename eq %EXE%" 2>nul | findstr /i /c:"%EXE%" >nul
+call :sleep 8
+"%TASKLIST%" /fi "imagename eq %EXE%" 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul
 if errorlevel 1 goto launchfail
 echo   running. have fun.
-timeout /t 3 /nobreak >nul
+call :sleep 2
 exit /b 0
+
+:skipver2
+goto skipver
 
 :launchfail
 echo   the game did not stay open. start it by hand to see the engine's
@@ -255,21 +290,24 @@ pause
 exit /b 1
 
 rem ===========================================================================
-rem  curl, in the background, so the arriving bytes can be counted
+rem  curl in the background, so the arriving bytes can be counted
 rem ===========================================================================
 :cfetch
-set "ZIPOK=0"
+rem %1 = url. %ZIP% already points at this attempt's own file, so a leftover
+rem process from an earlier attempt can never lock it.
+set "CFURL=%~1"
+set "DONE=%CACHE%\done-%RANDOM%.txt"
+set "ERRF=%CACHE%\err-%RANDOM%.txt"
+set "RUNB=%CACHE%\get-%RANDOM%.bat"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-if exist "%CACHE%\cf.done" del /q "%CACHE%\cf.done" >nul 2>&1
-if exist "%CACHE%\curl.err" del /q "%CACHE%\curl.err" >nul 2>&1
->"%CACHE%\run.bat" echo @echo off
->>"%CACHE%\run.bat" echo "%SystemRoot%\System32\curl.exe" -sS -L --fail --ssl-no-revoke --connect-timeout 30 --max-time 900 --speed-time 90 --speed-limit 2048 -o "%ZIP%" "%~1" 2^>"%CACHE%\curl.err"
->>"%CACHE%\run.bat" echo echo %%ERRORLEVEL%%^>"%CACHE%\cf.done"
+>"%RUNB%" echo @echo off
+>>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 30 --max-time 900 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
+>>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
 echo            curl is fetching. this line grows while it works:
-start "" /b "%CACHE%\run.bat"
+start "" /b "%RUNB%"
 set /a SECS=0
 :cfpoll
-timeout /t 5 /nobreak >nul
+call :sleep 5
 set /a SECS+=5
 set "SZ=0"
 for %%A in ("%ZIP%") do set "SZ=%%~zA"
@@ -279,29 +317,49 @@ set /a REST=SECS%%60
 set "CLOCK=%MINS%:%REST%"
 if %REST% LSS 10 set "CLOCK=%MINS%:0%REST%"
 echo            %MB% of about 190 MB   -   %CLOCK% elapsed
-if exist "%CACHE%\cf.done" goto cfdone
-if %SECS% LSS 960 goto cfpoll
-echo            no transfer after 16 minutes. moving on.
+if exist "%DONE%" goto cfdone
+if %SECS% LSS 900 goto cfpoll
+echo            no complete transfer after 15 minutes. moving on.
 exit /b 0
 
 :cfdone
-set "CODE=?"
-if exist "%CACHE%\cf.done" set /p CODE=<"%CACHE%\cf.done"
-call :zipok
+if exist "%DONE%" set /p CODE=<"%DONE%"
+call :zipcheck
 if "%ZIPOK%"=="1" exit /b 0
 echo            that attempt did not finish. curl said:
-if exist "%CACHE%\curl.err" type "%CACHE%\curl.err"
+if exist "%ERRF%" type "%ERRF%"
 exit /b 0
 
 rem ===========================================================================
 rem  helpers
 rem ===========================================================================
-:zipok
+:sleep
+rem ping is the only delay Windows always has, whatever is on PATH
+set /a "P=%~1+1"
+"%PING%" -n %P% 127.0.0.1 >nul 2>&1
+exit /b 0
+
+:zipcheck
+rem A download that stopped early still has a plausible size, so the archive
+rem itself is listed and data/fight.def has to be inside it.
 set "ZIPOK=0"
+if not defined ZIP exit /b 0
 if not exist "%ZIP%" exit /b 0
-for %%A in ("%ZIP%") do set "ZIPSIZE=%%~zA"
-if not defined ZIPSIZE exit /b 0
-if %ZIPSIZE% LSS 20000000 exit /b 0
+for %%A in ("%ZIP%") do set "ZS=%%~zA"
+if not defined ZS exit /b 0
+if %ZS% LSS 20000000 exit /b 0
+if not defined TAR goto zipcheck_ps
+"%TAR%" -tf "%ZIP%" >"%CACHE%\zlist.txt" 2>nul
+if errorlevel 1 exit /b 0
+"%FINDSTR%" /c:"data/fight.def" "%CACHE%\zlist.txt" >nul 2>&1
+if errorlevel 1 exit /b 0
+set "ZIPOK=1"
+exit /b 0
+
+:zipcheck_ps
+if not defined POWERSHELL exit /b 0
+"%POWERSHELL%" -NoProfile -Command "try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $n=($z.Entries | Where-Object { $_.FullName -like '*data/fight.def' }).Count; $z.Dispose(); if ($n -ge 1) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if errorlevel 1 exit /b 0
 set "ZIPOK=1"
 exit /b 0
 

@@ -97,6 +97,17 @@ skips the network completely.
 `Apply main.zip.bat` remains for the case where you would rather do the download
 by hand: save the zip in the game folder and double-click it.
 
+### Why the scripts name `System32` tools in full
+
+A Git for Windows install that puts its `usr\bin` on `PATH` shadows the Windows
+programs with MSYS builds of the same name, and they behave differently: the MSYS
+`timeout` answers `invalid time interval '/t'`, the MSYS `tar` reads `H:\...` as a
+remote host and answers `Cannot connect to H:`, and the MSYS `curl` looks for its
+CA bundle at `/usr/ssl/certs/ca-bundle.crt`, which does not exist there. That is
+what produced the certificate error and the instant `timeout` failures. Both
+launchers now call `%SystemRoot%\System32\...` for every tool and never rely on
+`PATH`; if you write your own script for this folder, do the same.
+
 ## Run from source
 
 Everything below is for editing the game. If you only want to play, use a release.
