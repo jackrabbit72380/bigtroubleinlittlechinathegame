@@ -88,6 +88,46 @@ ignoreHitPause if !const(Default.Enable.Score) || teamSide = 0 {
 				redirectid: cond(playerIdExist(getHitVar(playerId)), getHitVar(playerId), player(getHitVar(playerNo)), ID);
 			}
 		}
+		# chi: a hit that dealt actual damage charges the attacker. Blocked hits
+		# never reach this code, and throws are ignored because they are grabs.
+		if getHitVar(playerNo) > 0 {
+			let chiGain = 0;
+			# normal, special and hyper attacks and projectiles
+			if (getHitVar(attr) = SCA, NA || getHitVar(attr) = SCA, SA || getHitVar(attr) = SCA, HA
+				|| getHitVar(attr) = SCA, NP || getHitVar(attr) = SCA, SP || getHitVar(attr) = SCA, HP) {
+				let chiGain = 1;
+			}
+			# hyper attacks are worth more
+			if getHitVar(attr) = SCA, HA || getHitVar(attr) = SCA, HP {
+				let chiGain = 3;
+			}
+			if $chiGain > 0 {
+				# chi is carried by the attacker, so it survives the round
+				mapAdd{map: "_chi"; value: $chiGain; redirectid: player(getHitVar(playerNo)), ID}
+				# +chi popup over the fighter that was hit
+				if $chiGain > 1 {
+					text{
+						removetime: 40;
+						layerno: 2;
+						text: "+3 CHI";
+						font: 8;
+						align: 0;
+						pos: (pos x - cameraPos x) * (screenHeight / 240.0) + screenWidth * 0.5, screenHeight * 0.5 - pos y * (screenHeight / 240.0) - 66;
+						scale: 0.5, 0.5;
+					}
+				} else {
+					text{
+						removetime: 40;
+						layerno: 2;
+						text: "+CHI";
+						font: 8;
+						align: 0;
+						pos: (pos x - cameraPos x) * (screenHeight / 240.0) + screenWidth * 0.5, screenHeight * 0.5 - pos y * (screenHeight / 240.0) - 66;
+						scale: 0.5, 0.5;
+					}
+				}
+			}
+		}
 	}	
 	# code executed only by P1 and P2
 	if playerNo = teamSide && !isHelper {
