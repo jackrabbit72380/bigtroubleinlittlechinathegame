@@ -34,8 +34,11 @@ p1facing = 1
 p2startx = 315
 p2starty = 0
 p2facing = -1
-leftbound = -4028
-rightbound = 4028
+; the rig's rear face and the trailer's tail board are the walls, so the cab
+; cannot be walked through and the bed cannot be walked off. both come from
+; the painting constants in tools/stages_hd.py (RIG_FRONT_WALL / RIG_TAIL_WALL)
+leftbound = -2602
+rightbound = 3790
 
 [Bound]
 screenleft = 68

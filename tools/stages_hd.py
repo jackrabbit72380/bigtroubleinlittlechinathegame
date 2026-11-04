@@ -530,6 +530,21 @@ RIG_X = px(72)                           # 324: the rig is parked at the far lef
 FAR_RAIL_TOP = FLOOR_Y - px(19)          # 814: the far stake rail
 FAR_RAIL_BOT = FLOOR_Y - px(15)          # 832: the deck runs from here to the near rail
 
+# The rig's own surfaces are the walls of the fight. World x is canvas x +
+# START_X, so both come out of the painting constants above and cannot drift away
+# from the artwork if the truck is repainted or moved:
+#   RIG_FRONT_WALL = -2602, the cab's rear face. Without it a fighter walks
+#     straight through the cab, which is painted behind the play plane and cannot
+#     stop anyone by itself.
+#   RIG_TAIL_WALL = 3790, the trailer's tail board. Without it a fighter walks off
+#     the end of the bed and stands on the highway.
+# A MUGEN/Ikemen stage carries no collision geometry, so these bounds are the
+# only stage-level solidity the format offers.
+RIG_FRONT_WALL = RIG_X + CAB_X + CAB_W + START_X      # -2602
+RIG_TAIL_WALL = 2 * HALF_SPAN - TAIL_W + START_X      # 3790
+PLAYER_WALLS = {"porkchop_express": (RIG_FRONT_WALL, RIG_TAIL_WALL)}
+
+
 
 def _grad(d, y0, y1, c0, c1, x0=0, x1=W):
     span = max(1, int(round(y1 - y0)))
@@ -1589,8 +1604,8 @@ p1facing = 1
 p2startx = {p2startx}
 p2starty = 0
 p2facing = -1
-leftbound = -{playerbound}
-rightbound = {playerbound}
+leftbound = {playerleft}
+rightbound = {playerright}
 
 [Bound]
 screenleft = {margin}
@@ -1828,7 +1843,8 @@ def build(sid):
     with open(os.path.join(ROOT, "stages", f"{sid}.def"), "w", encoding="utf-8") as fh:
         fh.write(interleave_wide(DEF_TEMPLATE.format(
             sid=sid, name=name,
-            bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerbound=PLAYER_BOUND,
+            bgmusic=MUSIC.get(sid, ""), scroll=SCROLL, playerleft=PLAYER_WALLS.get(sid, (-PLAYER_BOUND, PLAYER_BOUND))[0],
+            playerright=PLAYER_WALLS.get(sid, (-PLAYER_BOUND, PLAYER_BOUND))[1],
             margin=SCREEN_MARGIN, tension=int(round(60 * S)),
             zoffset=ZOFFSET, localw=LOCAL_W, localh=LOCAL_H,
             boundhigh=-int(25 * S), cuthigh=int(35 * S), cutlow=int(25 * S),
