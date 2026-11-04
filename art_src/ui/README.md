@@ -37,6 +37,25 @@ Delete the file and the project's own rendition comes back. The layer wiring,
 the additive glow behind the logo and the on-screen placement are generated
 either way — a plate only has to be one picture.
 
+## Title backdrop overlay
+
+The same `splash.png` also becomes a full-screen layer *on the title screen*,
+drawn over the animated clouds and under the wordmark and the menu:
+
+- **1280x720, opaque.** Cover-cropped like the splash card, so a wider or
+  taller export loses its edges rather than being squashed.
+- It is packed as sprite `205, 0` and added to `[TitleBGdef]` as
+  `[TitleBG Title Overlay]`, between the cloud layers and the logo layers —
+  that definition order is what puts it above the sky and below the logo
+  (`layerno = 1`) and the menu text (`layerno = 2`).
+- Delete the file and the layer plus its sprite are removed again on the next
+  build, leaving the plain clouds.
+
+The wordmark can be flattened onto a solid background: a flat plate colour found
+in all four corners is keyed out automatically and the art is cropped to its own
+ink, so an exported logo with a white or grey box does not paint a rectangle over
+the backdrop.
+
 ## Splash screen
 
 The splash that plays before the title reads the same two folders:

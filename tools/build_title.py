@@ -279,19 +279,147 @@ def ribbon(points, width=(30.0, 26.0), colors=(WHITE, BLUE_DEEP), seed=3):
 
 
 # ------------------------------------------------------------------- plate
+# The title backdrop: full-screen art drawn over the animated clouds, under the
+# logo (layerno 1) and the menu text (layerno 2). Groups already used by the
+# engine screenpack: 0, 98, 100-102, 110-113, 150-192, 200-204, 220-223,
+# 400-403, 500, 600, 610, 700, 800, 810, 921-923, 1000 - 205 is the first gap,
+# so the backdrop cannot overwrite real screen art.
+SCREEN = (1280, 720)
+OVERLAY = (205, 0)
+SPLASHES = (os.path.join(ROOT, "art_src", "ui", "splash.png"),
+            os.path.join(ROOT, "concept_art", "ui", "splash.png"))
+
+
+def first_plate(paths):
+    for path in paths:
+        if os.path.isfile(path):
+            return path
+    return None
+
+
+def flat_key(img, tol=20):
+    """Turn a flat painted backdrop into transparency, then crop to the ink.
+
+    Painted logos usually arrive flattened onto a light plate rather than with
+    real alpha, so the corner colour is read as the backdrop and every pixel
+    close to it is cleared. The picture is then cropped to what is left, since
+    empty margin only shrinks the logo once it is fitted to the sprite. Art that
+    already carries alpha, or that has no single corner colour, is only cropped.
+    """
+    img = img.convert("RGBA")
+    alpha = img.getchannel("A")
+    if alpha.getextrema()[0] < 250:
+        box = alpha.getbbox()
+        return img.crop(box) if box else img
+
+    corners = [img.getpixel(p) for p in ((0, 0), (img.width - 1, 0),
+                                         (0, img.height - 1),
+                                         (img.width - 1, img.height - 1))]
+    base = corners[0][:3]
+    flat = all(max(abs(c[i] - base[i]) for i in range(3)) <= 12
+               for c in corners[1:])
+    if not flat:
+        return img
+
+    px = img.load()
+    for y in range(img.height):
+        for x in range(img.width):
+            r, g, b, a = px[x, y]
+            if abs(r - base[0]) <= tol and abs(g - base[1]) <= tol \
+                    and abs(b - base[2]) <= tol:
+                px[x, y] = (r, g, b, 0)
+    box = img.getchannel("A").getbbox()
+    return img.crop(box) if box else img
+
+
 def plate():
     """A painted title logo from art_src, if one has been supplied."""
-    for path in PLATES:
-        if os.path.isfile(path):
-            img = Image.open(path).convert("RGBA")
-            k = min(CANVAS[0] / float(img.width), CANVAS[1] / float(img.height))
-            img = img.resize((max(1, int(round(img.width * k))),
-                              max(1, int(round(img.height * k)))), Image.LANCZOS)
-            out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-            out.alpha_composite(img, ((CANVAS[0] - img.width) // 2,
-                                      (CANVAS[1] - img.height) // 2))
-            return out, path
+    path = first_plate(PLATES)
+    if path:
+        img = flat_key(Image.open(path))
+        k = min(CANVAS[0] / float(img.width), CANVAS[1] / float(img.height))
+        img = img.resize((max(1, int(round(img.width * k))),
+                          max(1, int(round(img.height * k)))), Image.LANCZOS)
+        out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+        out.alpha_composite(img, ((CANVAS[0] - img.width) // 2,
+                                  (CANVAS[1] - img.height) // 2))
+        return out, path
     return None, None
+
+
+def overlay():
+    """The full-screen backdrop from art_src/ui/splash.png, cover-cropped."""
+    path = first_plate(SPLASHES)
+    if not path:
+        return None, None
+    img = Image.open(path).convert("RGB")
+    k = max(SCREEN[0] / float(img.width), SCREEN[1] / float(img.height))
+    img = img.resize((max(1, int(round(img.width * k))),
+                      max(1, int(round(img.height * k)))), Image.LANCZOS)
+    left = (img.width - SCREEN[0]) // 2
+    top = (img.height - SCREEN[1]) // 2
+    img = img.crop((left, top, left + SCREEN[0], top + SCREEN[1]))
+    return img.convert("RGBA"), path
+
+
+def bg_start(section):
+    """The ``start`` of one [TitleBG ...] layer, or None."""
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return None
+    current = ""
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            s = line.strip().lower()
+            if s.startswith("["):
+                current = s
+            elif current == "[" + section.lower() + "]" and s.startswith("start"):
+                try:
+                    x, y = s.split("=", 1)[1].split(",")
+                    return int(x.strip()), int(y.strip())
+                except ValueError:
+                    return None
+    return None
+
+
+def place_overlay(start):
+    """Add the backdrop layer after the clouds and before the logo.
+
+    Definition order is drawing order inside a layerno, so putting this section
+    between the sky/cloud layers and [TitleBG Title Logo] is what makes the art
+    cover the clouds yet stay under the wordmark and the menu. Idempotent: an
+    existing overlay block is removed before the new one is written.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return False
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+
+    out, skipping, placed = [], False, False
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            skipping = s.startswith("[titlebg title overlay")
+        if skipping:
+            continue
+        if start is not None and s.startswith("[titlebg title logo") and not placed:
+            if out and out[-1].strip():
+                out.append("")
+            out.extend(["[TitleBG Title Overlay]",
+                        "type = normal",
+                        "spriteno = %d, %d" % OVERLAY,
+                        "layerno = 0",
+                        "start = %d,%d" % start,
+                        "mask = 0",
+                        ""])
+            placed = True
+        out.append(line)
+
+    text = "\n".join(out) + "\n"
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(text)
+    return placed
 
 
 # -------------------------------------------------------------------- logo
@@ -480,6 +608,16 @@ def build():
                         "axis": sp["axis"], "pal": sp["pal"],
                         "link": sp["link"]})
 
+    # The backdrop goes in as its own sprite, sharing the sky's axis so it lands
+    # exactly where the clouds do.
+    over_img, over_src = overlay()
+    out = [sp for sp in out if (sp["group"], sp["number"]) != OVERLAY]
+    if over_img is not None:
+        sky_axis = next((sp["axis"] for sp in sprites
+                         if (sp["group"], sp["number"]) == (100, 0)), (0, 0))
+        out.append({"group": OVERLAY[0], "number": OVERLAY[1],
+                    "image": over_img, "axis": sky_axis})
+
     # Build the whole file in memory and swap it in: opening the real path for
     # writing first would truncate a 9 MB engine asset if anything raised.
     blob = sff.write_sff(out, [p["rgba"] for p in palettes])
@@ -498,6 +636,13 @@ def build():
     place_def(start)
     if strip_menu_shade():
         print("removed the black menu panel from the title background")
+    # Called either way: with no plate the layer and its sprite are removed
+    # again, so deleting art_src/ui/splash.png restores the plain clouds.
+    where = bg_start("titlebg background sky") or (-640, 0)
+    if place_overlay(where if over_img is not None else None):
+        print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)}")
+    elif over_img is None:
+        print("no art_src/ui/splash.png - the title keeps its painted clouds")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     logo.save(os.path.join(ROOT, "artifacts", "title_logo.png"))
