@@ -84,13 +84,27 @@ def draw_banner(canvas, d, by_key, pals):
         blit(canvas, img, x, y, S)
 
 
+def _tint(img, add):
+    """Approximate palfx.add so player two's bar shows its green dragon skin."""
+    r, g, b, a = img.convert("RGBA").split()
+    shift = lambda ch, d: ch.point(lambda v: max(0, min(255, v + d)))
+    return Image.merge("RGBA", (shift(r, add[0]), shift(g, add[1]),
+                                shift(b, add[2]), a))
+
+
+P2_ADD = (-150, 90, -10)
+
+
 def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror):
     """[Lifebar]: bg0 trough, top frame, mid fill, front on top of the fill."""
     px, py = pos[0] * S, pos[1] * S
     bg, bw, bh = pic(d, by_key, pals, (10, 0))
     top, _tw, _th = pic(d, by_key, pals, (11, 0))
     mid, _mw, _mh = pic(d, by_key, pals, (12, 0))
-    front, fw, fh = pic(d, by_key, pals, (13, 0))
+    key = (13, 0 if frac > 0.5 else (1 if frac > 0.25 else 2))
+    front, fw, fh = pic(d, by_key, pals, key)
+    if mirror:
+        bg, top, mid, front = (_tint(x, P2_ADD) for x in (bg, top, mid, front))
 
     if not mirror:
         blit(canvas, bg, px - bw * S, py, S)
