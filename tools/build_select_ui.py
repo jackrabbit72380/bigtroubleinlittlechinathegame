@@ -238,6 +238,8 @@ VS_PLATE = _card(665) + (
 VS_TEXT = (
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
+    # the VS screen's "Match %i" caption: same gold as every other caption
+    ("match.font", "2, 0, 0, " + NAME_GOLD),
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
     ("stage.text", "%s"),
     ("stage.scale", NAME_SCALE),
