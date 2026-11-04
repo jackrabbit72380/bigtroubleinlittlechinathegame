@@ -64,9 +64,6 @@ scale = 4
 p1.pos = 595,2
 p1.bg0.spr = 10,0
 p1.bg0.offset = 0,0
-p1.bg1.spr = 20,0
-p1.bg1.offset = -595,-2
-p1.bg1.xshear = 0
 p1.bg0.xshear = 0
 p1.top.spr = 11,0
 p1.top.xshear = 0
@@ -91,16 +88,13 @@ p1.front.xshear = 0
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
 p2.pos = 684,2
 p2.bg0.spr = 10,0
 p2.bg0.offset = 0,0
-p2.bg1.spr = 20,1
-p2.bg1.offset = -44,-2
-p2.bg1.xshear = 0
 p2.bg0.xshear = 0
 p2.bg0.facing = -1
 p2.top.spr = 11,0
@@ -133,8 +127,14 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
+p1.bg1.spr = 20,0
+p1.bg1.offset = -595,-2
+p1.bg1.xshear = 0
+p2.bg1.spr = 20,1
+p2.bg1.offset = -44,-2
+p2.bg1.xshear = 0
 p2.bg0.palfx.add = -150, 90, -10
 p2.top.palfx.add = -150, 90, -10
 p2.mid.palfx.add = -150, 90, -10
@@ -171,7 +171,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -210,7 +210,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -312,7 +312,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -351,7 +351,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -523,7 +523,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 23,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -562,7 +562,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -814,7 +814,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -857,7 +857,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -981,7 +981,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -1029,7 +1029,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -1228,7 +1228,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 23,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -1271,7 +1271,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;Player 3
@@ -1535,7 +1535,7 @@ p1.front.xshear = 3
 ;p1.shift.spr = 13,2          
 ;p1.shift.offset = 0,0       
 ;p1.shift.xshear = 3
-p1.range.x  = -4, -456
+p1.range.x  = 15,-460
 p1.scalefill = 1
 
 ;Player 2
@@ -1574,7 +1574,7 @@ p2.front.facing = -1
 ;p2.shift.offset = 0,0        
 ;p2.shift.xshear = -3
 ;p2.shift.facing = -1         
-p2.range.x  = 4, 456
+p2.range.x  = -15,460
 p2.scalefill = 1
 
 ;-----------------------------------------------------------
@@ -1589,6 +1589,7 @@ p1.front.spr = 43,0
 p1.front.offset = -4,0
 p1.front.palfx.mul = 178, 178, 178
 p1.range.x = -4, -206
+
 ; Multiple Front Elements can be added depending on the amount of power, including maximum power
 
 p1.front500.spr = 43, 0
@@ -1652,10 +1653,10 @@ p1.frontMax.palfx.sinmul = 30, 30, 30, 10
 
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
-p1.counterMax.text =  
+p1.counterMax.text = M
 p1.counterMax.offset = -241,21
 p1.counterMax.font = 4, 0, 0
-p1.counterMax.palfx.mul = 255, 214, 120
+p1.counterMax.palfx.mul = 226, 226, 226
 p1.counterMax.palfx.sinmul = 30, 30, 30, 10
 
 p1.counter10000.offset = -241,21
@@ -1717,7 +1718,8 @@ p2.front.spr = 43,0
 p2.front.palfx.mul = 178, 178, 178
 p2.front.offset = 4,0
 p2.front.facing = -1
-p2.range.x  = 4, 206
+p2.range.x  = 4,206
+
 ; Multiple Front Elements can be added depending on the amount of power, including maximum power
 
 p2.front500.spr = 43, 0
@@ -1793,10 +1795,10 @@ p2.frontMax.facing = 1
 
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
-p2.counterMax.text =  
+p2.counterMax.text = M
 p2.counterMax.offset = 241,21
 p2.counterMax.font = 4, 0, 0
-p2.counterMax.palfx.mul = 255, 214, 120
+p2.counterMax.palfx.mul = 226, 226, 226
 p2.counterMax.palfx.sinmul = 30, 30, 30, 10
 
 p2.counter10000.offset = 243,21
@@ -2074,7 +2076,8 @@ p1.warn.palfx.sinmul = 0, 128, 128, 5
 p1.warn.offset = -15, 0
 p1.warn.layerno = 1
 p1.warn.scale = 2,2
-p1.range.x = -4, -456
+p1.range.x = -103, -3
+
 ;Player 2
 p2.pos = 1157, 3
 p2.top.spr = 96, 0
@@ -2096,7 +2099,8 @@ p2.warn.palfx.sinmul = 0, 128, 128, 5
 p2.warn.offset = 93, 0
 p2.warn.layerno = 1
 p2.warn.scale = 2,2
-p2.range.x = 4, 456
+p2.range.x = 105, 5
+
 [Simul Stunbar]
 [Simul_3P Stunbar]
 [Simul_4P Stunbar]
@@ -2120,7 +2124,8 @@ p1.warn.palfx.sinmul = 0, 128, 128, 5
 p1.warn.offset = -15, 0
 p1.warn.layerno = 1
 p1.warn.scale = 2,2
-p1.range.x = -4, -456
+p1.range.x = -103, -3
+
 ;Player 2
 p2.pos = 1157, 3
 p2.top.spr = 96, 0
@@ -2142,7 +2147,8 @@ p2.warn.palfx.sinmul = 0, 128, 128, 5
 p2.warn.offset = 93, 0
 p2.warn.layerno = 1
 p2.warn.scale = 2,2
-p2.range.x = 4, 456
+p2.range.x = 105, 5
+
 [Tag_3P Stunbar]
 ;Player 1
 p1.pos = 123, 3
@@ -2162,7 +2168,8 @@ p1.warn.palfx.sinmul = 0, 128, 128, 5
 p1.warn.offset = -15, 0
 p1.warn.layerno = 1
 p1.warn.scale = 2,2
-p1.range.x = -4, -456
+p1.range.x = -103, -3
+
 ;Player 2
 p2.pos = 1157, 3
 p2.top.spr = 96, 0
@@ -2184,7 +2191,8 @@ p2.warn.palfx.sinmul = 0, 128, 128, 5
 p2.warn.offset = 93, 0
 p2.warn.layerno = 1
 p2.warn.scale = 2,2
-p2.range.x = 4, 456
+p2.range.x = 105, 5
+
 [Tag_4P Stunbar]
 ;Player 1
 p1.pos = 123, 3
@@ -2204,7 +2212,8 @@ p1.warn.palfx.sinmul = 0, 128, 128, 5
 p1.warn.offset = -15, 0
 p1.warn.layerno = 1
 p1.warn.scale = 2,2
-p1.range.x = -4, -456
+p1.range.x = -103, -3
+
 ;Player 2
 p2.pos = 1157, 3
 p2.top.spr = 96, 0
@@ -2226,7 +2235,10 @@ p2.warn.palfx.sinmul = 0, 128, 128, 5
 p2.warn.offset = 93, 0
 p2.warn.layerno = 1
 p2.warn.scale = 2,2
-p2.range.x = 4, 456
+p2.range.x = 105, 5
+
+
+
 ;-----------------------------------------------------------
 [Face]
 ;Player 1
@@ -2725,9 +2737,7 @@ p*.teammate.ko.hide = 1
 [Time]
 pos = 640,34
 ; Uncomment the following line to use a bg component
-bg.spr = 30,0
-bg.offset = 0,0
-bg.palfx.sinmul = 26, 26, 26, 24
+;bg.spr = 
 ; Time count display
 counter.offset = 0,-4
 counter.font = 2,0, 0
@@ -2758,6 +2768,8 @@ counter11.layerno = 0
 ;counter11.palfx.sinmul = 0, 128, 128, 20
 
 ;-----------------------------------------------------------
+bg.spr = 30,0
+bg.offset = 0,0
 [Combo]
 team1.pos = 130,260        ;Coords to show
 team1.start.x = -240      ;Starting x-coords
