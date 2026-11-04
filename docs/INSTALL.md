@@ -36,6 +36,13 @@ If the box appears before you can reach that menu, delete `save/config.ini`: the
 engine recreates it on the default renderer, and your other settings are the only
 thing in there.
 
+## The easy route: open `Start.html`
+
+Double-click `Start.html` in the repository (or in your game folder) and a themed
+page opens in your browser with the two downloads that matter: the game zip and
+`Apply main.zip.bat`. Both are ordinary browser downloads, so they still work on a
+machine where the command window cannot reach GitHub.
+
 ## Try the latest changes in one step
 
 When you want to play whatever is newest on `main` — a HUD tweak, a stage fix —
