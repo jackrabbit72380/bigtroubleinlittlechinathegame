@@ -205,7 +205,10 @@ goto downloadfailed
 rem ---- unpack and copy ---------------------------------------------------
 :havezip
 echo.
+echo   ==============================================================
+echo.
 echo   [ 3/4 ]  copying the game files over this folder
+echo.
 if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
 mkdir "%CACHE%\unpack" 2>nul
 if not defined TAR goto un_ps
@@ -303,9 +306,9 @@ if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 >"%RUNB%" echo @echo off
 >>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 30 --max-time 900 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
-echo            curl is fetching. this line grows while it works:
 start "" /b "%RUNB%"
 set /a SECS=0
+call :drawdl 0 0:00
 :cfpoll
 call :sleep 5
 set /a SECS+=5
@@ -316,7 +319,7 @@ set /a MINS=SECS/60
 set /a REST=SECS%%60
 set "CLOCK=%MINS%:%REST%"
 if %REST% LSS 10 set "CLOCK=%MINS%:0%REST%"
-echo            %MB% of about 190 MB   -   %CLOCK% elapsed
+call :drawdl %MB% %CLOCK%
 if exist "%DONE%" goto cfdone
 if %SECS% LSS 900 goto cfpoll
 echo            no complete transfer after 15 minutes. moving on.
@@ -333,6 +336,41 @@ exit /b 0
 rem ===========================================================================
 rem  helpers
 rem ===========================================================================
+:dragonbar
+rem %1 = done, %2 = total -> BAR: 32 cells, a body of = and a head at the tip
+setlocal EnableDelayedExpansion
+set /a "C=(%~1)*32/(%~2)"
+if !C! LSS 1 set "C=1"
+if !C! GTR 32 set "C=32"
+set "BAR="
+for /l %%i in (1,1,32) do (
+  if %%i LSS !C! set "BAR=!BAR!="
+  if %%i EQU !C! set "BAR=!BAR!>"
+  if %%i GTR !C! set "BAR=!BAR!-"
+)
+endlocal & set "BAR=%BAR%"
+exit /b 0
+
+:drawdl
+rem %1 = MB so far, %2 = elapsed clock. Redrawn in place, so the screen stays
+rem one panel instead of a growing list of lines.
+call :dragonbar %~1 190
+cls
+echo.
+echo   ==============================================================
+echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
+echo   ==============================================================
+echo.
+echo   fetching the newest build of the game
+echo.
+echo     [%BAR%]
+echo.
+echo        %~1 of about 190 MB           %~2 elapsed
+echo.
+echo   keep this window open - it starts the game by itself when
+echo   the download is done.
+exit /b 0
+
 :sleep
 rem ping is the only delay Windows always has, whatever is on PATH
 set /a "P=%~1+1"
