@@ -55,7 +55,7 @@ echo   [ 1/4 ]  looking for the newest files
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 where git >nul 2>nul
-if errorlevel 1 goto checkdone
+if errorlevel 1 goto download
 goto trygit
 
 :manualzip
@@ -96,6 +96,7 @@ echo.
 echo   [ 2/4 ]  downloading the files
 echo            one-off download of about 190 MB
 echo.
+if not exist "%SystemRoot%\System32\curl.exe" goto dl_start
 echo            checking this window can reach GitHub ...
 "%SystemRoot%\System32\curl.exe" -sS -o nul --max-time 20 "https://raw.githubusercontent.com/jackrabbit72380/bigtroubleinlittlechinathegame/main/README.md"
 if errorlevel 1 goto dl_blocked
