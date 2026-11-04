@@ -119,6 +119,11 @@ def main():
     # The stage-select hint is another layer in the same screenpack.
     if os.path.isfile(title_sff):
         scripts.append("build_select_ui.py")
+    # The in-fight captions (ROUND 1, FIGHT, HITS!, the names) take the same
+    # gold as the menus; fight.def is one of the files reset above.
+    fight_def = os.path.join(TOOLS, os.pardir, "data", "fight.def")
+    if os.path.isfile(fight_def):
+        scripts.append("build_fight_text.py")
     # The power meters are painted into the engine's fight.sff.
     # The VS HUD: one dragon per side whose back is the health bar, whose belly
     # is the audacity bar, and whose heads frame the yin-yang timer. It repaints
