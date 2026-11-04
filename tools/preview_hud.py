@@ -61,6 +61,29 @@ def draw_sprite(canvas, d, by_key, pals, key, x, y, scale, mirror=False):
 
 
 # ------------------------------------------------------------------- meters
+def draw_banner(canvas, d, by_key, pals):
+    """[Lifebar] bg1: the VS banner halves, anchored on the screen centre."""
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[Lifebar]", 1)[1].split("\n[", 1)[0]
+    for side in ("p1", "p2"):
+        m = re.search(r"(?m)^\s*%s\.bg1\.spr\s*=\s*(\d+)\s*,\s*(\d+)" % side,
+                      body)
+        o = re.search(r"(?m)^\s*%s\.bg1\.offset\s*=\s*(-?\d+)\s*,\s*(-?\d+)"
+                      % side, body)
+        p = re.search(r"(?m)^\s*%s\.pos\s*=\s*(-?\d+)\s*,\s*(-?\d+)" % side,
+                      body)
+        if not (m and o and p):
+            continue
+        key = (int(m.group(1)), int(m.group(2)))
+        if key not in by_key:
+            continue
+        sp = by_key[key]
+        img, _w, _h = pic(d, by_key, pals, key)
+        x = (int(p.group(1)) + int(o.group(1)) - sp["axis"][0]) * S
+        y = (int(p.group(2)) + int(o.group(2)) - sp["axis"][1]) * S
+        blit(canvas, img, x, y, S)
+
+
 def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror):
     """[Lifebar]: bg0 trough, top frame, mid fill, front on top of the fill."""
     px, py = pos[0] * S, pos[1] * S
@@ -187,9 +210,11 @@ def main():
     level_glyphs = load_glyphs("PowerbarNum.sff")
     timer_glyphs = load_glyphs("Timer.sff")
 
+    draw_banner(shot, d, by_key, pals)
     draw_powerbar(shot, d, by_key, pals, power["p2"], 0.35, True)
-    draw_powerbar(shot, d, by_key, pals, power["p1"], 1.0, False,
-                  level_glyphs, "AUDACITY")
+    # AUDACITY is painted into the full-power sprite itself, so nothing is
+    # drawn under the meter here
+    draw_powerbar(shot, d, by_key, pals, power["p1"], 1.0, False)
     draw_lifebar(shot, d, by_key, pals, life["p1"], 0.82, False)
     draw_lifebar(shot, d, by_key, pals, life["p2"], 0.55, True)
     draw_timer(shot, d, by_key, pals, time_pos, timer_glyphs, 60, bg_offset)
