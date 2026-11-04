@@ -141,26 +141,13 @@ loading.xshear = 0.25
 loading.text = NOW LOADING...
 	
 ; The engine's own bar across the bottom of every menu ("I.K.E.M.E.N. GO" and
-; its version string) is off. The strip is drawn by the overlay below and the
-; three text fields by their offsets, so the overlay is made fully transparent
-; and the fields are parked below the 1280x720 screen - nothing is drawn there.
-; The build number is still on the launcher banner and in VERSION.txt beside the
-; exe, so nothing is lost - it just stops sitting under every menu.
-footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
-footer.title.offset = 5, 5000
-footer.title.scale = 1,1
-
-footer.info.font = 11, 0, 0, 240, 196, 88, 255, -1
-footer.info.offset = 640, 5000
-footer.info.scale = 1,1
-
-footer.version.font = 11, 0, -1, 176, 126, 44, 255, -1
-footer.version.offset = 1275, 5000
-footer.version.scale = 1,1
-
-footer.overlay.col = 0, 0, 64
-footer.overlay.alpha = 0, 0
-footer.overlay.window = 0, 700, 1280, 720
+; its version string) is gone. The three text fields and the overlay strip are
+; deleted, not parked: the strip's own dark rect is drawn whenever the footer
+; keys parse, so moving the text off screen left a black bar behind. With no
+; footer keys at all the engine skips the footer and the menus are full height.
+; The build number is still on the launcher banner, in VERSION.txt beside the
+; exe, and in Options > Video, which reports the engine version it is running.
+; tools/build_fonts.py re-applies this after the engine data is staged.
 
 ;Network menu
 connecting.offset = 640, 393
@@ -263,20 +250,20 @@ suffix, so this block IS the list; it used to stop at 1920x1080 and a 4K display
 had nothing to pick. Only the window changes: GameWidth and GameHeight stay at
 the motif's own 1280x720, so the art, the framing and the netplay handshake are
 all unaffected.
-menu.itemname.menuvideo.resolution = RESOLUTION
-menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
-menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
-menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
-menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
-menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
-menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
-menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
-menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
-menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
-menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
-menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
-menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
-menu.itemname.menuvideo.resolution.back = BACK
+	menu.itemname.menuvideo.resolution = RESOLUTION
+	menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
+	menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
+	menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)
+	menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)
+	menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)
+	menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)
+	menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)
+	menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)
+	menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
+	menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
+	menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
+	menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
+	menu.itemname.menuvideo.resolution.back = BACK
 
 menu.itemname.menuvideo.window = WINDOW SIZE
 menu.itemname.menuvideo.window.windowauto = Match Render Size
@@ -2114,7 +2101,7 @@ keymenu.item.active.font = 11,0,-1, 255, 228, 140
 keymenu.item.selected.font = 11,0,-1, 255, 228, 140
 keymenu.item.selected.active.font = 11,0,-1, 255, 228, 140
 keymenu.item.value.font = 11,0,1, 240, 196, 88
-keymenu.item.value.active.font = 11,0,1, 255, 228, 140
+keymenu.item.value.active.font = 11,1,1, 255, 228, 140
 keymenu.item.spacing = 0, 30
 keymenu.item.value.offset = 160, 0
 keymenu.item.value.active.offset = 160, 0

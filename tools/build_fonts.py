@@ -84,18 +84,8 @@ REWRITES = (
     ("menu.item.info.active.font", f"{B},0,-1, {BRIGHT}"),
     ("title.font", f"{D},0,0, {BRIGHT}"),
     ("loading.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
-    # the engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is switched off:
-    # the fields are parked below the 1280x720 screen and the motif's overlay
-    # strip is left transparent, so no bar is drawn in any menu.
-    ("footer.title.font", f"{B}, 0, 1, {GOLD}, 255, -1"),
-    ("footer.info.font", f"{B}, 0, 0, {GOLD}, 255, -1"),
-    ("footer.version.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
-    ("footer.title.scale", "1,1"),
-    ("footer.info.scale", "1,1"),
-    ("footer.version.scale", "1,1"),
-    ("footer.title.offset", "5, 5000"),
-    ("footer.info.offset", "640, 5000"),
-    ("footer.version.offset", "1275, 5000"),
+    # The engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is not rewritten
+    # here but removed outright - see DROP_KEYS below.
     # infobox, game over text, story text
     ("text.font", f"{B}, 0, 1, {GOLD}"),
     # select screen
@@ -164,6 +154,32 @@ REWRITES = (
     ("menu.boxcursor.col", BRIGHT),
     ("menu.boxbg.col", "40, 10, 14"),
 )
+
+# Keys to delete from the motif rather than rewrite.
+#
+# Parking the footer's three text fields below the screen was not enough: the
+# engine draws the footer's backdrop rect (footer.overlay, colour 0,0,64) from
+# main.lua whenever the footer keys parse at all, and its "0, 0" alpha leaves
+# the strip drawn - a black bar with nothing written on it. Deleting every
+# footer.* key makes sec.footer nil in the engine, so neither the rect nor the
+# text is drawn and the menus use the full height. Idempotent: stock keys that
+# survive a re-stage are dropped again on every build.
+DROP_KEYS = ("footer.",)
+
+
+def drop_keys(text, prefixes):
+    """Delete every `key = value` line whose key starts with one of prefixes."""
+    out, dropped = [], 0
+    for line in text.splitlines(True):
+        s = line.strip()
+        if "=" in s and not s.startswith((";", "#", "/")):
+            key = s.split("=", 1)[0].strip().lower()
+            if any(key.startswith(p) for p in prefixes):
+                dropped += 1
+                continue
+        out.append(line)
+    return "".join(out), dropped
+
 
 # Layout numbers that only make sense on one screen. REWRITES above is global
 # (the same key lives in several menu blocks), but position and line pitch are
@@ -887,6 +903,11 @@ def main():
             touched += count
         else:
             print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
+
+    text, dropped_keys = drop_keys(text, DROP_KEYS)
+    if dropped_keys:
+        print(f"  removed the {dropped_keys}-key menu footer (its dark strip "
+              f"was the bar left at the bottom)")
 
     for section, settings in SECTION_LAYOUT.items():
         for key, value in settings:
