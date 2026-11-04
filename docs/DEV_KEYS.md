@@ -10,9 +10,12 @@ below is inert.
 
 ## In the game
 
-Pause the match and choose **Developer Keys** to see the list as a screen you
-can scroll with up/down; cancel closes it and returns to the pause menu. It
-sits in both the normal and the training pause menu.
+Pause the match and choose **Developer Keys**. The whole list is on that one
+screen: two columns, colour-grouped (display, time, match, players), with the
+title moved up so the text can be twice the size it was, and nothing to scroll.
+The size is computed from the font's real glyph metrics, so it stays inside the
+frame on any screenpack revision. Cancel closes it and returns to the pause menu.
+It sits in both the normal and the training pause menu.
 
 `Ctrl`+`F1` prints the same list into the debug console if you would rather not
 leave the fight. `F8` clears the console.
