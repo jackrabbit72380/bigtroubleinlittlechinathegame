@@ -1576,7 +1576,7 @@ p1.bg1.spr = 41,0
 p1.front.spr = 43,0
 p1.front.offset = -4,4
 p1.front.palfx.mul = 178, 178, 178
-p1.range.x = -4, -456
+p1.range.x = -4, -206
 ; Multiple Front Elements can be added depending on the amount of power, including maximum power
 
 p1.front500.spr = 43, 0
@@ -1640,55 +1640,55 @@ p1.frontMax.palfx.sinmul = 30, 30, 30, 10
 
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
-p1.counterMax.text = AUDACITY
-p1.counterMax.offset = -241,80
+p1.counterMax.text =  
+p1.counterMax.offset = -241,31
 p1.counterMax.font = 4, 0, 0
 p1.counterMax.palfx.mul = 255, 214, 120
 p1.counterMax.palfx.sinmul = 30, 30, 30, 10
 
-p1.counter10000.offset = -241,80
+p1.counter10000.offset = -241,31
 p1.counter10000.font = 4, 0, 0
 p1.counter10000.palfx.mul = 226, 226, 226
 p1.counter10000.palfx.sinmul = 30, 30, 30, 10
 
-p1.counter9000.offset = -241,80
+p1.counter9000.offset = -241,31
 p1.counter9000.font = 4, 0, 0
 p1.counter9000.palfx.mul = 255, 32, 135
 
-p1.counter8000.offset = -241,80
+p1.counter8000.offset = -241,31
 p1.counter8000.font = 4, 0, 0
 p1.counter8000.palfx.mul = 200, 78, 240
 
-p1.counter7000.offset = -241,80
+p1.counter7000.offset = -241,31
 p1.counter7000.font = 4, 0, 0
 p1.counter7000.palfx.mul = 102, 250, 250
 
-p1.counter6000.offset = -241,80
+p1.counter6000.offset = -241,31
 p1.counter6000.font = 4, 0, 0
 p1.counter6000.palfx.mul = 0, 204, 153
 
-p1.counter5000.offset = -241,80
+p1.counter5000.offset = -241,31
 p1.counter5000.font = 4, 0, 0
 p1.counter5000.palfx.mul = 255, 153, 0
 
-p1.counter4000.offset = -241,80
+p1.counter4000.offset = -241,31
 p1.counter4000.font = 4, 0, 0
 p1.counter4000.palfx.mul = 102, 255, 51
 
-p1.counter3000.offset = -241,80
+p1.counter3000.offset = -241,31
 p1.counter3000.font = 4, 0, 0
 p1.counter3000.palfx.mul = 255, 70, 70
 
-p1.counter2000.offset = -241,80
+p1.counter2000.offset = -241,31
 p1.counter2000.font = 4, 0, 0
 p1.counter2000.palfx.mul = 255, 255, 51
 
-p1.counter1000.offset = -241,80
+p1.counter1000.offset = -241,31
 p1.counter1000.font = 4, 0, 0
 p1.counter1000.palfx.mul = 0, 153, 255
 
 p1.counter.palfx.mul = 125, 125, 125
-p1.counter.offset = -241,80
+p1.counter.offset = -241,31
 p1.counter.font = 4, 0, 0
 p1.levelbars = 1             
 
@@ -1705,7 +1705,7 @@ p2.front.spr = 43,0
 p2.front.palfx.mul = 178, 178, 178
 p2.front.offset = 4,4
 p2.front.facing = -1
-p2.range.x  = 4, 456
+p2.range.x  = 4, 206
 ; Multiple Front Elements can be added depending on the amount of power, including maximum power
 
 p2.front500.spr = 43, 0
@@ -1781,54 +1781,54 @@ p2.frontMax.facing = 1
 
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
-p2.counterMax.text = AUDACITY
-p2.counterMax.offset = 241,80
+p2.counterMax.text =  
+p2.counterMax.offset = 241,31
 p2.counterMax.font = 4, 0, 0
 p2.counterMax.palfx.mul = 255, 214, 120
 p2.counterMax.palfx.sinmul = 30, 30, 30, 10
 
-p2.counter10000.offset = 243,80
+p2.counter10000.offset = 243,31
 p2.counter10000.font = 4, 0, 0
 p2.counter10000.palfx.mul = 226, 226, 226
 p2.counter10000.palfx.sinmul = 30, 30, 30, 10
 
-p2.counter9000.offset = 243,80
+p2.counter9000.offset = 243,31
 p2.counter9000.font = 4, 0, 0
 p2.counter9000.palfx.mul = 255, 32, 135
 
-p2.counter8000.offset = 243,80
+p2.counter8000.offset = 243,31
 p2.counter8000.font = 4, 0, 0
 p2.counter8000.palfx.mul = 200, 78, 240
 
-p2.counter7000.offset = 243,80
+p2.counter7000.offset = 243,31
 p2.counter7000.font = 4, 0, 0
 p2.counter7000.palfx.mul = 102, 250, 250
 
-p2.counter6000.offset = 243,80
+p2.counter6000.offset = 243,31
 p2.counter6000.font = 4, 0, 0
 p2.counter6000.palfx.mul = 0, 204, 153
 
-p2.counter5000.offset = 243,80
+p2.counter5000.offset = 243,31
 p2.counter5000.font = 4, 0, 0
 p2.counter5000.palfx.mul = 255, 153, 0
 
-p2.counter4000.offset = 243,80
+p2.counter4000.offset = 243,31
 p2.counter4000.font = 4, 0, 0
 p2.counter4000.palfx.mul = 102, 255, 51
 
-p2.counter3000.offset = 243,80
+p2.counter3000.offset = 243,31
 p2.counter3000.font = 4, 0, 0
 p2.counter3000.palfx.mul = 255, 70, 70
 
-p2.counter2000.offset = 243,80
+p2.counter2000.offset = 243,31
 p2.counter2000.font = 4, 0, 0
 p2.counter2000.palfx.mul = 255, 255, 51
 
-p2.counter1000.offset = 243,80
+p2.counter1000.offset = 243,31
 p2.counter1000.font = 4, 0, 0
 p2.counter1000.palfx.mul = 0, 153, 255
 
-p2.counter.offset = 243,80
+p2.counter.offset = 243,31
 p2.counter.font = 4, 0, 0
 p2.counter.palfx.mul = 125, 125, 125
 p2.levelbars = 1             
@@ -2699,7 +2699,9 @@ p*.teammate.ko.hide = 1
 [Time]
 pos = 640,105
 ; Uncomment the following line to use a bg component
-;bg.spr = 
+bg.spr = 30,0
+bg.offset = 0,55
+bg.palfx.sinmul = 26, 26, 26, 24
 ; Time count display
 counter.offset = 0,30
 counter.font = 2,0, 0
