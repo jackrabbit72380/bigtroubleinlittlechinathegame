@@ -76,3 +76,37 @@ in [`external/mods/devhelp.lua`](../external/mods/devhelp.lua).
 build stages a fresh engine copy, so add your own keys in
 `external/mods/devhelp.lua` instead — the engine requires every file in that
 folder at startup.
+
+## Compared with MUGEN's debug mode
+
+Ikemen GO inherits M.U.G.E.N's debug keys and then adds its own. The left column
+is from the [MUGEN Database *Debug Mode* page](https://mugen.fandom.com/wiki/Debug_Mode)
+(the wiki blocks the article page but serves it through its API); the right
+column is what this build actually binds, read from `external/script/debug.lua`.
+
+| MUGEN key | What MUGEN does | What this build does |
+|---|---|---|
+| `F1` / `Ctrl`+`F1` | KOs player 2 / player 1 | Same. |
+| `F2` / `Ctrl`+`F2` / `Shift`+`F2` | Lowers life to 1 | KOs instead: `F2` everyone, `Ctrl`+`F2` the first player's side, `Shift`+`F2` the second player's. |
+| `F3` / `Ctrl`+`Shift`+`F3` | Max power / auto-refill power bars | Same two meanings. |
+| `F4` / `Shift`+`F4` | Restart round / restart the whole match | Same, and the reload also re-reads Lua and defs, which is the point of it here. |
+| `F5` | Time over | Same. |
+| `F8` | Clears debug messages | Clears the console. |
+| `Space` | Maxes time, life and power | Same. |
+| `Ctrl`+`C` / `Ctrl`+`L` / `Ctrl`+`V` | Collision boxes / life and power bars / vsync | Same. |
+| `Ctrl`+`D` | Debug mode, cycling characters and helpers | Same readout, cycling the same way. |
+| `Ctrl`+`I` | Forces the standing state | Same, applied to all eight players. |
+| `Ctrl`+`S` | Toggles the fastest speed | Cycles 1× → 2× → 4× → 0.25× → 0.5× instead of a single toggle. |
+| `Ctrl`+`<n>` / `Ctrl`+`Alt`+`<n>` | Toggles AI / toggles a player, 1–4 | Same, extended to 1–8 AI and 1–9 players/helpers. |
+| `Pause` | Pauses | Same. |
+
+**Keys MUGEN documents that this engine's debug module does not bind:** `F12`
+(screenshot), `Ctrl`+`~` (M.U.G.E.N console), `Ctrl`+`F` (frame skipping) and
+`Ctrl`+`T` (auto-refill life and power). They are absent from `debug.lua`, so
+unless the engine handles one natively they do nothing here — worth knowing
+before you report a missing screenshot key as a bug.
+
+**Ikemen-only keys**, all listed on the screen above: `Ctrl`+`W` wireframe,
+`Ctrl`+`Shift`+`D` and `Shift`+`D` readout variants, `Ctrl`+`KP +`/`-` for 0.01
+speed steps, `F9`/`F10` state save/load, and `ScrollLock` single frame step.
+
