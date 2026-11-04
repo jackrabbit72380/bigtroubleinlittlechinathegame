@@ -420,7 +420,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0,0
 portrait.loading.scale = .25,.25
 title.offset = 640, 2
-title.font = 10,0,0, 255, 228, 140
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -551,10 +551,10 @@ p2.face2.facing = -1
 p2.face2.window = 962,86,1276,712
 p2.face2.applypal = 1
 
-p1.face2.random.spr = 151,0
-p1.face2.random.offset = -97, 173
+p1.face2.random.spr = 151,10
+p1.face2.random.offset = 8, 150
 p1.face2.random.facing = 1
-p1.face2.random.scale = 4.8, 4.8
+p1.face2.random.scale = 1, 1
 p1.face2.random.layerno = 2
 p1.face2.random.projection = perspective
 p1.face2.random.yangle = 70
@@ -562,10 +562,10 @@ p1.face2.random.layerno = 2
 p1.face2.random.focallength = 400
 p1.face2.random.window = 0,86,320,712
 
-p2.face2.random.spr = 151, 1
-p2.face2.random.offset = 1328, 173
+p2.face2.random.spr = 151,10
+p2.face2.random.offset = 1266, 150
 p2.face2.random.facing = -1
-p2.face2.random.scale = 4.8, 4.8
+p2.face2.random.scale = 1, 1
 p2.face2.random.layerno = 2
 p2.face2.random.window = 962,86,1276,712
 p2.face2.random.projection = perspective
@@ -595,17 +595,17 @@ p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 50, 690
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 11, 0, 0, 255, 228, 140
 p1.name.spacing = 15,25                   ;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1230, 690
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 11, 0, -1, 255, 170, 96
 p2.name.spacing = -15,25
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 640, 638
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 176, 126, 44
 stage.done.font = 11, 0, 0, 176, 126, 44
@@ -741,7 +741,7 @@ teammenu.itemname.simul = Simul
 teammenu.itemname.tag = Tag
 teammenu.itemname.turns = Turns
 
-paletteselect = 3
+paletteselect = 0
 ; Enables or disables palette selection menu in select screen. Accepted values:
 ; 0 - Palette menu disabled. Palette corresponds to key pressed when selecting character
 ; 1 - Palette menu enabled. Initial selected palette is 1

@@ -142,8 +142,38 @@ except Exception:      # a partial checkout without the gang painter still bakes
     pass
 
 
+STRIKE_POSES = (
+    # first action, last action, wind-up, strike, follow-through
+    (200, 209, "stance", "jab", "stance"),       # standing light punch
+    (210, 219, "stance", "cross", "stance"),     # standing medium punch
+    (220, 229, "stance", "upper", "cross"),      # standing hard punch
+    (230, 239, "stance", "boot", "stance"),      # standing light kick
+    (240, 249, "stance", "boot", "low_kick"),    # standing medium kick
+    (250, 259, "stance", "low_kick", "boot"),    # standing hard kick
+    (400, 409, "jump", "jab", "jump"),           # jumping light punch
+    (410, 419, "jump", "cross", "jump"),         # jumping medium punch
+    (420, 429, "jump", "upper", "jump"),         # jumping hard punch
+    (430, 439, "jump", "boot", "jump"),          # jumping light kick
+    (440, 449, "jump", "low_kick", "jump"),      # jumping medium kick
+    (450, 459, "jump", "boot", "jump"),          # jumping hard kick
+)
+
+
 def pose_for(action, frame):
-    """Which rig pose stands in for this animation."""
+    """Which rig pose stands in for this animation.
+
+    The attack states used to fall through to "stance", so every standing punch
+    and kick drew the idle drawing: the arms never moved and the move looked
+    like it never happened. Each strike now has a wind-up, a strike and a
+    follow-through keyed off the frame index, so the AIR carries real motion.
+    """
+    for first, last, wind, strike, follow in STRIKE_POSES:
+        if first <= action <= last:
+            if frame <= 0:
+                return wind
+            if frame <= 2:
+                return strike
+            return follow
     a = action
     if a <= 5:
         return "stance" if frame % 2 == 0 else "breath"

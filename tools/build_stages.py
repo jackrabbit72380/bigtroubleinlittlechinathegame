@@ -551,8 +551,10 @@ localcoord = 320, 240
 xscale = 1
 yscale = 1
 
+; no ground shadow: the engine's per-fighter blob read as a
+; pill-shaped bubble around the feet
 [Shadow]
-intensity = 96
+intensity = 0
 color = 0,0,0
 yscale = -.1
 fade.range = -400,-100
