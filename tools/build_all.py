@@ -124,6 +124,11 @@ def main():
     fight_def = os.path.join(TOOLS, os.pardir, "data", "fight.def")
     if os.path.isfile(fight_def):
         scripts.append("build_fight_text.py")
+    # TIME UP, WINNER!, YOU LOSE! and the VS screen's NEXT MATCH banner are
+    # repainted in the same face as the menus; they are the last stock arcade
+    # lettering left in the game.
+    if os.path.isfile(fight_def):
+        scripts.append("build_fight_art.py")
     # The power meters are painted into the engine's fight.sff.
     # The VS HUD: one dragon per side whose back is the health bar, whose belly
     # is the audacity bar, and whose heads frame the yin-yang timer. It repaints

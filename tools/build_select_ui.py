@@ -131,7 +131,7 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
 # the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
-CARD_W = select_grid.GRID_W   # the card is as wide as the roster grid
+CARD_W = 460                  # the card's own width, independent of the grid
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
 CARD_H = ART_H
 CARD_CX = 640

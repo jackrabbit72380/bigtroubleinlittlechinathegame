@@ -693,11 +693,10 @@ def pool(base, cx, rx, seed=0):
         hx = bx + rx * (0.30 + 0.055 * k)
         d.arc([hx - px(4), cy - ry * 0.36, hx + px(4), cy + ry * 0.12], 200, 340,
               fill=(48, 44, 38, 150), width=1)
-    # ripples round the body, and the firelight lying on the water
-    for k in range(5):
-        rr = 0.34 + 0.14 * k
-        d.arc([bx - rx * rr, cy - ry * rr * 1.15, bx + rx * rr, cy + ry * rr * 1.15],
-              200, 340, fill=(92, 106, 96, 40), width=1)
+    # No ripples round the body: a ring of concentric ellipses on the floor is
+    # what read as a bubble drawn round the fighters' boots when one of them
+    # stood over a sump. The firelight on the water stays.
+    d = ImageDraw.Draw(base)
     refl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     rd = ImageDraw.Draw(refl)
     for k in range(4):
@@ -707,9 +706,6 @@ def pool(base, cx, rx, seed=0):
                    fill=(236, 124, 48, 34))
     base.alpha_composite(refl.filter(ImageFilter.GaussianBlur(px(2.5))))
     d = ImageDraw.Draw(base)
-    # the near lip of the sump, catching the slot light
-    d.arc([cx - rx - px(3), cy - ry - px(3), cx + rx + px(3), cy + ry + px(5)],
-          20, 160, fill=(70, 48, 34, 80), width=max(1, px(1.4)))
     RIM.append((cx, cy, rx * 1.15, (206, 112, 48), 26))
 
 
@@ -796,8 +792,11 @@ def paint():
     # near lip, so the fight has something in front of it
     fg = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     fd = ImageDraw.Draw(fg)
-    for i in range(px(26)):
-        a = int(214 * (1 - i / float(px(26))) ** 1.5)
+    # The near lip: short and translucent. At 117px of near-opaque black it
+    # swallowed the fighters' boots and left them standing in the air above
+    # their own shadow, which is what the floor looked like from the front.
+    for i in range(px(12)):
+        a = int(150 * (1 - i / float(px(12))) ** 1.5)
         fd.line([(0, H - i), (W, H - i)], fill=(5, 4, 4, a))
     rnd = random.Random(97)
     for k in range(-7, 8):
