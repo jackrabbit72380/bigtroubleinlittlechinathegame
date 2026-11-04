@@ -119,7 +119,8 @@ def main():
     # The stage-select hint is another layer in the same screenpack.
     if os.path.isfile(title_sff):
         scripts.append("build_select_ui.py")
-    scripts.append("validate.py")
+    # The power meters are painted into the engine's fight.sff.
+    scripts += ["build_powerbar.py", "validate.py"]
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry
         code = run(script, *args)

@@ -182,72 +182,81 @@ def cursor_frame(colour):
     return out
 
 
-# The random box (and the two big side panels while "?" is showing) use the
-# engine's stock white question mark, which read as bare silver next to the
-# gold frames and the amber captions. It cannot be tinted from a .def, so the
-# glyph is repainted into the same gold ramp the cells use.
-RANDOM_MARK = ((151, 0), (151, 1))
+# The random slot: a grey stone card with a question mark, drawn at the cell's
+# size and, separately, at the size of the big side panels. The stock slot drew
+# a recoloured 62px glyph blown up 4.8x in the panels, which is why the random
+# portrait read as blank next to the painted ones.
+RANDOM_CELL = (151, 0)
+RANDOM_CARD = (62, 63)
+RANDOM_PORTRAIT = (151, 10)
+# The big panels clip to their portrait rect (8,150-308,670 on the left,
+# 966,150-1266,670 on the right), so the random card is cut to fit that
+# exactly - the validator refuses anything that would show around the art.
+RANDOM_PANEL = (300, 520)
 
 
-def gold_glyph(img):
-    """Recolour the stock white "?" onto the grid's gold ramp.
-
-    The glyph is a white face over a black outline and a grey shadow, so the
-    luminance carries the whole shape: dark pixels stay as the outline, the
-    body runs from bronze in shadow to bright gold on the lit face.
-    """
-    out = img.convert("RGBA")
-    px = out.load()
-    for y in range(out.height):
-        for x in range(out.width):
-            r, g, b, a = px[x, y]
-            if not a:
-                continue
-            lum = max(r, g, b) / 255.0
-            if lum < 0.18:
-                px[x, y] = (14, 12, 8, a)
-                continue
-            k = (lum - 0.18) / 0.82
-            px[x, y] = tuple(
-                int(round(GOLD_DIM[i] + (GOLD_LIT[i] - GOLD_DIM[i]) * k))
-                for i in range(3)) + (a,)
-    return out
+def random_card(size):
+    """A grey plate with a big question mark: the stand-in for a random pick."""
+    w, h = size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    radius = max(4, min(w, h) // 12)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=radius,
+                        fill=(78, 82, 88, 255), outline=(18, 20, 22, 255),
+                        width=2)
+    inset = max(3, min(w, h) // 16)
+    d.rounded_rectangle([inset, inset, w - 1 - inset, h - 1 - inset],
+                        radius=max(3, radius - 2), outline=(146, 152, 160, 255),
+                        width=1)
+    wash = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    wd = ImageDraw.Draw(wash)
+    for y in range(inset + 1, h - inset - 1):
+        k = (y - inset) / float(max(1, h - 2 * inset))
+        wd.line([(inset + 1, y), (w - inset - 2, y)],
+                fill=(0, 0, 0, int(58 * (1.0 - k))))
+    img.alpha_composite(wash)
+    font = art.font(int(min(w, h) * 0.58))
+    text = "?"
+    tw = d.textlength(text, font=font)
+    box = d.textbbox((0, 0), text, font=font)
+    th = box[3] - box[1]
+    d.text(((w - tw) / 2.0, (h - th) / 2.0 - box[1]), text, font=font,
+           fill=(238, 240, 244, 255), stroke_width=max(1, min(w, h) // 48),
+           stroke_fill=(26, 28, 30, 255))
+    return img
 
 
 def repaint_random_mark():
-    """Rewrite the "?" sprites in place, keeping their own axis.
+    """Paint the random slot at cell size and at side-panel size.
 
-    The axis matters here: 151,0 sits at (-22,-18) and the select layout
-    compensates for it, so the sprite has to go back with the axis it had.
+    151,0 sits at (-22,-18) and the select layout compensates for it, so the
+    like-for-like replacement keeps the axis it had. 151,10 is new and is what
+    the big panels draw: panel-sized art at 1:1 with a zero axis.
     """
     d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    out, changed = [], 0
+    wanted = {RANDOM_CELL: random_card(RANDOM_CARD),
+              RANDOM_PORTRAIT: random_card(RANDOM_PANEL)}
+    out, done = [], set()
     for sp in sprites:
         key = (sp["group"], sp["number"])
-        glyph = None
-        if key in RANDOM_MARK:
-            try:
-                glyph = sff.decode_sprite(d, sp, palettes)
-            except ValueError:
-                # 8-bit indexed variants of the glyph cannot be decoded here;
-                # the main mark (151,0) is what the cell and the panels draw
-                pass
-        if glyph is not None:
+        if key in wanted:
             out.append({"group": key[0], "number": key[1],
-                        "image": gold_glyph(glyph), "axis": sp["axis"]})
-            changed += 1
+                        "image": wanted[key], "axis": sp["axis"]})
+            done.add(key)
             continue
         out.append({"group": sp["group"], "number": sp["number"],
                     "raw": sp["raw"], "format": sp["format"],
                     "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
                     "axis": sp["axis"], "pal": sp["pal"], "link": sp["link"]})
-    if not changed:
-        raise SystemExit("no question-mark sprite (151,0) in system.sff")
+    for key, image in wanted.items():
+        if key not in done:
+            out.append({"group": key[0], "number": key[1], "image": image,
+                        "axis": (0, 0)})
     blob = sff.write_sff(out, [p["rgba"] for p in palettes])
     with open(SYSTEM_SFF + ".tmp", "wb") as f:
         f.write(blob)
     os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
-    return changed
+    return len(wanted)
 
 
 def rewrite_system_sff(images):
@@ -284,6 +293,10 @@ def rewrite_system_sff(images):
 
 
 KEYS = (
+    # No palette menu on the select screen: it opened a "Color" panel every time
+    # a fighter was picked, and the colour is a costume decision that belongs in
+    # the character, not a prompt in the middle of choosing one.
+    ("paletteselect", "0"),
     ("rows", str(ROWS)),
     ("columns", str(COLS)),
     ("wrapping", "1"),
@@ -296,7 +309,7 @@ KEYS = (
     ("cell.bg.scale", "1,1"),
     ("cell.bg.offset", "0,0"),
     ("cell.random.spr", "151,0"),
-    ("cell.random.scale", "1.6,1.6"),
+    ("cell.random.scale", "1.3,1.3"),
     ("portrait.spr", "9000,0"),
     # the portrait art is painted at the cell's own size (build_portraits.py
     # CELL) and the bust is inset inside it, so it sits at the cell's origin -
@@ -350,14 +363,20 @@ KEYS = (
     # 5x scale and a 476px-wide window they spilled past the panel and showed
     # around the preview art. Offsets below compensate for each sprite's axis:
     # 151,0 sits at (-22,-18), 151,1 (mirrored) at (31,0), 1000,1 at (0,0).
-    ("p1.face2.random.offset", "-97, 173"),
-    ("p1.face2.random.scale", "4.8, 4.8"),
+    # The random card is painted at panel size, so it draws at 1:1 from the
+    # panel's corner instead of a 62px glyph blown up 4.8x.
+    ("p1.face2.random.spr", "151,10"),
+    ("p1.face2.random.offset", "8, 150"),
+    ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
     ("p1.face2.loading.offset", "8, 235"),
     ("p1.face2.loading.scale", ".625, .625"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
-    ("p2.face2.random.offset", "1328, 173"),
-    ("p2.face2.random.scale", "4.8, 4.8"),
+    ("p2.face2.random.spr", "151,10"),
+    # p2 draws its panel art mirrored (facing = -1), so the offset is the
+# panel's right edge and the card lands back on 966-1266.
+    ("p2.face2.random.offset", "1266, 150"),
+    ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
     ("p2.face2.loading.offset", "1266, 235"),
     ("p2.face2.loading.scale", ".625, .625"),
@@ -499,7 +518,7 @@ def main():
     sheet.convert("RGB").save(os.path.join(ROOT, "artifacts", "select_cells.png"))
     print(f"select screen: {COLS}x{ROWS} grid at {GRID[0]},{GRID[1]}, "
           f"cells {CELL}px, background layer {'added' if added else 'kept'}, "
-          f"{marks} random mark(s) in gold")
+          f"{marks} random card(s) painted")
 
 
 if __name__ == "__main__":
