@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater  v8
+rem  BIG TROUBLE IN LITTLE CHINA - updater  v9
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater  v8
+echo                        updater  v9
 echo.
 echo   ==============================================================
 echo.
@@ -88,7 +88,7 @@ if exist "%CACHE%\main-2.zip" del /q "%CACHE%\main-2.zip" >nul 2>&1
 if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip" >nul 2>&1
 if not exist "%WHERE%" goto download
 "%WHERE%" git >nul 2>&1
-if errorlevel 1 goto download
+if errorlevel 1 goto probe
 goto trygit
 
 :manualzip
@@ -163,8 +163,43 @@ echo            git could not fetch. it said:
 if not exist "%CACHE%\git.log" goto download
 "%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
 echo            trying a direct download instead
-goto download
+goto probe
 
+rem ---- has main moved? ---------------------------------------------------
+rem The zip path used to fetch the whole ~190 MB archive on every launch: it
+rem recorded nothing about what it had applied, and nothing compared the
+rem folder against main. The head commit is a few KB and answers the same
+rem question, so an unchanged build costs one small request instead.
+:probe
+set "RSHA7="
+if not exist "%CACHE%\applied.txt" goto download
+if not exist "%~dp0data\fight.def" goto download
+set "APPLIED="
+set /p APPLIED=<"%CACHE%\applied.txt"
+if not defined APPLIED goto download
+call :headsha
+if not defined RSHA7 goto download
+if not "%RSHA7%"=="%APPLIED%" goto download
+echo   files  : main @ %APPLIED%
+echo            main has not moved - nothing to download
+goto launch
+
+:headsha
+rem Sets RSHA7 to the short head commit of main. Left empty on any doubt, so
+rem a failed probe always falls through to the download it was avoiding.
+set "RSHA7="
+set "RSHA="
+if not defined CURL exit /b 0
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 20 --max-time 60 -H "User-Agent: btilc-updater" -o "%CACHE%\head.json" "https://api.github.com/repos/%REPO%/commits/main" >nul 2>&1
+if errorlevel 1 exit /b 0
+if not exist "%CACHE%\head.json" exit /b 0
+for /f "tokens=2 delims=:" %%a in ('"%FINDSTR%" /c:sha "%CACHE%\head.json"') do if not defined RSHA set "RSHA=%%a"
+if not defined RSHA exit /b 0
+set "RSHA=%RSHA: =%"
+set RSHA=%RSHA:"=%
+set "RSHA=%RSHA:,=%"
+if defined RSHA set "RSHA7=%RSHA:~0,7%"
+exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
@@ -268,8 +303,11 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 
 :copied
 set "VER="
-if not "%WHICH%"=="git" goto skipver
-for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
+if "%WHICH%"=="git" for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
+rem a zip run knows the version from the probe, and a fresh one asks now;
+rem without recording it the next launch cannot tell it is current
+if not defined VER if not defined RSHA7 call :headsha
+if not defined VER if defined RSHA7 set "VER=%RSHA7%"
 if defined VER (>"%CACHE%\applied.txt" echo %VER%)
 
 :sync
@@ -372,6 +410,10 @@ rem  helpers
 rem ===========================================================================
 :dragonbar
 rem %1 = done, %2 = total -> BAR: 32 cells, a body of = and a head at the tip
+rem The head must not be a redirect character: cmd parses redirection after
+rem variable expansion, so echoing a bar whose tip was > wrote the left half
+rem of the bar into a file named after its right half, every redraw. That is
+rem what filled the game folder with progress-bar files.
 setlocal EnableDelayedExpansion
 set /a "C=(%~1)*32/(%~2)"
 if !C! LSS 1 set "C=1"
@@ -379,7 +421,7 @@ if !C! GTR 32 set "C=32"
 set "BAR="
 for /l %%i in (1,1,32) do (
   if %%i LSS !C! set "BAR=!BAR!="
-  if %%i EQU !C! set "BAR=!BAR!>"
+  if %%i EQU !C! set "BAR=!BAR!#"
   if %%i GTR !C! set "BAR=!BAR!-"
 )
 endlocal & set "BAR=%BAR%"
@@ -406,9 +448,15 @@ echo   the download is done.
 exit /b 0
 
 :sleep
-rem ping is the only delay Windows always has, whatever is on PATH
+rem ping is the only delay Windows always has, whatever is on PATH - but if
+rem it cannot run, every wait returns at once and the redraw loop spins at
+rem full speed, blinking and writing a file per frame.
 set /a "P=%~1+1"
-"%PING%" -n %P% 127.0.0.1 >nul 2>&1
+if exist "%PING%" "%PING%" -n %P% 127.0.0.1 >nul 2>&1
+if exist "%PING%" exit /b 0
+if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Sleep -Seconds %~1" >nul 2>&1
+if defined POWERSHELL exit /b 0
+"%SYS%\timeout.exe" /t %~1 /nobreak >nul 2>&1
 exit /b 0
 
 :zipcheck
