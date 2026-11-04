@@ -42,7 +42,7 @@ screenleft = 68
 screenright = 68
 
 [StageInfo]
-zoffset = 900
+zoffset = 960
 autoturn = 1
 resetBG = 1
 localcoord = 1920, 1080
@@ -82,10 +82,6 @@ trans = none
 mask = 1
 tile = 0,0
 
-
-; the mouth is a hole into the throat: the fog film sits at the bottom of the
-; stack, so the aperture is the only place it can be seen. It covers the whole
-; view, so the fog keeps running in the mouth as the camera pans.
 [BG sky 1]
 type = normal
 spriteno = 10,1
@@ -99,13 +95,6 @@ tile = 0,0
 ; column 2 of the lip plate: 8192 px wide, past the 4096 px a
 ; single texture may be on some GPUs, so it ships in abutting
 ; columns that line up with the first one
-[BG fog]
-type = video
-path = video/fog.webm
-loop = 1
-layerno = 0
-start = -1920,0
-delta = 0,0
 [BG bg]
 type = normal
 spriteno = 0,0
@@ -182,7 +171,7 @@ tile = 0,0
 type = normal
 spriteno = 11,0
 layerno = 1
-start = -4096,900
+start = -4096,960
 delta = 1,1
 scale = 1,1
 trans = none
@@ -194,7 +183,7 @@ tile = 0,0
 type = normal
 spriteno = 11,1
 layerno = 1
-start = 0,900
+start = 0,960
 delta = 1,1
 trans = none
 mask = 1
