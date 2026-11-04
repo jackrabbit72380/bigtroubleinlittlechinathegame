@@ -1043,7 +1043,7 @@ fadeout.time = 25
 ;Match text in arcade modes
 match.text = Match %i        ;%i can be used for the match number
 match.offset = 640, 85
-match.font = 2,0,0
+match.font = 2, 0, 0, 236, 200, 120
 match.scale = 1.5,1.5
 
 ;Big portraits

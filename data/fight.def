@@ -1655,54 +1655,54 @@ p1.frontMax.palfx.sinmul = 30, 30, 30, 10
 
 p1.counterMax.text = M
 p1.counterMax.offset = -241,21
-p1.counterMax.font = 4, 0, 0
+p1.counterMax.font = 4, 0, 0, 255, 228, 140
 p1.counterMax.palfx.mul = 226, 226, 226
 p1.counterMax.palfx.sinmul = 30, 30, 30, 10
 
 p1.counter10000.offset = -241,21
-p1.counter10000.font = 4, 0, 0
+p1.counter10000.font = 4, 0, 0, 255, 228, 140
 p1.counter10000.palfx.mul = 226, 226, 226
 p1.counter10000.palfx.sinmul = 30, 30, 30, 10
 
 p1.counter9000.offset = -241,21
-p1.counter9000.font = 4, 0, 0
+p1.counter9000.font = 4, 0, 0, 255, 228, 140
 p1.counter9000.palfx.mul = 255, 32, 135
 
 p1.counter8000.offset = -241,21
-p1.counter8000.font = 4, 0, 0
+p1.counter8000.font = 4, 0, 0, 255, 228, 140
 p1.counter8000.palfx.mul = 200, 78, 240
 
 p1.counter7000.offset = -241,21
-p1.counter7000.font = 4, 0, 0
+p1.counter7000.font = 4, 0, 0, 255, 228, 140
 p1.counter7000.palfx.mul = 102, 250, 250
 
 p1.counter6000.offset = -241,21
-p1.counter6000.font = 4, 0, 0
+p1.counter6000.font = 4, 0, 0, 255, 228, 140
 p1.counter6000.palfx.mul = 0, 204, 153
 
 p1.counter5000.offset = -241,21
-p1.counter5000.font = 4, 0, 0
+p1.counter5000.font = 4, 0, 0, 255, 228, 140
 p1.counter5000.palfx.mul = 255, 153, 0
 
 p1.counter4000.offset = -241,21
-p1.counter4000.font = 4, 0, 0
+p1.counter4000.font = 4, 0, 0, 255, 228, 140
 p1.counter4000.palfx.mul = 102, 255, 51
 
 p1.counter3000.offset = -241,21
-p1.counter3000.font = 4, 0, 0
+p1.counter3000.font = 4, 0, 0, 255, 228, 140
 p1.counter3000.palfx.mul = 255, 70, 70
 
 p1.counter2000.offset = -241,21
-p1.counter2000.font = 4, 0, 0
+p1.counter2000.font = 4, 0, 0, 255, 228, 140
 p1.counter2000.palfx.mul = 255, 255, 51
 
 p1.counter1000.offset = -241,21
-p1.counter1000.font = 4, 0, 0
+p1.counter1000.font = 4, 0, 0, 255, 228, 140
 p1.counter1000.palfx.mul = 0, 153, 255
 
 p1.counter.palfx.mul = 125, 125, 125
 p1.counter.offset = -241,21
-p1.counter.font = 4, 0, 0
+p1.counter.font = 4, 0, 0, 255, 228, 140
 p1.levelbars = 1             
 
 ;Player 2
@@ -1797,53 +1797,53 @@ p2.frontMax.facing = 1
 
 p2.counterMax.text = M
 p2.counterMax.offset = 241,21
-p2.counterMax.font = 4, 0, 0
+p2.counterMax.font = 4, 0, 0, 255, 228, 140
 p2.counterMax.palfx.mul = 226, 226, 226
 p2.counterMax.palfx.sinmul = 30, 30, 30, 10
 
 p2.counter10000.offset = 243,21
-p2.counter10000.font = 4, 0, 0
+p2.counter10000.font = 4, 0, 0, 255, 228, 140
 p2.counter10000.palfx.mul = 226, 226, 226
 p2.counter10000.palfx.sinmul = 30, 30, 30, 10
 
 p2.counter9000.offset = 243,21
-p2.counter9000.font = 4, 0, 0
+p2.counter9000.font = 4, 0, 0, 255, 228, 140
 p2.counter9000.palfx.mul = 255, 32, 135
 
 p2.counter8000.offset = 243,21
-p2.counter8000.font = 4, 0, 0
+p2.counter8000.font = 4, 0, 0, 255, 228, 140
 p2.counter8000.palfx.mul = 200, 78, 240
 
 p2.counter7000.offset = 243,21
-p2.counter7000.font = 4, 0, 0
+p2.counter7000.font = 4, 0, 0, 255, 228, 140
 p2.counter7000.palfx.mul = 102, 250, 250
 
 p2.counter6000.offset = 243,21
-p2.counter6000.font = 4, 0, 0
+p2.counter6000.font = 4, 0, 0, 255, 228, 140
 p2.counter6000.palfx.mul = 0, 204, 153
 
 p2.counter5000.offset = 243,21
-p2.counter5000.font = 4, 0, 0
+p2.counter5000.font = 4, 0, 0, 255, 228, 140
 p2.counter5000.palfx.mul = 255, 153, 0
 
 p2.counter4000.offset = 243,21
-p2.counter4000.font = 4, 0, 0
+p2.counter4000.font = 4, 0, 0, 255, 228, 140
 p2.counter4000.palfx.mul = 102, 255, 51
 
 p2.counter3000.offset = 243,21
-p2.counter3000.font = 4, 0, 0
+p2.counter3000.font = 4, 0, 0, 255, 228, 140
 p2.counter3000.palfx.mul = 255, 70, 70
 
 p2.counter2000.offset = 243,21
-p2.counter2000.font = 4, 0, 0
+p2.counter2000.font = 4, 0, 0, 255, 228, 140
 p2.counter2000.palfx.mul = 255, 255, 51
 
 p2.counter1000.offset = 243,21
-p2.counter1000.font = 4, 0, 0
+p2.counter1000.font = 4, 0, 0, 255, 228, 140
 p2.counter1000.palfx.mul = 0, 153, 255
 
 p2.counter.offset = 243,21
-p2.counter.font = 4, 0, 0
+p2.counter.font = 4, 0, 0, 255, 228, 140
 p2.counter.palfx.mul = 125, 125, 125
 p2.levelbars = 1             
 
@@ -2441,13 +2441,13 @@ p2.teammate.face.facing = -1
 p1.pos = 13,145
 p1.name.scale = 1,1
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 
 ;Player 2
 p2.name.scale = 1,1
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 [Simul Name]
 leaderontop = 1 ; This allows the names to render from top to bottom.
@@ -2455,24 +2455,24 @@ leaderontop = 1 ; This allows the names to render from top to bottom.
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,165
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 1,1
 p3.name.palfx.mul = 178, 178, 178
 
 ;Player 4
 p4.pos = 1252,165
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 1,1
 p4.name.palfx.mul = 178, 178, 178
 
@@ -2483,18 +2483,18 @@ leaderontop = 1
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28, 160
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 0.8,0.8
 p3.name.palfx.mul = 178, 178, 178
 p3.name.layerno = 0
@@ -2502,21 +2502,21 @@ p3.name.layerno = 0
 ;Player 4
 p4.pos = 1252, 160
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 0.8,0.8
 p4.name.palfx.mul = 178, 178, 178
 
 ;Player 5
 p5.pos = 43,175
 ;p5.bg. =
-p5.name.font = 3,0, 1
+p5.name.font = 3,0, 1, 255, 228, 140
 p5.name.scale = 0.8,0.8
 p5.name.palfx.mul = 178, 178, 178
 
 ;Player 6
 p6.pos = 1237,175
 ;p6.bg. =
-p6.name.font = 3,0, -1
+p6.name.font = 3,0, -1, 255, 228, 140
 p6.name.scale = 0.8,0.8
 p6.name.palfx.mul = 178, 178, 178
 
@@ -2528,53 +2528,53 @@ leaderontop = 1
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,158
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 0.8,0.8
 p3.name.palfx.mul = 178, 178, 178
 
 ;Player 4
 p4.pos = 1252,158
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 0.8,0.8
 p4.name.palfx.mul = 178, 178, 178
 
 ;Player 5
 p5.pos = 43,171
 ;p5.bg. =
-p5.name.font = 3,0, 1
+p5.name.font = 3,0, 1, 255, 228, 140
 p5.name.scale = 0.8,0.8
 p5.name.palfx.mul = 178, 178, 178
 
 ;Player 6
 p6.pos = 1237,171
 ;p6.bg. =
-p6.name.font = 3,0, -1
+p6.name.font = 3,0, -1, 255, 228, 140
 p6.name.scale = 0.8,0.8
 p6.name.palfx.mul = 178, 178, 178
 
 ;Player 7
 p7.pos = 58,184
 ;p7.bg. =
-p7.name.font = 3,0, 1
+p7.name.font = 3,0, 1, 255, 228, 140
 p7.name.scale = 0.8,0.8
 p7.name.palfx.mul = 178, 178, 178
 
 ;Player 8
 p8.pos = 1222,184
 ;p8.bg. =
-p8.name.font = 3,0, -1
+p8.name.font = 3,0, -1, 255, 228, 140
 p8.name.scale = 0.8,0.8
 p8.name.palfx.mul = 178, 178, 178
 
@@ -2584,24 +2584,24 @@ leaderontop = 1
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,165
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 1,1
 p3.name.palfx.mul = 178, 178, 178
 
 ;Player 4
 p4.pos = 1252,165
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 1,1
 p4.name.palfx.mul = 178, 178, 178
 
@@ -2611,39 +2611,39 @@ leaderontop = 1
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28, 160
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 0.8,0.8
 p3.name.palfx.mul = 178, 178, 178
 
 ;Player 4
 p4.pos = 1252, 160
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 0.8,0.8
 p4.name.palfx.mul = 178, 178, 178
 
 ;Player 5
 p5.pos = 43,175
 ;p5.bg. =
-p5.name.font = 3,0, 1
+p5.name.font = 3,0, 1, 255, 228, 140
 p5.name.scale = 0.8,0.8
 p5.name.palfx.mul = 178, 178, 178
 
 ;Player 6
 p6.pos = 1237,175
 ;p6.bg. =
-p6.name.font = 3,0, -1
+p6.name.font = 3,0, -1, 255, 228, 140
 p6.name.scale = 0.8,0.8
 p6.name.palfx.mul = 178, 178, 178
 
@@ -2654,53 +2654,53 @@ leaderontop = 1
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,0, 1
+p1.name.font = 3,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,0, -1
+p2.name.font = 3,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,158
 ;p3.bg. =
-p3.name.font = 3,0, 1
+p3.name.font = 3,0, 1, 255, 228, 140
 p3.name.scale = 0.8,0.8
 p3.name.palfx.mul = 178, 178, 178
 
 ;Player 4
 p4.pos = 1252,158
 ;p4.bg. =
-p4.name.font = 3,0, -1
+p4.name.font = 3,0, -1, 255, 228, 140
 p4.name.scale = 0.8,0.8
 p4.name.palfx.mul = 178, 178, 178
 
 ;Player 5
 p5.pos = 43,171
 ;p5.bg. =
-p5.name.font = 3,0, 1
+p5.name.font = 3,0, 1, 255, 228, 140
 p5.name.scale = 0.8,0.8
 p5.name.palfx.mul = 178, 178, 178
 
 ;Player 6
 p6.pos = 1237,171
 ;p6.bg. =
-p6.name.font = 3,0, -1
+p6.name.font = 3,0, -1, 255, 228, 140
 p6.name.scale = 0.8,0.8
 p6.name.palfx.mul = 178, 178, 178
 
 ;Player 7
 p7.pos = 58,184
 ;p7.bg. =
-p7.name.font = 3,0, 1
+p7.name.font = 3,0, 1, 255, 228, 140
 p7.name.scale = 0.8,0.8
 p7.name.palfx.mul = 178, 178, 178
 
 ;Player 8
 p8.pos = 1222,184
 ;p8.bg. =
-p8.name.font = 3,0, -1
+p8.name.font = 3,0, -1, 255, 228, 140
 p8.name.scale = 0.8,0.8
 p8.name.palfx.mul = 178, 178, 178
 
@@ -2709,17 +2709,17 @@ p8.name.palfx.mul = 178, 178, 178
 ;Player 1
 p1.pos = 13,145
 ;p1.bg. =
-p1.name.font = 3,3, 1
+p1.name.font = 3,3, 1, 255, 228, 140
 ;Player 2
 p2.pos = 1267,145
 ;p2.bg. =
-p2.name.font = 3,1, -1
+p2.name.font = 3,1, -1, 255, 228, 140
 
 ;Player 1 Teammates
 p1.teammate.pos = 28,160
 p1.teammate.spacing = 15, 15
 ;p1.teammate.bg. =
-p1.teammate.name.font = 3,3, 1
+p1.teammate.name.font = 3,3, 1, 255, 228, 140
 p1.teammate.name.scale = 0.8, 0.8
 p1.teammate.name.palfx.mul = 178, 178, 178
 
@@ -2727,7 +2727,7 @@ p1.teammate.name.palfx.mul = 178, 178, 178
 p2.teammate.pos = 1252,160
 p2.teammate.spacing = -15, 15
 ;p2.teammate.bg. =
-p2.teammate.name.font = 3,1, -1
+p2.teammate.name.font = 3,1, -1, 255, 228, 140
 p2.teammate.name.scale = 0.8, 0.8
 p2.teammate.name.palfx.mul = 178, 178, 178
 
@@ -2740,7 +2740,7 @@ pos = 640,34
 ;bg.spr = 
 ; Time count display
 counter.offset = 0,-4
-counter.font = 2,0, 0
+counter.font = 2,0, 0, 255, 228, 140
 counter.scale = 0.55, 0.55
 counter.palfx.mul = 256, 0, 0
 ; Ticks for each count
@@ -2748,12 +2748,12 @@ framespercount = 60
 
 counter1.scale = 0.55, 0.55
 counter1.offset = 0,-4
-counter1.font = 2, 0, 0
+counter1.font = 2, 0, 0, 255, 228, 140
 counter1.palfx.mul = 256, 128, 128
 counter1.palfx.sinmul = 0, 128, 128, 20
 counter1.layerno = 0
 
-counter10.font = 2, 0, 0
+counter10.font = 2, 0, 0, 255, 228, 140
 counter10.offset = 0,-4
 counter10.scale = 0.55, 0.55
 counter10.palfx.mul = 256, 128, 128
@@ -2774,26 +2774,26 @@ bg.offset = 0,0
 team1.pos = 130,260        ;Coords to show
 team1.start.x = -240      ;Starting x-coords
 team1.counter.layerno = 2
-team1.counter.font = 6,0,0
-team1.counter10.font = 6,0,0
+team1.counter.font = 6,0,0, 255, 228, 140
+team1.counter10.font = 6,0,0, 255, 228, 140
 team1.counter10.palfx.mul = 255, 217, 179
-team1.counter20.font = 6,0,0
+team1.counter20.font = 6,0,0, 255, 228, 140
 team1.counter20.palfx.mul = 255, 153, 51
-team1.counter30.font = 6,0,0
+team1.counter30.font = 6,0,0, 255, 228, 140
 team1.counter30.palfx.mul = 255, 255, 77
-team1.counter40.font = 6,0,0
+team1.counter40.font = 6,0,0, 255, 228, 140
 team1.counter40.palfx.mul = 102, 255, 51
-team1.counter50.font = 6,0,0
+team1.counter50.font = 6,0,0, 255, 228, 140
 team1.counter50.palfx.mul = 51, 255, 214
-team1.counter60.font = 6,0,0
+team1.counter60.font = 6,0,0, 255, 228, 140
 team1.counter60.palfx.mul = 0, 153, 255
-team1.counter70.font = 6,0,0
+team1.counter70.font = 6,0,0, 255, 228, 140
 team1.counter70.palfx.mul = 204, 51, 255
-team1.counter80.font = 6,0,0
+team1.counter80.font = 6,0,0, 255, 228, 140
 team1.counter80.palfx.mul = 255, 26, 117
-team1.counter90.font = 6,0,0
+team1.counter90.font = 6,0,0, 255, 228, 140
 team1.counter90.palfx.mul = 255, 26, 26
-team1.counter100.font = 6,0,0
+team1.counter100.font = 6,0,0, 255, 228, 140
 team1.counter100.palfx.mul = 255, 26, 26
 team1.counter100.palfx.sinmul = 90, 90, 90, 15
 team1.counter.shake = 1   ;Set to 1 to shake count on hit
@@ -2813,37 +2813,37 @@ team1.text.shake.dir = 90
 team1.text.layerno = 2
 ; (text format %i = combo count, %d = combo damage, %p = combo damage percentage)
 team1.text.text = "HITS!\n%p%" ;You can use %i to show count in the text, eg "%i Hit!" ; ( %d d for damage, %p% for hit)
-team1.text.font = 7,0,0
+team1.text.font = 7,0,0, 255, 228, 140
 team1.text.offset = 6,42  ;Offset of text
 team1.text10.text = "HITS!!\n%p%" ;By inputting a number next to text, You can change certain elements of the combo text when a combo reaches a certain point.
-team1.text10.font = 7,0,0
+team1.text10.font = 7,0,0, 255, 228, 140
 team1.text10.offset = 6,42
 team1.text20.text = "HITS!!!\n%p%"
-team1.text20.font = 7,0,0
+team1.text20.font = 7,0,0, 255, 228, 140
 team1.text20.offset = 6,42
 team1.text30.text = "HITS!!!!\n%p%"
-team1.text30.font = 7,0,0
+team1.text30.font = 7,0,0, 255, 228, 140
 team1.text30.offset = 6,42
 team1.text40.text = "HITS!!!!!\n%p%"
-team1.text40.font = 7,0,0
+team1.text40.font = 7,0,0, 255, 228, 140
 team1.text40.offset = 6,42
 team1.text50.text = "HITS!!!!!!\n%p%"
-team1.text50.font = 7,0,0
+team1.text50.font = 7,0,0, 255, 228, 140
 team1.text50.offset = 6,42
 team1.text60.text = "HITS!!!!!!!\n%p%"
-team1.text60.font = 7,0,0
+team1.text60.font = 7,0,0, 255, 228, 140
 team1.text60.offset = 6,42
 team1.text70.text = "HITS!!!!!!!!\n%p%"
-team1.text70.font = 7,0,0
+team1.text70.font = 7,0,0, 255, 228, 140
 team1.text70.offset = 6,42
 team1.text80.text = "HITS!!!!!!!!!\n%p%"
-team1.text80.font = 7,0,0
+team1.text80.font = 7,0,0, 255, 228, 140
 team1.text80.offset = 6,42
 team1.text90.text = "HITS!!!!!!!!!!\n%p%"
-team1.text90.font = 7,0,0
+team1.text90.font = 7,0,0, 255, 228, 140
 team1.text90.offset = 6,42
 team1.text100.text = "HITS!!!!!!!!!!!\n%p%"
-team1.text100.font = 7,0,0
+team1.text100.font = 7,0,0, 255, 228, 140
 team1.text100.offset = 6,42
 team1.text100.palfx.mul = 256, 256, 256
 team1.text100.palfx.sinmul = 90, 90, 90, 15
@@ -2855,26 +2855,26 @@ team1.autoalign = 0
 team2.pos = 1150,260      ;Coords to show
 team2.start.x = 1520      ;Starting x-coords
 team2.counter.layerno = 2
-team2.counter.font = 6,0,0
-team2.counter10.font = 6,0,0
+team2.counter.font = 6,0,0, 255, 228, 140
+team2.counter10.font = 6,0,0, 255, 228, 140
 team2.counter10.palfx.mul = 255, 217, 179
-team2.counter20.font = 6,0,0
+team2.counter20.font = 6,0,0, 255, 228, 140
 team2.counter20.palfx.mul = 255, 153, 51
-team2.counter30.font = 6,0,0
+team2.counter30.font = 6,0,0, 255, 228, 140
 team2.counter30.palfx.mul = 255, 255, 77
-team2.counter40.font = 6,0,0
+team2.counter40.font = 6,0,0, 255, 228, 140
 team2.counter40.palfx.mul = 102, 255, 51
-team2.counter50.font = 6,0,0
+team2.counter50.font = 6,0,0, 255, 228, 140
 team2.counter50.palfx.mul = 51, 255, 214
-team2.counter60.font = 6,0,0
+team2.counter60.font = 6,0,0, 255, 228, 140
 team2.counter60.palfx.mul = 0, 153, 255
-team2.counter70.font = 6,0,0
+team2.counter70.font = 6,0,0, 255, 228, 140
 team2.counter70.palfx.mul = 204, 51, 255
-team2.counter80.font = 6,0,0
+team2.counter80.font = 6,0,0, 255, 228, 140
 team2.counter80.palfx.mul = 255, 26, 117
-team2.counter90.font = 6,0,0
+team2.counter90.font = 6,0,0, 255, 228, 140
 team2.counter90.palfx.mul = 255, 26, 26
-team2.counter100.font = 6,0,0
+team2.counter100.font = 6,0,0, 255, 228, 140
 team2.counter100.palfx.mul = 255, 26, 26
 team2.counter100.palfx.sinmul = 90, 90, 90, 15
 team2.counter.shake = 1   ;Set to 1 to shake count on hit
@@ -2894,37 +2894,37 @@ team2.text.shake.dir = 90
 team2.text.layerno = 2
 ;(text format %i = combo count, %d = combo damage, %p = combo damage percentage)
 team2.text.text = "HITS!\n%p%" ;You can use %i to show count in the text, eg "%i Hit!"
-team2.text.font = 7,0,0
+team2.text.font = 7,0,0, 255, 228, 140
 team2.text.offset = 6,42  ;Offset of text
 team2.text10.text = "HITS!!\n%p%" ;By inputting a number next to text, You can change certain elements of the combo text when a combo reaches a certain point.
-team2.text10.font = 7,0,0
+team2.text10.font = 7,0,0, 255, 228, 140
 team2.text10.offset = 6,42
 team2.text20.text = "HITS!!!\n%p%"
-team2.text20.font = 7,0,0
+team2.text20.font = 7,0,0, 255, 228, 140
 team2.text20.offset = 6,42
 team2.text30.text = "HITS!!!!\n%p%"
-team2.text30.font = 7,0,0
+team2.text30.font = 7,0,0, 255, 228, 140
 team2.text30.offset = 6,42
 team2.text40.text = "HITS!!!!!\n%p%"
-team2.text40.font = 7,0,0
+team2.text40.font = 7,0,0, 255, 228, 140
 team2.text40.offset = 6,42
 team2.text50.text = "HITS!!!!!!\n%p%"
-team2.text50.font = 7,0,0
+team2.text50.font = 7,0,0, 255, 228, 140
 team2.text50.offset = 6,42
 team2.text60.text = "HITS!!!!!!!\n%p%"
-team2.text60.font = 7,0,0
+team2.text60.font = 7,0,0, 255, 228, 140
 team2.text60.offset = 6,42
 team2.text70.text = "HITS!!!!!!!!\n%p%"
-team2.text70.font = 7,0,0
+team2.text70.font = 7,0,0, 255, 228, 140
 team2.text70.offset = 6,42
 team2.text80.text = "HITS!!!!!!!!!\n%p%"
-team2.text80.font = 7,0,0
+team2.text80.font = 7,0,0, 255, 228, 140
 team2.text80.offset = 6,42
 team2.text90.text = "HITS!!!!!!!!!!\n%p%"
-team2.text90.font = 7,0,0
+team2.text90.font = 7,0,0, 255, 228, 140
 team2.text90.offset = 6,42
 team2.text100.text = "HITS!!!!!!!!!!!\n%p%"
-team2.text100.font = 7,0,0
+team2.text100.font = 7,0,0, 255, 228, 140
 team2.text100.offset = 6,42
 team2.text100.palfx.mul = 256, 256, 256
 team2.text100.palfx.sinmul = 90, 90, 90, 15
@@ -2952,7 +2952,7 @@ team1.front.layerno = 2
 team1.front.offset = 75,0
 team1.front.scale = 1.0,1.0
 team1.text.layerno = 2
-team1.text.font = 5,0,0
+team1.text.font = 5,0,0, 255, 228, 140
 team1.text.offset = 80,20   ;Offset of text
 team1.text.scale = 0.85,0.95
 team1.displaytime = 60    ;Time to show message
@@ -2972,7 +2972,7 @@ team2.front.layerno = 2
 team2.front.offset = -75,0
 team2.front.scale = 1.0,1\\
 team2.text.layerno = 2
-team2.text.font = 5,0,0
+team2.text.font = 5,0,0, 255, 228, 140
 team2.text.offset = -80,20
 team2.text.scale = 0.85,0.95
 team2.displaytime = 60
@@ -3000,7 +3000,7 @@ round.default.offset = 630, 480
 ; text.
 round.default.text = "R   %i"
 ;round.default.anim = 500
-round.default.font = 9,0,0
+round.default.font = 9,0,0, 255, 228, 140
 round.default.displaytime = 55
 round.default.scale = 1,1
 round.default.snd = 0, 11
@@ -3038,14 +3038,14 @@ round9.offset = 640, 380
 
 
 round.single.offset = 640, 480
-round.single.font = 9, 0, 0
+round.single.font = 9, 0, 0, 255, 228, 140
 round.single.text = "G   r"
 round.single.displaytime = 55
 round.single.scale = 1, 1
 round.single.snd = 0, 11
 
 round.final.offset = 640, 480
-round.final.font = 9, 0, 0
+round.final.font = 9, 0, 0, 255, 228, 140
 round.final.text = "F   R"
 round.final.text = " "
 ;round.final.anim = 510
@@ -3121,7 +3121,7 @@ p1.win.bg1.anim = 580
 p1.win.bg1.offset = 540, 610
 p1.win.bg0.anim = 586
 p1.win.bg0.offset = 640, 690
-p1.win.font = 1,0,1
+p1.win.font = 1,0,1, 255, 228, 140
 p1.win.text = "%s"
 p1.win.displaytime = 180
 p1.win.snd     = 2,3
@@ -3131,7 +3131,7 @@ p2.win.bg1.anim = 581
 p2.win.bg1.offset = 740, 610
 p2.win.bg0.anim = 586
 p2.win.bg0.offset = 640, 690
-p2.win.font = 1,0,-1
+p2.win.font = 1,0,-1, 255, 228, 140
 p2.win.text = "%s"
 p2.win.displaytime = 180
 p2.win.snd     = 2,3
@@ -3142,7 +3142,7 @@ p1.win2.bg1.anim = 580
 p1.win2.bg1.offset = 540, 610
 p1.win2.bg0.anim = 586
 p1.win2.bg0.offset = 640, 690
-p1.win2.font = 1,0,1
+p1.win2.font = 1,0,1, 255, 228, 140
 p1.win2.text = "%s and %s"
 p1.win2.displaytime = 180
 p1.win2.snd     = 2,3
@@ -3152,7 +3152,7 @@ p2.win2.bg1.anim = 581
 p2.win2.bg1.offset = 740, 610
 p2.win2.bg0.anim = 586
 p2.win2.bg0.offset = 640, 690
-p2.win2.font = 1,0,-1
+p2.win2.font = 1,0,-1, 255, 228, 140
 p2.win2.text = "%s and %s"
 p2.win2.displaytime = 180
 p2.win2.snd     = 2,3
@@ -3163,7 +3163,7 @@ p1.win3.bg1.anim = 580
 p1.win3.bg1.offset = 540, 610
 p1.win3.bg0.anim = 586
 p1.win3.bg0.offset = 640, 690
-p1.win3.font = 1,0,1
+p1.win3.font = 1,0,1, 255, 228, 140
 p1.win3.text = "Team %s"
 p1.win3.displaytime = 180
 p1.win3.snd     = 2,3
@@ -3173,7 +3173,7 @@ p2.win3.bg1.anim = 581
 p2.win3.bg1.offset = 740, 610
 p2.win3.bg0.anim = 586
 p2.win3.bg0.offset = 640, 690
-p2.win3.font = 1,0,-1
+p2.win3.font = 1,0,-1, 255, 228, 140
 p2.win3.text = "Team %s"
 p2.win3.displaytime = 180
 p2.win3.snd     = 2,3
@@ -3184,7 +3184,7 @@ p1.win4.bg1.anim = 580
 p1.win4.bg1.offset = 540, 610
 p1.win4.bg0.anim = 586
 p1.win4.bg0.offset = 640, 690
-p1.win4.font = 1,0,1
+p1.win4.font = 1,0,1, 255, 228, 140
 p1.win4.text = "Team %s"
 p1.win4.displaytime = 180
 p1.win4.snd     = 2,3
@@ -3194,7 +3194,7 @@ p2.win4.bg1.anim = 581
 p2.win4.bg1.offset = 740, 610
 p2.win4.bg0.anim = 586
 p2.win4.bg0.offset = 640, 690
-p2.win4.font = 1,0,-1
+p2.win4.font = 1,0,-1, 255, 228, 140
 p2.win4.text = "Team %s"
 p2.win4.displaytime = 180
 p2.win4.snd     = 2,3
@@ -3781,12 +3781,12 @@ useiconupto = 4
 [WinCount]
 p1.pos = 586,24
 ;p1.bg.spr = 
-p1.text.font = 8,0, -1
+p1.text.font = 8,0, -1, 255, 228, 140
 p1.text.text = WINS %s
 
 p2.pos = 696,24
 ;p2.bg.spr = 
-p2.text.font = 8,0, 1
+p2.text.font = 8,0, 1, 255, 228, 140
 p2.text.text = WINS %s
 
 p1.enabled.netplayversus = 1
@@ -3801,7 +3801,7 @@ p2.enabled.versuscoop = 1
 [Timer]
 pos = 1080,24
 ;bg.spr = 
-text.font = 8,0, -1
+text.font = 8,0, -1, 255, 228, 140
 ; Time format: %m = minutes, %s = seconds, %x = milliseconds
 text.text = TIME: %m:%s.%x
 
@@ -3813,12 +3813,12 @@ enabled.timechallenge = 1
 [Score]
 p1.pos = 586,60
 ;p1.bg.spr = 
-p1.text.font = 8,0, -1
+p1.text.font = 8,0, -1, 255, 228, 140
 p1.text.text = %s
 
 p2.pos = 696,60
 ;p2.bg.spr = 
-p2.text.font = 8,0, 1
+p2.text.font = 8,0, 1, 255, 228, 140
 p2.text.text = %s
 
 score.min = 0
@@ -3840,7 +3840,7 @@ p1.enabled.training = 1
 [Match]
 pos = 200,24
 ;bg.spr = 
-text.font = 8,0, 1
+text.font = 8,0, 1, 255, 228, 140
 text.text = STAGE %s
 
 enabled.arcade = 1
@@ -3859,13 +3859,13 @@ enabled.vs100kumite = 1
 [AILevel]
 p1.pos = 586,24
 ;p1.bg.spr = 
-p1.text.font = 8,0, -1
+p1.text.font = 8,0, -1, 255, 228, 140
 ; %s = integer value, %p = percentage
 p1.text.text = CPU-%s
 
 p2.pos = 696,24
 ;p2.bg.spr = 
-p2.text.font = 8,0, 1
+p2.text.font = 8,0, 1, 255, 228, 140
 p2.text.text = CPU-%s
 
 format.decimal.places = 0
@@ -3892,7 +3892,7 @@ p2.enabled.watch = 1
 [Mode]
 demo.pos = 1138,35
 ;demo.bg.spr = 
-demo.text.font = 8,0, -1
+demo.text.font = 8,0, -1, 255, 228, 140
 demo.text.text = Demo Mode
 
 ;-----------------------------------------------------------
