@@ -148,6 +148,20 @@ def _scales(d, line):
             x += step
 
 
+def _spines(d, line, unit):
+    """Small fins along the top of the back."""
+    n = len(line)
+    for i in range(2, n - 4, 9):
+        x, y, half = line[i]
+        nx, ny, _ = line[i + 3]
+        dx = (nx - x) / max(1.0, half)
+        lift = half * 0.62
+        d.polygon([(x - half * 0.55, y - half * 0.86),
+                   (x + dx * half * 0.25, y - half - lift),
+                   (x + half * 0.70, y - half * 0.80)],
+                  fill=GOLD_HI, outline=INK)
+
+
 def _head(d, line, unit):
     """The head at the left end, facing left, as in the concept."""
     x0, y0, half = line[0]
@@ -272,6 +286,7 @@ def _dragon_raw(kind):
                              mask))
 
     d = ImageDraw.Draw(img)
+    _spines(d, line, h / 76.0)
     _head(d, line, (h / 76.0) * 1.0)
     _tail_fin(d, line)
 
@@ -353,6 +368,40 @@ def _from_concept(path):
             (44, 0): front_max}
 
 
+def _patch_section(text, name, fn):
+    """Run fn over one [Section] only, never over the rest of the file."""
+    lines = text.split("\n")
+    start = next((i for i, ln in enumerate(lines)
+                  if ln.strip().lower() == "[" + name.lower() + "]"), None)
+    if start is None:
+        return text
+    end = next((j for j in range(start + 1, len(lines))
+                if lines[j].lstrip().startswith("[")), len(lines))
+    body = "\n".join(lines[start:end])
+    new = fn(body)
+    if new == body:
+        return text
+    return "\n".join(lines[:start] + new.split("\n") + lines[end:])
+
+
+def _patch_powerbar(body):
+    # the meter is W wide, anchored on its right edge
+    body = re.sub(r"(?m)^(\s*p1\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
+                  r"\g<1>-4, -%d" % (W - 4), body)
+    body = re.sub(r"(?m)^(\s*p2\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
+                  r"\g<1>4, %d" % (W - 4), body)
+    # AUDACITY replaces the maximum text ("M"), which sits under the bar
+    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.text\s*=\s*).*$",
+                  r"\g<1>AUDACITY", body)
+    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.palfx\.mul\s*=\s*).*$",
+                  r"\g<1>255, 214, 120", body)
+    # the bar is H tall, so the counters sit below it, not buried in the art
+    body = re.sub(
+        r"(?m)^(\s*p[12]\.counter(?:Max|\d+)?\.offset\s*=\s*)(-?\d+)\s*,\s*-?\d+\s*$",
+        lambda m: "%s%s,%d" % (m.group(1), m.group(2), H + 4), body)
+    return body
+
+
 def patch_fight_def():
     if not os.path.isfile(FIGHT_DEF):
         return False
@@ -360,10 +409,7 @@ def patch_fight_def():
               newline="") as f:
         text = f.read()
     orig = text
-    text = re.sub(r"(?m)^(\s*p1\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
-                  r"\g<1>-4, -%d" % (W - 4), text)
-    text = re.sub(r"(?m)^(\s*p2\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
-                  r"\g<1>4, %d" % (W - 4), text)
+    text = _patch_section(text, "Powerbar", _patch_powerbar)
     if text != orig:
         with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
                   errors="surrogateescape", newline="") as f:
