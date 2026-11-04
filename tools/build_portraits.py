@@ -31,9 +31,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The cell art is painted at the grid cell size so it can be drawn at scale 1
 # with the axis at the sprite corner, which is how the engine lays out its own
 # 25x25 portraits in a 24px cell.
-CELL = (84, 84)            # the grid's cell, in build_select_grid.py
-BUST = 76                  # the bust sits inside the cell bevel
-SIDE = (300, 520)          # the tall art shown beside the grid
+# The grid's cell is 74px now that the roster is ten across, and the standing
+# art beside it gets a 222px column; painting the art at the column width is
+# what keeps the whole fighter visible instead of cropped by the frame.
+CELL = (74, 74)            # the grid's cell, in build_select_grid.py
+BUST = 66                  # the bust sits inside the cell bevel
+SIDE = (214, 600)          # the tall art shown beside the grid
 BIG = (120, 140)
 AXIS = (0, 0)
 

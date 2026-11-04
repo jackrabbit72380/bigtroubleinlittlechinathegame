@@ -1,0 +1,28 @@
+[Info]
+name = "Joe Lucky (rig)"
+displayname = "Joe Lucky"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 960, 720
+
+[Files]
+cmd      = joe_lucky.cmd
+cns      = joe_lucky.cns
+st       = joe_lucky.cns
+stcommon = common1.cns
+sprite   = joe_lucky.sff
+anim     = joe_lucky.air
+sound    = joe_lucky.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480

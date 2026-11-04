@@ -24,6 +24,27 @@ from PIL import Image
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _roster_display(char_id):
+    """The name on the select screen, from the roster spec that made this fighter.
+
+    The gangs and tools/street.py each hold a member's screen name; baking used
+    to fall back to the id in title case, so the roster read "Wingkong Gou"
+    instead of the fighter's name. DISPLAY is only the old hard-coded map.
+    """
+    try:
+        import build_chars as roster
+        import street
+        specs = {s["id"]: s for s in
+                 list(roster.ROSTER) + list(roster.gangs.ROSTER_SPECS)
+                 + list(street.ROSTER_SPECS)}
+        spec = specs.get(char_id)
+        if spec:
+            return spec["display"]
+    except Exception:
+        pass
+    return DISPLAY.get(char_id, char_id.title())
+
+
 def _roster_palette(char_id):
     """The palette tools/build_chars.py grades this fighter to.
 
@@ -33,8 +54,10 @@ def _roster_palette(char_id):
     """
     try:
         import build_chars as roster
+        import street
         specs = {s["id"]: s for s in
-                 list(roster.ROSTER) + list(roster.gangs.ROSTER_SPECS)}
+                 list(roster.ROSTER) + list(roster.gangs.ROSTER_SPECS)
+                 + list(street.ROSTER_SPECS)}
         spec = specs.get(char_id)
         if spec is None:
             return None
@@ -404,7 +427,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     if os.path.isfile(cns_path):
         scale_weapon_positions(cns_path, clsn_k)
 
-    display = DISPLAY.get(char_id, char_id.title())
+    display = _roster_display(char_id)
     def_text = f"""[Info]
 name = "{display} (rig)"
 displayname = "{display}"

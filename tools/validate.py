@@ -221,12 +221,12 @@ def check_select_screen(chars):
             key, value = line.split("=", 1)
             opts[key.strip().lower()] = value.split(";")[0].strip()
 
-    if opts.get("rows") != "5" or opts.get("columns") != "9":
-        err("select screen: grid is %s rows by %s columns, expected 5 by 9 "
-            "(45 cells for a 26-line roster plus the random box)"
+    if opts.get("rows") != "5" or opts.get("columns") != "10":
+        err("select screen: grid is %s rows by %s columns, expected 5 by 10 "
+            "(50 cells for the whole cast plus the random box)"
             % (opts.get("rows"), opts.get("columns")))
-    if opts.get("cell.size") != "84,84":
-        err("select screen: cell.size is %r, expected 84,84" % opts.get("cell.size"))
+    if opts.get("cell.size") != "74,74":
+        err("select screen: cell.size is %r, expected 74,74" % opts.get("cell.size"))
     # Every roster line must land on the one page, or fighters exist but cannot
     # be picked.
     try:
@@ -269,7 +269,7 @@ def check_select_screen(chars):
     # must draw inside the portrait rect. The engine scales a sprite's axis with
     # it, which is what pushed the stock 5x "?" out past the panel and left it
     # showing around the preview art.
-    portrait = (300.0, 520.0)          # 9000,2 on screen at scale 1
+    portrait = (300.0, 520.0)          # 9000,2 / placeholder art at scale 1
     for side, flip in (("p1", 1), ("p2", -1)):
         off = [float(v) for v in opts.get(side + ".face2.offset", "0,0").split(",")]
         psc = [float(v) for v in opts.get(side + ".face2.scale", "1,1").split(",")]
@@ -319,8 +319,8 @@ def check_select_screen(chars):
                              re.M | re.I)
         localcoord = int(lc_match.group(1)) if lc_match else 320
         factor = 1280.0 / localcoord      # motif [Info] localcoord width
-        want = {(9000, 0): (84, 84), (9000, 1): (120, 140),
-                (9000, 2): (300, 520)}
+        want = {(9000, 0): (74, 74), (9000, 1): (120, 140),
+                (9000, 2): (214, 600)}
         for key, size in want.items():
             hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
             if hit is None:
@@ -332,7 +332,7 @@ def check_select_screen(chars):
                     "expected %dx%d"
                     % (name, key[0], key[1], round(drawn[0]), round(drawn[1]),
                        localcoord, size[0], size[1]))
-    notes.append("select screen: 9x5 portrait grid, 84px cells, framed sides; "
+    notes.append("select screen: 10x5 portrait grid, 74px cells, framed sides; "
                  "every fighter carries 9000,0 cell art, 9000,1 VS art and "
                  "9000,2 side art")
 

@@ -1,0 +1,28 @@
+[Info]
+name = "Minion 2 (rig)"
+displayname = "Minion 2"
+versiondate = 10,29,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+pal.defaults = 1
+localcoord = 960, 720
+
+[Files]
+cmd      = minion2.cmd
+cns      = minion2.cns
+st       = minion2.cns
+stcommon = common1.cns
+sprite   = minion2.sff
+anim     = minion2.air
+sound    = minion2.snd
+movelist = movelist.dat
+
+[Size]
+height   = 197
+mid.pos  = 0,-152
+head.pos = 0,-292
+ground.back  = 84
+ground.front = 72
+air.back     = -72
+air.front    = 72
+attack.dist  = 480

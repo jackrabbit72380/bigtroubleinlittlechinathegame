@@ -26,6 +26,7 @@ import lightning
 import lopan
 import rain
 import sff
+import street
 import thunder
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -149,7 +150,7 @@ ROSTER = [
         ],
     ),
     dict(
-        id="jade", name="Maio Yin", display="Maio Yin",
+        id="jade", name="Mao Yin", display="Mao Yin",
         pal=(350, 1.2, 1.05), life=900, attack=101, defence=94,
         xscale=1.0, yscale=1.0, order=1,
         blurb="Lo Pan's bride-to-be, and nobody's sacrifice.",
@@ -187,7 +188,7 @@ ROSTER = [
         ],
     ),
     dict(
-        id="thunder", name="Thunder", display="Thunder",
+        id="thunder", name="Thunder Storm", display="Thunder Storm",
         pal=(14, 0.8, 0.9), life=1200, attack=115, defence=112,
         extra=thunder,
         xscale=1.12, yscale=1.12, order=2,
@@ -206,7 +207,7 @@ ROSTER = [
         ],
     ),
     dict(
-        id="rain", name="Rain", display="Rain",
+        id="rain", name="Rain Storm", display="Rain Storm",
         pal=(175, 1.1, 1.05), life=950, attack=100, defence=96,
         extra=rain,
         xscale=0.99, yscale=1.0, order=1,
@@ -225,7 +226,7 @@ ROSTER = [
         ],
     ),
     dict(
-        id="lightning", name="Lightning", display="Lightning",
+        id="lightning", name="Lightning Storm", display="Lightning Storm",
         pal=(272, 1.35, 1.1), life=1000, attack=105, defence=100,
         extra=lightning,
         xscale=1.0, yscale=1.0, order=1,
@@ -245,7 +246,7 @@ ROSTER = [
         ],
     ),
     dict(
-        id="lopan", name="David Lo Pan", display="Lo Pan",
+        id="lopan", name="Daved Lo Pan", display="Daved Lo Pan",
         pal=(105, 1.15, 0.95), life=1300, attack=125, defence=112,
         extra=lopan,
         xscale=1.1, yscale=1.08, order=4,
@@ -621,6 +622,10 @@ def main():
     # The two gangs: same base body, their own clothes and weapons, painted by
     # tools/gangs.py and baked into the rig by tools/bake_char.py.
     for spec in gangs.ROSTER_SPECS:
+        build(spec, sprites, palettes)
+    # The people around the tongs: guards, the Lords of Death, police,
+    # security and the old Chinatown. Same KFM state base, their own clothes.
+    for spec in street.ROSTER_SPECS:
         build(spec, sprites, palettes)
     roster_sheet()
 
