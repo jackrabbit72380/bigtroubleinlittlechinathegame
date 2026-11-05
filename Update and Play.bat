@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v16
+rem  BIG TROUBLE IN LITTLE CHINA - updater v17
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v16
+echo                        updater v17
 echo.
 echo   ==============================================================
 echo.
@@ -124,7 +124,7 @@ echo            Git found - comparing with main.
 if exist "%CACHE%\repo\.git" goto gitpull
 if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 echo            First run: building the local copy. This is the big one.
-git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -c http.version=HTTP/1.1 clone --depth 1 --filter=blob:none --sparse --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
+git -c core.longpaths=true -c http.version=HTTP/1.1 clone --depth 1 --filter=blob:none --sparse --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitplain
 git -C "%CACHE%\repo" sparse-checkout set data chars stages font external sound >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 git -C "%CACHE%\repo" checkout --quiet >>"%CACHE%\git.log" 2>&1
@@ -132,13 +132,13 @@ goto gitdone
 
 :gitplain
 rem older git, or a server without partial clone: take the whole tree once
-git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -c http.version=HTTP/1.1 clone --depth 1 --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
+git -c core.longpaths=true -c http.version=HTTP/1.1 clone --depth 1 --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 goto gitdone
 
 :gitpull
 for /f %%s in ('git -C "%CACHE%\repo" rev-parse HEAD 2^>nul') do set "OLDSHA=%%s"
-git -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -C "%CACHE%\repo" fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
+git -C "%CACHE%\repo" fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 git -C "%CACHE%\repo" reset --hard --quiet FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 for /f %%s in ('git -C "%CACHE%\repo" rev-parse FETCH_HEAD 2^>nul') do set "NEWSHA=%%s"
@@ -264,9 +264,8 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  Downloading the game files
-echo            About 190 MB. The archive is built fresh for each commit and
-echo            cannot be continued part-way, so leave this window open until
-echo            it finishes.
+echo            About 190 MB. Leave this window open; a transfer that stops
+echo            starts again from the beginning.
 echo.
 set "ATT=0"
 
@@ -453,7 +452,7 @@ if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
 start "" /b "%RUNB%"
 set /a SECS=0
-set /a LASTKB=0
+set /a KB30=0
 call :drawdl 0 ""
 :cfpoll
 call :sleep 5
@@ -461,23 +460,27 @@ set /a SECS+=5
 set "SZ=0"
 for %%A in ("%ZIP%") do set "SZ=%%~zA"
 set /a KB=SZ/1024
-set /a DELTA=KB-LASTKB
-set /a LASTKB=KB
-rem The first reading has nothing to compare against, so it would read as a
-rem huge burst. Two polls are enough to average over.
-if %SECS% LSS 10 set /a DELTA=0
-set /a RATE=DELTA/5
 set "DLINFO="
-if %RATE% GTR 0 set /a LEFT=(194560-KB)/RATE
-if %RATE% GTR 0 call :clock %LEFT% LEFTCLOCK
-if %RATE% GTR 0 set "DLINFO=%RATE% KB/s   %LEFTCLOCK% left"
-if %SECS% GEQ 15 if %RATE% LSS 1 set "DLINFO=no data arriving"
+if %SECS% GEQ 30 call :rate
 call :drawdl %KB% "%DLINFO%"
 if exist "%DONE%" goto cfdone
 if %SECS% LSS 1200 goto cfpoll
 echo.
 echo            No complete transfer after 20 minutes. The archive has to
 echo            start again, so run the updater once the connection is back.
+exit /b 0
+
+:rate
+rem Averaged over the last half minute, so one slow second does not swing it and
+rem the first reading is left out: it has nothing to compare against.
+set /a GAIN=KB-KB30
+set /a KB30=KB
+set /a RATE=GAIN/30
+if %RATE% LSS 1 set "DLINFO=no data arriving"
+if %RATE% LSS 1 exit /b 0
+set /a LEFT=(194560-KB)/RATE
+call :clock %LEFT% LEFTCLOCK
+set "DLINFO=%RATE% KB/s   %LEFTCLOCK% left"
 exit /b 0
 
 
@@ -571,77 +574,62 @@ if not errorlevel 1 set /a NDEL+=1
 exit /b 0
 
 :dragonbar
-rem %1 = done, %2 = total -> BAR: 32 cells, a body of = and a head at the tip
-rem The head must not be a redirect character: cmd parses redirection after
-rem variable expansion, so echoing a bar whose tip was > wrote the left half
-rem of the bar into a file named after its right half, every redraw. That is
-rem what filled the game folder with progress-bar files.
+rem %1 = kilobytes so far, %2 = total kilobytes -> BAR: 20 cells, a body of =
+rem and a head at the tip. The head must not be a redirect character: cmd
+rem parses redirection after variable expansion, so a bar whose tip was > wrote
+rem the left half of the bar into a file named after its right half.
 setlocal EnableDelayedExpansion
-set /a "C=(%~1)*32/(%~2)"
-if !C! LSS 1 set "C=1"
-if !C! GTR 32 set "C=32"
+set /a "C=(%~1)*20/(%~2)"
+if !C! LSS 0 set "C=0"
+if !C! GTR 20 set "C=20"
 set "BAR="
-for /l %%i in (1,1,32) do (
-  if %%i LSS !C! set "BAR=!BAR!="
-  if %%i EQU !C! set "BAR=!BAR!#"
+for /l %%i in (1,1,20) do (
+  if %%i LEQ !C! set "BAR=!BAR!="
   if %%i GTR !C! set "BAR=!BAR!-"
 )
 endlocal & set "BAR=%BAR%"
 exit /b 0
 
 :drawdl
-rem %1 = kilobytes so far, %2 = rate and time left, once there is enough of a
-rem sample for them to mean anything. Only this one line is rewritten, where it
-rem stands: clearing the window every five seconds made the whole screen blink
-rem and threw the cursor back to the top each time.
-call :dragonbar %~1 194560
+rem %1 = kilobytes so far, %2 = rate and time left. A plain line is printed
+rem every half minute. Writing one line in place needs a carriage return that
+rem cmd does not pass through set /p the way it looks - the terminal ran the
+rem bars together into unreadable rows - and clearing the window every five
+rem seconds made it blink, so neither is used any more.
 if not defined DLHEAD goto drawdl_head
+set /a TICK=SECS%%30
+if not %TICK%==0 exit /b 0
+call :dragonbar %~1 194560
 set /a DLMB=%~1/1024
 set /a DLTENTH=%~1*10/1024-DLMB*10
-set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
-if not "%~2"=="" set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
-set "DLTEXT=%DLTEXT%%PAD%"
-set "DLTEXT=%DLTEXT:~0,76%"
-if "%DLTEXT%"=="%DLLAST%" exit /b 0
-set "DLLAST=%DLTEXT%"
-call :dlwrite
+set "DLTLINE=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
+if not "%~2"=="" set "DLTLINE=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
+echo %DLTLINE%
 exit /b 0
 
 :drawdl_head
 set "DLHEAD=1"
-set "PAD=                                                                                "
 echo.
 echo   Fetching the newest build of the game.
 echo.
-echo   Keep this window open - the game starts by itself when the download is
-echo   done. The archive is rebuilt for every commit, so a transfer that stops
-echo   starts again from the beginning.
+echo   Keep this window open - the game starts by itself when the download
+echo   is done.
 echo.
+call :dragonbar %~1 194560
 set /a DLMB=%~1/1024
 set /a DLTENTH=%~1*10/1024-DLMB*10
-set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
-set "DLTEXT=%DLTEXT%%PAD%"
-set "DLTEXT=%DLTEXT:~0,76%"
-set "DLLAST=%DLTEXT%"
-call :dlwrite
-exit /b 0
-
-:dlwrite
-rem Written without a trailing newline and led by a carriage return, so it lands
-rem on top of the previous reading instead of under it.
-if defined CR (
-  <nul set /p "=%CR%%DLTEXT%"
-  exit /b 0
-)
-echo %DLTEXT%
+echo      [%BAR%]  %DLMB%.%DLTENTH%/190 MB
 exit /b 0
 
 :clock
-rem %1 = seconds, %2 = the variable to leave m:ss in.
-set /a "CK_M=%~1/60"
+rem %1 = seconds, %2 = the variable to leave the time in. Hours once it runs
+rem past one, so a slow line reads 2h 4m instead of 124:33.
+set /a "CK_H=%~1/3600"
+set /a "CK_M=(%~1%%3600)/60"
 set /a "CK_S=%~1%%60"
 set "CK_T=%CK_M%:%CK_S%"
 if %CK_S% LSS 10 set "CK_T=%CK_M%:0%CK_S%"
+if %CK_H% GEQ 1 set "CK_T=%CK_H%h %CK_M%m"
 set "%~2=%CK_T%"
 exit /b 0
 
