@@ -40,10 +40,17 @@ local function albumsFromJson()
 						key = tostring(key),
 						title = tostring(song.Title or key),
 						file = song.file,
+						order = tonumber(song.Order),
 					}
 				end
 			end
+			-- Albums ship a track list (the build writes Order from the album's own
+			-- metadata), so that order wins; naming is only the fallback, because
+			-- alphabetically "10 - ..." would come before "2 - ...".
 			table.sort(songs, function(a, b)
+				if a.order ~= nil and b.order ~= nil and a.order ~= b.order then
+					return a.order < b.order
+				end
 				return string.lower(a.title) < string.lower(b.title)
 			end)
 			if #songs > 0 then

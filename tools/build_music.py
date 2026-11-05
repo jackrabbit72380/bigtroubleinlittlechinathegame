@@ -30,13 +30,26 @@ Every directory directly under sound/ is an album. Its audio files become the
 album's track list and its boxFront.png (any case) becomes the cover art:
 
     sound/Big Trouble in Little China OST Movie Version/
-        01 - Pork Chop Express.ogg
+        1 - Prologue.ogg
         boxFront.png
+        Big Trouble in Little China OST Movie.metadata.pegasus.txt
 
-writes data/music.json for the browser (external/mods/musicselect.lua) and packs
-each cover into data/albums.sff at group = the album's number, so the browser can
-show one cover per album. An album with no cover still lists its tracks, it just
-has nothing to draw above them.
+That metadata file is what an album pack normally ships with, and it is read for
+two things the filenames cannot give: the album's own playing order (one `game:`
+entry per track, in order) and the track titles to print (the `game:` line, so
+"1 - Prologue" is shown as written rather than rebuilt from the filename). Its
+`assets.boxFront:` line is used for the cover when that file exists, and `file:`
+paths are resolved leniently - from the repo root, inside the album folder, in
+sound/ itself, or one folder down - so a pack written for `sound/x.ogg` still
+works from the album directory. Tracks in the folder but not in the metadata are
+appended at the end rather than dropped, and a track the metadata lists without a
+file on disk is reported and skipped.
+
+The result lands in data/music.json for the browser
+(external/mods/musicselect.lua) with a 1-based Order per track, and each cover is
+packed into data/albums.sff at group = the album's number, so the browser shows
+one cover per album. An album with no cover still lists its tracks, it just has
+nothing to draw above them.
 
 Stage fight music is separate: it lives in [Music] bgmusic of each stages/*.def.
 
@@ -157,6 +170,99 @@ def cover_in(folder):
     return None
 
 
+METADATA_SUFFIX = ".metadata.pegasus.txt"
+
+
+def metadata_in(folder):
+    """The Pegasus metadata file for an album folder, if it ships one."""
+    try:
+        names = sorted(os.listdir(folder), key=str.lower)
+    except OSError:
+        return None
+    for name in names:
+        if name.lower().endswith(METADATA_SUFFIX):
+            return os.path.join(folder, name)
+    return None
+
+
+def parse_metadata(path):
+    """Read (tracks, cover) out of a Pegasus metadata file.
+
+    tracks is [(file, title)] in file order and cover is the boxFront path exactly
+    as written (or None). Only `game:`/`title:`, `file:`/`path:` and
+    `assets.boxFront:` are used; developer, release, genre, sort, description and
+    the other assets are skipped, and `collection:` is ignored because the folder
+    name is the album's name here.
+    """
+    tracks = []
+    cover = None
+    current = None
+    with open(path, "r", encoding="utf-8-sig", errors="replace") as fh:
+        for raw in fh:
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            key, sep, value = line.partition(":")
+            if not sep:
+                continue
+            key = key.strip().lower()
+            value = value.strip()
+            if key in ("game", "title"):
+                current = {"file": None, "title": value}
+                tracks.append(current)
+            elif key in ("file", "path"):
+                if current is None:
+                    current = {"file": None, "title": None}
+                    tracks.append(current)
+                current["file"] = value
+            elif key == "assets.boxfront" and cover is None and value:
+                cover = value
+    return [(t["file"], t["title"]) for t in tracks if t["file"]], cover
+
+
+def resolve_track(folder, written):
+    """Repo-relative path of a track named in metadata, or None if it is absent.
+
+    Metadata paths are written for Pegasus, not for this folder layout, so they are
+    tried in the places the file can actually be: as a path from the repo root,
+    then by name inside the album, then by name in sound/ itself, then one folder
+    down inside the album.
+    """
+    written = written.replace("\\", "/").strip()
+    while written.startswith("./"):
+        written = written[2:]
+    if written.startswith("/"):
+        written = written[1:]
+    if os.path.isfile(os.path.join(ROOT, written)):
+        return written
+    base = written.rpartition("/")[2]
+    for candidate in (os.path.join(folder, base), os.path.join(SOUND_DIR, base)):
+        if os.path.isfile(candidate):
+            return os.path.relpath(candidate, ROOT).replace(os.sep, "/")
+    try:
+        subs = sorted(os.listdir(folder))
+    except OSError:
+        subs = []
+    for sub in subs:
+        candidate = os.path.join(folder, sub, base)
+        if os.path.isfile(candidate):
+            return os.path.relpath(candidate, ROOT).replace(os.sep, "/")
+    return None
+
+
+def resolve_cover(folder, written):
+    """The cover: the metadata's boxFront if it exists, else boxFront.png."""
+    if written:
+        written = written.replace("\\", "/").strip()
+        while written.startswith("./"):
+            written = written[2:]
+        for base in (folder, SOUND_DIR, ROOT):
+            candidate = os.path.join(base, written.lstrip("/"))
+            if os.path.isfile(candidate):
+                return candidate
+    return cover_in(folder)
+
+
 def album_dirs():
     if not os.path.isdir(SOUND_DIR):
         return []
@@ -179,10 +285,14 @@ def write_music_json(albums):
     }
     for i, album in enumerate(albums, start=1):
         songs = {}
-        for name in album["tracks"]:
-            songs[nice_title(name)] = {
-                "file": f"sound/{album['name']}/{name}",
-                "Title": nice_title(name),
+        for order, track in enumerate(album["tracks"], start=1):
+            key = track["title"]
+            if key in songs:  # two tracks with one name would otherwise collide
+                key = f"{key} ({order})"
+            songs[key] = {
+                "file": track["file"],
+                "Title": track["title"],
+                "Order": order,
             }
         if songs:
             payload[album["name"]] = {"Art": i, "Songs": songs}
@@ -292,12 +402,46 @@ def main():
     albums = []
     for name in album_dirs():
         folder = os.path.join(SOUND_DIR, name)
-        tracks = [f for _, f in audio_in(folder)]
+        tracks = []
+        cover_hint = None
+        source = ""
+        meta = metadata_in(folder)
+        if meta:
+            listed, cover_hint = parse_metadata(meta)
+            used = set()
+            for written, title in listed:
+                path = resolve_track(folder, written)
+                if path is None:
+                    print(f"  warning: {name}: metadata lists {written}, "
+                          f"which is not on disk")
+                    continue
+                if path.lower() in used:
+                    continue
+                used.add(path.lower())
+                tracks.append({
+                    "file": path,
+                    "title": title or nice_title(path.rpartition("/")[2]),
+                })
+            # Nothing in the folder should go missing just because the metadata
+            # forgot it, so unlisted audio joins the end of the list.
+            for _, fname in audio_in(folder):
+                rel = f"sound/{name}/{fname}"
+                if rel.lower() in used:
+                    continue
+                used.add(rel.lower())
+                tracks.append({"file": rel, "title": nice_title(fname)})
+                print(f"  note: {name}: {fname} is not in the metadata, "
+                      f"added at the end")
+            source = f", {os.path.basename(meta)}"
+        else:
+            tracks = [{"file": f"sound/{name}/{f}", "title": nice_title(f)}
+                      for _, f in audio_in(folder)]
         if not tracks:
             continue
-        albums.append({"name": name, "tracks": tracks, "cover": cover_in(folder)})
-        print(f"  album: {name} ({len(tracks)} track(s)"
-              f"{', cover found' if albums[-1]['cover'] else ', no boxFront.png'})")
+        cover = resolve_cover(folder, cover_hint)
+        albums.append({"name": name, "tracks": tracks, "cover": cover})
+        print(f"  album: {name} ({len(tracks)} track(s){source}"
+              f"{', cover found' if cover else ', no boxFront.png'})")
     if not albums:
         print("note: no album folders under sound/ yet; put the two OST folders there\n"
               "      with their .ogg tracks and boxFront.png and rerun this tool")
