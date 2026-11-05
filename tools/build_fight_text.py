@@ -115,6 +115,73 @@ def place_round_banner(text):
     return head + body + tail, made
 
 
+# The demo caption. "Demo Mode" was drawn in the Pixel face, whose 18px cell
+# lands 27px tall on a 1920 screen - half again the size of every other word in
+# the game, and in a face nothing else uses. It is set in the motif's own Body
+# face now, the one the menus, the select captions and the fighter names use,
+# scaled so its 20px cell lands on the same 20px those are set at. The demo
+# screen then reads at one size with everything else instead of shouting.
+BODY = "ikemen1/fonts/Body.def"
+MODE_SCALE = "0.667, 0.667"     # Body's 20px cell in the 1280 fight space
+
+
+def font_slot(text, path):
+    """Index of the [Files] font already pointing at path, or a new one."""
+    for m in re.finditer(r"^font(\d+)\s*=\s*([^\r\n]*)$", text, re.M):
+        value = m.group(2).split(";")[0].strip().lower()
+        if value == path.lower():
+            return text, int(m.group(1))
+    fonts = list(re.finditer(r"^font(\d+)\s*=[^\r\n]*$", text, re.M))
+    if not fonts:
+        return text, None
+    last = fonts[-1]
+    idx = int(last.group(1)) + 1
+    eol = "\r\n" if text[last.start():last.end()].endswith("\r") else "\n"
+    line = "font%d = %s   ;the menus' face, for the demo caption" % (idx, path)
+    return text[:last.end()] + eol + line + text[last.end():], idx
+
+
+def place_demo_caption(text):
+    """Point the [Mode] caption at the Body face, at the menus' size."""
+    text, idx = font_slot(text, BODY)
+    if idx is None:
+        return text, False
+    start = text.find("[Mode]")
+    if start < 0:
+        return text, False
+    nxt = re.compile(r"^\[", re.M).search(text, start + len("[Mode]"))
+    end = nxt.start() if nxt else len(text)
+    head, body, tail = text[:start], text[start:end], text[end:]
+    made = False
+    # Both keys are written next to the caption they belong to. The first run of
+    # this appended the scale at the end of the section, which is a screenful
+    # below in the middle of the fight.def help text: still [Mode], but nobody
+    # reading the block would find it. The scale is deleted and re-inserted
+    # beside the caption every run, so a stray copy cannot survive.
+    font_line = "demo.text.font = %d, 0, -1, 255, 228, 140" % idx
+    scale_line = "demo.text.scale = %s" % MODE_SCALE
+    lines = [l for l in body.splitlines(True)
+             if not re.match(r"^;?[ \t]*demo\.text\.scale[ \t]*=", l)]
+    body = "".join(lines)
+    font_re = re.compile(r"^;?[ \t]*demo\.text\.font[ \t]*=[^\r\n]*$", re.M)
+    if font_re.search(body):
+        body = font_re.sub(font_line, body, count=1)
+    else:
+        body = body.rstrip("\r\n") + "\n" + font_line + "\n"
+    lines = body.splitlines(True)
+    for anchor in ("demo.text.text", "demo.text.font", "demo.pos"):
+        hit = next((i for i, l in enumerate(lines) if l.strip().startswith(anchor)), None)
+        if hit is not None:
+            eol = "\r\n" if lines[hit].endswith("\r\n") else "\n"
+            lines.insert(hit + 1, scale_line + eol)
+            break
+    else:
+        lines.append(scale_line + "\n")
+    body = "".join(lines)
+    made = True
+    return head + body + tail, made
+
+
 def build():
     if not os.path.isfile(FIGHT_DEF):
         raise SystemExit("data/fight.def is missing")
@@ -158,6 +225,16 @@ def build():
             f.write(text)
         os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
 
+    # The demo caption is set at the menus' size, every build, for the same
+    # reason: the engine copy resets it to the Pixel face.
+    with open(FIGHT_DEF, encoding="utf-8", errors="replace", newline="") as f:
+        text = f.read()
+    text, caption = place_demo_caption(text)
+    if caption:
+        with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+        os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
+
     # Read back: one captioned spec has to carry the colour now.
     with open(FIGHT_DEF, encoding="utf-8", errors="replace") as f:
         check = f.read()
@@ -172,6 +249,9 @@ def build():
         raise SystemExit("the round banner did not take the wording")
     if "fonts/Display.def" not in check:
         raise SystemExit("the Display face was not registered in fight.def")
+    mode = check.split("[Mode]", 1)[-1].split("\n[", 1)[0]
+    if "fonts/Body.def" not in check or "demo.text.scale = %s" % MODE_SCALE not in mode:
+        raise SystemExit("[Mode] did not take the menus' face and size: %r" % mode)
     print("fight text: %d caption(s) given the gold, %d already coloured, "
           "%d win-counter key(s) moved onto the character boxes"
           % (changed, sum(1 for l in text.splitlines() if ".font" in l and "=" in l)

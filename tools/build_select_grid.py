@@ -69,7 +69,10 @@ AXIS = (0, 0)
 # and the top is derived from the art height and a foot margin.
 SIDE_INSET = 20
 SIDE_ART = (380, 500)          # 9000,2 at scale 1, in screen pixels
-FACE2_MARGIN = 20              # air under the fighter's feet
+# The margin is the room the name line needs: p1/p2.name sit at y=1035, so a
+# fighter standing on a 20px margin had his shoes drawn through his own name.
+# 70px puts the art's floor at 1010, clear of the text.
+FACE2_MARGIN = 70              # air under the feet, and the name line's room
 FACE2_PAD = 2                  # the art is edge-to-edge; clip just outside it
 FACE2_TOP = SCREEN[1] - SIDE_ART[1] - FACE2_MARGIN
 FACE2_WIN_P1 = "%d,%d,%d,%d" % (SIDE_INSET - FACE2_PAD, FACE2_TOP - FACE2_PAD,

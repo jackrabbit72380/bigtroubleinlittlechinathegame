@@ -49,6 +49,7 @@ font7 = ikemen1/fonts/HitNum.def
 font8 = ikemen1/fonts/Pixel.def
 font9 = ikemen1/fonts/Round.def
 font10 = ikemen1/fonts/Display.def   ;VS-screen face, for the round banner
+font11 = ikemen1/fonts/Body.def   ;the menus' face, for the demo caption
 fightfx.sff = fightfx.sff ;Legacy Mugen common effects
 fightfx.air = fightfx.air ;Legacy Mugen common effects
 common.snd = common.snd   ;Legacy Mugen common effects
@@ -3865,8 +3866,9 @@ p2.enabled.watch = 1
 [Mode]
 demo.pos = 1138,35
 ;demo.bg.spr = 
-demo.text.font = 8,0, -1, 255, 228, 140
+demo.text.font = 11, 0, -1, 255, 228, 140
 demo.text.text = Demo Mode
+demo.text.scale = 0.667, 0.667
 
 ;-----------------------------------------------------------
 ; How to customize
