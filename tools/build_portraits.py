@@ -39,6 +39,7 @@ CELL = (128, 160)          # the grid's cell, in build_select_grid.py
 # the air left between a bust and those rules, both in screen pixels.
 OPENING = (104, 136)
 ART_MARGIN = 3
+ART_SCALE = 0.94           # how much of the opening the bust fills
 BUST_SLICE = 0.52          # how much of the standing figure is the bust
 # The standing art beside the grid. A fighter is 0.77 as wide as it is tall, so
 # a column narrower than that cannot hold him whole: containing a 0.77-aspect
@@ -156,9 +157,9 @@ def cell_art(img, cell=CELL):
     The cell's gold rules take 12px on every side of the 128x160 cell, so the
     clear opening is 104x136; anything painted beyond that is hidden under the
     rules, which is how half the roster came to sit off-centre in its box. The
-    bust is cropped to its own pixels and scaled to the opening's height, so
-    every head lands the same size and every figure stands on the same floor
-    with the same air under the frame. A bust wider than the opening keeps its
+    bust is cropped to its own pixels, scaled to ART_SCALE of the opening's
+    height and centred in it, so every head lands the same size with the same
+    air above, below and beside it. A bust wider than the opening keeps its
     height and is cropped at the sides - a portrait crops a shoulder or a rifle
     - instead of being shrunk until the fighter is lost inside the box.
 
@@ -172,8 +173,8 @@ def cell_art(img, cell=CELL):
     iy = (sy - OPENING[1]) / 2.0 * cell[1] / sy
     mx = ART_MARGIN * cell[0] / sx
     my = ART_MARGIN * cell[1] / sy
-    inner_w = max(1.0, cell[0] - 2.0 * (ix + mx))
-    inner_h = max(1.0, cell[1] - 2.0 * (iy + my))
+    inner_w = max(1.0, (cell[0] - 2.0 * (ix + mx)) * ART_SCALE)
+    inner_h = max(1.0, (cell[1] - 2.0 * (iy + my)) * ART_SCALE)
 
     out = Image.new("RGBA", cell, (0, 0, 0, 0))
     bust = img.crop((0, 0, img.width,
@@ -193,7 +194,7 @@ def cell_art(img, cell=CELL):
     art = bust.resize((max(1, int(round(bust.width * k))),
                        max(1, int(round(bust.height * k)))), Image.LANCZOS)
     out.alpha_composite(art, (int(round((cell[0] - art.width) / 2.0)),
-                              int(round(cell[1] - (iy + my) - art.height))))
+                              int(round((cell[1] - art.height) / 2.0))))
     return out
 
 
