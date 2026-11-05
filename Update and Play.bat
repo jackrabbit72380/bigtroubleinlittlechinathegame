@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v28
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v29
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v28
+echo                        Updater v29
 echo.
 echo   ==============================================================
 echo.
@@ -224,6 +224,7 @@ rem a log left by an earlier run must never be read as this run's answer
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
 echo            Asking main for its latest commit - git prints its own progress.
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
@@ -287,6 +288,23 @@ if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Comm
 set "GITFAILED=1"
 echo            Falling back to the archive download in step 2.
 goto probe
+
+:gitfetch_retry
+rem The fetch above runs with GIT_SSL_CAINFO pointing at a bundle this
+rem script went looking for on disk. When that bundle belongs to another
+rem git install - or to one that reads the Windows store instead - every
+rem fetch dies on it, and that failure used to mean the 190 MB archive.
+rem Two cheaper answers are tried first: no bundle at all, then the
+rem Windows certificate store, which is where a normal install looks.
+echo            Fetch failed. Retrying without the bundle this script found.
+set "GIT_SSL_CAINFO="
+set "GITBUNDLE="
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+if not errorlevel 1 exit /b 0
+echo            Retrying with the Windows certificate store.
+git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+if not errorlevel 1 exit /b 0
+exit /b 1
 
 :gitdrop
 rem %1 = a path this launcher installed before, which main no longer has
@@ -538,7 +556,10 @@ rem The launcher is not in the six folders the update writes, so before this it
 rem could never be refreshed - a folder running v19 stayed on v19 no matter what
 rem main fixed. It is fetched on its own here, a few KB.
 "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher-new.bat" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
-if errorlevel 1 exit /b 0
+if not errorlevel 1 goto selfupdate_got
+echo   Could not fetch a newer launcher - using this copy.
+exit /b 0
+:selfupdate_got
 if not exist "%CACHE%\launcher-new.bat" exit /b 0
 rem A truncated file, an error page or anything else that is not the launcher
 rem must never be copied over a working one.
