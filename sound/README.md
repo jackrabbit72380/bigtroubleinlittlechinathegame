@@ -65,7 +65,9 @@ line under it), the build reads it instead of guessing:
   spacing or punctuation ("12- Lopan's" for "12 - Lopan's") still finds its file
   and is reported, rather than being treated as a missing track.
 
-Audio in the folder that the metadata does not mention is added at the end of the
-album rather than dropped, so a pack with a bonus track and an out-of-date list
-still plays everything. The metadata is optional: without it the album lists its
-audio files by name.
+Audio in the folder that the metadata does not mention is placed at the track
+number its filename leads with rather than dropped, so a pack with a bonus track
+and an out-of-date list still plays everything in order; a file the engine cannot
+decode (an `.mp4` sitting among the `.ogg` tracks) is not listed at all, since it
+would only ever play silence. The metadata is optional: without it the album lists
+its audio files by name.

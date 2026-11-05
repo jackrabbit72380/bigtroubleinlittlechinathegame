@@ -5,5 +5,105 @@
         "Title": "Default (stage music)"
       }
     }
+  },
+  "Big Trouble in Little China OST Movie Version": {
+    "Art": 1,
+    "Songs": {
+      "1 - Prologue": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/1 - Prologue.ogg",
+        "Title": "1 - Prologue",
+        "Order": 1
+      },
+      "2 - Pork Chop Express (Main Title)": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/2 - Pork Chop Express (Main Title).ogg",
+        "Title": "2 - Pork Chop Express (Main Title)",
+        "Order": 2
+      },
+      "3 - Abduction at Airport": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/3 - Abduction At Airport.ogg",
+        "Title": "3 - Abduction at Airport",
+        "Order": 3
+      },
+      "4 - The Alley (Procession)": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/4 - The Alley (Procession).ogg",
+        "Title": "4 - The Alley (Procession)",
+        "Order": 4
+      },
+      "5 - The Alley (War)": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/5 - The Alley (War).ogg",
+        "Title": "5 - The Alley (War)",
+        "Order": 5
+      },
+      "6 - The Storms": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/6 - The Storms.ogg",
+        "Title": "6 - The Storms",
+        "Order": 6
+      },
+      "7 - Tenement-White Tiger": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/7 - Tenement - White Tiger.ogg",
+        "Title": "7 - Tenement-White Tiger",
+        "Order": 7
+      },
+      "8 - Here Come the Storms": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/8 - Here Come the Storms.ogg",
+        "Title": "8 - Here Come the Storms",
+        "Order": 8
+      },
+      "8 - Stingers Montage": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/8 - Stingers Montage.ogg",
+        "Title": "8 - Stingers Montage",
+        "Order": 9
+      },
+      "9 - Wing Kong Exchange": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/9 - Wing Kong Exchange.ogg",
+        "Title": "9 - Wing Kong Exchange",
+        "Order": 10
+      },
+      "10 - Lo Pan's Domain-Looking for a Girl": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/10 - Lo Pans Domain - Looking For A Girl.ogg",
+        "Title": "10 - Lo Pan's Domain-Looking for a Girl",
+        "Order": 11
+      },
+      "11 - Friends Of Yours - Escape Iron Basis": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/11 - Friends Of Yours - Escape Iron Basis.ogg",
+        "Title": "11 - Friends Of Yours - Escape Iron Basis",
+        "Order": 12
+      },
+      "12 - Escape from Wing Kong": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/12 - Escape From Wing Kong.ogg",
+        "Title": "12 - Escape from Wing Kong",
+        "Order": 13
+      },
+      "13 - Hide": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/13 - Hide.ogg",
+        "Title": "13 - Hide",
+        "Order": 14
+      },
+      "14 - Call the Police": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/14 - Call the Police.ogg",
+        "Title": "14 - Call the Police",
+        "Order": 15
+      },
+      "15 - Dragon Eyes": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/15 - Dragon Eyes.ogg",
+        "Title": "15 - Dragon Eyes",
+        "Order": 16
+      },
+      "16 - Into the Spirit Path": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/16 - Into the Spirit Path.ogg",
+        "Title": "16 - Into the Spirit Path",
+        "Order": 17
+      },
+      "17 - The Great Arcade": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/17 - The Great Arcade.ogg",
+        "Title": "17 - The Great Arcade",
+        "Order": 18
+      },
+      "18 - The Final Escape (Lo Pan's Demise-Getaway)": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/18 - The Final Escape (Lo Pans Demise-Getaway).ogg",
+        "Title": "18 - The Final Escape (Lo Pan's Demise-Getaway)",
+        "Order": 19
+      }
+    }
   }
 }
