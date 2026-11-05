@@ -141,7 +141,12 @@ def main():
     # [Lifebar], [Powerbar] and [Time] in data/fight.def and the sprites in
     # data/fight.sff, both of which the engine copy above starts from stock, so
     # it has to run here or a rebuild would put the old bars back.
-    scripts += ["build_banner.py", "build_powerbar.py"]
+    # build_banner.py paints the whole dragon - body, health back, audacity
+    # belly and the heads on the timer - and patches [Powerbar] to match.
+    # build_powerbar.py used to run after it and paint a second, complete
+    # dragon into the belly sprites, which is why the fight screen showed
+    # four dragons instead of one per player. It is retired from the build.
+    scripts += ["build_banner.py"]
     # The pause menu's Developer Keys entry is declared in the motif, which the
     # engine copy above resets, so it is re-applied here rather than edited by
     # hand. external/mods/devhelp.lua supplies the screen it opens.

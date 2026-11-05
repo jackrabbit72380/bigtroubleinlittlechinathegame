@@ -413,6 +413,17 @@ def main():
     # The dragon is the meter: its back is the health bar and its belly is the
     # audacity bar. It used to be opt-in, and the shipped def kept the stock
     # 206x18 range while the art grew, so the fill covered half the belly.
+    #
+    # That dragon is build_banner.py's now: it paints the body, the health back,
+    # the audacity belly (sprites 40,0 41,0 43,0 44,0) and the heads, and patches
+    # [Powerbar] to the belly's own width. This tool painting a complete second
+    # dragon into those same sprites is what put four dragons on the fight
+    # screen - two bodies and two power dragons - instead of one per player.
+    # Painting here is opt-in, for trying the concept art on its own.
+    if os.environ.get("POWERBAR_PAINT") != "1":
+        print("power bar: the dragon and [Powerbar] belong to build_banner.py; "
+              "set POWERBAR_PAINT=1 to paint the concept dragon instead")
+        return 0
 
     if not os.path.isfile(FIGHT_SFF):
         raise SystemExit("data/fight.sff is missing - fetch the engine data first")
