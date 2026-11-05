@@ -624,15 +624,15 @@ p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 960, 1035
-stage.font = 11, 0, 0, 176, 126, 44
-stage.active.font = 11, 0, 0, 255, 228, 140
-stage.active2.font = 11, 0, 0, 176, 126, 44
-stage.done.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
+stage.active.font = 11, 0, 0, 236, 200, 120
+stage.active2.font = 11, 0, 0, 236, 200, 120
+stage.done.font = 11, 0, 0, 236, 200, 120
 stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-stage.portrait.spr = 9000,1
+stage.portrait.spr = -1
 stage.portrait.offset = 0, -100
 stage.portrait.scale = 0.4280, 0.4280
 stage.portrait.bg.anim = -1
@@ -840,7 +840,7 @@ stage.portrait.random.window = 703, 853, 1217, 1017
 stage.portrait.loading.window = 703, 853, 1217, 1017
 stage.text = %s
 stage.active.text = %s
-stage.scale = 1, 1
+stage.scale = 1.5, 1.5
 stage.active.switchtime = 300000
 searchemptyboxesdown = 1
 searchemptyboxesup = 1
@@ -1099,12 +1099,12 @@ p2.done.anim = 181
 
 ;Names
 p1.name.num = 1              ;Not used for co-op
-p1.name.offset = 20,615      ;Position to put name
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.offset = 20, 1035
+p1.name.font = 10, 0, 1, 255, 228, 140
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
-p2.name.offset = 1900, 615
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.offset = 1900, 1035
+p2.name.font = 10, 0, -1, 255, 170, 96
 p2.name.spacing = -22.5, 37.5
 
 orderselect.enabled = 1
@@ -1278,16 +1278,16 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 960, 1035
 stage.text = %s
 stage.offset = 0, -15
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.scale = 1.5, 1.5
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = -320.0000, -405.0000
-stage.portrait.scale = 0.5267, 0.5267
+stage.portrait.offset = 0, -122
+stage.portrait.scale = 0.4280, 0.4280
 stage.portrait.bg.spr = 112,0
-stage.portrait.bg.offset = -4000, -4000
+stage.portrait.bg.offset = -260, -207
 stage.portrait.bg.scale = 1.0, 1.0
-stage.portrait.window = 640, 630, 1280, 990
+stage.portrait.window = 703, 831, 1217, 995
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
@@ -1324,11 +1324,11 @@ loading.storyboard =
 ; Loading
 stage.portrait.random.offset = -260, -207
 stage.portrait.random.scale = 1, 1
-stage.portrait.random.window = 640, 630, 1280, 990
+stage.portrait.random.window = 703, 831, 1217, 995
 stage.portrait.loading.anim = -1
 stage.portrait.loading.offset = -260, -207
 stage.portrait.loading.scale = 1, 1
-stage.portrait.loading.window = 640, 630, 1280, 990
+stage.portrait.loading.window = 703, 831, 1217, 995
 [Begin Action 600]
 600,0, 0, 0, 3
 600,1, 0, 0, 3
@@ -1373,7 +1373,6 @@ spriteno = 204,0
 layerno = 0
 start = -960, 0
 
-scale = 1.5, 1.5
 [VersusBG Background Clouds Top]
 type = normal
 spriteno = 102,2
@@ -1385,7 +1384,6 @@ trans = add1
 window = 0, 0, 1918.5, 1438.5
 mask = 1
 
-scale = 1.5, 1.5
 [VersusBG Background Clouds Bottom]
 type = normal
 spriteno = 102,3
@@ -1396,7 +1394,6 @@ velocity = -1.05, 0
 window = 0, 0, 1918.5, 1438.5
 mask = 1
 
-scale = 1.5, 1.5
 [VersusBG Background Black Bars]
 type = normal
 spriteno = 100,1
@@ -1405,7 +1402,6 @@ start = -960, 0
 trans = add1
 mask = 1
 
-scale = 1.5, 1.5
 [VersusBG 5]   ;VS Logo
 type = anim
 actionno = 200
