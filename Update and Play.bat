@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v25
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v26
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v25
+echo                        Updater v26
 echo.
 echo   ==============================================================
 echo.
@@ -96,13 +96,19 @@ set "WHICH="
 set "ZIPOK=0"
 set "PREVCAND="
 set "PREVSZ="
-set "NEWLAUNCHER="
 set "LAUNCHARED="
 set "CHANGED="
 set "BASE="
 set "NCOP=0"
 set "NDEL=0"
 set "FOUNDZIP="
+
+rem This window first makes sure it IS the current launcher. Until now the
+rem launcher was not in the six folders the update writes, so a fix to it
+rem could never reach a folder running an older copy - a window on v19 was
+rem still failing against a repository already fixed at v24. Nothing else
+rem here is worth doing with an out-of-date script.
+call :selfupdate %1
 
 echo   [ 1/4 ]  Looking for the newest files
 if exist "%~dp0main.zip" goto manualzip
@@ -530,7 +536,6 @@ if not defined VER if not defined RSHA7 call :atoms
 if not defined VER if not defined RSHA7 call :headsha
 if not defined VER if defined RSHA7 set "VER=%RSHA7%"
 if defined VER (>"%CACHE%\applied.txt" echo %VER%)
-call :newlauncher
 
 :sync
 if not "%WHICH%"=="git" goto skipver2
@@ -542,8 +547,6 @@ if errorlevel 1 echo   HUD:     old - the copy did not land
 if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
 if defined VER echo   Version: main @ %VER%
 if not defined VER echo   Version: zip build
-if defined NEWLAUNCHER echo   Updater: a newer launcher is in this folder as
-if defined NEWLAUNCHER echo            "Update and Play (new).bat" - use that one from now on.
 echo.
 
 :launch
@@ -568,28 +571,59 @@ exit 0
 goto skipver
 
 rem ===========================================================================
-rem  the launcher refreshes itself beside the file that is running
+rem  the first thing this window does: become the current launcher
 rem ===========================================================================
-:newlauncher
-rem This file is not in the six folders the update writes, so a fix to it could
-rem never reach a folder running an older copy - which is how a window on v19
-rem kept failing against a repository already fixed at v24. Main's launcher is
-rem fetched on its own, a few KB, and written beside this one.
-rem It is never written OVER this file: cmd reads a script as it runs, so
-rem replacing it mid-run would make the rest of this window execute the new
-rem file's bytes at the old file's offsets. A second file avoids that.
+:selfupdate
+rem %1 = the argument this script was started with. --updated means the swap
+rem below already ran, so this window must not check again or the two would pass
+rem the baton back and forth for ever.
+if /i "%~1"=="--updated" exit /b 0
 if defined LAUNCHARED exit /b 0
 set "LAUNCHARED=1"
 if not defined CURL exit /b 0
-"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher.new" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
+rem The launcher is not in the six folders the update writes, so before this it
+rem could never be refreshed - a folder running v19 stayed on v19 no matter what
+rem main fixed. It is fetched on its own here, a few KB.
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher-new.bat" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
 if errorlevel 1 exit /b 0
-if not exist "%CACHE%\launcher.new" exit /b 0
-for %%A in ("%CACHE%\launcher.new") do if %%~zA LSS 5000 exit /b 0
-"%SYS%\fc.exe" /b "%CACHE%\launcher.new" "%~f0" >nul 2>&1
+if not exist "%CACHE%\launcher-new.bat" exit /b 0
+rem A truncated file, an error page or anything else that is not the launcher
+rem must never be copied over a working one.
+for %%A in ("%CACHE%\launcher-new.bat") do if %%~zA LSS 5000 exit /b 0
+"%FINDSTR%" /c:"BIG TROUBLE IN LITTLE CHINA" "%CACHE%\launcher-new.bat" >nul 2>&1
+if errorlevel 1 exit /b 0
+"%SYS%\fc.exe" /b "%CACHE%\launcher-new.bat" "%~f0" >nul 2>&1
 if not errorlevel 1 exit /b 0
-copy /Y "%CACHE%\launcher.new" "%~dp0Update and Play (new).bat" >nul 2>&1
-if not errorlevel 1 set "NEWLAUNCHER=1"
-exit /b 0
+echo.
+echo   This launcher is not the current one - updating it before anything else.
+rem cmd reads a batch file while it runs it, so this file cannot be written over
+rem by the window that is executing it. A detached helper waits for the window to
+rem close, copies the new launcher into place and starts it again with --updated.
+rem If the copy loses the race the restarted window carries on as it is: the next
+rem launch tries again, and nothing here can loop.
+set "SWAP=%CACHE%\swap.bat"
+>"%SWAP%" echo @echo off
+rem Three tries, a few seconds apart: the window that started this has to
+rem close before the file it is running can be written over, and how long
+rem that takes is not known here. Whatever happens the launcher is started
+rem again at the end, so a copy that never lands costs one launch, not the
+rem update itself.
+>>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
+>>"%SWAP%" echo if not errorlevel 1 goto run
+>>"%SWAP%" echo "%PING%" -n 4 127.0.0.1 ^>nul
+>>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
+>>"%SWAP%" echo if not errorlevel 1 goto run
+>>"%SWAP%" echo "%PING%" -n 5 127.0.0.1 ^>nul
+>>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
+>>"%SWAP%" echo :run
+>>"%SWAP%" echo start "" "%~f0" --updated
+if not exist "%SWAP%" exit /b 0
+rem A window of its own, minimised: a /b child shares this console and would
+rem go with it when this script exits on the next line.
+start "btilc launcher update" /min "%SWAP%"
+echo   It restarts in a moment with the current one.
+echo.
+exit 0
 
 :launchfail
 echo   The game did not stay open. Start it by hand to see the engine's
