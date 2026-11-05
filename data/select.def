@@ -41,7 +41,6 @@ changsing_wounded_rig/changsing_wounded.def, stages/chinatown_alley.def, order=1
 
  ; --- Chinatown: the police and the people on the street ---------------------
 police_rig/police.def, stages/chinatown_alley.def, order=2
-lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
  ; --- the heroes ------------------------------------------------------------
 eddilee_rig/eddilee.def, stages/chinatown_alley.def, order=1
@@ -51,7 +50,6 @@ jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
 
  ; --- the Lords of Death ----------------------------------------------------
 joe_lucky_rig/joe_lucky.def, stages/chinatown_alley.def, order=2
-lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
 jade_rig/jade.def, stages/lopans_throne.def, order=1
 margo_rig/margo.def, stages/chinatown_alley.def, order=2
 
@@ -61,15 +59,19 @@ minion2_rig/minion2.def, stages/wingkong_exchange.def, order=2
 otoole_rig/otoole.def, stages/chinatown_alley.def, order=1
 needles_rig/needles.def, stages/chinatown_alley.def, order=2
 one_ear_rig/one_ear.def, stages/chinatown_alley.def, order=2
-rain_rig/rain.def, stages/porkchop_express.def, order=1
 sewermonster_rig/sewermonster.def, stages/the_upside_down.def, order=3
 tara_rig/tara.def, stages/chinatown_alley.def, order=1
 guardian_rig/guardian.def, stages/lopans_ceremony.def, order=3
-thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
 uncle_chu_rig/uncle_chu.def, stages/porkchop_express.def, order=1
 wangchi_rig/wangchi.def, stages/wingkong_exchange.def, order=2
 security1_rig/security1.def, stages/wingkong_exchange.def, order=2
 security2_rig/security2.def, stages/lopans_hallway.def, order=2
+
+ ; --- the bosses: the bottom row of the select wall -------------------------
+lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
+rain_rig/rain.def, stages/porkchop_express.def, order=1
+thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
+lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
 randomselect
 
