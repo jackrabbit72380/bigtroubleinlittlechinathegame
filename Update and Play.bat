@@ -769,11 +769,21 @@ echo.
 exit /b 0
 
 :choose
-rem Continue or leave: one keypress, no Enter. choice.exe ships with every
-rem Windows since Vista; where it is missing, pause keeps the window open
-rem instead of running past the question.
+rem Enter continues, Escape leaves. choice.exe can only answer to letters, so
+rem the key is read through PowerShell, which can tell Enter and Escape apart.
+rem If PowerShell is missing, or cannot read this console, the letter prompt
+rem below still works and never runs past the question by itself.
 if defined ASKED exit /b 0
 set "ASKED=1"
+if not defined POWERSHELL goto choose_choice
+<nul set /p "=   Enter = continue    Esc = exit   "
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "try { while ($true) { $k = [Console]::ReadKey($true); if ($k.Key -eq 'Enter') { exit 0 } elseif ($k.Key -eq 'Escape') { exit 1 } } } catch { exit 2 }"
+echo.
+if errorlevel 2 goto choose_choice
+if errorlevel 1 exit /b 1
+exit /b 0
+:choose_choice
+rem No PowerShell, or it could not read the console: letters still work.
 if not exist "%SYS%\choice.exe" goto choose_pause
 "%SYS%\choice.exe" /c ce /n /m "   C = continue    E = exit   "
 echo.
@@ -782,4 +792,3 @@ exit /b 0
 :choose_pause
 pause
 exit /b 0
-
