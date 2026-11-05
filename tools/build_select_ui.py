@@ -309,6 +309,72 @@ VS_TEXT = (
 )
 
 
+# [VS Screen] is not only drawn with these tables: start.lua:4427 hands the
+# player table to start.f_animGet as `params` (and, once the selection order is
+# confirmed, hands over `pX.done` instead), then hands the same player table over
+# again as the velocity source. The stock motif carries every field that
+# function indexes; this section was generated with just the drawing keys, so
+# the first VS portrait indexed a nil - which is the engine error VS MODE hit
+# (start.lua:755, the animSetScale/animSetTrans pair). These are the stock
+# values, so nothing about the picture changes.
+VS_MOTION = tuple(
+    (f"{p}.{key}", value)
+    for p in ("p1", "p2")
+    for key, value in (
+        ("velocity", "0, 0"), ("maxdist", "0, 0"), ("accel", "0, 0"),
+        ("friction", "1, 1"), ("xshear", "0"), ("angle", "0"),
+        ("xangle", "0"), ("yangle", "0"),
+        ("projection", "orthographic"), ("focallength", "2048"),
+        ("layerno", "0"),
+    )
+)
+
+# Each side also has a second portrait group, `face2`. Stock ships both of its
+# groups switched off with every field present; this section had neither, so the
+# line right after the first portrait - `pCfg.face2.done.anim` - would have been
+# the next nil index. anim -1 with spr -1,0 means "no picture", which is what a
+# one-portrait VS screen wants.
+VS_FACE2 = tuple(
+    (f"{grp}.{key}", value)
+    for p in ("p1", "p2")
+    for grp in (f"{p}.face2", f"{p}.face2.done")
+    for key, value in (
+        ("anim", "-1"), ("spr", "-1, 0"), ("offset", "0, 0"), ("facing", "1"),
+        ("scale", "1.0, 1.0"), ("xshear", "0"), ("angle", "0"),
+        ("xangle", "0"), ("yangle", "0"), ("projection", "orthographic"),
+        ("focallength", "2048"), ("layerno", "0"),
+        ("window", "0, 0, 1, 1"), ("applypal", "0"),
+        # face2 is also handed over as the velocity source for its own done
+        # group, so it needs the four motion tables even while it draws nothing.
+        ("velocity", "0, 0"), ("maxdist", "0, 0"), ("accel", "0, 0"),
+        ("friction", "1, 1"),
+    )
+)
+
+
+def vs_done_pairs(text):
+    """`pX.done` mirrors `pX`, field for field.
+
+    start.lua loads the done group as `params` and the main group as the
+    velocity source, so the two have to describe the same picture in the same
+    place. Only `anim` was written before, which is why the done group alone had
+    no scale to read.
+    """
+    pairs = [("p1.done.anim", "9000"), ("p2.done.anim", "9000"),
+             ("p1.done.applypal", "0"), ("p2.done.applypal", "0")]
+    for p in ("p1", "p2"):
+        for key in ("spr", "offset", "facing", "scale", "window"):
+            found = re.search(
+                rf"(?mi)^[ \t]*{p}\.{key}[ \t]*=[ \t]*([^;\r\n]*?)[ \t]*(?:;.*)?$", text)
+            if found and found.group(1).strip():
+                pairs.append((f"{p}.done.{key}", found.group(1).strip()))
+        for key, value in (("xshear", "0"), ("angle", "0"), ("xangle", "0"),
+                           ("yangle", "0"), ("projection", "orthographic"),
+                           ("focallength", "2048"), ("layerno", "0")):
+            pairs.append((f"{p}.done.{key}", value))
+    return pairs
+
+
 def _apply_section(text, section, pairs):
     """Set keys inside one [section] block only."""
     start = text.find(section)
@@ -346,6 +412,12 @@ def layout(text):
                            ("[VS Screen]", VS_PLATE + VS_TEXT)):
         text, done = _apply_section(text, section, extra)
         changed += done
+    # The VS portrait groups carry every field start.f_animGet indexes, not only
+    # the ones that decide how the picture looks: see VS_MOTION and VS_FACE2.
+    # vs_done_pairs reads the main group's values, so it runs after VS_TEXT.
+    text, done = _apply_section(
+        text, "[VS Screen]", VS_MOTION + tuple(vs_done_pairs(text)) + VS_FACE2)
+    changed += done
     return text, changed
 
 def layer_block():
