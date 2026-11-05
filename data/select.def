@@ -6,10 +6,11 @@
 ; The "order" param feeds the arcade ladder: arcade.maxmatches in [Options]
 ; lists how many opponents to take from order=1, order=2, and so on.
 ;
-; Forty-nine lines, in the order the film's cast list runs, so the select wall
-; holds every fighter on its ten-by-five page: forty-eight of them and the
-; random box, with the fiftieth cell left free. Names
-; are the characters' - no performer is credited anywhere in the game.
+; Forty-eight fighters, in the order the film's cast list runs, then the seven
+; placeholder slots and the randomselect that put RANDOM under the wall instead
+; of inside it: the wall is eight portraits across and six down, and every cell
+; of it is a fighter. Names are the characters' - no performer is credited
+; anywhere in the game.
 ;-------------------------------------------------------------------------------
 
 [Characters]
@@ -73,6 +74,19 @@ rain_rig/rain.def, stages/porkchop_express.def, order=1
 thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
 lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
+ ; --- the RANDOM stop: seven placeholders, then the pick itself ---------------
+ ; The wall above holds the whole cast, so this last row exists only to give
+ ; RANDOM a cursor stop. skipslot cells are never drawn and never take the
+ ; cursor; searchemptyboxesdown (in [Select Info]) walks right along this row,
+ ; so pressing down anywhere on the wall lands on RANDOM. start.lua draws the
+ ; randomselect slot as a label centred under the wall, not as a portrait cell.
+skipslot
+skipslot
+skipslot
+skipslot
+skipslot
+skipslot
+skipslot
 randomselect
 
 ;-------------------------------------------------------------------------------

@@ -120,7 +120,7 @@ def parse_roster(text):
         if line.startswith("[") and line.endswith("]"):
             section = line[1:-1].strip().lower()
             continue
-        if line in ("{", "}") or line.lower().startswith("slot"):
+        if line in ("{", "}") or line.lower().startswith(("slot", "skipslot", "dummyslot")):
             continue
         if section == "characters":
             if line.lower() == "randomselect":
