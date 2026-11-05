@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v13
+rem  BIG TROUBLE IN LITTLE CHINA - updater v14
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v13
+echo                        updater v14
 echo.
 echo   ==============================================================
 echo.
@@ -83,7 +83,7 @@ set "NCOP=0"
 set "NDEL=0"
 set "FOUNDZIP="
 
-echo   [ 1/4 ]  looking for the newest files
+echo   [ 1/4 ]  Looking for the newest files
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -96,21 +96,21 @@ if errorlevel 1 goto probe
 goto trygit
 
 :manualzip
-echo            using main.zip from this folder - no download needed
+echo            Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo            that main.zip is incomplete - downloading instead
+echo            That main.zip is incomplete - downloading instead.
 goto download
 
 :manualzip2
-echo            using bigtroubleinlittlechinathegame-main.zip here
+echo            Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0bigtroubleinlittlechinathegame-main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo            that zip is incomplete - downloading instead
+echo            That zip is incomplete - downloading instead.
 goto download
 
 rem ---- transport 1: git, which moves only the objects that differ ---------
@@ -120,10 +120,10 @@ rem small files. Sparse checkout also leaves out the folders the game never
 rem copies - artifacts, concept_art, art_src, tools - which is 128 MB of the
 rem committed tree.
 :trygit
-echo            git found - comparing with main
+echo            Git found - comparing with main.
 if exist "%CACHE%\repo\.git" goto gitpull
 if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
-echo            first run: building the local copy. this one is the big one
+echo            First run: building the local copy. This is the big one.
 git -c core.longpaths=true -c http.sslBackend=schannel -c http.schannelCheckRevoke=false -c http.version=HTTP/1.1 clone --depth 1 --filter=blob:none --sparse --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitplain
 git -C "%CACHE%\repo" sparse-checkout set data chars stages font external sound >>"%CACHE%\git.log" 2>&1
@@ -158,8 +158,8 @@ git -C "%CACHE%\repo" diff --name-only --no-renames "%BASE%" "%NEWSHA%" >"%CACHE
 if errorlevel 1 goto gitdiffdone
 set "CHANGED=%CACHE%\changed.txt"
 :gitdiffdone
-if "%OLDSHA%"=="%NEWSHA%" echo            main has not moved - nothing to download
-if not "%OLDSHA%"=="%NEWSHA%" echo            fetched only the files that changed
+if "%OLDSHA%"=="%NEWSHA%" echo            Main has not moved - nothing to download.
+if not "%OLDSHA%"=="%NEWSHA%" echo            Fetched only the files that changed.
 
 :gitdone
 if not exist "%CACHE%\repo\data\fight.def" goto gitfail
@@ -174,7 +174,7 @@ if exist "%CACHE%\applied.txt" set /p APPLIED=<"%CACHE%\applied.txt"
 if not "%APPLIED%"=="%VER%" goto gitapply
 if not exist "%~dp0data\fight.def" goto gitapply
 echo   files  : main @ %VER%
-echo            already up to date - launching what is here
+echo            Already up to date - launching what is here.
 goto launch
 
 :gitapply
@@ -190,10 +190,10 @@ git -C "%CACHE%\repo" ls-files data chars stages font external sound >"%CACHE%\a
 goto copied
 
 :gitfail
-echo            git could not fetch. it said:
+echo            Git could not fetch. It said:
 if not exist "%CACHE%\git.log" goto download
 "%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
-echo            trying a direct download instead
+echo            Trying a direct download instead.
 goto probe
 
 rem ---- has main moved? ---------------------------------------------------
@@ -212,7 +212,7 @@ call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto download
 echo   files  : main @ %APPLIED%
-echo            main has not moved - nothing to download
+echo            Main has not moved - nothing to download.
 goto launch
 
 :probe_api
@@ -222,7 +222,7 @@ call :headsha
 if not defined RSHA7 goto download
 if not "%RSHA7%"=="%APPLIED%" goto download
 echo   files  : main @ %APPLIED%
-echo            main has not moved - nothing to download
+echo            Main has not moved - nothing to download.
 goto launch
 
 :atoms
@@ -263,8 +263,10 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   [ 2/4 ]  downloading the game files
-echo            about 190 MB. the count below only goes up.
+echo   [ 2/4 ]  Downloading the game files
+echo            About 190 MB. If this stops part-way, run the updater again:
+echo            what was already fetched is kept, and the download carries on
+echo            from there instead of starting over.
 echo.
 set "ATT=0"
 
@@ -272,17 +274,17 @@ set "ATT=0"
 set /a ATT+=1
 if %ATT% GTR 2 goto dl_ps
 if not defined CURL goto dl_ps
-set "ZIP=%CACHE%\main-%ATT%.zip"
 if %ATT%==2 (call :cfetch "%ZIPURL2%") else (call :cfetch "%ZIPURL%")
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 goto curl_try
 
+
 :dl_ps
 if not defined POWERSHELL goto dl_bits
 set "ZIP=%CACHE%\main-ps.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            trying PowerShell. this step is silent, so it may sit a while:
+echo            Trying PowerShell. This step is silent, so it may sit a while:
 "%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $c = New-Object Net.WebClient; $c.Headers.Add('User-Agent','btilc-updater'); $c.DownloadFile('%ZIPURL%','%ZIP%'); exit 0 } catch { Write-Host ('             ' + $_.Exception.Message); exit 1 }"
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
@@ -291,8 +293,8 @@ if "%ZIPOK%"=="1" goto havezip
 if not exist "%SYS%\bitsadmin.exe" goto dl_browser
 set "ZIP=%CACHE%\main-bits.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            trying BITS, the Windows download service
-echo            it uses the same proxy settings as your browser
+echo            Trying BITS, the Windows download service.
+echo            It uses the same proxy settings as your browser.
 "%SYS%\bitsadmin.exe" /reset >nul 2>&1
 "%SYS%\bitsadmin.exe" /transfer BTILCupdate /download /priority normal "%ZIPURL%" "%ZIP%" >nul 2>&1
 call :zipcheck
@@ -301,15 +303,15 @@ if "%ZIPOK%"=="1" goto havezip
 rem ---- last resort: the browser does the download, this finishes it ------
 :dl_browser
 echo.
-echo            this window is not allowed out to GitHub, but your browser is.
-echo            opening the download now.
+echo            This window is not allowed out to GitHub, but your browser is.
+echo            Opening the download now.
 echo.
-echo            save it anywhere in Downloads. this window watches for it
+echo            Save it anywhere in Downloads. This window watches for it
 echo            and starts the game as soon as it is complete - you do not
 echo            have to come back here or run anything else.
 echo.
 start "" "%ZIPURL%"
-echo            waiting for the zip ...
+echo            Waiting for the zip ...
 set /a WAIT=0
 :bwait
 call :sleep 5
@@ -317,11 +319,11 @@ set /a WAIT+=5
 call :findzip
 if defined FOUNDZIP goto bapply
 if %WAIT% LSS 1200 goto bwait
-echo            nothing arrived after 20 minutes.
+echo            Nothing arrived after 20 minutes.
 goto downloadfailed
 
 :bapply
-echo            got it: %FOUNDZIP%
+echo            Got it: %FOUNDZIP%
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%FOUNDZIP%" "%ZIP%" >nul
 call :zipcheck
@@ -333,7 +335,7 @@ rem ---- unpack and copy ---------------------------------------------------
 echo.
 echo   ==============================================================
 echo.
-echo   [ 3/4 ]  copying the game files over this folder
+echo   [ 3/4 ]  Copying the game files over this folder
 echo.
 call :ziptree
 if "%PSOK%"=="1" goto copied
@@ -361,6 +363,8 @@ if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
 if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config.ini" >nul
 
 :copied
+rem the archive has been read; keeping it would only hold 190 MB of cache
+if defined ZIP if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 set "VER="
 if "%WHICH%"=="git" for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
 rem a zip run knows the version from the probe, and a fresh one asks now;
@@ -385,13 +389,13 @@ if not defined VER echo   files  : main, from the zip
 echo.
 
 :launch
-echo   [ 4/4 ]  starting the game
+echo   [ 4/4 ]  Starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
 call :sleep 8
 "%TASKLIST%" /fi "imagename eq %EXE%" 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul
 if errorlevel 1 goto launchfail
-echo   running. have fun.
+echo   Running. Have fun.
 call :sleep 2
 exit /b 0
 
@@ -399,7 +403,7 @@ exit /b 0
 goto skipver
 
 :launchfail
-echo   the game did not stay open. start it by hand to see the engine's
+echo   The game did not stay open. Start it by hand to see the engine's
 echo   message, and check docs/INSTALL.md - the renderer setting is the
 echo   usual reason, and deleting save\config.ini resets it.
 echo.
@@ -407,7 +411,7 @@ pause
 exit /b 1
 
 :wrongfolder
-echo   this file belongs in your game folder - the one that has
+echo   This file belongs in your game folder - the one that has
 echo   BigTroubleInLittleChinaTheGame.exe in it.
 echo.
 pause
@@ -415,13 +419,13 @@ exit /b 1
 
 :downloadfailed
 echo.
-echo   could not get the files automatically.
+echo   Could not get the files automatically.
 echo.
-echo   the last resort, which always works:
-echo     1. download this in your browser
+echo   The last resort, which always works:
+echo     1. Download this in your browser.
 echo        %ZIPURL%
-echo     2. save the zip in this folder
-echo     3. run "Apply main.zip.bat"
+echo     2. Save the zip in this folder.
+echo     3. Run "Apply main.zip.bat".
 echo.
 pause
 exit /b 1
@@ -430,15 +434,27 @@ rem ===========================================================================
 rem  curl in the background, so the arriving bytes can be counted
 rem ===========================================================================
 :cfetch
-rem %1 = url. %ZIP% already points at this attempt's own file, so a leftover
-rem process from an earlier attempt can never lock it.
+rem %1 = url. One part file is reused between runs, so a download that was cut
+rem off - a closed window, a lost connection, a reboot - continues from the byte
+rem it reached instead of fetching the whole archive again. The address it came
+rem from is kept beside it: bytes from one address cannot be continued from
+rem another, so a change of address throws the part away and starts clean.
 set "CFURL=%~1"
+set "ZIP=%CACHE%\main.part"
+set "PARTURL="
+if exist "%CACHE%\main.part.url" set /p PARTURL=<"%CACHE%\main.part.url"
+if not "%PARTURL%"=="%CFURL%" (
+  if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+  >"%CACHE%\main.part.url" echo %CFURL%
+)
 set "DONE=%CACHE%\done-%RANDOM%.txt"
 set "ERRF=%CACHE%\err-%RANDOM%.txt"
 set "RUNB=%CACHE%\get-%RANDOM%.bat"
-if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+rem A carriage return, so the count is rewritten on its own line. Without it
+rem each redraw would add a line and the window would scroll instead.
+if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 >"%RUNB%" echo @echo off
->>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 30 --max-time 900 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
+>>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke -C - --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1200 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
 start "" /b "%RUNB%"
 set /a SECS=0
@@ -448,22 +464,36 @@ call :sleep 5
 set /a SECS+=5
 set "SZ=0"
 for %%A in ("%ZIP%") do set "SZ=%%~zA"
-set /a MB=SZ/1048576
+set /a KB=SZ/1024
 set /a MINS=SECS/60
 set /a REST=SECS%%60
 set "CLOCK=%MINS%:%REST%"
 if %REST% LSS 10 set "CLOCK=%MINS%:0%REST%"
-call :drawdl %MB% %CLOCK%
+call :drawdl %KB% %CLOCK%
 if exist "%DONE%" goto cfdone
-if %SECS% LSS 900 goto cfpoll
-echo            no complete transfer after 15 minutes. moving on.
+if %SECS% LSS 1200 goto cfpoll
+echo.
+echo            No complete transfer after 20 minutes. Run the updater again
+echo            and it will carry on from here.
 exit /b 0
 
+
 :cfdone
+echo.
 if exist "%DONE%" set /p CODE=<"%DONE%"
 call :zipcheck
-if "%ZIPOK%"=="1" exit /b 0
-echo            that attempt did not finish. curl said:
+if "%ZIPOK%"=="1" (
+  del /q "%CACHE%\main.part.url" >nul 2>&1
+  exit /b 0
+)
+if "%CODE%"=="0" (
+  rem The transfer said it was complete, yet the archive is unusable, so there
+  rem is nothing worth continuing from. Start the next attempt clean rather
+  rem than resume onto damaged bytes.
+  if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+  del /q "%CACHE%\main.part.url" >nul 2>&1
+)
+echo            That attempt did not finish. Curl said:
 if exist "%ERRF%" type "%ERRF%"
 exit /b 0
 
@@ -568,24 +598,52 @@ endlocal & set "BAR=%BAR%"
 exit /b 0
 
 :drawdl
-rem %1 = MB so far, %2 = elapsed clock. Redrawn in place, so the screen stays
-rem one panel instead of a growing list of lines.
-call :dragonbar %~1 190
-cls
-echo.
-echo   ==============================================================
-echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
-echo   ==============================================================
-echo.
-echo   fetching the newest build of the game
-echo.
-echo     [%BAR%]
-echo.
-echo        %~1 of about 190 MB           %~2 elapsed
-echo.
-echo   keep this window open - it starts the game by itself when
-echo   the download is done.
+rem %1 = kilobytes so far, %2 = elapsed clock. Only this one line is rewritten,
+rem where it stands. Clearing the window every five seconds made the whole
+rem screen blink and threw the cursor back to the top each time.
+call :dragonbar %~1 194560
+if not defined DLHEAD goto drawdl_head
+set /a DLMB=%~1/1024
+set "DLSTATE=%DLMB% MB"
+if %~1 LSS 10240 set "DLSTATE=%~1 KB"
+if "%DLSTATE%"=="%DLLAST%" exit /b 0
+set "DLLAST=%DLSTATE%"
+set "DLTEXT=     [%BAR%]   %DLSTATE% of about 190 MB   %~2 elapsed"
+set "DLTEXT=%DLTEXT%%PAD%"
+set "DLTEXT=%DLTEXT:~0,78%"
+call :dlwrite
 exit /b 0
+
+:drawdl_head
+set "DLHEAD=1"
+set "PAD=                                                                                "
+echo.
+echo   Fetching the newest build of the game.
+echo.
+echo   Keep this window open - the game starts by itself when the download is
+echo   done. If it stops part-way, run the updater again and it carries on from
+echo   here rather than starting over.
+echo.
+set /a DLMB=%~1/1024
+set "DLSTATE=%DLMB% MB"
+if %~1 LSS 10240 set "DLSTATE=%~1 KB"
+set "DLLAST=%DLSTATE%"
+set "DLTEXT=     [%BAR%]   %DLSTATE% of about 190 MB   %~2 elapsed"
+set "DLTEXT=%DLTEXT%%PAD%"
+set "DLTEXT=%DLTEXT:~0,78%"
+call :dlwrite
+exit /b 0
+
+:dlwrite
+rem Written without a trailing newline and led by a carriage return, so it lands
+rem on top of the previous reading instead of under it.
+if defined CR (
+  <nul set /p "=%CR%%DLTEXT%"
+  exit /b 0
+)
+echo %DLTEXT%
+exit /b 0
+
 
 :sleep
 rem ping is the only delay Windows always has, whatever is on PATH - but if

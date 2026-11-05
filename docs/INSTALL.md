@@ -97,7 +97,7 @@ bytes as they arrive, so a slow line looks slow rather than broken:
    folder already matches `main`, it also skips the 340 MB local copy and just
    launches.
 2. **curl**, with `CURL_CA_BUNDLE`/`SSL_CERT_FILE` cleared for that window and
-   `--ssl-no-revoke`, printing `112 of about 190 MB` as it goes.
+   `--ssl-no-revoke`, printing `112 MB of about 190 MB` as it goes.
 3. **PowerShell**, which uses the .NET and Windows proxy settings.
 4. **BITS**, the Windows download service, when a corporate proxy only allows it.
 
