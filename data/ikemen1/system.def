@@ -2864,3 +2864,8 @@ overlay.col = 0, 0, 0
 overlay.alpha = 0, 128
 done.snd = 100, 0
 cancel.snd = 100, 2
+
+[MusicBGdef]
+; Background for the music select browser (external/mods/musicselect.lua). It
+; draws its own covers and text, so the block only has to clear the screen.
+bgclearcolor = 0, 0, 0
