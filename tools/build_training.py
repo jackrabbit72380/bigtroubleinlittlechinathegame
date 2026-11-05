@@ -76,20 +76,30 @@ def backdrop():
         step *= 1.28
 
     # --- banner across the back wall --------------------------------------
+    # Hung clear of the top of the screen: the life bars, portraits and player
+    # names occupy roughly the first 180px of a 1080p frame, so a sign at y=120
+    # read as lettering smeared behind P2's name. The round and FIGHT callouts
+    # sit around y=600, and the floor starts at 900, so the wall's clear band is
+    # between those and the sign goes in the middle of it.
+    banner_y = 300
     f = art.font(96)
     text = "TRAINING ROOM"
     tw = d.textlength(text, font=f)
-    d.text(((W - tw) / 2.0, 120), text, font=f, fill=GOLD + (255,),
+    d.text(((W - tw) / 2.0, banner_y), text, font=f, fill=GOLD + (255,),
            stroke_width=6, stroke_fill=INK + (255,))
-    d.line([(W // 2 - 420, 250), (W // 2 + 420, 250)], fill=GOLD_DIM + (255,), width=4)
+    d.line([(W // 2 - 420, banner_y + 130), (W // 2 + 420, banner_y + 130)],
+           fill=GOLD_DIM + (255,), width=4)
 
     # --- two work lights on the wall --------------------------------------
+    # Below the HUD too, so they light the wall instead of the health bars.
+    light_y = 230
     for x in (W // 2 - 470, W // 2 + 470):
-        d.rectangle([x - 46, 40, x + 46, 88], fill=(22, 24, 24),
+        d.rectangle([x - 46, light_y, x + 46, light_y + 48], fill=(22, 24, 24),
                     outline=(58, 54, 44), width=3)
-        d.ellipse([x - 34, 62, x + 34, 118], fill=(255, 226, 158, 210))
+        d.ellipse([x - 34, light_y + 22, x + 34, light_y + 78],
+                  fill=(255, 226, 158, 210))
         img = Image.alpha_composite(img, art.radial_light(
-            (W, SCREEN[1]), (x, 110), 330, (255, 210, 130), peak=64))
+            (W, SCREEN[1]), (x, light_y + 60), 330, (255, 210, 130), peak=64))
 
     # chalk centre line the fighters square up on
     cx = W // 2

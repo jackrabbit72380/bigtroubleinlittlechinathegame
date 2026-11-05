@@ -1236,7 +1236,7 @@ MUSIC = {
     "wingkong_exchange": "sound/WingKongExchange.ogg",
     "chinatown_alley": "sound/AlleyWar.ogg",
     "porkchop_express": "sound/PorkChopExpress.ogg",
-    "the_upside_down": "sound/Hide.ogg",
+    "the_upside_down": "sound/UpsideDown.wav",
     "hell_sinners": "sound/LoPansDemise.ogg",
     "airport_terminal": "sound/Airport.ogg",
 }

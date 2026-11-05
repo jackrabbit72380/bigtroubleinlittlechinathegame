@@ -50,3 +50,7 @@ chars/*_kfm/
 
 # our shipped renderer defaults; the engine seed file is regenerated, ours is not
 !config.ini
+
+# Placeholder that keeps the folder in a checkout; the tracks themselves are
+# added deliberately, so this one is never committed.
+sound/.keep

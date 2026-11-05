@@ -657,6 +657,49 @@ def set_section_key(text, section, key, value):
     return text[:start] + body + text[end:], count
 
 
+def repair_font_files(text):
+    """Repoint [Files] font entries that name a file the engine cannot find.
+
+    The motif ships ``font1 = f-4x6.def``, but that file only exists in the
+    repository's source ``font/`` folder; motif paths resolve against ``data/``,
+    so the engine looked for data/f-4x6.def, did not find it, and reported a
+    missing font at every boot for an entry nothing in the motif uses. Anything
+    that does not resolve is pointed at the body font, which does.
+    """
+    head = re.compile(r"^[ \t]*\[Files\][ \t]*$", re.MULTILINE | re.IGNORECASE).search(text)
+    if not head:
+        return text, 0
+    nxt = re.compile(r"^[ \t]*\[[^\]]*\]", re.MULTILINE).search(text, head.end())
+    end = nxt.start() if nxt else len(text)
+    body = text[head.end():end]
+
+    motif_dir = os.path.dirname(MOTIF)                 # data/ikemen1
+    data_dir = os.path.dirname(motif_dir)              # data
+    fallback = "ikemen1/fonts/Body.def"
+    if not os.path.isfile(os.path.join(data_dir, fallback)):
+        return text, 0
+
+    fixed = []
+
+    def repl(match):
+        value = match.group(2).strip()
+        if not value:
+            return match.group(0)
+        if any(os.path.isfile(os.path.join(base, value))
+               for base in (data_dir, motif_dir)):
+            return match.group(0)
+        fixed.append(value)
+        return match.group(1) + fallback
+
+    body = re.sub(r"(?im)^([ \t]*font[0-9]+[ \t]*=[ \t]*)([^;\r\n]+)([ \t]*;?[^\r\n]*)$",
+                  repl, body)
+    if not fixed:
+        return text, 0
+    print(f"  repointed {len(fixed)} missing font file(s) at {fallback}: "
+          + ", ".join(sorted(set(fixed))))
+    return text[:head.end()] + body + text[end:], len(fixed)
+
+
 def ensure_font_files(text):
     """Register Display, Body and DisplayActive as font10, font11, font12."""
     wanted = (("Display", 10), ("Body", 11), ("DisplayActive", 12))
@@ -1034,6 +1077,8 @@ def main():
     text, added = ensure_font_files(original)
     if added:
         print(f"  registered font10/font11 in {os.path.basename(MOTIF)}")
+
+    text, _repointed = repair_font_files(text)
 
     text, res_added = ensure_resolution_menu(text)
     if res_added:            print(f"  rewrote the video resolution list in "
