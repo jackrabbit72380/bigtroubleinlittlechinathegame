@@ -153,22 +153,25 @@ def background():
     return art.grain(img, amount=5, seed=5)
 
 
-def cell_frame():
-    """One empty portrait cell: a tall coin plate with a gold bevel.
+def _plate(accent, dim):
+    """One portrait plate: a tall coin shape with a double rule in ``accent``.
 
     The cells are 128x160, not squares: the grid reads as columns of figures
     rather than a wall of buttons, and the extra 32px is head room for the bust.
+    The empty cell and both player cursors are this same plate, only recoloured,
+    so a selection reads as the cell lighting up instead of a second, glowier
+    shape pasted on top of it.
     """
     w, h = CELL, CELL_H
     r = min(w, h) // 8
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=INK + (238,),
-                        outline=GOLD + (255,), width=4)
+                        outline=accent + (255,), width=4)
     d.rounded_rectangle([4, 4, w - 5, h - 5], radius=max(2, r - 2),
                         outline=(26, 24, 20, 255), width=4)
     d.rounded_rectangle([9, 9, w - 10, h - 10], radius=max(2, r - 5),
-                        outline=GOLD_DIM + (215,), width=3)
+                        outline=dim + (215,), width=3)
 
     shade = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shade)
@@ -178,23 +181,14 @@ def cell_frame():
     return img
 
 
+def cell_frame():
+    """The empty portrait cell, in the screenpack's gold."""
+    return _plate(GOLD, GOLD_DIM)
+
+
 def cursor_frame(colour):
-    """Selection frame: a bright box with a soft outward glow."""
-    w, h = CELL, CELL_H
-    r = min(w, h) // 8
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rounded_rectangle([4, 4, w - 5, h - 5], radius=max(2, r - 1),
-                        outline=colour + (255,), width=9)
-    d.rounded_rectangle([13, 13, w - 14, h - 14], radius=max(2, r - 4),
-                        outline=(255, 255, 255, 165), width=3)
-    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=colour + (135,),
-                        width=2)
-    glow = img.filter(ImageFilter.GaussianBlur(12))
-    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    out.alpha_composite(glow)
-    out.alpha_composite(img)
-    return out
+    """A player's selection: the cell plate in that player's colour."""
+    return _plate(colour, tuple(int(c * 0.62) for c in colour))
 
 
 # The random slot: a grey stone card with a question mark, drawn at the cell's
