@@ -41,7 +41,8 @@ entry per track, in order) and the track titles to print (the `game:` line, so
 `assets.boxFront:` line is used for the cover when that file exists, and `file:`
 paths are resolved leniently - from the repo root, inside the album folder, in
 sound/ itself, or one folder down - so a pack written for `sound/x.ogg` still
-works from the album directory. Tracks in the folder but not in the metadata are
+works from the album directory, and a name that differs only in spacing or
+punctuation still finds its file. Tracks in the folder but not in the metadata are
 appended at the end rather than dropped, and a track the metadata lists without a
 file on disk is reported and skipped.
 
@@ -220,44 +221,79 @@ def parse_metadata(path):
     return [(t["file"], t["title"]) for t in tracks if t["file"]], cover
 
 
+def _clean_path(written):
+    written = written.replace("\\", "/").strip()
+    while written.startswith("./"):
+        written = written[2:]
+    return written.lstrip("/")
+
+
+def _rel(path):
+    return os.path.relpath(path, ROOT).replace(os.sep, "/")
+
+
+def _listing(place):
+    try:
+        return sorted(os.listdir(place))
+    except OSError:
+        return []
+
+
+def _places(folder):
+    """Where a track named in metadata can be, the album folder first."""
+    places = [folder, SOUND_DIR]
+    for name in _listing(folder):
+        sub = os.path.join(folder, name)
+        if os.path.isdir(sub):
+            places.append(sub)
+    return places
+
+
+def _norm(name):
+    """A filename with spacing and punctuation removed, for tolerant matching."""
+    return re.sub(r"[^0-9a-z]+", "", name.lower())
+
+
 def resolve_track(folder, written):
     """Repo-relative path of a track named in metadata, or None if it is absent.
 
     Metadata paths are written for Pegasus, not for this folder layout, so they are
-    tried in the places the file can actually be: as a path from the repo root,
-    then by name inside the album, then by name in sound/ itself, then one folder
-    down inside the album.
+    tried where the file can actually be: as a path from the repo root, then by name
+    inside the album, in sound/ itself, or one folder down inside the album. The
+    last pass ignores spacing and punctuation, because a list and the files it
+    ships with do drift there ("12- Lopan's" for "12 - Lopan's").
     """
-    written = written.replace("\\", "/").strip()
-    while written.startswith("./"):
-        written = written[2:]
-    if written.startswith("/"):
-        written = written[1:]
-    if os.path.isfile(os.path.join(ROOT, written)):
-        return written
-    base = written.rpartition("/")[2]
+    path = _clean_path(written)
+    if os.path.isfile(os.path.join(ROOT, path)):
+        return path
+    base = path.rpartition("/")[2]
     for candidate in (os.path.join(folder, base), os.path.join(SOUND_DIR, base)):
         if os.path.isfile(candidate):
-            return os.path.relpath(candidate, ROOT).replace(os.sep, "/")
-    try:
-        subs = sorted(os.listdir(folder))
-    except OSError:
-        subs = []
-    for sub in subs:
-        candidate = os.path.join(folder, sub, base)
-        if os.path.isfile(candidate):
-            return os.path.relpath(candidate, ROOT).replace(os.sep, "/")
+            return _rel(candidate)
+    for place in _places(folder):
+        for name in _listing(place):
+            candidate = os.path.join(place, name)
+            if (name == base or name.lower() == base.lower()) and os.path.isfile(candidate):
+                return _rel(candidate)
+    wanted = _norm(base)
+    if wanted:
+        for place in _places(folder):
+            for name in _listing(place):
+                candidate = os.path.join(place, name)
+                if _norm(name) == wanted and os.path.isfile(candidate):
+                    rel = _rel(candidate)
+                    print(f"  note: {os.path.basename(folder)}: metadata says {written}, "
+                          f"using {rel} (names differ in spacing or punctuation)")
+                    return rel
     return None
 
 
 def resolve_cover(folder, written):
     """The cover: the metadata's boxFront if it exists, else boxFront.png."""
     if written:
-        written = written.replace("\\", "/").strip()
-        while written.startswith("./"):
-            written = written[2:]
+        path = _clean_path(written)
         for base in (folder, SOUND_DIR, ROOT):
-            candidate = os.path.join(base, written.lstrip("/"))
+            candidate = os.path.join(base, path)
             if os.path.isfile(candidate):
                 return candidate
     return cover_in(folder)
