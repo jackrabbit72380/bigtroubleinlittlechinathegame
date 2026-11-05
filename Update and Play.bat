@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v15
+rem  BIG TROUBLE IN LITTLE CHINA - updater v16
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v15
+echo                        updater v16
 echo.
 echo   ==============================================================
 echo.
@@ -264,9 +264,9 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  Downloading the game files
-echo            About 190 MB. If this stops part-way, run the updater again:
-echo            what was already fetched is kept, and the download carries on
-echo            from there instead of starting over.
+echo            About 190 MB. The archive is built fresh for each commit and
+echo            cannot be continued part-way, so leave this window open until
+echo            it finishes.
 echo.
 set "ATT=0"
 
@@ -434,19 +434,14 @@ rem ===========================================================================
 rem  curl in the background, so the arriving bytes can be counted
 rem ===========================================================================
 :cfetch
-rem %1 = url. One part file is reused between runs, so a download that was cut
-rem off - a closed window, a lost connection, a reboot - continues from the byte
-rem it reached instead of fetching the whole archive again. The address it came
-rem from is kept beside it: bytes from one address cannot be continued from
-rem another, so a change of address throws the part away and starts clean.
+rem %1 = url. GitHub builds this archive fresh for each commit and does not serve
+rem it in byte ranges - curl answers "HTTP server doesn't seem to support byte
+rem ranges. Cannot resume." - so a half file can never be continued. It is
+rem dropped before every attempt: a part from an earlier commit would only fail
+rem the archive test at the end anyway.
 set "CFURL=%~1"
 set "ZIP=%CACHE%\main.part"
-set "PARTURL="
-if exist "%CACHE%\main.part.url" set /p PARTURL=<"%CACHE%\main.part.url"
-if not "%PARTURL%"=="%CFURL%" (
-  if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-  >"%CACHE%\main.part.url" echo %CFURL%
-)
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 set "DONE=%CACHE%\done-%RANDOM%.txt"
 set "ERRF=%CACHE%\err-%RANDOM%.txt"
 set "RUNB=%CACHE%\get-%RANDOM%.bat"
@@ -454,7 +449,7 @@ rem A carriage return, so the count is rewritten on its own line. Without it
 rem each redraw would add a line and the window would scroll instead.
 if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 >"%RUNB%" echo @echo off
->>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke -C - --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1200 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
+>>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1200 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
 start "" /b "%RUNB%"
 set /a SECS=0
@@ -481,26 +476,15 @@ call :drawdl %KB% "%DLINFO%"
 if exist "%DONE%" goto cfdone
 if %SECS% LSS 1200 goto cfpoll
 echo.
-echo            No complete transfer after 20 minutes. Run the updater again
-echo            and it will carry on from here.
+echo            No complete transfer after 20 minutes. The archive has to
+echo            start again, so run the updater once the connection is back.
 exit /b 0
 
 
 :cfdone
 echo.
-if exist "%DONE%" set /p CODE=<"%DONE%"
 call :zipcheck
-if "%ZIPOK%"=="1" (
-  del /q "%CACHE%\main.part.url" >nul 2>&1
-  exit /b 0
-)
-if "%CODE%"=="0" (
-  rem The transfer said it was complete, yet the archive is unusable, so there
-  rem is nothing worth continuing from. Start the next attempt clean rather
-  rem than resume onto damaged bytes.
-  if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-  del /q "%CACHE%\main.part.url" >nul 2>&1
-)
+if "%ZIPOK%"=="1" exit /b 0
 echo            That attempt did not finish. Curl said:
 if exist "%ERRF%" type "%ERRF%"
 exit /b 0
@@ -630,8 +614,8 @@ echo.
 echo   Fetching the newest build of the game.
 echo.
 echo   Keep this window open - the game starts by itself when the download is
-echo   done. If it stops part-way, run the updater again and it carries on from
-echo   here rather than starting over.
+echo   done. The archive is rebuilt for every commit, so a transfer that stops
+echo   starts again from the beginning.
 echo.
 set /a DLMB=%~1/1024
 set /a DLTENTH=%~1*10/1024-DLMB*10
