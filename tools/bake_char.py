@@ -122,7 +122,7 @@ ART_HEIGHT = {"lightning": TARGET_HEIGHT,
               "lopan": TARGET_HEIGHT, "eddilee": TARGET_HEIGHT,
               "sewermonster": TARGET_HEIGHT, "margo": TARGET_HEIGHT}
 DISPLAY = {"jackburton": "Jack Burton", "lightning": "Lightning",
-           "gracielaw": "Gracie Law", "jade": "Maio Yin",
+           "gracielaw": "Gracie Law", "jade": "Mao Yin",
            "eggshen": "Egg Shen",
            "wangchi": "Wang Chi",
            "rain": "Rain", "thunder": "Thunder", "lopan": "Lo Pan",

@@ -1,4 +1,4 @@
-; Maio Yin - command file
+; Mao Yin - command file
 ;
 ; Two parts: 1. Command definition and  2. State entry
 ; (state entry is after the commands def section)
