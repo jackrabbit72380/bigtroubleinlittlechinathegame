@@ -489,6 +489,13 @@ KEYS = (
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
     # the cells beside it.
+    # The engine draws this in the seventh row of the grid, which starts at
+    # y=1012 and runs past the 1080 frame: the word could be seen but the
+    # cursor frame drawn over it could not, so RANDOM was the one stop on the
+    # screen with no selection mark. start.lua draws the label under the wall
+    # instead (start.f_drawRandomStop), so the cell sprite is switched off here
+    # rather than drawn twice.
+    ("cell.random.spr", "-1"),
     ("cell.random.offset", "0,0"),
     ("cell.random.scale", "1, 1"),
     # The stock screen re-rolls the random portrait every 4 ticks and plays
