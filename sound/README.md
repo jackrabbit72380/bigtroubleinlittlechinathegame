@@ -61,7 +61,9 @@ line under it), the build reads it instead of guessing:
   `boxFront.png` sitting in the album folder is used;
 - `file:` paths may be written as `sound/<name>.ogg` or just `<name>.ogg`; the
   build finds the file in the album folder, in `sound/` itself, or one folder
-  down, and says so if it truly is not there.
+  down, and says so if it truly is not there. A name that matches except for
+  spacing or punctuation ("12- Lopan's" for "12 - Lopan's") still finds its file
+  and is reported, rather than being treated as a missing track.
 
 Audio in the folder that the metadata does not mention is added at the end of the
 album rather than dropped, so a pack with a bonus track and an out-of-date list
