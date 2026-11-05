@@ -429,7 +429,12 @@ KEYS = (
     # nudging it in again double-counted the inset and pushed the art 4px past
     # the frame on two sides
     ("portrait.offset", "0,0"),
-    ("portrait.scale", "1,1"),
+    # The cell art is painted at twice the cell (build_portraits.CELL_RES) and
+    # drawn at half scale, so the roster is 1:1 on screen instead of a 64x80
+    # sheet blown up 2x. Both the engine and this motif's Lua select
+    # multiply the portrait scale by motif.localcoord / the character's
+    # localcoord, so the doubling cancels for every fighter.
+    ("portrait.scale", "0.5,0.5"),
     # The stage card's position, scale, window and name band all belong to
     # tools/build_select_ui.py, which runs after this one; stage.pos is
     # deliberately not set here, because the card hangs from the band now and
