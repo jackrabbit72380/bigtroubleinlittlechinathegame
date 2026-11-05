@@ -56,8 +56,8 @@ CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
 # Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
 # The grid's frame padding ends at x=222 and x=1058, so each window stops 4px
-# inside that and the portrait art bleeds off the screen edge rather than being
-# cut by the frame's gold rule.
+# inside that. build_portraits.py paints the art 214x600, so each window is
+# wider and taller than the art and nothing of the fighter is cut off.
 FACE2_WIN_P1 = "0,86,222,712"
 FACE2_WIN_P2 = "1058,86,1276,712"
 
@@ -335,15 +335,19 @@ KEYS = (
     ("title.font", "11, 0, 0, 255, 228, 140"),
     ("title.scale", "1,1"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
-    # each other no matter how tall the fighter is in play.
+    # each other no matter how tall the fighter is in play. The art is 214x600
+    # (build_portraits.py SIDE) with its axis at the top-left, so the offset is
+    # where that corner goes: 4px inside the frame rule, low enough that the
+    # 600px of fighter ends above the bottom of the screen. The old -78,150 came
+    # from 300px-wide art and pushed a quarter of each fighter off the edge.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "-78,150"),
+    ("p1.face2.offset", "4,100"),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1358,150"),
+    ("p2.face2.offset", "1276,100"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are engine text and were still the
@@ -369,19 +373,21 @@ KEYS = (
     # The random card is painted at panel size, so it draws at 1:1 from the
     # panel's corner instead of a 62px glyph blown up 4.8x.
     ("p1.face2.random.spr", "151,10"),
-    ("p1.face2.random.offset", "-78, 150"),
-    ("p1.face2.random.scale", "1, 1"),
+    # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
+    # instead of drawing 86px into the grid.
+    ("p1.face2.random.offset", "4, 100"),
+    ("p1.face2.random.scale", "0.7, 0.7"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "-78, 235"),
+    ("p1.face2.loading.offset", "4, 200"),
     ("p1.face2.loading.scale", ".625, .625"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
-# panel's right edge and the card lands back on 966-1266.
-    ("p2.face2.random.offset", "1358, 150"),
-    ("p2.face2.random.scale", "1, 1"),
+    # panel's right edge and the card lands on 1066-1276.
+    ("p2.face2.random.offset", "1276, 100"),
+    ("p2.face2.random.scale", "0.7, 0.7"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1358, 235"),
+    ("p2.face2.loading.offset", "1276, 200"),
     ("p2.face2.loading.scale", ".625, .625"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
