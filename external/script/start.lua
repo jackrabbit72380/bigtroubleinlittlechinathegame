@@ -752,6 +752,7 @@ function start.f_animGet(ref, side, member, params, velParams, loop, srcAnim)
 				animSetFriction(a, velParams.friction[1], velParams.friction[2])
 				animSetPos(a, 0, 0)
 				animSetScale(a, params.scale[1] * xscale, params.scale[2] * yscale)
+				animSetTrans(a, params.trans, params.alpha[1], params.alpha[2])
 				animSetFacing(a, params.facing)
 				animSetXShear(a, params.xshear)
 				animSetAngle(a, params.angle)
@@ -1219,6 +1220,96 @@ function getCellTransform(col, row, paramName, default)
 end
 
 --draw cursor
+-- The RANDOM stop: its label, and the frame that says it is selected.
+--
+-- The randomselect slot is the last row of the grid in data/select.def. With
+-- 160px cells from y=40 that row starts at 1012 and runs to 1172, so the engine
+-- draws the cell's word just above the bottom edge and the player's 160px
+-- cursor frame - the green box every other stop gets - almost entirely below
+-- it. RANDOM therefore looked like the one position on the screen that could
+-- not be selected. The motif's cell sprite is switched off (cell.random.spr =
+-- -1) and the word is drawn here, centred under the wall and clear of it, in
+-- the player's green when any cursor sits on it.
+--
+-- The text calls are the ones external/mods/devhelp.lua uses against this same
+-- engine: the font goes in as the table or as its index, whichever this build
+-- accepts, and the call that works is remembered.
+local randomStop = {text = nil, mode = nil}
+
+local function randomStopText()
+	if randomStop.text == nil then
+		local ok, made = pcall(textImgNew)
+		if not ok or made == nil then
+			return nil
+		end
+		randomStop.text = made
+	end
+	local t = randomStop.text
+	if randomStop.mode == nil then
+		local sec = motif.select_info and motif.select_info.p1
+		local font = (sec and sec.name and sec.name.font)
+			or (motif.title_info and motif.title_info.menu and motif.title_info.menu.item.font)
+		if font == nil then
+			return nil
+		end
+		local idx = type(font) == 'table' and font[1] or font
+		local tries = {{'object', font}}
+		if idx ~= nil then
+			tries[#tries + 1] = {'index', idx}
+			if motif.files and motif.files.font and motif.files.font['font' .. tostring(idx)] then
+				tries[#tries + 1] = {'object', motif.files.font['font' .. tostring(idx)]}
+			end
+		end
+		for _, try in ipairs(tries) do
+			if pcall(textImgSetFont, t, try[2]) then
+				randomStop.mode = try[1]
+				break
+			end
+		end
+		if randomStop.mode == nil then
+			randomStop.mode = 'none'
+		end
+		pcall(textImgSetAlign, t, 1)
+		pcall(textImgSetScale, t, 1.5, 1.5)
+	end
+	if randomStop.mode == 'none' then
+		return nil
+	end
+	return t
+end
+
+-- Any player's cursor, not just the first: in versus both cursors can be on
+-- the stop, and the label should read as selected for either of them.
+local function randomStopLit()
+	for _, c in pairs(start.c) do
+		local cell = c and c.cell
+		if cell ~= nil then
+			local g = start.f_selGrid(cell + 1)
+			if g ~= nil and (g.char == 'randomselect' or g.hidden == 3) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function start.f_drawRandomStop()
+	local t = randomStopText()
+	if t == nil then
+		return
+	end
+	local pos = motif.select_info.pos
+	-- the wall is 1038 wide from x=441, so its middle is 960
+	local x = pos[1] + 519
+	local y = 1020
+	local col = randomStopLit() and {72, 232, 96} or {206, 168, 86}
+	pcall(textImgReset, t)
+	pcall(textImgSetText, t, 'RANDOM')
+	pcall(textImgSetPos, t, x, y)
+	pcall(textImgSetColor, t, col[1], col[2], col[3])
+	pcall(textImgDraw, t)
+end
+
 function start.f_drawCursor(pn, x, y, param, done)
 	local pData = start.f_getCursorData(pn)
 	-- select appropriate cursor table and initialize if needed
@@ -1279,18 +1370,6 @@ function start.f_drawCursor(pn, x, y, param, done)
 	cd.currentPos[2] = cd.targetPos[2] + cd.slideOffset[2]
 	-- draw
 	-- per cell cursor variant fully defines the cursor on its cell, so cell transformations apply to cursors that have no variant there
-	-- The random slot is a word, not a cell: no plate is drawn on it. The word
-	-- itself stands in for the cursor, brighter if the motif supplies
-	-- cell.random.active, so a player on RANDOM still sees where the pick is.
-	if cellData ~= nil and cellData.char == 'randomselect' then
-		local lit = motif.select_info.cell.random.active
-		if lit ~= nil and lit.AnimData ~= nil then
-			animSetPos(lit.AnimData, motif.select_info.pos[1] + cellData.x + motif.select_info.portrait.offset[1], motif.select_info.pos[2] + cellData.y + motif.select_info.portrait.offset[2])
-			animDraw(lit.AnimData)
-			animUpdate(lit.AnimData)
-		end
-		return
-	end
 	local variant = getOverride(pData.cursor[param], x, y)
 	local params = variant or pData.cursor[param].default
 	local cx, cy
@@ -1514,72 +1593,59 @@ function start.f_randomChar(pn)
 	return result
 end
 
+-- Moves the slot to the next or previous character that is not hidden, wrapping around.
+local function slotCycle(cell, dir)
+	local grid = main.t_selGrid[cell]
+	local count = #grid.chars
+	for step = 1, count - 1 do
+		local idx = (grid.slot - 1 + dir * step) % count + 1
+		if start.f_getCharData(start.f_selGrid(cell, idx).char_ref).hidden < 2 then
+			grid.slot = idx
+			return true
+		end
+	end
+	return false
+end
+
 --return true if slot is selected, update start.t_grid
 function start.f_slotSelected(cell, side, cmd, player, x, y)
 	if cmd == nil then
 		return false, false
 	end
-	local original_slot = main.t_selGrid[cell].slot
-	if #main.t_selGrid[cell].chars > 0 then
-		-- select.def 'slot' parameter special keys detection
-		for _, cmdType in ipairs({'select', 'next', 'previous'}) do
-			if main.t_selGrid[cell][cmdType] ~= nil then
-				for k, v in pairs(main.t_selGrid[cell][cmdType]) do
-					if commandGetState(cmd, k) then
-						if cmdType == 'next' then
-							local ok = false
-							for i = main.t_selGrid[cell].slot + 1, #v do
-								if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
-									main.t_selGrid[cell].slot = v[i]
-									ok = true
-									break
-								end
-							end
-							if not ok then
-								for i = 1, main.t_selGrid[cell].slot - 1 do
-									if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
-										main.t_selGrid[cell].slot = v[i]
-										ok = true
-										break
-									end
-								end
-							end
-							if ok then
-								sndPlay(motif.Snd, motif.select_info['p' .. side].swap.snd[1], motif.select_info['p' .. side].swap.snd[2])
-							end
-						elseif cmdType == 'previous' then
-							local ok = false
-							for i = main.t_selGrid[cell].slot -1, 1, -1 do
-								if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
-									main.t_selGrid[cell].slot = v[i]
-									ok = true
-									break
-								end
-							end
-							if not ok then
-								for i = #v, main.t_selGrid[cell].slot + 1, -1 do
-									if start.f_getCharData(start.f_selGrid(cell, v[i]).char_ref).hidden < 2 then
-										main.t_selGrid[cell].slot = v[i]
-										ok = true
-										break
-									end
-								end
-							end
-							if ok then
-								sndPlay(motif.Snd, motif.select_info['p' .. side].swap.snd[1], motif.select_info['p' .. side].swap.snd[2])
-							end
-						else --select
-							main.t_selGrid[cell].slot = v[math.random(#v)]
-							start.c[player].selRef = start.f_selGrid(cell).char_ref
-						end
-						start.t_grid[y + 1][x + 1].char = start.f_selGrid(cell).char
-						start.t_grid[y + 1][x + 1].char_ref = start.f_selGrid(cell).char_ref
-						start.t_grid[y + 1][x + 1].hidden = start.f_selGrid(cell).hidden
-						start.t_grid[y + 1][x + 1].skip = start.f_selGrid(cell).skip
-						return cmdType == 'select', (main.t_selGrid[cell].slot ~= original_slot)
-					end
+	local grid = main.t_selGrid[cell]
+	if #grid.chars > 0 then
+		local original_slot = grid.slot
+		local selected = false
+		local pressed = false
+		-- select.def 'select' param commands
+		if grid.select ~= nil then
+			for k, v in pairs(grid.select) do
+				if commandGetState(cmd, k) then
+					grid.slot = v[math.random(#v)]
+					start.c[player].selRef = start.f_selGrid(cell).char_ref
+					selected, pressed = true, true
+					break
 				end
 			end
+		end
+		-- [Select Info] cell.slot.next / cell.slot.previous
+		if not pressed and #grid.chars > 1 then
+			for _, entry in ipairs({{motif.select_info.cell.slot.next, 1}, {motif.select_info.cell.slot.previous, -1}}) do
+				if #entry[1].key > 0 and getInput(cmd, entry[1].key) then
+					if slotCycle(cell, entry[2]) then
+						sndPlay(motif.Snd, motif.select_info['p' .. side].swap.snd[1], motif.select_info['p' .. side].swap.snd[2])
+					end
+					pressed = true
+					break
+				end
+			end
+		end
+		if pressed then
+			start.t_grid[y + 1][x + 1].char = start.f_selGrid(cell).char
+			start.t_grid[y + 1][x + 1].char_ref = start.f_selGrid(cell).char_ref
+			start.t_grid[y + 1][x + 1].hidden = start.f_selGrid(cell).hidden
+			start.t_grid[y + 1][x + 1].skip = start.f_selGrid(cell).skip
+			return selected, (grid.slot ~= original_slot)
 		end
 	end
 	-- returns true on pressed key if current slot is not blocked by TeamDuplicates feature
@@ -1604,15 +1670,6 @@ for i = 1, motif.select_info.rows * motif.select_info.columns do
 		x = (col - 1) * (motif.select_info.cell.size[1] + cell_spacing[1]) + cell_offset[1],
 		y = (row - 1) * (motif.select_info.cell.size[2] + cell_spacing[2]) + cell_offset[2]
 	}
-	if start.f_selGrid(i).char == 'randomselect' then
-		-- RANDOM is a word under the wall, not a cell in it. The randomselect slot
-		-- is the last cell of the last row and every other slot in that row is a
-		-- skipslot, so the cursor reaches it from any column by pressing down.
-		-- Centre it under the wall here, one line below the grid's own rows,
-		-- instead of leaving it in the corner of the grid.
-		start.t_grid[row][col].x = (motif.info.localcoord[1] - motif.select_info.cell.size[1]) / 2 - motif.select_info.pos[1]
-		start.t_grid[row][col].y = (motif.select_info.rows - 1) * (motif.select_info.cell.size[2] + motif.select_info.cell.spacing[2]) + 20
-	end
 	if start.f_selGrid(i).char ~= nil then
 		start.t_grid[row][col].char = start.f_selGrid(i).char
 		start.t_grid[row][col].char_ref = start.f_selGrid(i).char_ref
@@ -2547,9 +2604,7 @@ function start.f_updateDrawList()
 					}
 				end
 
-				-- the random slot is a word under the wall and gets no plate; every other
-				-- cell that can be picked keeps its framed one
-				if (charData and charData.char ~= nil and charData.char ~= 'randomselect' and (charData.hidden == 0 or charData.hidden == 3)) or motif.select_info.showemptyboxes then
+				if (charData and charData.char ~= nil and (charData.hidden == 0 or charData.hidden == 3)) or motif.select_info.showemptyboxes then
 					local item = getTransforms(motif.select_info.cell.bg)
 					item.anim = motif.select_info.cell.bg.AnimData
 					item.x = motif.select_info.pos[1] + t.x
@@ -2928,6 +2983,11 @@ function start.f_selectScreen()
 					end
 				end
 			end
+			-- The RANDOM stop's label, drawn once for both players
+			-- because its lit state depends on all of them.
+			if side == 1 then
+				start.f_drawRandomStop()
+			end
 			--draw done cursors
 			local persist = motif.select_info['p' .. side].cursor.persist
 			local totalSelected = #start.p[side].t_selected
@@ -2999,21 +3059,19 @@ function start.f_selectScreen()
 					end
 				end
 			end
-		elseif not start.escFlag and not fadeOutStarted
-			and start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
+		elseif not start.escFlag and start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
+			local cancelHandled = false
 			if main.stageMenu and stageEnd and getInput(-1, motif.select_info.cancel.key) then
 				stageEnd = false
 				stageTextData = motif.select_info.stage.active.TextSpriteData
 				timerSelect = motif.select_info.timer.displaytime
 				sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
+				cancelHandled = true
 			else
-				local cancelPressed = false
-				local cancelHandled = false
 				for side = 2, 1, -1 do
 					for k, v in ipairs(start.p[side].t_selCmd) do
 						if getInput(v.cmd, motif.select_info.cancel.key) then
-							cancelPressed = true
-							if cancelSelectMember(side, k) then
+							if cancelSelectMember(side, k) or cancelPreviousSide(side) then
 								timerSelect = motif.select_info.timer.displaytime
 								if main.stageMenu then
 									timerReset = false
@@ -3029,9 +3087,10 @@ function start.f_selectScreen()
 						break
 					end
 				end
-				if not cancelHandled and (cancelPressed or (main.stageMenu and getInput(-1, motif.select_info.cancel.key))) then
-					exitSelectScreen()
-				end
+			end
+			if cancelHandled and fadeOutStarted then
+				fadeSkip()
+				fadeOutStarted = false
 			end
 		end
 		--draw names
@@ -3994,39 +4053,31 @@ end
 --;===========================================================
 --; STAGE MENU
 --;===========================================================
--- Same command mapping as character slots. Candidates are stage references,
--- so hidden members and command subsets do not change the mapping indices
+-- Stage slots work like character slots: a select.def 'select' command picks a random
+-- member, [Select Info] cell.slot.next/previous cycle through them.
 function start.f_stageSlotSelected(group)
 	if group == nil or #group.available == 0 then return false, false end
-	for _, cmdType in ipairs({'select', 'next', 'previous'}) do
-		for command, refs in pairs(group[cmdType] or {}) do
-			for player = 1, gameOption('Config.Players') do
-				if commandGetState(player, command) then
-					local candidates = {}
-					local allowed = {}
-					for _, ref in ipairs(refs) do allowed[ref] = true end
-					for i, ref in ipairs(group.available) do
-						if allowed[ref] then table.insert(candidates, i) end
-					end
-					if #candidates == 0 then return false, true end
-					if cmdType == 'select' then
-						group.slot = candidates[math.random(#candidates)]
-						return true, true
-					end
-					local original = group.slot
-					local direction = cmdType == 'next' and 1 or -1
-					for step = 1, #group.available do
-						local i = (original - 1 + direction * step) % #group.available + 1
-						if allowed[group.available[i]] then
-							group.slot = i
-							break
-						end
-					end
-					if group.slot ~= original then
-						sndPlay(motif.Snd, motif.select_info.stage.swap.snd[1], motif.select_info.stage.swap.snd[2])
-					end
-					return false, true
+	for command, refs in pairs(group.select or {}) do
+		for player = 1, gameOption('Config.Players') do
+			if commandGetState(player, command) then
+				local allowed = {}
+				for _, ref in ipairs(refs) do allowed[ref] = true end
+				local candidates = {}
+				for i, ref in ipairs(group.available) do
+					if allowed[ref] then table.insert(candidates, i) end
 				end
+				if #candidates == 0 then return false, true end
+				group.slot = candidates[math.random(#candidates)]
+				return true, true
+			end
+		end
+	end
+	if #group.available > 1 then
+		for _, entry in ipairs({{motif.select_info.cell.slot.next, 1}, {motif.select_info.cell.slot.previous, -1}}) do
+			if #entry[1].key > 0 and getInput(-1, entry[1].key) then
+				group.slot = (group.slot - 1 + entry[2]) % #group.available + 1
+				sndPlay(motif.Snd, motif.select_info.stage.swap.snd[1], motif.select_info.stage.swap.snd[2])
+				return false, true
 			end
 		end
 	end
@@ -4053,21 +4104,21 @@ function start.f_stageMenu()
 		stageListNo = r.init
 	end
 
-	if getInput(-1, motif.select_info.cell.left.key) then
+	if getInput(-1, motif.select_info.stage.previous.key) then
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 		stageListNo = stageListNo - 1
 		if stageListNo < stageListMinIdx then stageListNo = stageListMaxIdx end
-	elseif getInput(-1, motif.select_info.cell.right.key) then
+	elseif getInput(-1, motif.select_info.stage.next.key) then
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 		stageListNo = stageListNo + 1
 		if stageListNo > stageListMaxIdx then stageListNo = stageListMinIdx end
-	elseif getInput(-1, motif.select_info.cell.up.key) then
+	elseif getInput(-1, motif.select_info.stage.skip.previous.key) then
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 		for i = 1, 10 do
 			stageListNo = stageListNo - 1
 			if stageListNo < stageListMinIdx then stageListNo = stageListMaxIdx end
 		end
-	elseif getInput(-1, motif.select_info.cell.down.key) then
+	elseif getInput(-1, motif.select_info.stage.skip.next.key) then
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 		for i = 1, 10 do
 			stageListNo = stageListNo + 1
@@ -4099,12 +4150,6 @@ function start.f_buildLoadStartParams(arg, doSelectMissing, t_orderRemap)
 	end
 	if musicParams and musicParams ~= "" then
 		parts[#parts + 1] = musicParams
-	end
-	-- Music select (external/mods/musicselect.lua) hands the track picked in the
-	-- title menu's MUSIC screen through here; it wins over the mode's own choice.
-	if type(main.t_musicSelect) == "table" and main.t_musicSelect.params ~= nil
-		and main.t_musicSelect.params ~= "" then
-		parts[#parts + 1] = main.t_musicSelect.params
 	end
 	local function addParam(k, v)
 		if v == nil or v == "" then
