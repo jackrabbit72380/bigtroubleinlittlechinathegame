@@ -75,7 +75,9 @@ Drop `Update and Play.bat` into that folder and double-click it instead of the
 game's own exe. Each run fetches whatever is newest on `main`, copies only the files that changed inside `data/`,
 `chars/`, `stages/`, `font/`, `external/` and `sound/`, and leaves
 your `save/` and the engine files alone, prints which HUD it copied, and starts
-the game. With Git installed the update moves only the changed files; without git
+the game. With Git installed it compares the files already in that folder against
+`main` and downloads only the ones that differ - the art you already have
+is read and hashed, not fetched again; without git
 it reads the public commit feed (a few tens of KB, no token, no API quota) and
 only downloads the `main` zip when that feed shows `main` has moved, so a launch
 with nothing new behind it costs one small request. When it does download, the
@@ -86,16 +88,18 @@ by hand.
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
 
-1. **git**, forced onto the Windows certificate store (`http.sslBackend=schannel`)
-   so a broken CA path from a Git Bash install cannot stop it. This is the small
-   one: a depth-1 clone with `--filter=blob:none` and a sparse checkout of only
-   `data chars stages font external sound`, so the first run brings the art
-   (about 150 MB, unavoidable) and every run after it transfers just the objects
-   a commit touched - recent updates have been 3 to 8 files, around 0.01 MB. The
-   skipped folders (`artifacts`, `concept_art`, `art_src`, `tools`) are 128 MB of
-   the committed tree that the game never copies. If the revision in the game
-   folder already matches `main`, it also skips the 340 MB local copy and just
-   launches.
+1. **git**, working on the game folder itself rather than on a copy of it. It
+   records the folder as a repository (`git init` - no commit, no file rewritten),
+   fetches `main` with `--filter=blob:none`, then compares the content of the six
+   folders the game uses against it. A file that already matches is never
+   transferred; only the blobs that really differ are fetched, straight into
+   place. The first run pays for one hash pass over the art already on disk, with
+   no download at all, and later runs transfer only what a commit touched -
+   recent updates have been 3 to 8 files. `artifacts`, `concept_art`, `art_src`
+   and `tools` are outside those paths and are never read. When nothing differs
+   it prints `Already current` and starts the game in a couple of seconds, and
+   there is no second copy of the art anywhere: `.update-cache` holds only logs,
+   and a copy left by an older launcher is deleted.
 2. **curl**, with `CURL_CA_BUNDLE`/`SSL_CERT_FILE` cleared for that window and
    `--ssl-no-revoke`, printing `112.4/190 MB  640 KB/s  4:12 left` as it goes.
 3. **PowerShell**, which uses the .NET and Windows proxy settings.
