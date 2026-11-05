@@ -14,7 +14,7 @@ rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
 color 0E
 cd /d "%~dp0"
-title Big Trouble in Little China - apply update
+title Big Trouble in Little China: The Game - Zip Applier
 
 set "SYS=%SystemRoot%\System32"
 set "TAR=%SYS%\tar.exe"
@@ -34,7 +34,7 @@ echo                    a p p l y   u p d a t e
 echo.
 echo   ==============================================================
 echo.
-echo   folder : %~dp0
+echo   Folder:  %~dp0
 echo.
 
 set "EXE="
@@ -92,8 +92,8 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 :copied
 echo.
 "%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
-if errorlevel 1 echo   HUD    : OLD - the copy did not land
-if not errorlevel 1 echo   HUD    : dragon - back is health, belly is audacity
+if errorlevel 1 echo   HUD:     old - the copy did not land
+if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
 "%FINDSTR%" /c:"'Ctrl+Alt+1..9'" "%~dp0external\mods\devhelp.lua" >nul 2>nul
 if errorlevel 1 echo   keys   : OLD developer keys screen
 if not errorlevel 1 echo   keys   : two columns, no scrolling
