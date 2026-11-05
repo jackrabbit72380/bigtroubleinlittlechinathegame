@@ -43,8 +43,10 @@ paths are resolved leniently - from the repo root, inside the album folder, in
 sound/ itself, or one folder down - so a pack written for `sound/x.ogg` still
 works from the album directory, and a name that differs only in spacing or
 punctuation still finds its file. Tracks in the folder but not in the metadata are
-appended at the end rather than dropped, and a track the metadata lists without a
-file on disk is reported and skipped.
+placed by the number their filename leads with rather than dropped or tacked on at
+the end, a track the metadata lists without a file on disk is reported and skipped,
+and a file the engine cannot decode (an .mp4 in an album of .ogg files) is not
+listed at all, since it would only ever play silence.
 
 The result lands in data/music.json for the browser
 (external/mods/musicselect.lua) with a 1-based Order per track, and each cover is
@@ -254,33 +256,45 @@ def _norm(name):
     return re.sub(r"[^0-9a-z]+", "", name.lower())
 
 
+def _decodable(path):
+    """True when the engine can decode this file, judging by its extension.
+
+    Ikemen picks its decoder from the extension, so a track an album lists as an
+    .mp4 or .m4a plays in a media player and is silent here.
+    """
+    return path.rpartition(".")[2].lower() in EXTS
+
+
 def resolve_track(folder, written):
-    """Repo-relative path of a track named in metadata, or None if it is absent.
+    """Repo-relative path of a playable track named in metadata, or None.
 
     Metadata paths are written for Pegasus, not for this folder layout, so they are
     tried where the file can actually be: as a path from the repo root, then by name
     inside the album, in sound/ itself, or one folder down inside the album. The
     last pass ignores spacing and punctuation, because a list and the files it
-    ships with do drift there ("12- Lopan's" for "12 - Lopan's").
+    ships with do drift there ("12- Lopan's" for "12 - Lopan's"). A file the engine
+    cannot decode is treated as absent, so it never becomes a track row.
     """
     path = _clean_path(written)
-    if os.path.isfile(os.path.join(ROOT, path)):
+    if os.path.isfile(os.path.join(ROOT, path)) and _decodable(path):
         return path
     base = path.rpartition("/")[2]
     for candidate in (os.path.join(folder, base), os.path.join(SOUND_DIR, base)):
-        if os.path.isfile(candidate):
+        if os.path.isfile(candidate) and _decodable(candidate):
             return _rel(candidate)
     for place in _places(folder):
         for name in _listing(place):
             candidate = os.path.join(place, name)
-            if (name == base or name.lower() == base.lower()) and os.path.isfile(candidate):
+            if (name == base or name.lower() == base.lower()) \
+                    and os.path.isfile(candidate) and _decodable(candidate):
                 return _rel(candidate)
     wanted = _norm(base)
     if wanted:
         for place in _places(folder):
             for name in _listing(place):
                 candidate = os.path.join(place, name)
-                if _norm(name) == wanted and os.path.isfile(candidate):
+                if _norm(name) == wanted and os.path.isfile(candidate) \
+                        and _decodable(candidate):
                     rel = _rel(candidate)
                     print(f"  note: {os.path.basename(folder)}: metadata says {written}, "
                           f"using {rel} (names differ in spacing or punctuation)")
@@ -311,6 +325,31 @@ def album_dirs():
 def nice_title(filename):
     stem = filename.rpartition(".")[0]
     return stem.replace("_", " ").strip()
+
+
+def track_number(name):
+    """The number an album's filename or title leads with, or None."""
+    match = re.match(r"\s*(\d+)", name or "")
+    return int(match.group(1)) if match else None
+
+
+def place_by_number(tracks, track):
+    """Insert `track` after the last track numbered at or below its own.
+
+    An album's list can be out of date while its files are not, and appending
+    those files puts track 11 after track 18. The numbers in the filenames are
+    what is left to place them by; a track with no number goes to the end.
+    """
+    number = track.get("num")
+    at = len(tracks)
+    if number is not None:
+        at = 0
+        for i, other in enumerate(tracks):
+            other_number = other.get("num")
+            if other_number is not None and other_number <= number:
+                at = i + 1
+    tracks.insert(at, track)
+    return at + 1
 
 
 def write_music_json(albums):
@@ -446,6 +485,10 @@ def main():
             listed, cover_hint = parse_metadata(meta)
             used = set()
             for written, title in listed:
+                if written.rpartition(".")[2].lower() in UNSUPPORTED:
+                    # Playable in a media player, silent in this engine. audio_in()
+                    # below already explains the file itself.
+                    continue
                 path = resolve_track(folder, written)
                 if path is None:
                     print(f"  warning: {name}: metadata lists {written}, "
@@ -454,24 +497,40 @@ def main():
                 if path.lower() in used:
                     continue
                 used.add(path.lower())
+                label = title or nice_title(path.rpartition("/")[2])
                 tracks.append({
                     "file": path,
-                    "title": title or nice_title(path.rpartition("/")[2]),
+                    "title": label,
+                    "num": track_number(path.rpartition("/")[2]) or track_number(title),
                 })
             # Nothing in the folder should go missing just because the metadata
-            # forgot it, so unlisted audio joins the end of the list.
+            # forgot it (older lists name tracks that were renamed, or skip a
+            # bonus track), so unlisted audio joins the list where its number
+            # says it belongs instead of after the last track.
+            extras = []
             for _, fname in audio_in(folder):
                 rel = f"sound/{name}/{fname}"
                 if rel.lower() in used:
                     continue
                 used.add(rel.lower())
-                tracks.append({"file": rel, "title": nice_title(fname)})
-                print(f"  note: {name}: {fname} is not in the metadata, "
-                      f"added at the end")
+                extras.append({
+                    "file": rel,
+                    "title": nice_title(fname),
+                    "num": track_number(fname),
+                })
+            # Lowest number first: each insertion then lands after the previous
+            # one, so placing track 9 afterwards cannot shift track 11 down.
+            extras.sort(key=lambda t: (t["num"] is None, t["num"] or 0, t["file"].lower()))
+            for extra in extras:
+                at = place_by_number(tracks, extra)
+                print(f"  note: {name}: {os.path.basename(extra['file'])} is not in "
+                      f"the metadata, placed at position {at}")
             source = f", {os.path.basename(meta)}"
         else:
             tracks = [{"file": f"sound/{name}/{f}", "title": nice_title(f)}
                       for _, f in audio_in(folder)]
+        for track in tracks:  # the placement number is not part of the output
+            track.pop("num", None)
         if not tracks:
             continue
         cover = resolve_cover(folder, cover_hint)
