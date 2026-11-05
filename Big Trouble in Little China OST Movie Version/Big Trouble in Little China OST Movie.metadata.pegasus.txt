@@ -1,0 +1,127 @@
+collection: Soundtracks
+
+game: Big Trouble in Little China OST Movie Version
+sort: Big Trouble in Little China OST Movie Version
+developer: John Carpenter & Alan Howarth
+publisher: Varese Sarabande
+release: 1986-05-30
+genre: Soundtrack
+players: 0
+
+description: Original soundtrack album for the 1986 cult classic film Big Trouble in Little China. Composed by John Carpenter and Alan Howarth, featuring the iconic synthesizer-driven score and the film's memorable theme song.
+
+collection: Big Trouble in Little China OST Movie Version
+
+game: 1 - Prologue
+file: sound/1 - Prologue.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 2 - Pork Chop Express (Main Title)
+file: sound/2 - Pork Chop Express (Main Title).ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 3 - Abduction at Airport
+file: sound/3 - Abduction at Airport.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 4 - The Alley (Procession)
+file: sound/4 - The Alley (Procession).ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 5 - The Alley (War)
+file: sound/5 - The Alley (War).ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 6 - The Storms
+file: sound/6 - The Storms.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 7 - Tenement-White Tiger
+file: sound/7 - Tenement-White Tiger.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 8 - Here Come the Storms
+file: sound/8 - Here Come the Storms.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 9 - Wing Kong Exchange
+file: sound/9 - Wing Kong Exchange.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 10 - Lo Pan's Domain-Looking for a Girl
+file: sound/10 - Lo Pan's Domain-Looking for a Girl.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 11 - Friend of Yours-Escape Iron Basis
+file: sound/11 - Friend of Yours-Escape Iron Basis.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 12 - Escape from Wing Kong
+file: sound/12 - Escape from Wing Kong.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 13 - Hide
+file: sound/13 - Hide.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 14 - Call the Police
+file: sound/14 - Call the Police.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 15 - Dragon Eyes
+file: sound/15 - Dragon Eyes.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 16 - Into the Spirit Path
+file: sound/16 - Into the Spirit Path.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 17 - The Great Arcade
+file: sound/17 - The Great Arcade.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 18 - The Final Escape (Lo Pan's Demise-Getaway)
+file: sound/18 - The Final Escape (Lo Pan's Demise-Getaway).ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 19 - Goodbye Jack
+file: sound/19 - Goodbye Jack.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
