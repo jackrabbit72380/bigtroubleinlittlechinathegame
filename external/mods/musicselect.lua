@@ -71,6 +71,32 @@ local function makeText(font, x, y, scale)
 	return t
 end
 
+-- The browser borrows the option menu's sound and confirm keys, and falls back
+-- to the title menu's when a screenpack has no [Option Info].
+local function moveSnd()
+	local ui = motif.option_info
+	if ui and ui.cursor and ui.cursor.move and ui.cursor.move.snd then
+		sndPlay(motif.Snd, ui.cursor.move.snd[1], ui.cursor.move.snd[2])
+	end
+end
+
+local function doneSnd()
+	local ui = motif.option_info
+	if ui and ui.cursor and ui.cursor.done and ui.cursor.done.snd then
+		sndPlay(motif.Snd, ui.cursor.done.snd[1], ui.cursor.done.snd[2])
+	else
+		sndPlay(motif.Snd, motif.title_info.cursor.done.snd.default[1], motif.title_info.cursor.done.snd.default[2])
+	end
+end
+
+local function doneKeys()
+	local ui = motif.option_info
+	if ui and ui.menu and ui.menu.done and ui.menu.done.key then
+		return ui.menu.done.key
+	end
+	return motif.title_info.menu.done.key
+end
+
 local function setText(sprite, text)
 	textImgSetText(sprite, text or '')
 	return sprite
@@ -104,7 +130,7 @@ function ms.open()
 
 	local titleFont = motif.title_info.menu.item.font
 	local activeFont = motif.title_info.menu.item.active.font or titleFont
-	local smallFont = motif.option_info and motif.option_info.menu and motif.option_info.menu.item.font or titleFont
+	local smallFont = titleFont
 	local head = makeText(titleFont, HEAD.x, HEAD.y)
 	local hint = makeText(smallFont, HINT.x, HINT.y, 0.5)
 	local choice = makeText(smallFont, CHOICE.x, CHOICE.y, 0.5)
@@ -116,9 +142,13 @@ function ms.open()
 		}
 	end
 
-	local okBg, bg = pcall(bgNew, sffNew(motif.files.spr), gameOption('Config.Motif'), 'musicBG')
-	if not okBg then
-		bg = nil
+	local bg = nil
+	local okSff, systemSff = pcall(sffNew, motif.files and motif.files.spr or 'data/ikemen1/system.sff')
+	if okSff then
+		local okBg, made = pcall(bgNew, systemSff, gameOption('Config.Motif'), 'musicBG')
+		if okBg then
+			bg = made
+		end
 	end
 	local okArt, albumData = pcall(sffNew, 'data/albums.sff')
 	if not okArt then
@@ -172,7 +202,7 @@ function ms.open()
 		if esc() then
 			return false
 		elseif main.f_input({1}, {'$U', 'LS_Y-'}) then
-			sndPlay(motif.Snd, motif.option_info.cursor.move.snd[1], motif.option_info.cursor.move.snd[2])
+			moveSnd()
 			songNo = songNo - 1
 			if songNo < 1 then
 				albumNo = albumNo - 1
@@ -182,7 +212,7 @@ function ms.open()
 				songNo = #albums[albumNo].songs
 			end
 		elseif main.f_input({1}, {'$D', 'LS_Y+'}) then
-			sndPlay(motif.Snd, motif.option_info.cursor.move.snd[1], motif.option_info.cursor.move.snd[2])
+			moveSnd()
 			songNo = songNo + 1
 			if songNo > #album.songs then
 				albumNo = albumNo + 1
@@ -192,21 +222,21 @@ function ms.open()
 				songNo = 1
 			end
 		elseif main.f_input({1}, {'$L', 'LS_X-'}) then
-			sndPlay(motif.Snd, motif.option_info.cursor.move.snd[1], motif.option_info.cursor.move.snd[2])
+			moveSnd()
 			albumNo = albumNo - 1
 			if albumNo < 1 then
 				albumNo = #albums
 			end
 			songNo, scroll = 1, 1
 		elseif main.f_input({1}, {'$R', 'LS_X+'}) then
-			sndPlay(motif.Snd, motif.option_info.cursor.move.snd[1], motif.option_info.cursor.move.snd[2])
+			moveSnd()
 			albumNo = albumNo + 1
 			if albumNo > #albums then
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-		elseif main.f_input({1}, motif.option_info.menu.done.key) then
-			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
+		elseif main.f_input({1}, doneKeys()) then
+			doneSnd()
 			if song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
@@ -227,7 +257,9 @@ if type(motif) == 'table' and type(motif.title_info) == 'table' and type(motif.t
 	pcall(main.f_appendItemname, motif.title_info.menu, '', 'music', 'MUSIC', 'exit')
 end
 
+-- Returns nothing on purpose: the title menu assigns the return value to
+-- main.menu.f and, when that is non-nil, fades the screen out and calls it as a
+-- function. The browser is a screen of its own, so the title menu just stays.
 main.t_itemname.music = function(t, item)
 	ms.open()
-	return true
 end
