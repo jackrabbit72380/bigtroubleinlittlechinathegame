@@ -6,8 +6,9 @@
 ; The "order" param feeds the arcade ladder: arcade.maxmatches in [Options]
 ; lists how many opponents to take from order=1, order=2, and so on.
 ;
-; Fifty lines, in the order the film's cast list runs, so the select wall fills
-; its ten-by-five page exactly: forty-nine fighters and the random box. Names
+; Forty-nine lines, in the order the film's cast list runs, so the select wall
+; holds every fighter on its ten-by-five page: forty-eight of them and the
+; random box, with the fiftieth cell left free. Names
 ; are the characters' - no performer is credited anywhere in the game.
 ;-------------------------------------------------------------------------------
 
@@ -50,7 +51,6 @@ jackburton_rig/jackburton.def, stages/chinatown_alley.def, order=0
 
  ; --- the Lords of Death ----------------------------------------------------
 joe_lucky_rig/joe_lucky.def, stages/chinatown_alley.def, order=2
-junk_rig/junk.def, stages/chinatown_alley.def, order=1
 lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
 jade_rig/jade.def, stages/lopans_throne.def, order=1
 margo_rig/margo.def, stages/chinatown_alley.def, order=2
