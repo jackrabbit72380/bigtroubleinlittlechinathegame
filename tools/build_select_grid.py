@@ -161,9 +161,9 @@ def _plate(accent, dim):
 
     The cells are 128x160, not squares: the grid reads as columns of figures
     rather than a wall of buttons, and the extra 32px is head room for the bust.
-    The empty cell and both player cursors are this same plate, only recoloured,
-    so a selection reads as the cell lighting up instead of a second, glowier
-    shape pasted on top of it.
+    Only an empty cell is this filled plate: a player's cursor is a hollow frame
+    (see cursor_frame), because the plate's dark fill hid the very portrait the
+    cursor was marking.
     """
     w, h = CELL, CELL_H
     r = min(w, h) // 8
@@ -190,8 +190,32 @@ def cell_frame():
 
 
 def cursor_frame(colour):
-    """A player's selection: the cell plate in that player's colour."""
-    return _plate(colour, tuple(int(c * 0.62) for c in colour))
+    """A player's selection: the cell's frame in that player's colour, hollow.
+
+    This was the whole plate, dark fill and all, so the selected cell was the one
+    portrait nobody could see. Only the rules are drawn now - a dark keyline
+    outside for contrast on pale art, the player's colour over it, a thin inner
+    rule, and nothing at all in the middle, so the fighter shows through.
+    """
+    w, h = CELL, CELL_H
+    r = min(w, h) // 8
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    dim = tuple(int(c * 0.60) for c in colour)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=INK + (215,),
+                        width=1)
+    d.rounded_rectangle([1, 1, w - 2, h - 2], radius=max(2, r - 1),
+                        outline=colour + (255,), width=4)
+    d.rounded_rectangle([7, 7, w - 8, h - 8], radius=max(2, r - 4),
+                        outline=dim + (235,), width=2)
+    # corner ticks: the frame still reads when its rules run over bright art
+    tick, inset = 22, 12
+    for x, y, dx, dy in ((inset, inset, 1, 1), (w - 1 - inset, inset, -1, 1),
+                         (inset, h - 1 - inset, 1, -1),
+                         (w - 1 - inset, h - 1 - inset, -1, -1)):
+        d.line([(x, y + dy * tick), (x, y), (x + dx * tick, y)],
+               fill=colour + (255,), width=3)
+    return img
 
 
 # The random slot is a word under the wall, not a portrait: 151,0 is RANDOM set
