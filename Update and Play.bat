@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v31
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v32
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v31
+echo                        Updater v32
 echo.
 echo   ==============================================================
 echo.
@@ -103,6 +103,15 @@ set "NDEL=0"
 set "FOUNDZIP="
 set "DLOK="
 set "GITTRIED="
+set "GITFIXED="
+set "GITQUIET="
+set "GITLOCKED="
+set "GWAIT=0"
+rem The updater's repository is kept here from now on: per user, writable,
+rem and outside the game folder, which is the folder a scanner, a backup
+rem tool or the running game holds open. Temp is only the fallback.
+set "GITSTORE=%LOCALAPPDATA%\BigTroubleInLittleChina\updater-git"
+if not defined LOCALAPPDATA set "GITSTORE=%CACHE%"
 
 rem This window first makes sure it IS the current launcher. Until now the
 rem launcher was not in the six folders the update writes, so a fix to it
@@ -193,11 +202,26 @@ echo            This reads the art already in this folder; it does not download 
 echo            This can take a minute before the bar moves.
 
 :gitinit
-rem Also reached when the updater's own .git has to be rebuilt. That folder
-rem holds no player data - the working tree is the game itself - so throwing it
-rem away costs a re-read of the folders, never a download.
-git init -q . >"%CACHE%\git.log" 2>&1
+rem Also reached when the updater's own repository has to be rebuilt. It holds
+rem no player data - the game folder is the working tree - so throwing it away
+rem costs a re-read of the folders, never a download.
+rem
+rem It is kept in the per-user folder rather than in the game folder. Git
+rem writes to its repository constantly: an index on every diff, a config when
+rem a setting is set. In a game folder those writes are exactly what Windows
+rem refuses with "being used by another process" while the game, an antivirus
+rem or a backup tool has the folder open, and every one of those failures used
+rem to end in a 190 MB download. The game folder is only the working tree now,
+rem so the only thing ever written into it is a file whose content changed.
+set "GIT_DIR="
+set "GIT_WORK_TREE="
+if not exist "%GITSTORE%" mkdir "%GITSTORE%" 2>nul
+if exist "%GITSTORE%\.git\HEAD" goto gitinit_have
+git init -q "%GITSTORE%" >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
+:gitinit_have
+set "GIT_DIR=%GITSTORE%\.git"
+set "GIT_WORK_TREE=%~dp0"
 git config --local ikemen.updater 1 >>"%CACHE%\git.log" 2>&1
 git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
 git remote add origin "%GITURL%" >>"%CACHE%\git.log" 2>&1
@@ -207,13 +231,25 @@ git config --local core.longpaths true >>"%CACHE%\git.log" 2>&1
 git config --local http.version HTTP/1.1 >>"%CACHE%\git.log" 2>&1
 goto gitfetch
 
+:gitmigrate
+rem An older launcher kept its repository in the game folder. That is the copy
+rem a scanner, a backup tool or the game itself holds open, and a file held
+rem open is what turned an update into "The process cannot access the file
+rem because it is being used by another process" and then into the 190 MB
+rem archive. The repository lives outside the game folder now, so the one here
+rem is removed; nothing in it is player-visible, and if it cannot be removed it
+rem is simply ignored, because every git command below names the new one.
+echo            Moving the updater's git data out of the game folder.
+rd /s /q "%~dp0.git" >nul 2>&1
+goto gitinit
+
 :githere
 rem A folder somebody cloned themselves is their checkout: this launcher
 rem will not fetch into it, check anything out, or overwrite uncommitted
 rem work. It only says so and starts the game.
 set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
-if "%MINE%"=="1" goto gitfetch
+if "%MINE%"=="1" goto gitmigrate
 git rev-parse --verify -q HEAD >nul 2>&1
 if errorlevel 1 goto gitfetch
 echo            This folder is your own git checkout - left untouched.
@@ -243,9 +279,9 @@ set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
 set "HAVE="
 if exist "%CACHE%\applied.txt" set /p HAVE=<"%CACHE%\applied.txt"
-call :sayupdate "%NEWSHORT%" "%HAVE%"
-call :choose
-if errorlevel 1 goto quit
+if not defined GITQUIET call :gitchoose "%NEWSHORT%" "%HAVE%"
+if not defined GITQUIET if errorlevel 1 goto quit
+call :gamelock
 git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 echo            Checking which files in this folder differ.
@@ -298,29 +334,131 @@ rem here; the folder itself is the working tree now, so it is dead weight
 if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 goto copied
 
+:gitchoose
+rem %1 = main's short commit, %2 = the one recorded for this folder
+call :sayupdate "%~1" "%~2"
+call :choose
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:gitwhy
+rem Reads the log git just wrote and decides whether the failure was a file
+rem another process holds. Those are worth retrying and are never worth a
+rem download: the archive takes the same locks and fails the same way.
+set "GITLOCKED="
+if not exist "%CACHE%\git.log" exit /b 0
+for %%w in ("being used by another process" "Access is denied" "Permission denied" "index.lock" "could not lock config file" "unable to create file") do (
+  "%FINDSTR%" /i /c:%%w "%CACHE%\git.log" >nul 2>&1
+  if not errorlevel 1 set "GITLOCKED=1"
+)
+exit /b 0
+
+:gitunlock
+rem Lock files are markers, never data. One left by an interrupted git, or one
+rem a scanner is still holding, makes every later write fail with the same
+rem message; clearing them is the whole repair.
+if not exist "%GITSTORE%" exit /b 0
+del /q "%GITSTORE%\.git\index.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\HEAD.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\config.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\shallow.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\FETCH_HEAD.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\packed-refs.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\gc.pid" >nul 2>&1
+del /q "%GITSTORE%\.git\refs\heads\main.lock" >nul 2>&1
+del /q "%GITSTORE%\.git\refs\remotes\origin\main.lock" >nul 2>&1
+exit /b 0
+
+:gamelock
+rem The engine keeps its data files open while it runs and Windows will not let
+rem git replace one. Updating under a running game fails with "being used by
+rem another process", so this waits for it to close rather than writing into a
+rem folder that cannot be written.
+if not defined EXE exit /b 0
+if not defined TASKLIST exit /b 0
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+if errorlevel 1 exit /b 0
+echo.
+echo            The game is still running. Its files are open, so they cannot
+echo            be replaced. Close the game - this window carries on by itself.
+set /a GWAIT=0
+:gamelock_wait
+call :sleep 3
+set /a GWAIT+=3
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+if errorlevel 1 (
+  echo            Closed - carrying on.
+  exit /b 0
+)
+if %GWAIT% LSS 60 goto gamelock_wait
+echo            Still open after %GWAIT% seconds - carrying on anyway.
+exit /b 0
+
 :gitfail
-rem A half-written .git - an interrupted run, a full disk, settings an older
-rem launcher left behind - makes every git command in this folder fail, and the
-rem update then never applied here at all: it fell through to the 190 MB
-rem archive on every single launch. It is rebuilt once and tried again first.
+rem A failed git step used to mean two things at once: rebuild .git from
+rem scratch, and, if that failed too, download the whole 190 MB. Neither fits
+rem the failure that actually happens - a file another process is holding,
+rem the game still open, a second updater window, a scanner reading the folder
+rem - because rebuilding does not release that handle and a download cannot
+rem take it either. So the cheap repair comes first, the rebuild second, and a
+rem lock is reported instead of being spent on an archive that would fail the
+rem same way.
+call :gitwhy
+if not defined GITFIXED goto gitfail_fix
 if not defined GITTRIED goto gitfail_rebuild
+if defined GITLOCKED goto gitlocked
 goto gitfail_final
+
+:gitfail_fix
+set "GITFIXED=1"
+set "GITQUIET=1"
+echo.
+echo            A file git needs was in use. Clearing the lock files it leaves
+echo            behind and trying that step again - this costs a few hundred
+echo            KB, not the archive.
+call :gitunlock
+call :sleep 3
+goto gitfetch
+
 :gitfail_rebuild
 set "GITTRIED=1"
 set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
 if not "%MINE%"=="1" goto gitfail_final
 echo.
-echo            The updater's git data in this folder is not usable, so it is
-echo            being rebuilt from scratch and the update tried once more.
-rd /s /q "%~dp0.git" >nul 2>&1
+echo            The updater's git data is not usable, so it is rebuilt and the
+echo            update tried once more. That folder holds no player data, so
+echo            this costs a re-read of the folders, never a download.
+call :gitunlock
+if exist "%GITSTORE%" rd /s /q "%GITSTORE%" >nul 2>&1
 goto gitinit
+
+:gitlocked
+echo.
+echo            Git could not write a file because another program has it open.
+echo.
+echo            Nothing has been downloaded for this: the archive takes the
+echo            same locks and would fail the same way, which is why the whole
+echo            190 MB used to be spent here and change nothing.
+echo.
+echo            Close these and run this launcher again:
+echo              - the game, if it is still open
+echo              - any other copy of this updater
+echo              - an editor, git window or backup tool in this folder
+echo            An antivirus can hold a file for a few seconds after writing
+echo            it, so running this a second time often just works.
+echo.
+pause
+exit 1
+
 :gitfail_final
 echo.
 echo            Git could not finish this update.
 echo            Its reason is in git's own lines just above this - no
 echo            connection, a proxy, or a blocked github.com are the usual ones.
 if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
+if exist "%CACHE%\git.log" if not defined POWERSHELL "%FINDSTR%" /i /c:"fatal" /c:"error:" "%CACHE%\git.log" >nul 2>&1
+if exist "%CACHE%\git.log" if not defined POWERSHELL if not errorlevel 1 type "%CACHE%\git.log"
 set "GITFAILED=1"
 echo.
 echo            Falling back to step 2, which downloads the whole 190 MB again.
@@ -507,6 +645,7 @@ goto downloadfailed
 rem ---- unpack and copy ---------------------------------------------------
 :havezip
 echo.
+call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
