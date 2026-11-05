@@ -400,27 +400,27 @@ def build_bigbars(by_key, sil):
     return out
 
 
-def build_meters(by_key, sil):
-    def axis(key, fallback):
-        sp = by_key.get(key)
-        return sp["axis"] if sp else fallback
+def build_meters(_by_key, sil):
+    """The belly band, at the size this tool says it is.
 
-    def size(key, fallback):
-        sp = by_key.get(key)
-        return (sp["w"], sp["h"]) if sp else fallback
-
+    The sprite sizes used to be taken from whatever was already in the file, so
+    once the retired concept-dragon tool had written 460x76 into these keys this
+    band was drawn on that canvas instead of on its own 20px one - a pale slab
+    across the dragon's whole underside. The geometry below is the definition;
+    nothing here is inherited.
+    """
     out = {}
-    out[(40, 0)] = (_band(sil, *size((40, 0), (METER_W + 4, BAND)), RED, "belly",
-                          False, BAR_X1, BAR_Y),
-                    axis((40, 0), (METER_W + 4, 0)))
-    out[(41, 0)] = (Image.new("RGBA", size((41, 0), (METER_W + 4, BAND)),
-                              (0, 0, 0, 0)), axis((41, 0), (METER_W + 4, 0)))
-    out[(43, 0)] = (_band(sil, *size((43, 0), (METER_W, BAND)), RED, "belly",
-                          True, BAR_X1 - 4, BAR_Y),
-                    axis((43, 0), (METER_W, 0)))
-    out[(44, 0)] = (_band(sil, *size((44, 0), (METER_W, BAND)), RED, "belly",
-                          True, BAR_X1 - 4, BAR_Y, label="AUDACITY"),
-                    axis((44, 0), (METER_W, 0)))
+    out[(40, 0)] = (_band(sil, METER_W + 4, BAND, RED, "belly", False,
+                          BAR_X1, BAR_Y),
+                    (METER_W + 4, 0))
+    out[(41, 0)] = (Image.new("RGBA", (METER_W + 4, BAND), (0, 0, 0, 0)),
+                    (METER_W + 4, 0))
+    out[(43, 0)] = (_band(sil, METER_W, BAND, RED, "belly", True,
+                          BAR_X1 - 4, BAR_Y),
+                    (METER_W, 0))
+    out[(44, 0)] = (_band(sil, METER_W, BAND, RED, "belly", True,
+                          BAR_X1 - 4, BAR_Y, label="AUDACITY"),
+                    (METER_W, 0))
     return out
 
 
@@ -513,6 +513,11 @@ def patch_def():
                          "front7000", "front8000", "front9000", "front10000",
                          "frontMax"):
                 body = _set(body, "%s.%s.palfx.add" % (side, name), P2_TINT)
+    # The fill runs along the belly, so its travel is METER_W - it was left at
+    # the concept dragon's 456, three times the belly, and a full bar would have
+    # run off the end of the art into empty space.
+    body = _set(body, "p1.range.x", "-4,-%d" % METER_W)
+    body = _set(body, "p2.range.x", "4,%d" % METER_W)
     body = re.sub(r"(?m)^(\s*p[12]\.counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
     lines[s:e] = body.split("\n")
