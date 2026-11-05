@@ -391,28 +391,12 @@ SECTION_LAYOUT = {
         ("p2.teammenu.item.cursor.anim", "-1"),
         ("p2.teammenu.item.cursor.spr", "180,0"),
     ),
-    "VS Screen": (
-        # The motif's own keys were converted from the 1280-wide original (the
-        # windows run to 1920 and p1.offset is 444*1.5); p2's name was missed and
-        # still ended at 1260, so on a 1080p frame "Lion Lotus Shinko" printed
-        # across the VS mark in the middle instead of under P2's portrait. P1's
-        # name sits 20px from the left edge, so P2's ends 20px from the right.
-        ("p2.name.offset", "1900, 615"),
-        # The stage preview was a 514x164 strip: the motif clipped the stage's
-        # 9000,1 art to the small panel behind it, so only a letterboxed band of
-        # the painting showed. It is a full 16:9 thumbnail now, sized off the art
-        # itself (stages/stage0.sff 9000,1 = 1215x398, axis 0,0) and parked
-        # clear of the stage name at y~1020, with the old panel moved off screen.
-        ("stage.portrait.scale", "0.5267, 0.5267"),
-        ("stage.portrait.offset", "-320.0000, -405.0000"),
-        ("stage.portrait.window", "640, 630, 1280, 990"),
-        ("stage.portrait.bg.offset", "-4000, -4000"),
-        # The placeholder card and the loading portrait share the stage's slot,
-        # so they follow the preview into the new window instead of clipping to
-        # the old strip.
-        ("stage.portrait.random.window", "640, 630, 1280, 990"),
-        ("stage.portrait.loading.window", "640, 630, 1280, 990"),
-    ),
+    # [VS Screen] belongs to build_select_ui.py (VS_TEXT / VS_PLATE), which
+    # runs after this tool. This block was a leftover copy of an earlier fix
+    # and, being written later, quietly won: it put P2's name back at y=615
+    # (across the VS mark instead of on the fighters' row) and shrank the
+    # stage preview back to the old 0.5267 panel inside a 640px window. One
+    # owner per section from now on.
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
         ("menu.boxcursor.coords", "-15, 0, 462, 41"),
