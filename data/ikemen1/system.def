@@ -1327,11 +1327,11 @@ loading.storyboard =
 ; Loading
 stage.portrait.random.offset = -260, -207
 stage.portrait.random.scale = 1, 1
-stage.portrait.random.window = 703, 831, 1217, 995
+stage.portrait.random.window = 640, 630, 1280, 990
 stage.portrait.loading.anim = -1
 stage.portrait.loading.offset = -260, -207
 stage.portrait.loading.scale = 1, 1
-stage.portrait.loading.window = 703, 831, 1217, 995
+stage.portrait.loading.window = 640, 630, 1280, 990
 [Begin Action 600]
 600,0, 0, 0, 3
 600,1, 0, 0, 3
