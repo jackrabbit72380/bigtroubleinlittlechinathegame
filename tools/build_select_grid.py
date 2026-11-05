@@ -461,12 +461,18 @@ KEYS = (
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
     ("p1.face2.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
-    ("p1.face2.scale", "1,1"),
+    # Painted at twice the panel size (build_portraits.SIDE_RES) and drawn
+    # at half scale: the panel is 380x500 on screen either way, but the art
+    # is no longer a 190x250 sheet stretched across it.
+    ("p1.face2.scale", "0.5,0.5"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
     ("p2.face2.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
-    ("p2.face2.scale", "1,1"),
+    # Painted at twice the panel size (build_portraits.SIDE_RES) and drawn
+    # at half scale: the panel is 380x500 on screen either way, but the art
+    # is no longer a 190x250 sheet stretched across it.
+    ("p2.face2.scale", "0.5,0.5"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are font 11 at scale 1 - the same face
     # and the same scale as VERSUS and the stage caption, so every word on the

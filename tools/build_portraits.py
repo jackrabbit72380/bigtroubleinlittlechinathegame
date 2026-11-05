@@ -52,7 +52,11 @@ BUST_SLICE = 0.52          # how much of the standing figure is the bust
 # column is at most 426px wide before it meets the grid, so the art is painted
 # to the widest box that still leaves the panel its air - 380x500 - and the
 # figure inside it is contained, not cropped.
-SIDE = (380, 500)          # the standing art beside the grid
+SIDE = (380, 500)          # the standing art beside the grid, on screen
+# Painted at twice that and drawn at p1/p2.face2.scale 0.5 in
+# build_select_grid.py, so the 380x500 panel is 1:1 instead of a 190x250
+# sheet stretched up.
+SIDE_RES = 2
 BIG = (360, 420)
 AXIS = (0, 0)
 
@@ -246,7 +250,8 @@ def patch_character(path):
     cell_size, big_size, side_size = portrait_sizes(path)
     cell = cell_art(source, (cell_size[0] * CELL_RES,
                            cell_size[1] * CELL_RES))
-    side = fit_whole(source, side_size)
+    side = fit_whole(source, (side_size[0] * SIDE_RES,
+                              side_size[1] * SIDE_RES))
     out = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
             "format": sp["format"], "depth": sp["depth"], "w": sp["w"],
             "h": sp["h"], "axis": sp["axis"], "pal": sp["pal"],
