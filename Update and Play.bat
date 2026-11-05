@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v19
+rem  BIG TROUBLE IN LITTLE CHINA - updater v20
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v19
+echo                        updater v20
 echo.
 echo   ==============================================================
 echo.
@@ -185,6 +185,15 @@ goto launch
 :gitfetch
 git %GITCA% -c core.longpaths=true fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
+rem What the fetch just found, before the folder is read or anything is
+rem written: one sentence and a Continue/Exit choice.
+set "NEWSHORT="
+for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
+set "HAVE="
+if exist "%CACHE%\applied.txt" set /p HAVE=<"%CACHE%\applied.txt"
+call :sayupdate "%NEWSHORT%" "%HAVE%"
+call :choose
+if errorlevel 1 goto quit
 git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 rem The index now holds main and the working tree still holds this folder's
@@ -274,20 +283,37 @@ if not exist "%CACHE%\applied.txt" goto download
 if not exist "%~dp0data\fight.def" goto download
 set "APPLIED="
 set /p APPLIED=<"%CACHE%\applied.txt"
-if not defined APPLIED goto download
+if not defined APPLIED goto probe_first
 call :atoms
 if not defined RSHA7 goto probe_api
-if not "%RSHA7%"=="%APPLIED%" goto download
+if not "%RSHA7%"=="%APPLIED%" goto probe_offer
 echo   files  : main @ %APPLIED%
-echo            Main has not moved - nothing to download.
+call :sayupdate "%RSHA7%" "%APPLIED%"
+call :choose
+if errorlevel 1 goto quit
 goto launch
+
+:probe_offer
+call :sayupdate "%RSHA7%" "%APPLIED%"
+call :choose
+if errorlevel 1 goto quit
+goto download
+
+:probe_first
+rem nothing recorded for this folder yet, so there is no build to compare with
+set "APPLIED="
+call :atoms
+call :sayupdate "%RSHA7%" ""
+call :choose
+if errorlevel 1 goto quit
+goto download
 
 :probe_api
 rem Fallback only. The API answers the same question but counts against an
 rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
-if not defined RSHA7 goto download
-if not "%RSHA7%"=="%APPLIED%" goto download
+if not defined RSHA7 goto probe_offer
+if not "%RSHA7%"=="%APPLIED%" goto probe_offer
 echo   files  : main @ %APPLIED%
 echo            Main has not moved - nothing to download.
 goto launch
@@ -711,6 +737,49 @@ if errorlevel 1 exit /b 0
 set "VT=1"
 exit /b 0
 
+:sayupdate
+rem %1 = main's short commit (may be empty when the check could not ask),
+rem %2 = the commit this folder last applied (may be empty). Says plainly
+rem whether there is anything to fetch, so Continue/Exit is an informed choice.
+echo   ==============================================================
+echo.
+if "%~2"=="" goto sayupdate_first
+if "%~1"=="" goto sayupdate_unknown
+if "%~1"=="%~2" goto sayupdate_same
+echo   Update available : main @ %~1
+echo   This folder has  : %~2
+goto sayupdate_done
+:sayupdate_same
+echo   Up to date       : main @ %~1 is already in this folder.
+echo   Nothing to download.
+goto sayupdate_done
+:sayupdate_first
+if "%~1"=="" echo   Update available : could not read main's version.
+if not "%~1"=="" echo   Update available : main @ %~1
+echo   This folder has  : nothing recorded yet - the first update is the big one.
+goto sayupdate_done
+:sayupdate_unknown
+echo   Update available : main's version could not be read, so this run would
+echo                      fetch the whole archive (%APPLIED% is what is here).
+:sayupdate_done
+echo.
+exit /b 0
+
+:choose
+rem Continue or leave: one keypress, no Enter. choice.exe ships with every
+rem Windows since Vista; where it is missing, pause keeps the window open
+rem instead of running past the question.
+if defined ASKED exit /b 0
+set "ASKED=1"
+if not exist "%SYS%\choice.exe" goto choose_pause
+"%SYS%\choice.exe" /c ce /n /m "   C = continue    E = exit   "
+echo.
+if errorlevel 2 exit /b 1
+exit /b 0
+:choose_pause
+pause
+exit /b 0
+
 :clock
 rem %1 = seconds, %2 = the variable to leave the time in. Hours once it runs
 rem past one, so a slow line reads 2h 4m instead of 124:33.
@@ -776,4 +845,10 @@ if %CANDSZ% LSS 20971520 exit /b 0
 if "%CAND%"=="%PREVCAND%" if "%CANDSZ%"=="%PREVSZ%" set "FOUNDZIP=%CAND%"
 set "PREVCAND=%CAND%"
 set "PREVSZ=%CANDSZ%"
+exit /b 0
+
+:quit
+rem Reached when E is pressed: nothing has been fetched, copied or deleted.
+echo   Nothing was changed. Closing.
+call :sleep 3
 exit /b 0

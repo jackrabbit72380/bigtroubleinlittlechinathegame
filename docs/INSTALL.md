@@ -85,6 +85,12 @@ archive is opened in place and only the entries that differ are written into the
 folder, so an update no longer expands and recopies the whole game. Nothing to
 by hand.
 
+Before it fetches anything it says what it found - `Update available : main @
+e14800a` with `This folder has : 5d796a3` underneath, or `Up to date : main @
+e14800a is already in this folder.` - and waits for one keypress. `C` carries
+on, `E` closes the window with nothing downloaded, copied or deleted. Where
+the check cannot read main, it says so instead of guessing.
+
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
 
