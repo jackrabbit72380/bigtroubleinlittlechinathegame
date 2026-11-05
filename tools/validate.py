@@ -46,6 +46,20 @@ def _grid_cell():
 
 
 CELL, CELL_H = _grid_cell()
+
+
+def _grid_shape():
+    """COLS and ROWS, read from the generator that lays the wall out."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "build_select_grid.py"), encoding="utf-8") as f:
+        src = f.read()
+    m = re.search(r"(?m)^COLS,\s*ROWS\s*=\s*(\d+),\s*(\d+)", src)
+    if m is None:
+        return 10, 5
+    return int(m.group(1)), int(m.group(2))
+
+
+COLS, ROWS = _grid_shape()
 CELL_SIZE, BIG_SIZE, SIDE_SIZE = _portrait_sizes()
 MOTIF_WIDTH = int(re.search(r"^\s*localcoord\s*=\s*(\d+)",
                   open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
@@ -255,10 +269,10 @@ def check_select_screen(chars):
             key, value = line.split("=", 1)
             opts[key.strip().lower()] = value.split(";")[0].strip()
 
-    if opts.get("rows") != "5" or opts.get("columns") != "10":
-        err("select screen: grid is %s rows by %s columns, expected 5 by 10 "
-            "(50 cells for the whole cast plus the random box)"
-            % (opts.get("rows"), opts.get("columns")))
+    if opts.get("rows") != str(ROWS) or opts.get("columns") != str(COLS):
+        err("select screen: grid is %s rows by %s columns, expected %d by %d "
+            "(%d cells for the whole cast plus the random box)"
+            % (opts.get("rows"), opts.get("columns"), ROWS, COLS, ROWS * COLS))
     if opts.get("cell.size") != "%d,%d" % (CELL, CELL_H):
         err("select screen: cell.size is %r, expected %d,%d"
             % (opts.get("cell.size"), CELL, CELL_H))

@@ -158,7 +158,7 @@ NAME_FONT = 11                           # Body, a 13px cell: the face the
                                          # engine sets VERSUS in
 
 
-def _card(bottom_y, text_y=NAME_ROW_Y):
+def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True):
     """The stage card, and the point its name is drawn from.
 
     Everything the .def measures from ``stage.pos`` hangs off the name, and the
@@ -167,6 +167,20 @@ def _card(bottom_y, text_y=NAME_ROW_Y):
     the same way. The window is inset inside the plate's 2px gold rule, or the
     picture paints over the frame and the card loses its outline.
     """
+    if not portrait:
+        # The character-select screen shows no stage card: that space belongs to
+        # the portrait grid now, and the stage is chosen on a screen of its own
+        # once both fighters are picked. The keys are still written, empty, so a
+        # build over an older system.def cannot leave the old card on screen.
+        return (
+            ("stage.portrait.spr", "-1"),
+            ("stage.portrait.window", "0, 0, 0, 0"),
+            ("stage.portrait.bg.offset", "-4000, -4000"),
+            ("stage.portrait.random.offset", "-4000, -4000"),
+            ("stage.portrait.loading.anim", "-1"),
+            ("stage.portrait.loading.offset", "-4000, -4000"),
+            ("stage.pos", "%d, %d" % (CARD_CX, text_y)),
+        )
     left = CARD_CX - CARD_W // 2
     top = bottom_y - ART_H
     scale = CARD_W / float(STAGE_ART[0]) * CARD_FILL
@@ -221,7 +235,7 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(1020)          # [Select Info]
+STAGE_PORTRAIT = _card(1020, portrait=False)   # [Select Info]: no preview card
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate
