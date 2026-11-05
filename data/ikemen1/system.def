@@ -439,7 +439,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0, 0
 portrait.loading.scale = .25,.25
 title.offset = 960, 3
-title.font = 11, 0, 0, 255, 228, 140
+title.font = 10,0,0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -614,25 +614,25 @@ p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 75, 1035
-p1.name.font = 11, 0, 0, 255, 228, 140
+p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1845, 1035
-p2.name.font = 11, 0, -1, 255, 170, 96
+p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.spacing = -22.5, 37.5
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 960, 1035
 stage.font = 11, 0, 0, 236, 200, 120
-stage.active.font = 11, 0, 0, 255, 228, 140
-stage.active2.font = 11, 0, 0, 176, 126, 44
-stage.done.font = 11, 0, 0, 176, 126, 44
+stage.active.font = 11, 0, 0, 236, 200, 120
+stage.active2.font = 11, 0, 0, 236, 200, 120
+stage.done.font = 11, 0, 0, 236, 200, 120
 stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-stage.portrait.spr = 9000,1
+stage.portrait.spr = -1
 stage.portrait.offset = 0, -100
 stage.portrait.scale = 0.4280, 0.4280
 stage.portrait.bg.anim = -1
@@ -840,7 +840,7 @@ stage.portrait.random.window = 703, 853, 1217, 1017
 stage.portrait.loading.window = 703, 853, 1217, 1017
 stage.text = %s
 stage.active.text = %s
-stage.scale = 1, 1
+stage.scale = 1.5, 1.5
 stage.active.switchtime = 300000
 searchemptyboxesdown = 1
 searchemptyboxesup = 1
@@ -1067,8 +1067,8 @@ match.scale = 2.25, 2.25
 
 ;Big portraits
 p1.num = 4
-p1.anim = 0
-;p1.spr = 9000, 1
+p1.anim = -1
+p1.spr = 9000, 1
 p1.offset = 268, 180
 p1.facing = 1
 p1.scale = 1.5, 1.5
@@ -1078,8 +1078,8 @@ p1.padding = 1
 p1.applypal = 1
 
 p2.num = 4
-p2.anim = 0
-;p2.spr = 9000, 1
+p2.anim = -1
+p2.spr = 9000, 1
 p2.offset = 1652, 180
 p2.facing = -1
 p2.scale = 1.5, 1.5
@@ -1094,11 +1094,11 @@ p2.done.anim = 181
 ;Names
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20, 1035
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 10, 0, 1, 255, 228, 140
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
-p2.name.offset = 1900, 615
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.offset = 1900, 1035
+p2.name.font = 10, 0, -1, 255, 170, 96
 p2.name.spacing = -22.5, 37.5
 
 orderselect.enabled = 1
@@ -1272,16 +1272,16 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 960, 1035
 stage.text = %s
 stage.offset = 0, -15
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.scale = 1.5, 1.5
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = -320.0000, -405.0000
-stage.portrait.scale = 0.5267, 0.5267
+stage.portrait.offset = 0, -184
+stage.portrait.scale = 0.7407, 0.7407
 stage.portrait.bg.spr = 112,0
-stage.portrait.bg.offset = -4000, -4000
-stage.portrait.bg.scale = 1.0, 1.0
-stage.portrait.window = 640, 630, 1280, 990
+stage.portrait.bg.offset = -450, -332
+stage.portrait.bg.scale = 1.7308, 1.7308
+stage.portrait.window = 513, 706, 1407, 995
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
@@ -1316,13 +1316,13 @@ loading.wait.scale = 1.5, 1.5
 loading.storyboard = 
 
 ; Loading
-stage.portrait.random.offset = -260, -207
+stage.portrait.random.offset = -450, -332
 stage.portrait.random.scale = 1, 1
-stage.portrait.random.window = 640, 630, 1280, 990
+stage.portrait.random.window = 513, 706, 1407, 995
 stage.portrait.loading.anim = -1
-stage.portrait.loading.offset = -260, -207
+stage.portrait.loading.offset = -450, -332
 stage.portrait.loading.scale = 1, 1
-stage.portrait.loading.window = 640, 630, 1280, 990
+stage.portrait.loading.window = 513, 706, 1407, 995
 [Begin Action 600]
 600,0, 0, 0, 3
 600,1, 0, 0, 3

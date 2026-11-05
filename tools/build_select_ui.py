@@ -158,7 +158,7 @@ NAME_FONT = 11                           # Body, a 13px cell: the face the
                                          # engine sets VERSUS in
 
 
-def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True):
+def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
     """The stage card, and the point its name is drawn from.
 
     Everything the .def measures from ``stage.pos`` hangs off the name, and the
@@ -181,19 +181,23 @@ def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True):
             ("stage.portrait.loading.offset", "-4000, -4000"),
             ("stage.pos", "%d, %d" % (CARD_CX, text_y)),
         )
-    left = CARD_CX - CARD_W // 2
-    top = bottom_y - ART_H
-    scale = CARD_W / float(STAGE_ART[0]) * CARD_FILL
-    art_centre = top + ART_H / 2.0
-    window = "%d, %d, %d, %d" % (left + 3, top + 3, left + CARD_W - 3, bottom_y - 3)
+    card_h = int(round(card_w * STAGE_ART[1] / float(STAGE_ART[0])))
+    left = CARD_CX - card_w // 2
+    top = bottom_y - card_h
+    scale = card_w / float(STAGE_ART[0]) * CARD_FILL
+    art_centre = top + card_h / 2.0
+    window = "%d, %d, %d, %d" % (left + 3, top + 3, left + card_w - 3, bottom_y - 3)
     corner = "%d, %d" % (left - CARD_CX, top - text_y)
+    # the plate behind the picture is drawn at its own size, so it has to grow
+    # with the card or a wide card shows a small frame around a big photo
+    plate_scale = card_w / float(CARD_W)
     return (
         ("stage.portrait.spr", "9000,1"),
         ("stage.portrait.offset", "0, %d" % int(round(art_centre - text_y))),
         ("stage.portrait.scale", "%.4f, %.4f" % (scale, scale)),
         ("stage.portrait.window", window),
         ("stage.portrait.bg.offset", corner),
-        ("stage.portrait.bg.scale", "1.0, 1.0"),
+        ("stage.portrait.bg.scale", "%.4f, %.4f" % (plate_scale, plate_scale)),
         # the "random" and "loading" placeholders are drawn over the same
         # picture area, so they take the plate's corner and its clip
         ("stage.portrait.random.offset", corner),
@@ -242,7 +246,12 @@ SELECT_PLATE = STAGE_PORTRAIT + (
     ("stage.portrait.bg.anim", "-1"),
     ("stage.portrait.bg.spr", "110,0"),
 ) + SELECT_TEXT
-VS_PLATE = _card(998) + (
+# The VS screen is the one screen the stage preview is actually for, and 520px
+# on a 1920 frame read as a thumbnail - "the preview images are too small". 900
+# gives a 900x295 picture whose top edge (703) clears the VS mark and whose
+# bottom (998) leaves the caption row at 1035 to the names.
+VS_CARD_W = 900
+VS_PLATE = _card(998, card_w=VS_CARD_W) + (
     ("stage.portrait.bg.spr", "112,0"),
 )
 
@@ -275,6 +284,15 @@ VS_TEXT = (
     ("p2.name.offset", f"1900, {NAME_ROW_Y}"),
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
+    # The motif ships "p1.anim = 0" with "p1.spr" commented out, which asks each
+    # character for its own VS animation. Ours have none, so the screen came up
+    # with two names, the stage card and no fighters at all. The layout above is
+    # measured against the 360x420 portrait art in 9000,1, so both sides are
+    # pinned to it: anim -1 turns the character anim off and lets spr through.
+    ("p1.anim", "-1"),
+    ("p1.spr", "9000, 1"),
+    ("p2.anim", "-1"),
+    ("p2.spr", "9000, 1"),
     # the VS screen's "Match %i" caption: same gold as every other caption
     ("match.font", "2, 0, 0, " + NAME_GOLD),
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
