@@ -35,7 +35,7 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1280, 720)
-# 10x5 = 50 cells: the forty-nine fighters in data/select.def plus the random
+# 10x5 = 50 cells: the forty-eight fighters in data/select.def plus the random
 # box, which is the whole cast on one page.
 #
 # The roster outgrew nine across when the rest of the film's cast joined it, so

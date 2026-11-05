@@ -93,7 +93,7 @@ def _torso_blank(w=104, h=110):
 
 
 def _jacket(g):
-    """Open jacket over a tee, hem at the hip. Lords, minions, Junk."""
+    """Open jacket over a tee, hem at the hip. Lords, minions."""
     W, H = 104, 110
     img = char_rig._shade(_torso_blank(W, H), g["cloth"], g["cloth_lit"], g["cloth_dk"])
     d = ImageDraw.Draw(img)
@@ -387,8 +387,6 @@ MEMBERS = [
     dict(id="security2", name="Wing Kong Security Guard 2", look="uniform",
          style="cap", weapon="baton", build=0.98, pal="guard"),
     # --- civilians ---------------------------------------------------------
-    dict(id="junk", name="Junk", look="street", style="long",
-         weapon="none", build=1.00, pal="denim"),
     dict(id="uncle_chu", name="Uncle Chu", look="coat", style="topknot",
          weapon="none", build=0.96, pal="sand"),
     dict(id="tara", name="Tara", look="dress", style="long",
