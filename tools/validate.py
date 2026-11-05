@@ -20,6 +20,23 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import sff
 
+def _grid_cell():
+    """The roster cell size, read from the grid generator.
+
+    It was typed in here as 74 and stayed 74 when the grid was repainted, so a
+    cell change failed validation on every fighter instead of checking anything.
+    """
+    import os, re
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "build_select_grid.py"), encoding="utf-8") as f:
+        m = re.search(r"^CELL = (\d+)$", f.read(), re.M)
+    return int(m.group(1))
+
+
+CELL = _grid_cell()
+
+
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 errors = []
 notes = []
@@ -225,8 +242,9 @@ def check_select_screen(chars):
         err("select screen: grid is %s rows by %s columns, expected 5 by 10 "
             "(50 cells for the whole cast plus the random box)"
             % (opts.get("rows"), opts.get("columns")))
-    if opts.get("cell.size") != "74,74":
-        err("select screen: cell.size is %r, expected 74,74" % opts.get("cell.size"))
+    if opts.get("cell.size") != "%d,%d" % (CELL, CELL):
+        err("select screen: cell.size is %r, expected %d,%d"
+            % (opts.get("cell.size"), CELL, CELL))
     # Every roster line must land on the one page, or fighters exist but cannot
     # be picked.
     try:
@@ -319,7 +337,7 @@ def check_select_screen(chars):
                              re.M | re.I)
         localcoord = int(lc_match.group(1)) if lc_match else 320
         factor = 1280.0 / localcoord      # motif [Info] localcoord width
-        want = {(9000, 0): (74, 74), (9000, 1): (120, 140),
+        want = {(9000, 0): (CELL, CELL), (9000, 1): (120, 140),
                 (9000, 2): (214, 600)}
         for key, size in want.items():
             hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
@@ -332,7 +350,7 @@ def check_select_screen(chars):
                     "expected %dx%d"
                     % (name, key[0], key[1], round(drawn[0]), round(drawn[1]),
                        localcoord, size[0], size[1]))
-    notes.append("select screen: 10x5 portrait grid, 74px cells, framed sides; "
+    notes.append("select screen: 10x5 portrait grid, " + str(CELL) + "px cells, framed sides; "
                  "every fighter carries 9000,0 cell art, 9000,1 VS art and "
                  "9000,2 side art")
 
