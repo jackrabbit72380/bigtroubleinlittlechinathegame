@@ -38,6 +38,41 @@
         "file": "sound/Big Trouble in Little China OST Game Version/06 - Escape From Wing Kong.ogg",
         "Title": "06 - Escape From Wing Kong",
         "Order": 6
+      },
+      "07 - Hide": {
+        "file": "sound/Big Trouble in Little China OST Game Version/07 - Hide.ogg",
+        "Title": "07 - Hide",
+        "Order": 7
+      },
+      "08 - The Great Arcade": {
+        "file": "sound/Big Trouble in Little China OST Game Version/08 - The Great Arcade.ogg",
+        "Title": "08 - The Great Arcade",
+        "Order": 8
+      },
+      "09 - (BONUS) - Overture - Written By Jason Flanagan": {
+        "file": "sound/Big Trouble in Little China OST Game Version/09 - (BONUS) - Overture - Written By Jason Flanagan.ogg",
+        "Title": "09 - (BONUS) - Overture - Written By Jason Flanagan",
+        "Order": 9
+      },
+      "10 - Wing Kong Exchange": {
+        "file": "sound/Big Trouble in Little China OST Game Version/10 - Wing Kong Exchange.ogg",
+        "Title": "10 - Wing Kong Exchange",
+        "Order": 10
+      },
+      "11 - The Final Escape": {
+        "file": "sound/Big Trouble in Little China OST Game Version/11 - The Final Escape.ogg",
+        "Title": "11 - The Final Escape",
+        "Order": 11
+      },
+      "11 - The Final Escape + 12 - Lopan's Wedding Arrival": {
+        "file": "sound/Big Trouble in Little China OST Game Version/11 - The Final Escape_+_12 - Lopan's Wedding Arrival.ogg",
+        "Title": "11 - The Final Escape + 12 - Lopan's Wedding Arrival",
+        "Order": 12
+      },
+      "12 - Lopan's Wedding Arrival": {
+        "file": "sound/Big Trouble in Little China OST Game Version/12 - Lopan's Wedding Arrival.ogg",
+        "Title": "12 - Lopan's Wedding Arrival",
+        "Order": 13
       }
     }
   },
