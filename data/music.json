@@ -64,15 +64,10 @@
         "Title": "11 - The Final Escape",
         "Order": 11
       },
-      "11 - The Final Escape + 12 - Lopan's Wedding Arrival": {
-        "file": "sound/Big Trouble in Little China OST Game Version/11 - The Final Escape_+_12 - Lopan's Wedding Arrival.ogg",
-        "Title": "11 - The Final Escape + 12 - Lopan's Wedding Arrival",
-        "Order": 12
-      },
       "12 - Lopan's Wedding Arrival": {
         "file": "sound/Big Trouble in Little China OST Game Version/12 - Lopan's Wedding Arrival.ogg",
         "Title": "12 - Lopan's Wedding Arrival",
-        "Order": 13
+        "Order": 12
       }
     }
   },
