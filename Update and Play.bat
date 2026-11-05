@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v21
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v22
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -21,7 +21,7 @@ rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
 color 0E
 cd /d "%~dp0"
-title Big Trouble in Little China - updater
+title Big Trouble in Little China: The Game - Updater
 
 set "SYS=%SystemRoot%\System32"
 set "PING=%SYS%\ping.exe"
@@ -65,12 +65,12 @@ echo   ==============================================================
 echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
-echo                        t h e   g a m e
-echo                        updater v21
+echo                        T H E   G A M E
+echo                        Updater v22
 echo.
 echo   ==============================================================
 echo.
-echo   folder : %~dp0
+echo   Folder:  %~dp0
 echo.
 
 set "EXE="
@@ -134,7 +134,7 @@ rem and they are fetched straight into place. No second copy of the art is
 rem kept, and the folders the game never uses - artifacts, art_src, tools -
 rem are outside the paths below and are left alone.
 :trygit
-echo            Git found - comparing with main.
+echo            Git found. Comparing this folder with main.
 rem Git can be handed a certificate bundle path that only exists inside a Git
 rem Bash install - /usr/ssl/certs/ca-bundle.crt - and then every fetch dies with
 rem "error setting certificate file". The bundle that belongs to the git that is
@@ -172,9 +172,9 @@ echo            Using the verified download instead.
 goto probe
 :gitca_checked
 if exist ".git" goto githere
-echo            First run: reading what is here so only changes download.
-echo            That reads the art already in this folder; it is not downloaded.
-echo            It can take a minute before the bar moves.
+echo            First run: reading what is already here, so only changes are downloaded.
+echo            This reads the art already in this folder; it does not download it.
+echo            This can take a minute before the bar moves.
 git init -q . >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 git config --local ikemen.updater 1 >>"%CACHE%\git.log" 2>&1
@@ -254,7 +254,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 if "%NCH%"=="0" echo            Already current - nothing to download.
 if "%NCH%"=="0" goto gitdel
-echo            %NCH% file(s) differ - fetching those, named as they land.
+echo            %NCH% file(s) differ - fetching them, named as they land.
 if "%VT%"=="1" echo.
 set /a NDONE=0
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
@@ -335,7 +335,7 @@ if not defined APPLIED goto probe_first
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo   files  : main @ %APPLIED%
+echo   Version: main @ %APPLIED%
 call :sayupdate "%RSHA7%" "%APPLIED%"
 call :choose
 if errorlevel 1 goto quit
@@ -362,7 +362,7 @@ rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto probe_offer
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo   files  : main @ %APPLIED%
+echo   Version: main @ %APPLIED%
 echo            Main has not moved - nothing to download.
 goto launch
 
@@ -522,10 +522,10 @@ if not "%WHICH%"=="git" goto skipver2
 :skipver
 echo.
 "%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
-if errorlevel 1 echo   HUD    : OLD - the copy did not land
-if not errorlevel 1 echo   HUD    : dragon - back is health, belly is audacity
-if defined VER echo   files  : main @ %VER%
-if not defined VER echo   files  : main, from the zip
+if errorlevel 1 echo   HUD:     old - the copy did not land
+if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
+if defined VER echo   Version: main @ %VER%
+if not defined VER echo   Version: zip build
 echo.
 
 :launch
@@ -794,20 +794,20 @@ echo.
 if "%~2"=="" goto sayupdate_first
 if "%~1"=="" goto sayupdate_unknown
 if "%~1"=="%~2" goto sayupdate_same
-echo   Update available : main @ %~1
-echo   This folder has  : %~2
+echo   Update available: main @ %~1
+echo   This folder has:  %~2
 goto sayupdate_done
 :sayupdate_same
-echo   Up to date       : main @ %~1 is already in this folder.
+echo   Up to date:       main @ %~1 is already in this folder.
 echo   Nothing to download.
 goto sayupdate_done
 :sayupdate_first
-if "%~1"=="" echo   Update available : could not read main's version.
-if not "%~1"=="" echo   Update available : main @ %~1
-echo   This folder has  : nothing recorded yet - the first update is the big one.
+if "%~1"=="" echo   Update available: could not read main's version.
+if not "%~1"=="" echo   Update available: main @ %~1
+echo   This folder has:  nothing recorded yet - the first update is the big one.
 goto sayupdate_done
 :sayupdate_unknown
-echo   Update available : main's version could not be read, so this run would
+echo   Update available: main's version could not be read, so this run would
 echo                      fetch the whole archive (%APPLIED% is what is here).
 :sayupdate_done
 echo.
