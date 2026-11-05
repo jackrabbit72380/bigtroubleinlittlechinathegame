@@ -196,7 +196,12 @@ def drop_keys(text, prefixes):
 # derived ones up from its own default motif instead of from our [Pause Menu].
 # Anything not written here renders with the stock layout, so they all share it.
 PAUSE_LAYOUT = (
-    ("menu.pos", "460, 140"),
+    # 460 put the list's own highlight band (462 wide from -15) at 445..907 on
+    # a 1280-wide frame: 75px right of centre with the value column hanging off
+    # it. 402 centres the band on 640.
+    ("menu.pos", "402, 140"),
+    # No dark plate behind the pause list.
+    ("menu.boxbg.visible", "0"),
     ("menu.item.spacing", "0, 50"),
     ("menu.window.visibleitems", "10"),
     # The cursor band is drawn from menu.pos + coords[2] while the item text is
@@ -213,6 +218,16 @@ PAUSE_LAYOUT = (
     # The command list was the 13px Body face at 1.5x (19px rows) while every
     # other screen sets 34px Display; it is the same face as the menus now, at
     # the face's own size, so a row is as tall as a pause-menu row.
+    # The title and the list both start from movelist.pos, which is set with the
+    # widening below; 676.5 relative to the stock 283.5 put the heading at x=960,
+    # so on a 1280 frame it ran off the right edge and the screen read untitled.
+    # `%s` is substituted with the character's name, so the screen only ever
+    # said who the moves belonged to, never that it was the command list.
+    ("movelist.title.text", "Command List - %s"),
+    # A pad glyph sits 9px below the top of its own row and is scaled to the
+    # row height, so it hung into the row below and collided with that row's
+    # text. Flush with the row.
+    ("movelist.glyphs.offset", "0, 0"),
     ("movelist.text.scale", "1, 1"),
     ("movelist.title.scale", "1, 1"),
     ("movelist.glyphs.scale", "1, 1"),
@@ -221,6 +236,8 @@ PAUSE_LAYOUT = (
     # movelist.pos.x, and the motif still had the 1280-era 900: 283.5 + 900 cuts
     # the right-hand key column mid-glyph at x=1183 on a 1920 frame. Widening the
     # window only reveals text that was being clipped.
+    ("movelist.pos", "100, 90"),
+    ("movelist.title.offset", "540, -18"),
     ("movelist.window.width", "1500"),
 )
 
@@ -365,6 +382,10 @@ SECTION_LAYOUT = {
         # Team mode: the cursor was animation 180, a 22px arrow that slides 3px a
         # frame - the spinning arrow. It is the arrow's own still now, and the
         # blink is gone because active2.font is set to the active colour.
+        # The record line (WINS / LOSSES) sat at y=1008, under the bottom edge
+        # of the stage card, so it read as part of the card. It is above the
+        # card now, clear of the box and the two portraits.
+        ("record.offset", "960, 684"),
         ("p1.teammenu.item.cursor.anim", "-1"),
         ("p1.teammenu.item.cursor.spr", "180,0"),
         ("p2.teammenu.item.cursor.anim", "-1"),
