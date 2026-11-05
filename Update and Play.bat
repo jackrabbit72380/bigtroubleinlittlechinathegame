@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v24
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v25
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v24
+echo                        Updater v25
 echo.
 echo   ==============================================================
 echo.
@@ -83,6 +83,12 @@ set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
 set "ZIPURL2=https://github.com/%REPO%/archive/refs/heads/main.zip"
 set "GITURL=https://github.com/%REPO%.git"
 set "CACHE=%~dp0.update-cache"
+rem A cache folder that cannot be created takes every redirect with it: the
+rem run file is written to a path that is not there, curl never starts, and
+rem the bar sits at zero for twenty minutes saying nothing about it.
+if not exist "%CACHE%" set "CACHE=%TEMP%\btilc-updater"
+if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
+if not exist "%CACHE%" set "CACHE=%TEMP%"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 set "ZIP="
 set "SRC="
@@ -90,6 +96,8 @@ set "WHICH="
 set "ZIPOK=0"
 set "PREVCAND="
 set "PREVSZ="
+set "NEWLAUNCHER="
+set "LAUNCHARED="
 set "CHANGED="
 set "BASE="
 set "NCOP=0"
@@ -212,6 +220,7 @@ echo            Asking main for its latest commit - a few KB.
 >"%GRUN%" echo @echo off
 >>"%GRUN%" echo git %GITCA% -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 --progress origin main 2^>"%GERR%"
 >>"%GRUN%" echo echo %%ERRORLEVEL%%^>"%GDONE%"
+if not exist "%GRUN%" goto probe
 start "" /b "%GRUN%"
 set /a GW=0
 :gitpoll
@@ -297,9 +306,15 @@ goto copied
 
 :gitfail
 call :dlend
-echo            Git could not fetch. It said:
-if defined GERR if exist "%GERR%" type "%GERR%"
-if not defined GERR if exist "%CACHE%\git.log" type "%CACHE%\git.log"
+echo            Git could not fetch.
+set "GITSAID=0"
+if defined GERR if exist "%GERR%" for %%A in ("%GERR%") do if %%~zA GTR 0 set "GITSAID=1"
+if "%GITSAID%"=="1" echo            It said:
+if "%GITSAID%"=="1" type "%GERR%"
+if "%GITSAID%"=="0" echo            It printed nothing - exit code %GRC%.
+if "%GITSAID%"=="0" if exist "%CACHE%\git.log" echo            What git logged:
+if "%GITSAID%"=="0" if exist "%CACHE%\git.log" type "%CACHE%\git.log"
+if "%GITSAID%"=="0" if not exist "%CACHE%\git.log" echo            It left no log either.
 echo            Trying a direct download instead.
 goto probe
 
@@ -515,6 +530,7 @@ if not defined VER if not defined RSHA7 call :atoms
 if not defined VER if not defined RSHA7 call :headsha
 if not defined VER if defined RSHA7 set "VER=%RSHA7%"
 if defined VER (>"%CACHE%\applied.txt" echo %VER%)
+call :newlauncher
 
 :sync
 if not "%WHICH%"=="git" goto skipver2
@@ -526,6 +542,8 @@ if errorlevel 1 echo   HUD:     old - the copy did not land
 if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
 if defined VER echo   Version: main @ %VER%
 if not defined VER echo   Version: zip build
+if defined NEWLAUNCHER echo   Updater: a newer launcher is in this folder as
+if defined NEWLAUNCHER echo            "Update and Play (new).bat" - use that one from now on.
 echo.
 
 :launch
@@ -548,6 +566,30 @@ exit 0
 
 :skipver2
 goto skipver
+
+rem ===========================================================================
+rem  the launcher refreshes itself beside the file that is running
+rem ===========================================================================
+:newlauncher
+rem This file is not in the six folders the update writes, so a fix to it could
+rem never reach a folder running an older copy - which is how a window on v19
+rem kept failing against a repository already fixed at v24. Main's launcher is
+rem fetched on its own, a few KB, and written beside this one.
+rem It is never written OVER this file: cmd reads a script as it runs, so
+rem replacing it mid-run would make the rest of this window execute the new
+rem file's bytes at the old file's offsets. A second file avoids that.
+if defined LAUNCHARED exit /b 0
+set "LAUNCHARED=1"
+if not defined CURL exit /b 0
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher.new" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
+if errorlevel 1 exit /b 0
+if not exist "%CACHE%\launcher.new" exit /b 0
+for %%A in ("%CACHE%\launcher.new") do if %%~zA LSS 5000 exit /b 0
+"%SYS%\fc.exe" /b "%CACHE%\launcher.new" "%~f0" >nul 2>&1
+if not errorlevel 1 exit /b 0
+copy /Y "%CACHE%\launcher.new" "%~dp0Update and Play (new).bat" >nul 2>&1
+if not errorlevel 1 set "NEWLAUNCHER=1"
+exit /b 0
 
 :launchfail
 echo   The game did not stay open. Start it by hand to see the engine's
@@ -598,6 +640,7 @@ if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 >"%RUNB%" echo @echo off
 >>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1200 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
+if not exist "%RUNB%" goto dl_ps
 start "" /b "%RUNB%"
 set /a SECS=0
 set /a KB30=0
