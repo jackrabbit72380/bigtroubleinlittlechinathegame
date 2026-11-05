@@ -319,6 +319,14 @@ SECTION_LAYOUT = {
         ("p2.teammenu.item.cursor.anim", "-1"),
         ("p2.teammenu.item.cursor.spr", "180,0"),
     ),
+    "VS Screen": (
+        # The motif's own keys were converted from the 1280-wide original (the
+        # windows run to 1920 and p1.offset is 444*1.5); p2's name was missed and
+        # still ended at 1260, so on a 1080p frame "Lion Lotus Shinko" printed
+        # across the VS mark in the middle instead of under P2's portrait. P1's
+        # name sits 20px from the left edge, so P2's ends 20px from the right.
+        ("p2.name.offset", "1900, 615"),
+    ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
         ("menu.boxcursor.coords", "-15, 0, 462, 41"),
