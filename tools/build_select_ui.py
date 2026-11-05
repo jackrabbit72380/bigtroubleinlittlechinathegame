@@ -236,6 +236,9 @@ VS_PLATE = _card(998) + (
 # so both sides looked like the same orange: P1 is the motif's bright cream and
 # P2 a warmer amber. The stage name is under the card here as well.
 VS_TEXT = (
+    # the VS portraits are baked at 2x and drawn at half the scale
+    ("p1.scale", "0.25, 0.25"),
+    ("p2.scale", "0.25, 0.25"),
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
     # the VS screen's "Match %i" caption: same gold as every other caption
