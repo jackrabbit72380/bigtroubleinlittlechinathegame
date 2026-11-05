@@ -373,11 +373,11 @@ p2.teammenu.item.cursor.spr = 180,0
 p1.teammenu.item.cursor.spr = 180,0
 fadein.time = 10
 fadeout.time = 10
-rows = 5
-columns = 10
+rows = 6
+columns = 9
 wrapping = 1
-pos = 311,40
-showemptyboxes = 0
+pos = 376,40
+showemptyboxes = 1
 moveoveremptyboxes = 0
 coopqueue = 1                      ;1 to allow character selection queuing in coop modes
 cell.size = 128,160
@@ -621,32 +621,32 @@ p2.name.layerno = 2
 ;Stage select
 stage.pos = 960, 1035
 stage.font = 11, 0, 0, 236, 200, 120
-stage.active.font = 11, 0, 0, 255, 228, 140
+stage.active.font = 11, 0, 0, 236, 200, 120
 stage.active2.font = 11, 0, 0, 236, 200, 120
 stage.done.font = 11, 0, 0, 236, 200, 120
 stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-stage.portrait.spr = 9000,1
+stage.portrait.spr = -1
 stage.portrait.offset = 0, -100
 stage.portrait.scale = 0.4280, 0.4280
 stage.portrait.bg.anim = -1
 stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -260, -185
+stage.portrait.bg.offset = -4000, -4000
 stage.portrait.bg.scale = 1.0, 1.0
 stage.portrait.bg.layerno = 2
 ;stage.portrait.random.anim = 113
 stage.portrait.random.spr = 111,0
-stage.portrait.random.offset = -260, -185
+stage.portrait.random.offset = -4000, -4000
 stage.portrait.random.scale = 1, 1
 stage.portrait.random.layerno = 2
 ; stage.portrait.loading.spr = 
 stage.portrait.loading.anim = -1
-stage.portrait.loading.offset = -260, -185
+stage.portrait.loading.offset = -4000, -4000
 stage.portrait.loading.scale = 1, 1
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 703, 853, 1217, 1017
+stage.portrait.window = 0, 0, 0, 0
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator

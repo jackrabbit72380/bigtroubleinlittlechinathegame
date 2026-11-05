@@ -35,17 +35,18 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1920, 1080)
-# 10x5 = 50 cells: the forty-eight fighters in data/select.def plus the random
-# box, which is the whole cast on one page.
+# 9x6 = 54 cells for the forty-eight fighters in data/select.def, the random box
+# and five spare slots. Nine across kept the wall narrow enough for the two
+# standing fighters, and six down is what lets the cells keep their 128x160 size
+# instead of being shrunk to fit: the wall ends at y=1010, inside the screen,
+# with the name row still clear under it. The stage preview that used to hang
+# under the grid is gone, which is where the extra row comes from.
 #
-# The roster outgrew nine across when the rest of the film's cast joined it, so
-# the grid gained a column. The cells are 80px now - the size the reference
-# screen uses - and the 8px gutters between them came down to 2px to pay for it:
-# 10 * 80 + 9 * 2 = 818, so the wall spans x=231 to x=1049 and the two standing
-# fighters keep their own column either side of it.
+# 9 * 128 + 8 * 2 = 1168 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
+# x=376 to x=1544 and the two side columns keep 65px of air either side.
 CELL, CELL_H = 128, 160
 GAP = 2
-COLS, ROWS = 10, 5
+COLS, ROWS = 9, 6
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 40)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL_H + (ROWS - 1) * GAP
@@ -55,7 +56,8 @@ CELL_SPR = (222, 0)
 CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
 # Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
-# The grid's frame padding ends at x=221 and x=1059, so each window stops there.
+# The grid's frame padding ends at x=361 and x=1559, so each window stops well
+# short of it and the standing fighters never meet the wall.
 # build_portraits.py paints the art 214x600 and it is drawn at x=2 and x=1278,
 # so the window is wider and taller than the art and no part of the fighter is
 # cut off by the screen edge.
@@ -238,9 +240,10 @@ def random_card(size):
 def repaint_random_mark():
     """Paint the random slot at cell size and at side-panel size.
 
-    151,0 sits at (-22,-18) and the select layout compensates for it, so the
-    like-for-like replacement keeps the axis it had. 151,10 is new and is what
-    the big panels draw: panel-sized art at 1:1 with a zero axis.
+    Both are painted with a zero axis. The stock 151,0 carries its corner at
+    (-22,-18), so drawing it in a cell put the card 22px right and 18px down of
+    the slot it belongs to - the misplaced "?" - and the select layout has no
+    per-cell offset to undo that with.
     """
     d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
     wanted = {RANDOM_CELL: random_card(RANDOM_CARD),
@@ -250,7 +253,7 @@ def repaint_random_mark():
         key = (sp["group"], sp["number"])
         if key in wanted:
             out.append({"group": key[0], "number": key[1],
-                        "image": wanted[key], "axis": sp["axis"]})
+                        "image": wanted[key], "axis": (0, 0)})
             done.add(key)
             continue
         out.append({"group": sp["group"], "number": sp["number"],
@@ -310,7 +313,10 @@ KEYS = (
     ("columns", str(COLS)),
     ("wrapping", "1"),
     ("pos", "%d,%d" % GRID),
-    ("showemptyboxes", "0"),
+    # The five cells past the random box are drawn as the same gold plate as
+    # every other cell. Hidden, they showed as black holes at the end of the
+    # last row, which looked like art that had failed to load.
+    ("showemptyboxes", "1"),
     ("moveoveremptyboxes", "0"),
     ("cell.size", "%d,%d" % (CELL, CELL_H)),
     ("cell.spacing", str(GAP)),
