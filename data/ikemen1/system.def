@@ -2070,7 +2070,7 @@ title.offset = 640,48
 title.font = 10,0,0, 255, 228, 140
 title.scale = 1.0, 1.0
 title.text = OPTIONS
-menu.pos = 784, 99
+menu.pos = 1200, 99
 menu.item.offset = 0, 0
 menu.item.font = 10,0,-1, 240, 196, 88
 menu.item.scale = 1.5, 1.5
@@ -2102,7 +2102,7 @@ menu.item.spacing = 0, 46
 menu.window.margins.y = 21, 2
 menu.window.visibleitems = 13
 menu.boxcursor.visible = 1
-menu.boxcursor.coords = -512, 0, 280, 44
+menu.boxcursor.coords = -800, 0, 20, 44
 menu.boxcursor.col = 255, 228, 140
 menu.boxcursor.pulse = 30, 20, 30
 menu.boxbg.visible = 1
@@ -2143,12 +2143,12 @@ textinput.overlay.col = 0, 0, 0
 textinput.overlay.alpha = 0, 128
 
 ;P1 Key menu
-keymenu.p1.menuoffset = 276, 99
+keymenu.p1.menuoffset = 430, 99
 keymenu.p1.playerno.offset = 234, 0
 keymenu.p1.playerno.font = 11, 0, 0, 240, 196, 88
 keymenu.p1.playerno.scale = 1.5, 1.5
 ;P2 Key menu
-keymenu.p2.menuoffset = 693, 99
+keymenu.p2.menuoffset = 847, 99
 keymenu.p2.playerno.offset = 234, 0
 keymenu.p2.playerno.font = 11, 0, 0, 236, 158, 74
 keymenu.p2.playerno.scale = 1.5, 1.5

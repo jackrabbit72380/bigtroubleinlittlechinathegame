@@ -256,9 +256,12 @@ SECTION_LAYOUT = {
         # so the stock x=414 made every row end at 414 and grow leftwards. The
         # shipped Display face sets "RETURN WITHOUT SAVING" 492px wide, which
         # put its first pixel at -78: off the left edge of a 1280-wide screen.
-        # 784 leaves 292px of margin for that worst case, and the values start
-        # 30px later and end at 987 with the longest one measured (173px).
-        ("menu.pos", "784, 99"),
+        # The face is wider on the shipped screen than the stock one this was
+        # measured against: "RETURN WITHOUT SAVING" is 777px at this size, so at
+        # 784 it began at x=7 and ran off the left edge of a 1920-wide screen.
+        # 1200 leaves that worst case 423px of margin, and the value column
+        # (menu.pos.x + 40) runs 1240..1832, inside the right edge.
+        ("menu.pos", "1200, 99"),
         ("menu.item.font", f"{D},0,-1, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,-1, {BRIGHT}"),
         # The highlighted row used to switch to 1 (left), so it jumped to the
@@ -295,9 +298,17 @@ SECTION_LAYOUT = {
         ("menu.item.value.conflict.offset", "40, 0"),
         ("menu.item.info.offset", "40, 0"),
         ("menu.item.info.active.offset", "40, 0"),
-        # The band spans both columns now: 272 to 1064, instead of stopping at
-        # 999 with the values past its right edge.
-        ("menu.boxcursor.coords", "-512, 0, 280, 44"),
+        # The band spans both columns: it starts level with the widest label
+        # (400) and runs to 1220, instead of sitting under the middle of the
+        # list.
+        ("menu.boxcursor.coords", "-800, 0, 20, 44"),
+        # Key and joystick config put two panels side by side, each column
+        # anchored on this offset and right-aligned against it. At 276 the
+        # widest label ("CONFIG ALL", 370px) started at x=-94 and was cut off by
+        # the screen edge; the panels are 154px further right, so labels start
+        # at 60 and the P2 values end at 1348, still inside 1920.
+        ("keymenu.p1.menuoffset", "430, 99"),
+        ("keymenu.p2.menuoffset", "847, 99"),
     ),
     "Select Info": (
         # Team mode: the cursor was animation 180, a 22px arrow that slides 3px a
