@@ -53,13 +53,22 @@ LIFE_Y = 2                  # top of the health bar = top of the dragon's back
 BAR_Y = 30                  # top of the audacity bar = the underside
 BAND = 20                   # height of the audacity band
 TIME_Y = 34                 # yin-yang centre
+# The countdown is the Timer bitmap face (49-unit cells) at 0.55 in the def,
+# so the digits stand 27px tall. Their offset has to carry half of that to
+# land on the disc's centre line; at -4 they hung 9px low in the yin-yang.
+TIME_NUM_SCALE = 0.55
+TIME_NUM_CELL = 49
+TIME_NUM_Y = -int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
 METER_W = 202               # fillable length of the audacity bar
 BAR_X1 = 568                # p1.pos.x: inner end of the audacity bar
 
 SPINE_Y = 25                # the dragon's centre line
 BODY_R = 23                 # its half-thickness
 
-P2_TINT = "-150, 90, -10"   # player two is the green dragon
+# Both dragons are gold now, so player two is no longer tinted: the def used
+# to shift its bars green with palfx.add. Kept as a constant because the
+# patcher still writes it, but it is a no-op.
+P2_TINT = "0, 0, 0"
 
 RED = {
     "ink": (24, 5, 4), "dark": (78, 12, 9), "mid": (146, 32, 20),
@@ -78,6 +87,20 @@ GREEN = {
     "horn": (238, 232, 194), "eye": (255, 216, 78), "mouth": (16, 24, 10),
     "glow": (96, 255, 120), "whisker": (232, 250, 186),
     "back_top": (38, 58, 22), "back_low": (24, 38, 14),
+}
+
+# The dragon is gold - both players, one animal - so there is a single palette
+# here rather than a red one and a green one. "skin" is the scaled upper surface,
+# "belly" the smooth underside, "back_top"/"back_low" the dark trough the health
+# bar drains into.
+GOLD = {
+    "ink": (30, 20, 6), "dark": (104, 76, 22), "mid": (168, 128, 44),
+    "skin": (204, 162, 62), "light": (232, 196, 96), "rim": (255, 236, 168),
+    "belly": (226, 196, 130), "belly_lit": (250, 232, 180),
+    "plate": (255, 248, 214),
+    "horn": (248, 236, 196), "eye": (255, 216, 78), "mouth": (58, 26, 8),
+    "glow": (255, 200, 96), "whisker": (255, 238, 190),
+    "back_top": (86, 60, 14), "back_low": (52, 34, 8),
 }
 
 # the approved body curve: tail at the outer end, a lazy rise and fall along the
@@ -185,6 +208,47 @@ def _plates(img, line, pal):
               210, 330, fill=pal["rim"] + (140,), width=int(max(1, 0.9 * SS)))
 
 
+def _scales(img, line, pal):
+    """Overlapping scales over the dragon's skin - never over its belly.
+
+    The body is a run of discs, so the scales are laid out per station along the
+    spine and clipped to the part above the belly line (10% under the centre),
+    which is where a dragon is scaled; the underside stays smooth.
+    """
+    s = SS
+    n = len(line)
+    step = max(4, int(round(n / 42.0)))
+    layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    lift = int(max(1, 1.0 * s))
+    for i in range(0, n, step):
+        x, y, r = line[i]
+        k = -0.86
+        while k < 0.06:
+            half = math.sqrt(max(0.0, 1.0 - k * k)) * r * 0.94
+            if half < 3 * s:
+                k += 0.34
+                continue
+            cols = max(1, int(half / (5.0 * s)))
+            for c in range(cols):
+                t = (c + 0.5) / cols
+                cx = x - half + 2 * half * t
+                yy = y + r * k
+                rr = 3.6 * s
+                d.arc([cx - rr, yy - rr * 0.75, cx + rr, yy + rr * 0.75],
+                      205, 335, fill=pal["plate"] + (135,), width=lift)
+                d.arc([cx - rr, yy - rr * 0.75, cx + rr, yy + rr * 0.75],
+                      25, 155, fill=pal["dark"] + (110,), width=lift)
+            k += 0.34
+    mask = Image.new("L", img.size, 0)
+    ImageDraw.Draw(mask).polygon(
+        [(x, y - r) for x, y, r in line]
+        + [(x, y + r * 0.08) for x, y, r in reversed(line)], fill=255)
+    layer.putalpha(Image.composite(layer.split()[3],
+                                   Image.new("L", img.size, 0), mask))
+    img.alpha_composite(layer)
+
+
 def _spikes(img, line, pal, clip_top=0):
     """The approved dorsal fins, only where they are on screen."""
     d = ImageDraw.Draw(img)
@@ -256,6 +320,7 @@ def paint_body_half(pal, flip):
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     line = _spine(SS)
     _body(img, line, pal)
+    _scales(img, line, pal)
     _plates(img, line, pal)
     _spikes(img, line, pal, clip_top=0)
     if flip:
@@ -264,26 +329,36 @@ def paint_body_half(pal, flip):
 
 
 def _disc(r, s):
-    """The green/red yin-yang, glowing."""
-    n = int(r * 2.6 * s)
+    """The red/green yin-yang: translucent, ringed, and only faintly glowing.
+
+    It used to be opaque with a blurred copy of itself behind it, so it read as a
+    solid badge pasted over the fight. The body is ~75% now and the glow is a
+    thin ring sitting just outside the rim instead of a haze around the whole
+    disc, which keeps the light on the edge where the silhouette is.
+    """
+    n = int(r * 2.9 * s)                    # room for the ring and its glow
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     c, rr = n / 2.0, r * s
     half, dot = rr / 2.0, rr / 8.0
-    green, red = (58, 255, 138, 255), (255, 62, 52, 255)
+    body = 190                               # ~75%: the stage reads through it
+    green, red = (58, 255, 138, body), (255, 62, 52, body)
     d.ellipse([c - rr, c - rr, c + rr, c + rr], fill=red)
     d.pieslice([c - rr, c - rr, c + rr, c + rr], 90, 270, fill=green)
     d.ellipse([c - half, c - rr, c + half, c], fill=green)
     d.ellipse([c - half, c, c + half, c + rr], fill=red)
     d.ellipse([c - dot, c - half - dot, c + dot, c - half + dot], fill=red)
     d.ellipse([c - dot, c + half - dot, c + dot, c + half + dot], fill=green)
-    d.ellipse([c - rr, c - rr, c + rr, c + rr],
-              outline=(255, 226, 160, 235), width=max(1, round(1.4 * s)))
-    halo = img.filter(ImageFilter.GaussianBlur(4.0 * s))
-    alpha = halo.split()[3].point(lambda v: min(255, round(v * 2.0)))
-    halo.putalpha(alpha)
+
+    w = max(1, int(round(1.5 * s)))
+    ring = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    ImageDraw.Draw(ring).ellipse([c - rr - w, c - rr - w, c + rr + w, c + rr + w],
+                                 outline=(255, 232, 170, 205), width=w)
+    glow = ring.filter(ImageFilter.GaussianBlur(2.6 * s))
     out = Image.new("RGBA", (n, n), (0, 0, 0, 0))
-    out.alpha_composite(halo)
+    out.alpha_composite(glow)
+    out.alpha_composite(glow)
+    out.alpha_composite(ring)
     out.alpha_composite(img)
     return out
 
@@ -308,7 +383,10 @@ def paint_timer():
 
     img = Image.new("RGBA", (w * SS, h * SS), (0, 0, 0, 0))
     scale = (w * SS) / float(w)
-    for pal, flip, jx in ((RED, False, JOINT[0]), (GREEN, True, 400 - JOINT[0])):
+    # the heads are the same animal as the bodies: gold both sides, with
+    # the red/green left to the yin-yang they face
+    for pal, flip, jx in ((GOLD, False, JOINT[0]),
+                          (GOLD, True, 400 - JOINT[0])):
         layer = head_layer(pal, flip)
         img.alpha_composite(layer, (int(jx * SS - layer.width / 2),
                                     int(JOINT[1] * SS - layer.height / 2)))
@@ -388,14 +466,14 @@ def build_bigbars(by_key, sil):
     out = {}
     for key, fallback in (((10, 0), (435, 24)), ((12, 0), (435, 24))):
         (w, h), axis = meta(key, fallback)
-        out[key] = (_band(sil, w, h, RED, "back", False, 595, LIFE_Y),
+        out[key] = (_band(sil, w, h, GOLD, "back", False, 595, LIFE_Y),
                     axis or (w, 0))
     (w, h), axis = meta((11, 0), (439, 28))
-    out[(11, 0)] = (_sheen(sil, w, h, RED, 595, LIFE_Y), axis or (w, 0))
+    out[(11, 0)] = (_sheen(sil, w, h, GOLD, 595, LIFE_Y), axis or (w, 0))
     for i in range(4):
         key = (13, i)
         (w, h), axis = meta(key, (435, 24))
-        out[key] = (_band(sil, w, h, RED, "back", True, 591, LIFE_Y),
+        out[key] = (_band(sil, w, h, GOLD, "back", True, 591, LIFE_Y),
                     axis or (w, 0))
     return out
 
@@ -410,15 +488,15 @@ def build_meters(_by_key, sil):
     nothing here is inherited.
     """
     out = {}
-    out[(40, 0)] = (_band(sil, METER_W + 4, BAND, RED, "belly", False,
+    out[(40, 0)] = (_band(sil, METER_W + 4, BAND, GOLD, "belly", False,
                           BAR_X1, BAR_Y),
                     (METER_W + 4, 0))
     out[(41, 0)] = (Image.new("RGBA", (METER_W + 4, BAND), (0, 0, 0, 0)),
                     (METER_W + 4, 0))
-    out[(43, 0)] = (_band(sil, METER_W, BAND, RED, "belly", True,
+    out[(43, 0)] = (_band(sil, METER_W, BAND, GOLD, "belly", True,
                           BAR_X1 - 4, BAR_Y),
                     (METER_W, 0))
-    out[(44, 0)] = (_band(sil, METER_W, BAND, RED, "belly", True,
+    out[(44, 0)] = (_band(sil, METER_W, BAND, GOLD, "belly", True,
                           BAR_X1 - 4, BAR_Y, label="AUDACITY"),
                     (METER_W, 0))
     return out
@@ -529,7 +607,7 @@ def patch_def():
     body = _set(body, "bg.spr", "%d,%d" % (TIMER_GROUP, 0))
     body = _set(body, "bg.offset", "0,0")
     body = re.sub(r"(?m)^(\s*counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
-                  lambda m: "%s%s,%d" % (m.group(1), m.group(2), -4), body)
+                  lambda m: "%s%s,%d" % (m.group(1), m.group(2), TIME_NUM_Y), body)
     body = re.sub(r"(?m)^(\s*counter\w*\.scale\s*=\s*)\d+(\.\d+)?\s*,\s*\d+(\.\d+)?\s*$",
                   lambda m: "%s0.55, 0.55" % m.group(1), body)
     lines[s:e] = body.split("\n")
@@ -564,8 +642,8 @@ def main():
     _d, before, _p = sff.read_sff(FIGHT_SFF)
     by_key = {(s["group"], s["number"]): s for s in before}
 
-    painted = {(GROUP, 0): (paint_body_half(RED, False), (0, 0)),
-               (GROUP, 1): (paint_body_half(GREEN, True), (0, 0))}
+    painted = {(GROUP, 0): (paint_body_half(GOLD, False), (0, 0)),
+               (GROUP, 1): (paint_body_half(GOLD, True), (0, 0))}
     sil = body_silhouette()
     painted.update(build_bigbars(by_key, sil))
     painted.update(build_meters(by_key, sil))

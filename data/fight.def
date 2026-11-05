@@ -136,13 +136,13 @@ p1.bg1.xshear = 0
 p2.bg1.spr = 20,1
 p2.bg1.offset = -44,-2
 p2.bg1.xshear = 0
-p2.bg0.palfx.add = -150, 90, -10
-p2.top.palfx.add = -150, 90, -10
-p2.mid.palfx.add = -150, 90, -10
-p2.front100.palfx.add = -150, 90, -10
-p2.front50.palfx.add = -150, 90, -10
-p2.front25.palfx.add = -150, 90, -10
-p2.front.palfx.add = -150, 90, -10
+p2.bg0.palfx.add = 0, 0, 0
+p2.top.palfx.add = 0, 0, 0
+p2.mid.palfx.add = 0, 0, 0
+p2.front100.palfx.add = 0, 0, 0
+p2.front50.palfx.add = 0, 0, 0
+p2.front25.palfx.add = 0, 0, 0
+p2.front.palfx.add = 0, 0, 0
 [Simul Lifebar]
 ;Player 1
 p1.pos    = 595,46
@@ -1833,19 +1833,19 @@ levelMax.snd = 21, 1
 ;==================================================================================================
 p1.bg1.offset = 0,0
 p2.bg1.offset = 0,0
-p2.bg0.palfx.add = -150, 90, -10
-p2.front500.palfx.add = -150, 90, -10
-p2.front1000.palfx.add = -150, 90, -10
-p2.front2000.palfx.add = -150, 90, -10
-p2.front3000.palfx.add = -150, 90, -10
-p2.front4000.palfx.add = -150, 90, -10
-p2.front5000.palfx.add = -150, 90, -10
-p2.front6000.palfx.add = -150, 90, -10
-p2.front7000.palfx.add = -150, 90, -10
-p2.front8000.palfx.add = -150, 90, -10
-p2.front9000.palfx.add = -150, 90, -10
-p2.front10000.palfx.add = -150, 90, -10
-p2.frontMax.palfx.add = -150, 90, -10
+p2.bg0.palfx.add = 0, 0, 0
+p2.front500.palfx.add = 0, 0, 0
+p2.front1000.palfx.add = 0, 0, 0
+p2.front2000.palfx.add = 0, 0, 0
+p2.front3000.palfx.add = 0, 0, 0
+p2.front4000.palfx.add = 0, 0, 0
+p2.front5000.palfx.add = 0, 0, 0
+p2.front6000.palfx.add = 0, 0, 0
+p2.front7000.palfx.add = 0, 0, 0
+p2.front8000.palfx.add = 0, 0, 0
+p2.front9000.palfx.add = 0, 0, 0
+p2.front10000.palfx.add = 0, 0, 0
+p2.frontMax.palfx.add = 0, 0, 0
 [Guardbar]
 ;Player 1
 p1.pos = 16, 16
@@ -2710,7 +2710,7 @@ pos = 640,34
 ; Uncomment the following line to use a bg component
 ;bg.spr = 
 ; Time count display
-counter.offset = 0,-4
+counter.offset = 0,-13
 counter.font = 2,0, 0, 255, 228, 140
 counter.scale = 0.55, 0.55
 counter.palfx.mul = 256, 0, 0
@@ -2718,20 +2718,20 @@ counter.palfx.mul = 256, 0, 0
 framespercount = 60
 
 counter1.scale = 0.55, 0.55
-counter1.offset = 0,-4
+counter1.offset = 0,-13
 counter1.font = 2, 0, 0, 255, 228, 140
 counter1.palfx.mul = 256, 128, 128
 counter1.palfx.sinmul = 0, 128, 128, 20
 counter1.layerno = 0
 
 counter10.font = 2, 0, 0, 255, 228, 140
-counter10.offset = 0,-4
+counter10.offset = 0,-13
 counter10.scale = 0.55, 0.55
 counter10.palfx.mul = 256, 128, 128
 counter10.palfx.sinmul = 0, 128, 128, 20
 counter10.layerno = 0
 
-counter11.offset = 0,-4
+counter11.offset = 0,-13
 counter11.font = 2, 0, 0, 255, 255, 255
 counter11.scale = 0.55, 0.55
 ;counter11.palfx.mul = 256, 128, 128
