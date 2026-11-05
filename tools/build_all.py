@@ -30,7 +30,7 @@ def main():
     # The menu face is installed first, so every later step that draws text
     # through art.font() uses the same vendored typeface.
     scripts = ["build_fonts.py"]
-    scripts += ["build_stages.py", "stages_hd.py", "stage_throne.py",
+    scripts += ["build_stages.py", "build_training.py", "stages_hd.py", "stage_throne.py",
                "stage_ceremony.py", "stage_hallway.py",
                "stage_upside_down.py", "stage_airport.py", "stage_sinners.py",
                "build_hd_stage.py",

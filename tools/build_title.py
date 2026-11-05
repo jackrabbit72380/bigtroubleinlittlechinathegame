@@ -49,10 +49,10 @@ TOP_MARGIN = 30          # ink starts this far down the 720-line screen
 PAD = 8                  # clearance kept inside the sprite, for the glow
 ARC_RADIUS = 760         # bows the caps' ends well below the apex, as in the film
 
-GOLD = [(0.00, (255, 250, 208)), (0.34, (255, 233, 142)),
+GOLD = [(0.00, (255, 228, 140)), (0.34, (246, 200, 110)),
         (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
 MAROON = [(0.00, (152, 33, 45)), (0.55, (122, 20, 32)), (1.00, (82, 10, 20))]
-CREAM = (255, 248, 230)
+CREAM = (255, 236, 180)
 BLUE = (44, 70, 128)
 BLUE_DEEP = (26, 44, 92)
 WHITE = (255, 255, 255)

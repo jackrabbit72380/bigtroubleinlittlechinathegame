@@ -197,45 +197,29 @@ local function plainPitch(sec)
 	return h
 end
 
+-- The list is drawn with the pause menu's own text sprite, the same call the
+-- engine makes to draw the command list. The earlier two-column path built a
+-- text sprite with textImgNew and set a font on it; on a real build that opened
+-- an empty screen (the dim overlay drew, the rows did not), so the whole screen
+-- is drawn with the one sprite the engine demonstrably renders: two columns,
+-- offset with AddPos, no font swapping.
 local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
 	local lh = plainPitch(sec)
-	local i = 0
-	for _, col in ipairs({LEFT, RIGHT}) do
-		for _, row in ipairs(col) do
+	local COLS = {{0, LEFT}, {860, RIGHT}}
+	for _, col in ipairs(COLS) do
+		local x, rows = col[1], col[2]
+		for i, row in ipairs(rows) do
 			textImgReset(txt)
 			textImgSetAlign(txt, 1)
-			textImgAddPos(txt, 0, lh * i)
 			textImgSetText(txt, lineOf(row))
+			textImgAddPos(txt, x, lh * (i - 1))
 			textImgDraw(txt)
-			i = i + 1
 		end
 	end
 end
 
-local function drawTwoColumns(sec, font, idx, scale, lh)
-	local ti = ensure('body')
-	if ti == nil then return false end
-	local sub = ensure('sub')
-	if sub ~= nil then
-		put(sub, font, idx, NOTE, DIM, LEFT_X, TOP - 30, math.max(0.7, scale * 0.55))
-	end
-	for i, row in ipairs(LEFT) do
-		put(ti, font, idx, lineOf(row), row[3], LEFT_X, TOP + lh * (i - 1), scale)
-	end
-	for i, row in ipairs(RIGHT) do
-		put(ti, font, idx, lineOf(row), row[3], RIGHT_X, TOP + lh * (i - 1), scale)
-	end
-	return true
-end
-
 local function devhelpDraw(sec)
-	local font = sceneFont(sec)
-	local idx = nil
-	pcall(function() idx = sec.movelist.text.font[1] end)
-	local adv, cell, gap = metrics(font)
-	local scale, lh = fit(adv, cell, gap)
-
 	rectDraw(sec.movelist.overlay.RectData)
 
 	-- The title moves up: the space it gives back is what the bigger list needs.
@@ -244,24 +228,7 @@ local function devhelpDraw(sec)
 	textImgAddPos(sec.movelist.title.TextSpriteData, 0, -34)
 	textImgDraw(sec.movelist.title.TextSpriteData)
 
-	local drawn = false
-	if not devhelp.failed then
-		local okDraw, drew = pcall(drawTwoColumns, sec, font, idx, scale, lh)
-		drawn = okDraw and drew == true
-		if not drawn then
-			-- either it raised or the probe said no: keep the big path off for the
-			-- rest of the session instead of retrying every frame
-			devhelp.failed = true
-		end
-	end
-	if not drawn then
-		if not devhelp.warned then
-			devhelp.warned = true
-			print('devhelp: big key list unavailable in this build, using the ' ..
-				'plain list from the pause menu')
-		end
-		drawPlain(sec)
-	end
+	drawPlain(sec)
 
 	if esc() or getInput(-1, sec.menu.cancel.key, sec.menu.done.key) then
 		sndPlay(motif.Snd, sec.cancel.snd[1], sec.cancel.snd[2])

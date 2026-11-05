@@ -37,7 +37,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CELL = (158, 158)          # the grid's cell, in build_select_grid.py
 BUST = 85                  # the bust sits inside the cell bevel (54% of 158)
 SIDE = (160, 450)          # the corner art beside the grid
-BIG = (180, 210)
+BIG = (360, 420)
 AXIS = (0, 0)
 
 # [Info] localcoord of the screenpack these portraits are drawn in.

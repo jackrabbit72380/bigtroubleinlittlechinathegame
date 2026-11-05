@@ -98,14 +98,14 @@ REWRITES = (
     ("record.font", f"{B}, 0, 0, {DEEP}"),
     ("p1.teammenu.selftitle.font", f"{B}, 0, 0, {BRIGHT}"),
     ("p1.teammenu.enemytitle.font", f"{B}, 0, 0, {BRIGHT}"),
-    ("p1.teammenu.item.font", f"{B}, 0, 1, {GOLD}"),
-    ("p1.teammenu.item.active.font", f"{B}, 0, 1, {BRIGHT}"),
-    ("p1.teammenu.item.active2.font", f"{B}, 0, 1, {DEEP}"),
+    ("p1.teammenu.item.font", f"{D}, 0, 1, {GOLD}"),
+    ("p1.teammenu.item.active.font", f"{D}, 0, 1, {BRIGHT}"),
+    ("p1.teammenu.item.active2.font", f"{D}, 0, 1, {BRIGHT}"),
     ("p2.teammenu.selftitle.font", f"{B}, 0, 0, {GOLD}"),
     ("p2.teammenu.enemytitle.font", f"{B}, 0, 0, {GOLD}"),
-    ("p2.teammenu.item.font", f"{B}, 0, -1, {GOLD}"),
-    ("p2.teammenu.item.active.font", f"{B}, 1, -1, {AMBER}"),
-    ("p2.teammenu.item.active2.font", f"{B}, 1, -1, {GOLD}"),
+    ("p2.teammenu.item.font", f"{D}, 0, -1, {GOLD}"),
+    ("p2.teammenu.item.active.font", f"{D}, 0, -1, {AMBER}"),
+    ("p2.teammenu.item.active2.font", f"{D}, 0, -1, {AMBER}"),
     ("p1.palmenu.text.font", f"{B}, 0, 1, {GOLD}"),
     ("p2.palmenu.text.font", f"{B}, 0, -1, {AMBER}"),
     ("p1.palmenu.number.font", f"{B}, 0, 0, {GOLD}"),
@@ -143,7 +143,7 @@ REWRITES = (
     ("keymenu.item.selected.font", f"{B},0,-1, {BRIGHT}"),
     ("keymenu.item.selected.active.font", f"{B},0,-1, {BRIGHT}"),
     ("movelist.title.font", f"{D}, 0, 0, {BRIGHT}"),
-    ("movelist.text.font", f"{B}, 0, 1, {GOLD}"),
+    ("movelist.text.font", f"{D}, 0, 1, {GOLD}"),
     # TrueType faces are drawn in a single flat colour - src/font.go has no
     # gradient or outline for them - so the last white/grey text (netplay
     # "connecting", the text input line, the debug overlay) is moved onto the
@@ -206,6 +206,13 @@ PAUSE_LAYOUT = (
     ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
     ("menu.item.selected.font", f"{D},0,1, {BRIGHT}"),
     ("menu.item.selected.active.font", f"{DA},0,1, {BRIGHT}"),
+    # The command list was the 13px Body face at 1.5x (19px rows) while every
+    # other screen sets 34px Display; it is the same face as the menus now, at
+    # the face's own size, so a row is as tall as a pause-menu row.
+    ("movelist.text.scale", "1, 1"),
+    ("movelist.title.scale", "1, 1"),
+    ("movelist.glyphs.scale", "1, 1"),
+    ("movelist.text.spacing", "4.5, 4"),
 )
 
 SECTION_LAYOUT = {
@@ -266,6 +273,15 @@ SECTION_LAYOUT = {
         # The band spans both columns now: 272 to 1064, instead of stopping at
         # 999 with the values past its right edge.
         ("menu.boxcursor.coords", "-512, 0, 280, 44"),
+    ),
+    "Select Info": (
+        # Team mode: the cursor was animation 180, a 22px arrow that slides 3px a
+        # frame - the spinning arrow. It is the arrow's own still now, and the
+        # blink is gone because active2.font is set to the active colour.
+        ("p1.teammenu.item.cursor.anim", "-1"),
+        ("p1.teammenu.item.cursor.spr", "180,0"),
+        ("p2.teammenu.item.cursor.anim", "-1"),
+        ("p2.teammenu.item.cursor.spr", "180,0"),
     ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.

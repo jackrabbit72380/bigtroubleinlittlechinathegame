@@ -191,7 +191,7 @@ def cursor_frame(colour):
 # a recoloured 62px glyph blown up 4.8x in the panels, which is why the random
 # portrait read as blank next to the painted ones.
 RANDOM_CELL = (151, 0)
-RANDOM_CARD = (82, 84)
+RANDOM_CARD = (158, 158)
 RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
@@ -313,7 +313,7 @@ KEYS = (
     ("cell.bg.scale", "1,1"),
     ("cell.bg.offset", "0,0"),
     ("cell.random.spr", "151,0"),
-    ("cell.random.scale", "1.3,1.3"),
+    ("cell.random.scale", "1,1"),
     ("portrait.spr", "9000,0"),
     # the portrait art is painted at the cell's own size (build_portraits.py
     # CELL) and the bust is inset inside it, so it sits at the cell's origin -
@@ -393,13 +393,13 @@ KEYS = (
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
     # the cells beside it.
-    ("cell.random.offset", "-30,-24"),
-    ("cell.random.scale", "1.5, 1.5"),
+    ("cell.random.offset", "0,0"),
+    ("cell.random.scale", "1, 1"),
     # The stock screen re-rolls the random portrait every 4 ticks and plays
     # pX.random.move.snd on every roll, which stacked voices into a continuous
     # machine-gun tone while the "?" was highlighted. Half a second per roll,
     # and the cancel flag so a new roll stops the previous sound.
-    ("cell.random.switchtime", "32"),
+    ("cell.random.switchtime", "48"),
     ("random.move.snd.cancel", "1"),
 )
 for i, spr in enumerate(CURSOR, start=1):
