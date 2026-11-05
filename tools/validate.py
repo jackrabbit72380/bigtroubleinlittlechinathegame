@@ -370,6 +370,12 @@ def check_select_screen(chars):
                              re.M | re.I)
         localcoord = int(lc_match.group(1)) if lc_match else 320
         factor = MOTIF_WIDTH / localcoord  # motif [Info] localcoord width
+        # portrait.scale is what the screen draws the cell art at: it is painted
+        # at twice the cell (build_portraits.CELL_RES) and drawn at 0.5, so the
+        # screen size is the cell either way. The VS and side art draw at 1.
+        cell_scale = [float(v) for v in opts.get("portrait.scale", "1,1").split(",")]
+        scales = {(9000, 0): cell_scale, (9000, 1): (1.0, 1.0),
+                  (9000, 2): (1.0, 1.0)}
         want = {(9000, 0): CELL_SIZE, (9000, 1): BIG_SIZE,
                 (9000, 2): SIDE_SIZE}
         for key, size in want.items():
@@ -377,7 +383,8 @@ def check_select_screen(chars):
             if hit is None:
                 err("%s: no portrait sprite %d,%d" % (name, key[0], key[1]))
                 continue
-            drawn = (hit["w"] * factor, hit["h"] * factor)
+            sc = scales[key]
+            drawn = (hit["w"] * factor * sc[0], hit["h"] * factor * sc[1])
             if abs(drawn[0] - size[0]) > 4 or abs(drawn[1] - size[1]) > 4:
                 err("%s: portrait %d,%d draws %dx%d on screen at localcoord %d, "
                     "expected %dx%d"

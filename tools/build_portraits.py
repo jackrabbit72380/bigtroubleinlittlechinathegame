@@ -35,6 +35,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # art beside it gets a 214px column; painting the art at the column width is
 # what keeps the whole fighter visible instead of cropped by the frame.
 CELL = (128, 160)          # the grid's cell, in build_select_grid.py
+# Painted at twice the cell and drawn at portrait.scale 0.5 in
+# build_select_grid.py, so a 960-localcoord fighter keeps 128x160 pixels of
+# detail instead of being a 64x80 sprite that the engine blows up 2x.
+CELL_RES = 2
 # The cell's clear inside (build_select_grid.cell_frame: rules 0..11px) and
 # the air left between a bust and those rules, both in screen pixels.
 OPENING = (104, 136)
@@ -240,7 +244,8 @@ def patch_character(path):
         source = source.crop(box)
 
     cell_size, big_size, side_size = portrait_sizes(path)
-    cell = cell_art(source, cell_size)
+    cell = cell_art(source, (cell_size[0] * CELL_RES,
+                           cell_size[1] * CELL_RES))
     side = fit_whole(source, side_size)
     out = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
             "format": sp["format"], "depth": sp["depth"], "w": sp["w"],
