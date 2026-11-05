@@ -38,7 +38,7 @@ SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 # down to the fighters' row, and the strip used to be pinned to the left edge.
 SPRITE = (221, 0)
 STRIP = (450, 45)
-POS = (960, 645)
+POS = (430, 962)
 
 GOLD = (255, 214, 96)
 GOLD_DEEP = (120, 78, 16)
@@ -131,7 +131,7 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
 # the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
-CARD_W = 690                  # the card's own width, independent of the grid
+CARD_W = 520                  # the card's own width, independent of the grid
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
 CARD_H = ART_H
 CARD_CX = 960
@@ -221,7 +221,7 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(990)           # [Select Info]
+STAGE_PORTRAIT = _card(1020)          # [Select Info]
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate

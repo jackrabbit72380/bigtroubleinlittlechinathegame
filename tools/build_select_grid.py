@@ -43,10 +43,10 @@ SCREEN = (1920, 1080)
 # screen uses - and the 8px gutters between them came down to 2px to pay for it:
 # 10 * 80 + 9 * 2 = 818, so the wall spans x=231 to x=1049 and the two standing
 # fighters keep their own column either side of it.
-CELL = 123
-GAP = 4
+CELL = 158
+GAP = 0
 COLS, ROWS = 10, 5
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 31)
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 30)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
 
@@ -59,8 +59,8 @@ AXIS = (0, 0)
 # build_portraits.py paints the art 214x600 and it is drawn at x=2 and x=1278,
 # so the window is wider and taller than the art and no part of the fighter is
 # cut off by the screen edge.
-FACE2_WIN_P1 = "0,129,327,1068"
-FACE2_WIN_P2 = "1593,129,1920,1068"
+FACE2_WIN_P1 = "0,560,170,1035"
+FACE2_WIN_P2 = "1750,560,1920,1035"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
@@ -196,7 +196,7 @@ RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
 # exactly - the validator refuses anything that would show around the art.
-RANDOM_PANEL = (321, 900)
+RANDOM_PANEL = (160, 450)
 
 
 def random_card(size):
@@ -343,12 +343,12 @@ KEYS = (
     # from 300px-wide art and pushed a quarter of each fighter off the edge.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "3,150"),
+    ("p1.face2.offset", "5, 585"),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1917,150"),
+    ("p2.face2.offset", "1915, 585"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are engine text and were still the
@@ -376,20 +376,20 @@ KEYS = (
     ("p1.face2.random.spr", "151,10"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
-    ("p1.face2.random.offset", "3, 150"),
+    ("p1.face2.random.offset", "5, 585"),
     ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "3, 300"),
-    ("p1.face2.loading.scale", ".625, .625"),
+    ("p1.face2.loading.offset", "5, 716"),
+    ("p1.face2.loading.scale", "0.3333, 0.3333"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
-    ("p2.face2.random.offset", "1917, 150"),
+    ("p2.face2.random.offset", "1915, 585"),
     ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1917, 300"),
-    ("p2.face2.loading.scale", ".625, .625"),
+    ("p2.face2.loading.offset", "1915, 716"),
+    ("p2.face2.loading.scale", "0.3333, 0.3333"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
     # the cells beside it.
