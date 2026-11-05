@@ -3848,7 +3848,14 @@ function main.f_menuCommonCalc(t, item, cursorPosY, moveTxt, sec, cursorParams, 
 		end
 	end
 	main.menuWrapped = false
-	if item > #t or (item == 1 and t[item].itemname:match("^spacer%d*$")) then
+	if #t == 0 then
+		-- A screen can come up with no items at all (the video submenus list
+		-- whatever resolutions the motif names, and one missing key leaves the
+		-- list empty). Indexing t[1] below then raised "attempt to index a
+		-- non-table object(nil) with key 'itemname'" on entry.
+		item = 1
+		cursorPosY = 1
+	elseif item > #t or (item == 1 and t[item].itemname:match("^spacer%d*$")) then
 		item = 1
 		while true do
 			if not t[item].itemname:match("^spacer%d*$") or item >= #t then break end
