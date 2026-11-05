@@ -105,6 +105,10 @@ end
 local function makeText(font, x, y, scale)
 	local t = textImgNew()
 	applyFont(t, font)
+	-- A sprite built with textImgNew inherits neither the motif font's colour nor
+	-- its alignment, so both are set here rather than left to the build's default.
+	pcall(textImgSetAlign, t, 1)
+	pcall(textImgSetColor, t, 255, 255, 255)
 	textImgSetPos(t, x, y)
 	if scale then
 		textImgSetScale(t, scale, scale)
@@ -143,6 +147,26 @@ local function setText(sprite, text)
 	return sprite
 end
 
+-- Everything the browser paints is asked for layer 2.
+--
+-- This is why choosing MUSIC showed the clouds and the logo and nothing else:
+-- a text sprite built with textImgNew starts on layer 0, and Ikemen draws a
+-- background definition's front layer - the title artwork - above every sprite
+-- on layer 0. The list was there the whole time, underneath the backdrop. The
+-- engine's own menu text never hits this because it draws at the motif's
+-- menu.item.layerno, which this screenpack sets to 2; textImgDraw takes the
+-- layer as its optional second argument, so the browser asks for the same one.
+local LAYER = 2
+
+local function drawText(t)
+	if pcall(textImgDraw, t, LAYER) then
+		return
+	end
+	-- A build whose textImgDraw takes one argument still gets the text, just at
+	-- its own layer; see the background comment for what is done about that.
+	textImgDraw(t)
+end
+
 local function drawAlbumArt(albumData, album, x, y)
 	if albumData == nil or album.art == nil then
 		return
@@ -157,6 +181,7 @@ local function drawAlbumArt(albumData, album, x, y)
 		scale = COVER.cap / w
 	end
 	pcall(animSetScale, anim, scale, scale)
+	pcall(animSetLayerno, anim, LAYER)
 	pcall(animUpdate, anim)
 	main.f_animPosDraw(anim, x, y)
 end
@@ -223,13 +248,16 @@ function ms.open()
 		if bgSec then
 			clearColor(bgSec.bgclearcolor[1], bgSec.bgclearcolor[2], bgSec.bgclearcolor[3])
 			bgReset(bgSec.BGDef)
+			-- Back layer only. The front layer is the title logo, and it is drawn
+			-- above layer-0 sprites, so painting it here buried the list on any
+			-- build that ignores the layer argument above. The clouds are the back
+			-- layer, so the screen keeps its backdrop without ever hiding text.
 			bgDraw(bgSec.BGDef, 0)
-			bgDraw(bgSec.BGDef, 1)
 		end
 		drawAlbumArt(albumData, album, COVER.x, COVER.y)
 
 		textImgSetText(head, main.f_itemnameUpper(album.name ~= '' and album.name or 'Options', true))
-		textImgDraw(head)
+		drawText(head)
 
 		if songNo < scroll then
 			scroll = songNo
@@ -249,13 +277,13 @@ function ms.open()
 				textImgSetText(pair.active, label)
 			end
 			if s ~= nil then
-				textImgDraw((scroll + i - 1 == songNo) and pair.active or pair.normal)
+				drawText((scroll + i - 1 == songNo) and pair.active or pair.normal)
 			end
 		end
 
 		textImgSetText(choice, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music')
-		textImgDraw(choice)
-		textImgDraw(hint)
+		drawText(choice)
+		drawText(hint)
 
 		refresh()
 
