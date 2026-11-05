@@ -91,6 +91,11 @@ e14800a is already in this folder.` - and waits for one keypress. `C` carries
 on, `E` closes the window with nothing downloaded, copied or deleted. Where
 the check cannot read main, it says so instead of guessing.
 
+Asking GitHub for the latest commit runs beside the window rather than
+silently: the seconds are counted on the status line, git aborts itself
+after thirty seconds of less than 1 KB/s, and after three minutes without
+an answer the launcher takes the verified download instead of waiting.
+
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
 

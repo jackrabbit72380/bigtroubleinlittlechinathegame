@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v20
+rem  BIG TROUBLE IN LITTLE CHINA - updater v21
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v20
+echo                        updater v21
 echo.
 echo   ==============================================================
 echo.
@@ -149,11 +149,28 @@ if not defined GITBUNDLE if defined GITDIR if exist "%GITDIR%..\usr\ssl\certs\ca
 if not defined GITBUNDLE if exist "%ProgramFiles%\Git\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%ProgramFiles%\Git\mingw64\ssl\certs\ca-bundle.crt"
 if not defined GITBUNDLE if exist "%ProgramFiles%\Git\usr\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%ProgramFiles%\Git\usr\ssl\certs\ca-bundle.crt"
 if not defined GITBUNDLE if exist "%LOCALAPPDATA%\Programs\Git\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%LOCALAPPDATA%\Programs\Git\mingw64\ssl\certs\ca-bundle.crt"
+rem an MSYS2-style install keeps git in usr\bin and the bundle two levels up
+if not defined GITBUNDLE if defined GITDIR if exist "%GITDIR%..\..\usr\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%GITDIR%..\..\usr\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if defined GITDIR if exist "%GITDIR%..\..\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%GITDIR%..\..\mingw64\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if defined GITDIR if exist "%GITDIR%..\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%GITDIR%..\ssl\certs\ca-bundle.crt"
 set "GITCA="
 if not defined GITBUNDLE goto gitca_done
 set "GIT_SSL_CAINFO=%GITBUNDLE%"
 set GITCA=-c http.sslCAInfo="%GITBUNDLE%"
 :gitca_done
+rem A bundle git names but cannot read fails every fetch, and git can sit on
+rem the connection for a long time before it says so. That is knowable here: if
+rem git points at a file this machine does not have and no bundle was found
+rem beside it, the archive is taken straight away instead of stalling.
+set "GITCAFILE="
+for /f "delims=" %%c in ('git config --get http.sslCAInfo 2^>nul') do set "GITCAFILE=%%c"
+if not defined GITCAFILE goto gitca_checked
+if defined GITBUNDLE goto gitca_checked
+if exist "%GITCAFILE%" goto gitca_checked
+echo            Git cannot read its certificate bundle: %GITCAFILE%
+echo            Using the verified download instead.
+goto probe
+:gitca_checked
 if exist ".git" goto githere
 echo            First run: reading what is here so only changes download.
 echo            That reads the art already in this folder; it is not downloaded.
@@ -183,8 +200,39 @@ echo            Bring it up to date yourself with:  git pull
 goto launch
 
 :gitfetch
-git %GITCA% -c core.longpaths=true fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
-if errorlevel 1 goto gitfail
+rem The fetch used to run with no output and no limit: on a stalled line the
+rem window sat blinking with nothing to show. It now runs beside the launcher,
+rem the seconds are counted where the bar goes, git aborts itself after thirty
+rem seconds of under 1 KB/s, and this gives up asking after three minutes.
+set "GDONE=%CACHE%\gitdone-%RANDOM%.txt"
+set "GERR=%CACHE%\giterr-%RANDOM%.txt"
+set "GRUN=%CACHE%\gitrun-%RANDOM%.bat"
+if exist "%GDONE%" del /q "%GDONE%" >nul 2>&1
+echo            Asking main for its latest commit - a few KB.
+>"%GRUN%" echo @echo off
+>>"%GRUN%" echo git %GITCA% -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 --progress origin main 2^>"%GERR%"
+>>"%GRUN%" echo echo %%ERRORLEVEL%%^>"%GDONE%"
+start "" /b "%GRUN%"
+set /a GW=0
+:gitpoll
+call :sleep 2
+set /a GW+=2
+if exist "%GDONE%" goto gitpoll_done
+set "DLTLINE=[ git ]  waiting for GitHub ... %GW% seconds"
+call :dltxt "%DLTLINE%"
+if %GW% LSS 180 goto gitpoll
+call :dlend
+echo            GitHub did not answer within three minutes.
+echo            Trying a direct download instead.
+del /q "%GRUN%" >nul 2>&1
+goto probe
+:gitpoll_done
+call :dlend
+del /q "%GRUN%" >nul 2>&1
+set "GRC="
+set /p GRC=<"%GDONE%"
+del /q "%GDONE%" >nul 2>&1
+if not "%GRC%"=="0" goto gitfail
 rem What the fetch just found, before the folder is read or anything is
 rem written: one sentence and a Continue/Exit choice.
 set "NEWSHORT="
@@ -250,8 +298,8 @@ goto copied
 :gitfail
 call :dlend
 echo            Git could not fetch. It said:
-if not exist "%CACHE%\git.log" goto probe
-"%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
+if defined GERR if exist "%GERR%" type "%GERR%"
+if not defined GERR if exist "%CACHE%\git.log" type "%CACHE%\git.log"
 echo            Trying a direct download instead.
 goto probe
 
