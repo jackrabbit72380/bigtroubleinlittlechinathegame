@@ -138,10 +138,10 @@ footer.title.offset = 5, 5000
 footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
 fadein.time = 10
 fadeout.time = 10
-menu.pos = 1240, 520
+menu.pos = 800, 470
 menu.tween.factor = 0.5
-menu.item.font = 10,0,-1, 240, 196, 88
-menu.item.active.font = 12,0,-1, 255, 228, 140
+menu.item.font = 10,0,1, 240, 196, 88
+menu.item.active.font = 12,0,1, 255, 228, 140
 menu.item.spacing = 0, 56
 menu.item.layerno = 2
 menu.item.active.layerno = 2
@@ -280,7 +280,6 @@ spriteno = 100,0
 layerno = 0
 start = -960, 0
 
-scale = 1.5, 1.5
 [TitleBG Background Clouds Top]
 type = normal
 spriteno = 100,2
@@ -291,7 +290,6 @@ velocity = -0.15, 0
 window = 0, 0, 1918.5, 1438.5
 mask = 1
 
-scale = 1.5, 1.5
 [TitleBG Background Clouds Bottom]
 type = normal
 spriteno = 100,3
@@ -303,7 +301,6 @@ window = 0, 0, 1918.5, 1438.5
 mask = 1
 
 
-scale = 1.5, 1.5
 [TitleBG Background Black Bars]
 type = normal
 spriteno = 100,1
@@ -313,7 +310,6 @@ trans = add1
 mask = 1
 
 
-scale = 1.5, 1.5
 [TitleBG Title LogoShadow]
 type = normal
 spriteno = 0, 2
@@ -324,7 +320,6 @@ alpha = 256,96
 trans = add
 sin.y = 15, 264, 2
 
-scale = 1.5, 1.5
 [TitleBG Title LogoShadow]
 type = normal
 spriteno = 0, 3
@@ -335,7 +330,6 @@ alpha = 256,96
 trans = add
 sin.y = 15, 264, 32
 
-scale = 1.5, 1.5
 [TitleBG Title Logo]
 type = normal
 spriteno = 0, 0
@@ -344,7 +338,6 @@ start = -101,94
 mask = 1
 sin.y = 15, 264, 2
 
-scale = 1.5, 1.5
 [TitleBG Title Logo 2]
 type = normal
 spriteno = 0, 1
@@ -354,7 +347,6 @@ mask = 1
 sin.y = 15, 264, 32
 
 ;----------------------------
-scale = 1.5, 1.5
 [Infobox] ;(new in MUGEN 1.0)
 title.offset = 640,38
 title.font = 10,0,0, 255, 228, 140
@@ -447,7 +439,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0, 0
 portrait.loading.scale = .25,.25
 title.offset = 960, 3
-title.font = 11, 0, 0, 255, 228, 140
+title.font = 10,0,0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -622,17 +614,17 @@ p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 75, 1035
-p1.name.font = 11, 0, 0, 255, 228, 140
+p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1845, 1035
-p2.name.font = 11, 0, -1, 255, 170, 96
+p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.spacing = -22.5, 37.5
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 960, 1035
-stage.font = 11, 0, 0, 236, 200, 120
+stage.font = 11, 0, 0, 176, 126, 44
 stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 176, 126, 44
 stage.done.font = 11, 0, 0, 176, 126, 44
