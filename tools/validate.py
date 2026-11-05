@@ -318,12 +318,14 @@ def check_select_screen(chars):
     # must draw inside the portrait rect. The engine scales a sprite's axis with
     # it, which is what pushed the stock 5x "?" out past the panel and left it
     # showing around the preview art.
-    portrait = (float(SIDE_SIZE[0]), float(SIDE_SIZE[1]))   # 9000,2 at scale 1
+    # 9000,2 covers the panel exactly: it is painted at twice SIDE_SIZE
+    # (build_portraits.SIDE_RES) and drawn at face2.scale 0.5, so the screen
+    # rect is SIDE_SIZE whichever way round the two numbers are.
+    portrait = (float(SIDE_SIZE[0]), float(SIDE_SIZE[1]))
     for side, flip in (("p1", 1), ("p2", -1)):
         off = [float(v) for v in opts.get(side + ".face2.offset", "0,0").split(",")]
-        psc = [float(v) for v in opts.get(side + ".face2.scale", "1,1").split(",")]
-        px = off[0] if flip > 0 else off[0] - portrait[0] * psc[0]
-        box = (px, off[1], px + portrait[0] * psc[0], off[1] + portrait[1] * psc[1])
+        px = off[0] if flip > 0 else off[0] - portrait[0]
+        box = (px, off[1], px + portrait[0], off[1] + portrait[1])
         for state in ("random", "loading"):
             key = "%s.face2.%s" % (side, state)
             spr = [int(v) for v in opts.get(key + ".spr", "0,0").split(",")]
@@ -374,8 +376,9 @@ def check_select_screen(chars):
         # at twice the cell (build_portraits.CELL_RES) and drawn at 0.5, so the
         # screen size is the cell either way. The VS and side art draw at 1.
         cell_scale = [float(v) for v in opts.get("portrait.scale", "1,1").split(",")]
+        side_scale = [float(v) for v in opts.get("p1.face2.scale", "1,1").split(",")]
         scales = {(9000, 0): cell_scale, (9000, 1): (1.0, 1.0),
-                  (9000, 2): (1.0, 1.0)}
+                  (9000, 2): side_scale}
         want = {(9000, 0): CELL_SIZE, (9000, 1): BIG_SIZE,
                 (9000, 2): SIDE_SIZE}
         for key, size in want.items():
