@@ -68,9 +68,43 @@ local function albumsFromJson()
 	return albums
 end
 
+-- textImgSetFont is the call that puts a face on a text sprite. The nightly
+-- this ships against has no textImgApplyFontTuple at all, and calling the
+-- missing one is what took the whole browser down ("attempt to call a
+-- non-function object" at this line). Builds also disagree about whether the
+-- font goes in as the table or as its index, so both are tried once and the
+-- one that works is remembered - the same probe devhelp.lua uses.
+local fontMode = nil
+
+local function applyFont(t, font)
+	if font == nil then
+		return
+	end
+	local idx = type(font) == 'table' and font[1] or font
+	local tries = {}
+	if fontMode == nil or fontMode == 'object' then
+		tries[#tries + 1] = {mode = 'object', value = font}
+	end
+	if idx ~= nil and (fontMode == nil or fontMode == 'index') then
+		tries[#tries + 1] = {mode = 'index', value = idx}
+	end
+	if idx ~= nil and motif.files ~= nil and motif.files.font ~= nil then
+		local byIndex = motif.files.font['font' .. tostring(idx)]
+		if byIndex ~= nil and fontMode ~= 'index' then
+			tries[#tries + 1] = {mode = 'object', value = byIndex}
+		end
+	end
+	for _, try in ipairs(tries) do
+		if pcall(textImgSetFont, t, try.value) then
+			fontMode = try.mode
+			return
+		end
+	end
+end
+
 local function makeText(font, x, y, scale)
 	local t = textImgNew()
-	textImgApplyFontTuple(t, font)
+	applyFont(t, font)
 	textImgSetPos(t, x, y)
 	if scale then
 		textImgSetScale(t, scale, scale)
@@ -162,6 +196,24 @@ function ms.open()
 		albumData = nil
 	end
 
+	-- Input comes from the engine's getInput. main.f_input belongs to the
+	-- reference module this file was written against and does not exist in this
+	-- codebase, so the first frame of the browser would have raised on it.
+	local titleMenu = motif.title_info and motif.title_info.menu
+	local function hit(keys)
+		if keys == nil then
+			return false
+		end
+		local ok, res = pcall(getInput, -1, keys)
+		return (ok and res ~= nil and res ~= false) and true or false
+	end
+	local function pressed(name, fallback)
+		if titleMenu and titleMenu[name] and hit(titleMenu[name].key) then
+			return true
+		end
+		return hit(fallback)
+	end
+
 	local albumNo, songNo, scroll = 1, 1, 1
 	textImgSetText(hint, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back')
 
@@ -208,7 +260,7 @@ function ms.open()
 
 		if esc() then
 			return false
-		elseif main.f_input({1}, {'$U', 'LS_Y-'}) then
+		elseif pressed('up', 'UP') then
 			moveSnd()
 			songNo = songNo - 1
 			if songNo < 1 then
@@ -218,7 +270,7 @@ function ms.open()
 				end
 				songNo = #albums[albumNo].songs
 			end
-		elseif main.f_input({1}, {'$D', 'LS_Y+'}) then
+		elseif pressed('down', 'DOWN') then
 			moveSnd()
 			songNo = songNo + 1
 			if songNo > #album.songs then
@@ -228,23 +280,23 @@ function ms.open()
 				end
 				songNo = 1
 			end
-		elseif main.f_input({1}, {'$L', 'LS_X-'}) then
+		elseif pressed('left', 'LEFT') then
 			moveSnd()
 			albumNo = albumNo - 1
 			if albumNo < 1 then
 				albumNo = #albums
 			end
 			songNo, scroll = 1, 1
-		elseif main.f_input({1}, {'$R', 'LS_X+'}) then
+		elseif pressed('right', 'RIGHT') then
 			moveSnd()
 			albumNo = albumNo + 1
 			if albumNo > #albums then
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-		elseif main.f_input({1}, doneKeys()) then
+		elseif hit(doneKeys()) then
 			doneSnd()
-			if song.file ~= nil then
+			if song ~= nil and song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
 			else
@@ -268,5 +320,10 @@ end
 -- main.menu.f and, when that is non-nil, fades the screen out and calls it as a
 -- function. The browser is a screen of its own, so the title menu just stays.
 main.t_itemname.music = function(t, item)
-	ms.open()
+	-- A screen of its own, so a failure inside it must not take the engine down
+	-- with an error dialog: it is logged and the title menu is left standing.
+	local ok, err = pcall(ms.open)
+	if not ok then
+		print('musicselect: the browser could not open: ' .. tostring(err))
+	end
 end
