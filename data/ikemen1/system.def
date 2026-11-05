@@ -1285,12 +1285,12 @@ stage.font = 11, 0, 0, 176, 126, 44
 stage.scale = 1.5, 1.5
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -122
-stage.portrait.scale = 0.4280, 0.4280
+stage.portrait.offset = -320.0000, -405.0000
+stage.portrait.scale = 0.5267, 0.5267
 stage.portrait.bg.spr = 112,0
-stage.portrait.bg.offset = -260, -207
+stage.portrait.bg.offset = -4000, -4000
 stage.portrait.bg.scale = 1.0, 1.0
-stage.portrait.window = 703, 831, 1217, 995
+stage.portrait.window = 640, 630, 1280, 990
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
