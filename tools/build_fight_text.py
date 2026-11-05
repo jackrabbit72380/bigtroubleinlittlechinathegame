@@ -68,6 +68,53 @@ def place_wins(text):
     return head + body + tail, changed
 
 
+# The round banner. The stock motif spells the round "R   %i" in the 180px
+# Round face, so round 2 announced itself as "R 2". It is spelled out now, in the
+# Display face the VS screen's fighter names use - the same face the menus show -
+# at twice the cell so it still reads as an announcement between the rounds.
+ROUND_KEYS = (
+    ("round.default.text", '"ROUND %i"'),
+    ("round.default.font", "10,0,0, 255, 228, 140"),
+    ("round.default.scale", "2, 2"),
+    ("round.single.text", '"ROUND %i"'),
+    ("round.single.font", "10, 0, 0, 255, 228, 140"),
+    ("round.single.scale", "2, 2"),
+    ("round.final.font", "10,0,0, 255, 228, 140"),
+    ("round.final.scale", "2, 2"),
+)
+
+
+def place_round_banner(text):
+    """Point [Round] at the Display face, wording the banner out."""
+    made = False
+    if "fonts/Display.def" not in text:
+        fonts = list(re.finditer(r"^font(\d+)\s*=[^\r\n]*$", text, re.M))
+        if not fonts:
+            return text, False
+        last = fonts[-1]
+        eol = "\r\n" if text[last.start():last.end()].endswith("\r") else "\n"
+        line = "font%d = ikemen1/fonts/Display.def   ;the VS screen's face" % (
+            int(last.group(1)) + 1)
+        text = text[:last.end()] + eol + line + text[last.end():]
+        made = True
+
+    start = text.find("[Round]")
+    if start < 0:
+        return text, made
+    nxt = re.compile(r"^\[", re.M).search(text, start + len("[Round]"))
+    end = nxt.start() if nxt else len(text)
+    head, body, tail = text[:start], text[start:end], text[end:]
+    for key, value in ROUND_KEYS:
+        pattern = re.compile(r"^[ \t]*" + re.escape(key) + r"[ \t]*=[^\r\n]*$", re.M)
+        line = "%s = %s" % (key, value)
+        new = pattern.sub(line, body, count=1) if pattern.search(body) \
+            else body.rstrip("\r\n") + "\n" + line + "\n"
+        if new != body:
+            made = True
+        body = new
+    return head + body + tail, made
+
+
 def build():
     if not os.path.isfile(FIGHT_DEF):
         raise SystemExit("data/fight.def is missing")
@@ -101,6 +148,16 @@ def build():
             f.write(text)
         os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
 
+    # fight.def is reset from the engine copy on every build, so the round
+    # banner is set here rather than left as a hand edit.
+    with open(FIGHT_DEF, encoding="utf-8", errors="replace", newline="") as f:
+        text = f.read()
+    text, banner = place_round_banner(text)
+    if banner:
+        with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8", newline="") as f:
+            f.write(text)
+        os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
+
     # Read back: one captioned spec has to carry the colour now.
     with open(FIGHT_DEF, encoding="utf-8", errors="replace") as f:
         check = f.read()
@@ -111,6 +168,10 @@ def build():
         line = next(l for l in check.splitlines() if l.strip().startswith("round.default.font"))
         if "," not in line.split("=", 1)[1] or len(line.split("=", 1)[1].split(",")) < 6:
             raise SystemExit("round.default.font did not pick up the colour: %r" % line)
+    if 'round.default.text = "ROUND %i"' not in check:
+        raise SystemExit("the round banner did not take the wording")
+    if "fonts/Display.def" not in check:
+        raise SystemExit("the Display face was not registered in fight.def")
     print("fight text: %d caption(s) given the gold, %d already coloured, "
           "%d win-counter key(s) moved onto the character boxes"
           % (changed, sum(1 for l in text.splitlines() if ".font" in l and "=" in l)
