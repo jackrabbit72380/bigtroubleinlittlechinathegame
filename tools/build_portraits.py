@@ -36,7 +36,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # what keeps the whole fighter visible instead of cropped by the frame.
 CELL = (128, 160)          # the grid's cell, in build_select_grid.py
 BUST = 100                 # the bust sits inside the cell bevel
-SIDE = (310, 900)          # the tall art beside the grid
+# The standing art beside the grid. A fighter is 0.77 as wide as it is tall, so
+# a column narrower than that cannot hold him whole: containing a 0.77-aspect
+# figure in 310x900 gave 310x402 and left 500px of the column empty, and the old
+# height-fit filled the column by throwing 62% of his width away. The roster
+# column is at most 426px wide before it meets the grid, so the art is painted
+# to the widest box that still leaves the panel its air - 380x500 - and the
+# figure inside it is contained, not cropped.
+SIDE = (380, 500)          # the standing art beside the grid
 BIG = (360, 420)
 AXIS = (0, 0)
 
@@ -116,6 +123,29 @@ def fit(img, size, head=False):
     return out
 
 
+def fit_whole(img, size):
+    """Scale to fit the whole figure, feet on the bottom edge of the box.
+
+    ``fit`` scales by height and crops the surplus width, which is right for the
+    roster cells and the VS bust - they are head-and-shoulders crops and meant to
+    be. It was wrong for the standing art beside the grid: a 0.77-aspect fighter
+    scaled to a 310x900 column kept only 136 of his 357 source pixels, so what
+    hung at the sides was a vertical slice with the arms, the rifle and the legs
+    shaved off along the image edges. Containing him keeps every pixel of the
+    figure inside the art, and bottom-aligning stands him on the panel's floor
+    instead of floating him in the middle of it.
+    """
+    out = Image.new("RGBA", size, (0, 0, 0, 0))
+    if img.width < 1 or img.height < 1:
+        return out
+    k = min(size[0] / float(img.width), size[1] / float(img.height))
+    w = max(1, int(round(img.width * k)))
+    h = max(1, int(round(img.height * k)))
+    img = img.resize((w, h), Image.LANCZOS)
+    out.alpha_composite(img, ((size[0] - w) // 2, size[1] - h))
+    return out
+
+
 def cell_art(img, cell=CELL):
     """The roster cell: a head-and-shoulders crop centred on the cell plate.
 
@@ -178,7 +208,7 @@ def patch_character(path):
 
     cell_size, big_size, side_size = portrait_sizes(path)
     cell = cell_art(source, cell_size)
-    side = fit(source, side_size)
+    side = fit_whole(source, side_size)
     out = [{"group": sp["group"], "number": sp["number"], "raw": sp["raw"],
             "format": sp["format"], "depth": sp["depth"], "w": sp["w"],
             "h": sp["h"], "axis": sp["axis"], "pal": sp["pal"],
