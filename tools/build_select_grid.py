@@ -43,12 +43,12 @@ SCREEN = (1920, 1080)
 # screen uses - and the 8px gutters between them came down to 2px to pay for it:
 # 10 * 80 + 9 * 2 = 818, so the wall spans x=231 to x=1049 and the two standing
 # fighters keep their own column either side of it.
-CELL = 158
-GAP = 0
+CELL, CELL_H = 128, 160
+GAP = 2
 COLS, ROWS = 10, 5
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 30)
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 40)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
-GRID_H = ROWS * CELL + (ROWS - 1) * GAP
+GRID_H = ROWS * CELL_H + (ROWS - 1) * GAP
 
 BG_SPR = (220, 0)
 CELL_SPR = (222, 0)
@@ -59,8 +59,8 @@ AXIS = (0, 0)
 # build_portraits.py paints the art 214x600 and it is drawn at x=2 and x=1278,
 # so the window is wider and taller than the art and no part of the fighter is
 # cut off by the screen edge.
-FACE2_WIN_P1 = "0,560,170,1035"
-FACE2_WIN_P2 = "1750,560,1920,1035"
+FACE2_WIN_P1 = "0,180,311,1080"
+FACE2_WIN_P2 = "1609,180,1920,1080"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
@@ -154,33 +154,44 @@ def background():
 
 
 def cell_frame():
-    """One empty portrait cell: dark stone plate with a gold bevel."""
-    s = CELL
-    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    d.rectangle([0, 0, s - 1, s - 1], fill=INK + (238,))
-    d.rectangle([0, 0, s - 1, s - 1], outline=GOLD + (255,), width=3)
-    d.rectangle([3, 3, s - 4, s - 4], outline=(26, 24, 20, 255), width=3)
-    d.rectangle([6, 6, s - 7, s - 7], outline=GOLD_DIM + (210,), width=2)
+    """One empty portrait cell: a tall coin plate with a gold bevel.
 
-    shade = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    The cells are 128x160, not squares: the grid reads as columns of figures
+    rather than a wall of buttons, and the extra 32px is head room for the bust.
+    """
+    w, h = CELL, CELL_H
+    r = min(w, h) // 8
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=INK + (238,),
+                        outline=GOLD + (255,), width=3)
+    d.rounded_rectangle([3, 3, w - 4, h - 4], radius=max(2, r - 2),
+                        outline=(26, 24, 20, 255), width=3)
+    d.rounded_rectangle([6, 6, w - 7, h - 7], radius=max(2, r - 4),
+                        outline=GOLD_DIM + (210,), width=2)
+
+    shade = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shade)
     for y in range(7, 45):
-        sd.line([(7, y), (s - 8, y)], fill=(0, 0, 0, int(74 * (1 - (y - 7) / 37.0))))
+        sd.line([(7, y), (w - 8, y)], fill=(0, 0, 0, int(74 * (1 - (y - 7) / 37.0))))
     img.alpha_composite(shade)
     return img
 
 
 def cursor_frame(colour):
     """Selection frame: a bright box with a soft outward glow."""
-    s = CELL
-    img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    w, h = CELL, CELL_H
+    r = min(w, h) // 8
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rectangle([3, 3, s - 4, s - 4], outline=colour + (255,), width=6)
-    d.rectangle([9, 9, s - 10, s - 10], outline=(255, 255, 255, 150), width=2)
-    d.rectangle([0, 0, s - 1, s - 1], outline=colour + (120,), width=1)
+    d.rounded_rectangle([3, 3, w - 4, h - 4], radius=max(2, r - 1),
+                        outline=colour + (255,), width=6)
+    d.rounded_rectangle([9, 9, w - 10, h - 10], radius=max(2, r - 3),
+                        outline=(255, 255, 255, 150), width=2)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=colour + (120,),
+                        width=1)
     glow = img.filter(ImageFilter.GaussianBlur(10))
-    out = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+    out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     out.alpha_composite(glow)
     out.alpha_composite(img)
     return out
@@ -191,12 +202,12 @@ def cursor_frame(colour):
 # a recoloured 62px glyph blown up 4.8x in the panels, which is why the random
 # portrait read as blank next to the painted ones.
 RANDOM_CELL = (151, 0)
-RANDOM_CARD = (158, 158)
+RANDOM_CARD = (128, 160)
 RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
 # exactly - the validator refuses anything that would show around the art.
-RANDOM_PANEL = (160, 450)
+RANDOM_PANEL = (310, 900)
 
 
 def random_card(size):
@@ -307,7 +318,7 @@ KEYS = (
     ("pos", "%d,%d" % GRID),
     ("showemptyboxes", "0"),
     ("moveoveremptyboxes", "0"),
-    ("cell.size", "%d,%d" % (CELL, CELL)),
+    ("cell.size", "%d,%d" % (CELL, CELL_H)),
     ("cell.spacing", str(GAP)),
     ("cell.bg.spr", "%d,%d" % CELL_SPR),
     ("cell.bg.scale", "1,1"),
@@ -343,12 +354,12 @@ KEYS = (
     # from 300px-wide art and pushed a quarter of each fighter off the edge.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "5, 585"),
+    ("p1.face2.offset", "0, 180"),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1915, 585"),
+    ("p2.face2.offset", "1920, 180"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are engine text and were still the
@@ -376,19 +387,19 @@ KEYS = (
     ("p1.face2.random.spr", "151,10"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
-    ("p1.face2.random.offset", "5, 585"),
+    ("p1.face2.random.offset", "0, 180"),
     ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "5, 716"),
+    ("p1.face2.loading.offset", "0, 180"),
     ("p1.face2.loading.scale", "0.3333, 0.3333"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
-    ("p2.face2.random.offset", "1915, 585"),
+    ("p2.face2.random.offset", "1920, 180"),
     ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1915, 716"),
+    ("p2.face2.loading.offset", "1920, 180"),
     ("p2.face2.loading.scale", "0.3333, 0.3333"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
@@ -521,7 +532,7 @@ def main():
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     background().convert("RGB").save(os.path.join(ROOT, "artifacts", "select_bg.png"))
-    sheet = Image.new("RGBA", (CELL * 3 + 32, CELL + 16), (24, 24, 32, 255))
+    sheet = Image.new("RGBA", (CELL * 3 + 32, CELL_H + 16), (24, 24, 32, 255))
     sheet.alpha_composite(cell_frame(), (8, 8))
     sheet.alpha_composite(cursor_frame(PLAYER_COLOURS[0]), (CELL + 16, 8))
     sheet.alpha_composite(cursor_frame(PLAYER_COLOURS[1]), (CELL * 2 + 24, 8))

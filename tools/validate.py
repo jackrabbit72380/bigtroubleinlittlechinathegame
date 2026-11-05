@@ -41,11 +41,11 @@ def _grid_cell():
     import os, re
     here = os.path.dirname(os.path.abspath(__file__))
     with open(os.path.join(here, "build_select_grid.py"), encoding="utf-8") as f:
-        m = re.search(r"^CELL = (\d+)$", f.read(), re.M)
-    return int(m.group(1))
+        m = re.search(r"^CELL(?:, CELL_H)? = (\d+)(?:, (\d+))?", f.read(), re.M)
+    return int(m.group(1)), int(m.group(2) or m.group(1))
 
 
-CELL = _grid_cell()
+CELL, CELL_H = _grid_cell()
 CELL_SIZE, BIG_SIZE, SIDE_SIZE = _portrait_sizes()
 MOTIF_WIDTH = int(re.search(r"^\s*localcoord\s*=\s*(\d+)",
                   open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
@@ -259,9 +259,9 @@ def check_select_screen(chars):
         err("select screen: grid is %s rows by %s columns, expected 5 by 10 "
             "(50 cells for the whole cast plus the random box)"
             % (opts.get("rows"), opts.get("columns")))
-    if opts.get("cell.size") != "%d,%d" % (CELL, CELL):
+    if opts.get("cell.size") != "%d,%d" % (CELL, CELL_H):
         err("select screen: cell.size is %r, expected %d,%d"
-            % (opts.get("cell.size"), CELL, CELL))
+            % (opts.get("cell.size"), CELL, CELL_H))
     # Every roster line must land on the one page, or fighters exist but cannot
     # be picked.
     try:

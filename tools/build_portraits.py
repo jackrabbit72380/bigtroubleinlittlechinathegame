@@ -34,9 +34,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The grid's cell is 80px, the size the reference screen uses, and the standing
 # art beside it gets a 214px column; painting the art at the column width is
 # what keeps the whole fighter visible instead of cropped by the frame.
-CELL = (158, 158)          # the grid's cell, in build_select_grid.py
-BUST = 85                  # the bust sits inside the cell bevel (54% of 158)
-SIDE = (160, 450)          # the corner art beside the grid
+CELL = (128, 160)          # the grid's cell, in build_select_grid.py
+BUST = 100                 # the bust sits inside the cell bevel
+SIDE = (310, 900)          # the tall art beside the grid
 BIG = (360, 420)
 AXIS = (0, 0)
 
