@@ -719,7 +719,7 @@ set "PREVSZ=%CANDSZ%"
 exit /b 0
 
 :quit
-rem Reached when E is pressed: nothing has been fetched, copied or deleted.
+rem Reached when Escape is pressed: nothing has been fetched, copied or deleted.
 echo   Nothing was changed. Closing.
 call :sleep 3
 exit 0
@@ -743,7 +743,7 @@ exit /b 0
 :sayupdate
 rem %1 = main's short commit (may be empty when the check could not ask),
 rem %2 = the commit this folder last applied (may be empty). Says plainly
-rem whether there is anything to fetch, so Continue/Exit is an informed choice.
+rem whether there is anything to fetch, so Enter/Escape is an informed choice.
 echo   ==============================================================
 echo.
 if "%~2"=="" goto sayupdate_first
