@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v22
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v23
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v22
+echo                        Updater v23
 echo.
 echo   ==============================================================
 echo.
@@ -532,12 +532,23 @@ echo.
 echo   [ 4/4 ]  Starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
-call :sleep 8
+rem The game has been handed over, so this window has nothing left to do. The
+rem check runs once a second and stops the moment the process exists, instead of
+rem waiting a fixed ten seconds with the game already on screen; a game that
+rem dies on start is still caught, within twelve seconds.
+set /a LW=0
+:launchwait
+call :sleep 1
+set /a LW+=1
 "%TASKLIST%" /fi "imagename eq %EXE%" 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul
-if errorlevel 1 goto launchfail
-echo   Running. Have fun.
-call :sleep 2
-exit /b 0
+if not errorlevel 1 goto launchok
+if %LW% LSS 12 goto launchwait
+goto launchfail
+
+:launchok
+rem exit, not exit /b: the shell goes with it, so no cmd window is left
+rem running behind the game
+exit 0
 
 :skipver2
 goto skipver
@@ -548,14 +559,14 @@ echo   message, and check docs/INSTALL.md - the renderer setting is the
 echo   usual reason, and deleting save\config.ini resets it.
 echo.
 pause
-exit /b 1
+exit 1
 
 :wrongfolder
 echo   This file belongs in your game folder - the one that has
 echo   BigTroubleInLittleChinaTheGame.exe in it.
 echo.
 pause
-exit /b 1
+exit 1
 
 :downloadfailed
 echo.
@@ -568,7 +579,7 @@ echo     2. Save the zip in this folder.
 echo     3. Run "Apply main.zip.bat".
 echo.
 pause
-exit /b 1
+exit 1
 
 rem ===========================================================================
 rem  curl in the background, so the arriving bytes can be counted
@@ -899,4 +910,4 @@ exit /b 0
 rem Reached when E is pressed: nothing has been fetched, copied or deleted.
 echo   Nothing was changed. Closing.
 call :sleep 3
-exit /b 0
+exit 0
