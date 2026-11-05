@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v26
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v27
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v26
+echo                        Updater v27
 echo.
 echo   ==============================================================
 echo.
@@ -82,14 +82,13 @@ set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
 set "ZIPURL2=https://github.com/%REPO%/archive/refs/heads/main.zip"
 set "GITURL=https://github.com/%REPO%.git"
-set "CACHE=%~dp0.update-cache"
-rem A cache folder that cannot be created takes every redirect with it: the
-rem run file is written to a path that is not there, curl never starts, and
-rem the bar sits at zero for twenty minutes saying nothing about it.
-if not exist "%CACHE%" set "CACHE=%TEMP%\btilc-updater"
+rem Everything this launcher writes goes to the temp folder. A game folder can
+rem be read only, on a drive with no room, or behind a path cmd will not take, and
+rem a cache that cannot be written breaks every redirect after it - which is what
+rem left the download sitting at zero with no curl running behind it.
+set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 set "ZIP="
 set "SRC="
 set "WHICH="
@@ -213,43 +212,16 @@ echo            This folder is your own git checkout - left untouched.
 echo            Bring it up to date yourself with:  git pull
 goto launch
 
+rem ---- transport 1: git, in this window ---------------------------------
+rem This used to run in a helper batch whose exit code was read back through a
+rem file. When that file could not be written, a fetch that had already
+rem succeeded was reported as a failure and the folder was made to download the
+rem whole archive. Git prints its own progress here, so nothing has to be
+rem counted, polled or handed back.
 :gitfetch
-rem The fetch used to run with no output and no limit: on a stalled line the
-rem window sat blinking with nothing to show. It now runs beside the launcher,
-rem the seconds are counted where the bar goes, git aborts itself after thirty
-rem seconds of under 1 KB/s, and this gives up asking after three minutes.
-set "GDONE=%CACHE%\gitdone-%RANDOM%.txt"
-set "GERR=%CACHE%\giterr-%RANDOM%.txt"
-set "GRUN=%CACHE%\gitrun-%RANDOM%.bat"
-if exist "%GDONE%" del /q "%GDONE%" >nul 2>&1
-echo            Asking main for its latest commit - a few KB.
->"%GRUN%" echo @echo off
->>"%GRUN%" echo git %GITCA% -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 --progress origin main 2^>"%GERR%"
->>"%GRUN%" echo echo %%ERRORLEVEL%%^>"%GDONE%"
-if not exist "%GRUN%" goto probe
-start "" /b "%GRUN%"
-set /a GW=0
-:gitpoll
-call :sleep 2
-set /a GW+=2
-if exist "%GDONE%" goto gitpoll_done
-set "DLTLINE=[ git ]  waiting for GitHub ... %GW% seconds"
-call :dltxt "%DLTLINE%"
-if %GW% LSS 180 goto gitpoll
-call :dlend
-echo            GitHub did not answer within three minutes.
-echo            Trying a direct download instead.
-del /q "%GRUN%" >nul 2>&1
-goto probe
-:gitpoll_done
-call :dlend
-del /q "%GRUN%" >nul 2>&1
-set "GRC="
-set /p GRC=<"%GDONE%"
-del /q "%GDONE%" >nul 2>&1
-if not "%GRC%"=="0" goto gitfail
-rem What the fetch just found, before the folder is read or anything is
-rem written: one sentence and a Continue/Exit choice.
+echo            Asking main for its latest commit - git prints its own progress.
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
 set "HAVE="
@@ -259,32 +231,24 @@ call :choose
 if errorlevel 1 goto quit
 git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
-rem The index now holds main and the working tree still holds this folder's
-rem files. diff names the paths whose content differs - hashing what is here
-rem instead of fetching it - and checkout-index writes exactly those, pulling
-rem each missing blob on demand.
+echo            Checking which files in this folder differ.
 git -c core.quotepath=false diff --name-only -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 if "%NCH%"=="0" echo            Already current - nothing to download.
 if "%NCH%"=="0" goto gitdel
-echo            %NCH% file(s) differ - fetching them, named as they land.
-if "%VT%"=="1" echo.
+echo            %NCH% file(s) differ - fetching them.
 set /a NDONE=0
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
-call :dlend
 if defined GITBAD goto gitfail
 goto gitdel
 
 :gitone
-rem %1 = one path. Written on its own, so the name of the file being fetched is
-rem on the bar while it is fetched instead of a silent pause.
+rem %1 = one path. Written on its own so the name shows while it is fetched.
 set /a NDONE+=1
 set "GTXT=%~1"
-call :dragonbar %NDONE% %NCH%
-set "GITTXT=[%BAR%]  %NDONE%/%NCH%  %GTXT%"
-call :dltxt "%GITTXT%"
+echo              %NDONE%/%NCH%  %GTXT%
 git checkout-index -f -- "%GTXT%" >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 set "GITBAD=1"
 exit /b 0
@@ -311,17 +275,9 @@ if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 goto copied
 
 :gitfail
-call :dlend
-echo            Git could not fetch.
-set "GITSAID=0"
-if defined GERR if exist "%GERR%" for %%A in ("%GERR%") do if %%~zA GTR 0 set "GITSAID=1"
-if "%GITSAID%"=="1" echo            It said:
-if "%GITSAID%"=="1" type "%GERR%"
-if "%GITSAID%"=="0" echo            It printed nothing - exit code %GRC%.
-if "%GITSAID%"=="0" if exist "%CACHE%\git.log" echo            What git logged:
-if "%GITSAID%"=="0" if exist "%CACHE%\git.log" type "%CACHE%\git.log"
-if "%GITSAID%"=="0" if not exist "%CACHE%\git.log" echo            It left no log either.
-echo            Trying a direct download instead.
+echo.
+echo            Git could not fetch - its own message is above.
+echo            Trying the archive download instead.
 goto probe
 
 :gitdrop
@@ -426,42 +382,23 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  Downloading the game files
-echo            About 190 MB. Leave this window open; a transfer that stops
-echo            starts again from the beginning.
+echo            About 190 MB. curl draws its own progress bar; leave this
+echo            window open until it finishes.
 echo.
-set "ATT=0"
-
-:curl_try
-set /a ATT+=1
-if %ATT% GTR 2 goto dl_ps
-if not defined CURL goto dl_ps
-if %ATT%==2 (call :cfetch "%ZIPURL2%") else (call :cfetch "%ZIPURL%")
-call :zipcheck
-if "%ZIPOK%"=="1" goto havezip
-goto curl_try
-
-
-:dl_ps
-if not defined POWERSHELL goto dl_bits
-set "ZIP=%CACHE%\main-ps.zip"
+if not defined CURL goto dl_browser
+set "ZIP=%CACHE%\main.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            Trying PowerShell. This step is silent, so it may sit a while:
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; $c = New-Object Net.WebClient; $c.Headers.Add('User-Agent','btilc-updater'); $c.DownloadFile('%ZIPURL%','%ZIP%'); exit 0 } catch { Write-Host ('             ' + $_.Exception.Message); exit 1 }"
+"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 --progress-bar -o "%ZIP%" "%ZIPURL%"
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-
-:dl_bits
-if not exist "%SYS%\bitsadmin.exe" goto dl_browser
-set "ZIP=%CACHE%\main-bits.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            Trying BITS, the Windows download service.
-echo            It uses the same proxy settings as your browser.
-"%SYS%\bitsadmin.exe" /reset >nul 2>&1
-"%SYS%\bitsadmin.exe" /transfer BTILCupdate /download /priority normal "%ZIPURL%" "%ZIP%" >nul 2>&1
+echo            Trying GitHub's other archive address.
+"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 --progress-bar -o "%ZIP%" "%ZIPURL2%"
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-
-rem ---- last resort: the browser does the download, this finishes it ------
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+echo            curl could not finish the download.
+echo.
 :dl_browser
 echo.
 echo            This window is not allowed out to GitHub, but your browser is.
@@ -654,70 +591,6 @@ pause
 exit 1
 
 rem ===========================================================================
-rem  curl in the background, so the arriving bytes can be counted
-rem ===========================================================================
-:cfetch
-rem %1 = url. GitHub builds this archive fresh for each commit and does not serve
-rem it in byte ranges - curl answers "HTTP server doesn't seem to support byte
-rem ranges. Cannot resume." - so a half file can never be continued. It is
-rem dropped before every attempt: a part from an earlier commit would only fail
-rem the archive test at the end anyway.
-set "CFURL=%~1"
-set "ZIP=%CACHE%\main.part"
-if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-set "DONE=%CACHE%\done-%RANDOM%.txt"
-set "ERRF=%CACHE%\err-%RANDOM%.txt"
-set "RUNB=%CACHE%\get-%RANDOM%.bat"
-rem A carriage return, so the count is rewritten on its own line. Without it
-rem each redraw would add a line and the window would scroll instead.
-if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
->"%RUNB%" echo @echo off
->>"%RUNB%" echo "%CURL%" -sS -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1200 --speed-time 120 --speed-limit 1024 -o "%ZIP%" "%CFURL%" 2^>"%ERRF%"
->>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
-if not exist "%RUNB%" goto dl_ps
-start "" /b "%RUNB%"
-set /a SECS=0
-set /a KB30=0
-call :drawdl 0 ""
-:cfpoll
-call :sleep 5
-set /a SECS+=5
-set "SZ=0"
-for %%A in ("%ZIP%") do set "SZ=%%~zA"
-set /a KB=SZ/1024
-set "DLINFO="
-if %SECS% GEQ 30 call :rate
-call :drawdl %KB% "%DLINFO%"
-if exist "%DONE%" goto cfdone
-if %SECS% LSS 1200 goto cfpoll
-echo.
-echo            No complete transfer after 20 minutes. The archive has to
-echo            start again, so run the updater once the connection is back.
-exit /b 0
-
-:rate
-rem Averaged over the last half minute, so one slow second does not swing it and
-rem the first reading is left out: it has nothing to compare against.
-set /a GAIN=KB-KB30
-set /a KB30=KB
-set /a RATE=GAIN/30
-if %RATE% LSS 1 set "DLINFO=no data arriving"
-if %RATE% LSS 1 exit /b 0
-set /a LEFT=(194560-KB)/RATE
-call :clock %LEFT% LEFTCLOCK
-set "DLINFO=%RATE% KB/s   %LEFTCLOCK% left"
-exit /b 0
-
-
-:cfdone
-echo.
-call :zipcheck
-if "%ZIPOK%"=="1" exit /b 0
-echo            That attempt did not finish. Curl said:
-if exist "%ERRF%" type "%ERRF%"
-exit /b 0
-
-rem ===========================================================================
 rem  helpers
 rem ===========================================================================
 rem ===========================================================================
@@ -798,66 +671,64 @@ del /q "%~dp0%REL%" >nul 2>&1
 if not errorlevel 1 set /a NDEL+=1
 exit /b 0
 
-:dragonbar
-rem %1 = kilobytes so far, %2 = total kilobytes -> BAR: 20 cells, a body of =
-rem and a head at the tip. The head must not be a redirect character: cmd
-rem parses redirection after variable expansion, so a bar whose tip was > wrote
-rem the left half of the bar into a file named after its right half.
-setlocal EnableDelayedExpansion
-set /a "C=(%~1)*20/(%~2)"
-if !C! LSS 0 set "C=0"
-if !C! GTR 20 set "C=20"
-set "BAR="
-for /l %%i in (1,1,20) do (
-  if %%i LEQ !C! set "BAR=!BAR!="
-  if %%i GTR !C! set "BAR=!BAR!-"
+:sleep
+rem ping is the only delay Windows always has, whatever is on PATH - but if
+rem it cannot run, every wait returns at once and the redraw loop spins at
+rem full speed, blinking and writing a file per frame.
+set /a "P=%~1+1"
+if exist "%PING%" "%PING%" -n %P% 127.0.0.1 >nul 2>&1
+if exist "%PING%" exit /b 0
+if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Sleep -Seconds %~1" >nul 2>&1
+if defined POWERSHELL exit /b 0
+"%SYS%\timeout.exe" /t %~1 /nobreak >nul 2>&1
+exit /b 0
+
+:zipcheck
+rem A download that stopped early still has a plausible size, so the archive
+rem itself is listed and data/fight.def has to be inside it.
+set "ZIPOK=0"
+set "ZS=0"
+if not defined ZIP exit /b 0
+if not exist "%ZIP%" exit /b 0
+for %%A in ("%ZIP%") do set "ZS=%%~zA"
+if not defined ZS exit /b 0
+if %ZS% LSS 20000000 exit /b 0
+if not defined TAR goto zipcheck_ps
+"%TAR%" -tf "%ZIP%" >"%CACHE%\zlist.txt" 2>nul
+if errorlevel 1 exit /b 0
+"%FINDSTR%" /c:"data/fight.def" "%CACHE%\zlist.txt" >nul 2>&1
+if errorlevel 1 exit /b 0
+set "ZIPOK=1"
+exit /b 0
+
+:findzip
+set "FOUNDZIP="
+set "CAND="
+for %%D in ("%USERPROFILE%\Downloads" "%~dp0" "%CACHE%") do (
+  for /f "delims=" %%Z in ('dir /b /a-d /o-d "%%~D\*bigtrouble*.zip" 2^>nul') do (
+    if not defined CAND set "CAND=%%~D\%%Z"
+  )
 )
-endlocal & set "BAR=%BAR%"
+if not defined CAND exit /b 0
+for %%A in ("%CAND%") do set "CANDSZ=%%~zA"
+if not defined CANDSZ exit /b 0
+if %CANDSZ% LSS 20971520 exit /b 0
+if "%CAND%"=="%PREVCAND%" if "%CANDSZ%"=="%PREVSZ%" set "FOUNDZIP=%CAND%"
+set "PREVCAND=%CAND%"
+set "PREVSZ=%CANDSZ%"
 exit /b 0
 
-:drawdl
-rem %1 = kilobytes so far, %2 = rate and time left. One status line, kept at
-rem the bottom and rewritten where the terminal understands ANSI. Elsewhere the
-rem same line is printed once every half minute, because neither a carriage
-rem return through set /p nor clearing the window works there: the first ran
-rem the bars together and the second blinked.
-if not defined DLHEAD goto drawdl_head
-call :dragonbar %~1 194560
-set /a DLMB=%~1/1024
-set /a DLTENTH=%~1*10/1024-DLMB*10
-set "DLTLINE=[%BAR%]  %DLMB%.%DLTENTH%/190 MB"
-if not "%~2"=="" set "DLTLINE=[%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
-if "%VT%"=="1" call :dltxt "%DLTLINE%"
-if "%VT%"=="1" exit /b 0
-set /a TICK=SECS%%30
-if not %TICK%==0 exit /b 0
-echo      %DLTLINE%
-exit /b 0
+:quit
+rem Reached when E is pressed: nothing has been fetched, copied or deleted.
+echo   Nothing was changed. Closing.
+call :sleep 3
+exit 0
 
-:drawdl_head
-set "DLHEAD=1"
-echo.
-echo   Fetching the newest build of the game.
-echo.
-echo   Keep this window open - the game starts by itself when the download
-echo   is done.
-echo.
-call :drawdl %~1 ""
-exit /b 0
-
-:dltxt
-rem %1 = the whole status line. Where ANSI works the line is cleared and
-rem rewritten, so there is exactly one bar and it stays where it is; the caller
-rem prints ordinary lines where it does not.
-if not "%VT%"=="1" echo      %~1
-if not "%VT%"=="1" exit /b 0
-<nul set /p "=%ESC%[2K%ESC%[1G      %~1"
-exit /b 0
-
-:dlend
-rem finishes a status line that was written without a newline
-if not "%VT%"=="1" exit /b 0
-echo.
+:zipcheck_ps
+if not defined POWERSHELL exit /b 0
+"%POWERSHELL%" -NoProfile -Command "try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $n=($z.Entries | Where-Object { $_.FullName -like '*data/fight.def' }).Count; $z.Dispose(); if ($n -ge 1) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if errorlevel 1 exit /b 0
+set "ZIPOK=1"
 exit /b 0
 
 :vtdetect
@@ -912,75 +783,3 @@ exit /b 0
 pause
 exit /b 0
 
-:clock
-rem %1 = seconds, %2 = the variable to leave the time in. Hours once it runs
-rem past one, so a slow line reads 2h 4m instead of 124:33.
-set /a "CK_H=%~1/3600"
-set /a "CK_M=(%~1%%3600)/60"
-set /a "CK_S=%~1%%60"
-set "CK_T=%CK_M%:%CK_S%"
-if %CK_S% LSS 10 set "CK_T=%CK_M%:0%CK_S%"
-if %CK_H% GEQ 1 set "CK_T=%CK_H%h %CK_M%m"
-set "%~2=%CK_T%"
-exit /b 0
-
-
-:sleep
-rem ping is the only delay Windows always has, whatever is on PATH - but if
-rem it cannot run, every wait returns at once and the redraw loop spins at
-rem full speed, blinking and writing a file per frame.
-set /a "P=%~1+1"
-if exist "%PING%" "%PING%" -n %P% 127.0.0.1 >nul 2>&1
-if exist "%PING%" exit /b 0
-if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Sleep -Seconds %~1" >nul 2>&1
-if defined POWERSHELL exit /b 0
-"%SYS%\timeout.exe" /t %~1 /nobreak >nul 2>&1
-exit /b 0
-
-:zipcheck
-rem A download that stopped early still has a plausible size, so the archive
-rem itself is listed and data/fight.def has to be inside it.
-set "ZIPOK=0"
-set "ZS=0"
-if not defined ZIP exit /b 0
-if not exist "%ZIP%" exit /b 0
-for %%A in ("%ZIP%") do set "ZS=%%~zA"
-if not defined ZS exit /b 0
-if %ZS% LSS 20000000 exit /b 0
-if not defined TAR goto zipcheck_ps
-"%TAR%" -tf "%ZIP%" >"%CACHE%\zlist.txt" 2>nul
-if errorlevel 1 exit /b 0
-"%FINDSTR%" /c:"data/fight.def" "%CACHE%\zlist.txt" >nul 2>&1
-if errorlevel 1 exit /b 0
-set "ZIPOK=1"
-exit /b 0
-
-:zipcheck_ps
-if not defined POWERSHELL exit /b 0
-"%POWERSHELL%" -NoProfile -Command "try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $n=($z.Entries | Where-Object { $_.FullName -like '*data/fight.def' }).Count; $z.Dispose(); if ($n -ge 1) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
-if errorlevel 1 exit /b 0
-set "ZIPOK=1"
-exit /b 0
-
-:findzip
-set "FOUNDZIP="
-set "CAND="
-for %%D in ("%USERPROFILE%\Downloads" "%~dp0" "%CACHE%") do (
-  for /f "delims=" %%Z in ('dir /b /a-d /o-d "%%~D\*bigtrouble*.zip" 2^>nul') do (
-    if not defined CAND set "CAND=%%~D\%%Z"
-  )
-)
-if not defined CAND exit /b 0
-for %%A in ("%CAND%") do set "CANDSZ=%%~zA"
-if not defined CANDSZ exit /b 0
-if %CANDSZ% LSS 20971520 exit /b 0
-if "%CAND%"=="%PREVCAND%" if "%CANDSZ%"=="%PREVSZ%" set "FOUNDZIP=%CAND%"
-set "PREVCAND=%CAND%"
-set "PREVSZ=%CANDSZ%"
-exit /b 0
-
-:quit
-rem Reached when E is pressed: nothing has been fetched, copied or deleted.
-echo   Nothing was changed. Closing.
-call :sleep 3
-exit 0
