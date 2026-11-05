@@ -95,8 +95,8 @@ echo.
 if errorlevel 1 echo   HUD:     old - the copy did not land
 if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
 "%FINDSTR%" /c:"'Ctrl+Alt+1..9'" "%~dp0external\mods\devhelp.lua" >nul 2>nul
-if errorlevel 1 echo   keys   : OLD developer keys screen
-if not errorlevel 1 echo   keys   : two columns, no scrolling
+if errorlevel 1 echo   Keys:    old developer keys screen
+if not errorlevel 1 echo   Keys:    two columns, no scrolling
 echo.
 if not defined EXE goto noexe
 echo   [ 3/3 ]  starting the game
