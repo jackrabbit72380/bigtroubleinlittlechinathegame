@@ -59,18 +59,26 @@ AXIS = (0, 0)
 # Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
 # The grid's frame padding ends at x=426 and x=1494, so each window stops well
 # short of it and the standing fighters never meet the wall.
-# The art is 310x900 and it used to be hung from x=0 and x=1920 - the two
-# fighters stood flush against the screen edges and read as cut off. Both are
-# inset by SIDE_INSET now, so each one has air on the outside as well as the
-# inside, and the window moves with it.
-#
-# 48 was not enough: the window began 48px in while the art still reached the
-# screen edge, so what the player saw was a fighter with its leading arm cut off
-# by its own clip rect - the cut had moved, not gone. The window is built from
-# the same number as the offset here, so the two can never disagree again.
-SIDE_INSET = 96
-FACE2_WIN_P1 = "%d,180,%d,1080" % (SIDE_INSET, SIDE_INSET + 311)
-FACE2_WIN_P2 = "%d,180,%d,1080" % (1920 - SIDE_INSET - 311, 1920 - SIDE_INSET)
+# The art is the full standing fighter now (build_portraits.py SIDE, doubled for
+# a 960 localcoord character), and the panel is sized from it rather than from a
+# number typed by hand. It used to be a 310x900 column of cropped fighter with
+# 62% of his width cut away, hung from y=180 so the feet landed exactly on the
+# 1080 clipping line: the two side fighters were slices with their shoes sawn
+# off. The column is 426px before it meets the grid frame, so 380px of art with
+# 20px of air either side is the widest a whole standing fighter can be here,
+# and the top is derived from the art height and a foot margin.
+SIDE_INSET = 20
+SIDE_ART = (380, 500)          # 9000,2 at scale 1, in screen pixels
+FACE2_MARGIN = 20              # air under the fighter's feet
+FACE2_PAD = 2                  # the art is edge-to-edge; clip just outside it
+FACE2_TOP = SCREEN[1] - SIDE_ART[1] - FACE2_MARGIN
+FACE2_WIN_P1 = "%d,%d,%d,%d" % (SIDE_INSET - FACE2_PAD, FACE2_TOP - FACE2_PAD,
+                               SIDE_INSET + SIDE_ART[0] + FACE2_PAD,
+                               FACE2_TOP + SIDE_ART[1] + FACE2_PAD)
+FACE2_WIN_P2 = "%d,%d,%d,%d" % (1920 - SIDE_INSET - SIDE_ART[0] - FACE2_PAD,
+                               FACE2_TOP - FACE2_PAD,
+                               1920 - SIDE_INSET + FACE2_PAD,
+                               FACE2_TOP + SIDE_ART[1] + FACE2_PAD)
 
 GREEN = (72, 232, 96)          # player 1's cursor, the green the RANDOM frame uses
 GOLD = (206, 168, 86)
@@ -238,7 +246,7 @@ RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
 # exactly - the validator refuses anything that would show around the art.
-RANDOM_PANEL = (310, 900)
+RANDOM_PANEL = (380, 500)
 
 
 def random_card(size):
@@ -434,19 +442,18 @@ KEYS = (
     ("title.font", "11, 0, 0, 255, 228, 140"),
     ("title.scale", "1,1"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
-    # each other no matter how tall the fighter is in play. The art is 214x600
-    # (build_portraits.py SIDE) with its axis at the top-left, so the offset is
-    # where that corner goes: 4px inside the frame rule, low enough that the
-    # 600px of fighter ends above the bottom of the screen. The old -78,150 came
-    # from 300px-wide art and pushed a quarter of each fighter off the edge.
+    # each other no matter how tall the fighter is in play. Its axis is the
+    # top-left corner, so the offset is where that corner goes: SIDE_INSET in
+    # from the screen edge, FACE2_TOP down, which leaves FACE2_MARGIN of air
+    # under the feet instead of standing them on the clipping line.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "%d, 180" % SIDE_INSET),
+    ("p1.face2.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "%d, 180" % (1920 - SIDE_INSET)),
+    ("p2.face2.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are font 11 at scale 1 - the same face
@@ -472,19 +479,19 @@ KEYS = (
     ("p1.face2.random.spr", "151,10"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
-    ("p1.face2.random.offset", "%d, 180" % SIDE_INSET),
+    ("p1.face2.random.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
     ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "%d, 180" % SIDE_INSET),
+    ("p1.face2.loading.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
     ("p1.face2.loading.scale", "0.3333, 0.3333"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
-    ("p2.face2.random.offset", "%d, 180" % (1920 - SIDE_INSET)),
+    ("p2.face2.random.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
     ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "%d, 180" % (1920 - SIDE_INSET)),
+    ("p2.face2.loading.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
     ("p2.face2.loading.scale", "0.3333, 0.3333"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into
