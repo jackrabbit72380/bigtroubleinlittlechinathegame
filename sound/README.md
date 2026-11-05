@@ -47,3 +47,23 @@ alphabetically and tracks sort by title; the `boxFront.png` is resized to at mos
 640px on its long edge. Picking a track sets `bgmusic` for the next match only —
 "Default (stage music)" in the browser hands the match back to whatever music the
 mode or stage asked for.
+
+# Track lists
+
+If an album folder contains a `.metadata.pegasus.txt` file (the list most album
+packs ship for the Pegasus frontend, with one `game:` line per track and a `file:`
+line under it), the build reads it instead of guessing:
+
+- the album keeps the metadata's order, so track 10 stays after track 2;
+- the song's `game:` line is what the browser prints, so numbers and punctuation
+  come out exactly as the pack wrote them;
+- `assets.boxFront:` is used for the cover when that file exists, otherwise the
+  `boxFront.png` sitting in the album folder is used;
+- `file:` paths may be written as `sound/<name>.ogg` or just `<name>.ogg`; the
+  build finds the file in the album folder, in `sound/` itself, or one folder
+  down, and says so if it truly is not there.
+
+Audio in the folder that the metadata does not mention is added at the end of the
+album rather than dropped, so a pack with a bonus track and an out-of-date list
+still plays everything. The metadata is optional: without it the album lists its
+audio files by name.
