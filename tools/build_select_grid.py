@@ -164,11 +164,11 @@ def cell_frame():
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=INK + (238,),
-                        outline=GOLD + (255,), width=3)
-    d.rounded_rectangle([3, 3, w - 4, h - 4], radius=max(2, r - 2),
-                        outline=(26, 24, 20, 255), width=3)
-    d.rounded_rectangle([6, 6, w - 7, h - 7], radius=max(2, r - 4),
-                        outline=GOLD_DIM + (210,), width=2)
+                        outline=GOLD + (255,), width=4)
+    d.rounded_rectangle([4, 4, w - 5, h - 5], radius=max(2, r - 2),
+                        outline=(26, 24, 20, 255), width=4)
+    d.rounded_rectangle([9, 9, w - 10, h - 10], radius=max(2, r - 5),
+                        outline=GOLD_DIM + (215,), width=3)
 
     shade = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shade)
@@ -184,13 +184,13 @@ def cursor_frame(colour):
     r = min(w, h) // 8
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([3, 3, w - 4, h - 4], radius=max(2, r - 1),
-                        outline=colour + (255,), width=6)
-    d.rounded_rectangle([9, 9, w - 10, h - 10], radius=max(2, r - 3),
-                        outline=(255, 255, 255, 150), width=2)
-    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=colour + (120,),
-                        width=1)
-    glow = img.filter(ImageFilter.GaussianBlur(10))
+    d.rounded_rectangle([4, 4, w - 5, h - 5], radius=max(2, r - 1),
+                        outline=colour + (255,), width=9)
+    d.rounded_rectangle([13, 13, w - 14, h - 14], radius=max(2, r - 4),
+                        outline=(255, 255, 255, 165), width=3)
+    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=colour + (135,),
+                        width=2)
+    glow = img.filter(ImageFilter.GaussianBlur(12))
     out = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     out.alpha_composite(glow)
     out.alpha_composite(img)
