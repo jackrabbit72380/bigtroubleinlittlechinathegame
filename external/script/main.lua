@@ -679,11 +679,13 @@ end
 
 --The boot screen used to draw anim 600, a ring that only ever looped, so it
 --looked like a progress bar while telling the player nothing. Write the live
---count into the loading caption instead: it is the one text sprite the engine
---already draws here, while a freshly built textImg with a font set on it has
---come up blank before, and the motif reports no percentage of its own.
+--figure into the loading caption instead. That caption is the one text sprite
+--the motif actually configures (loading.font/offset/scale/text); the wait
+--sprite beside the ring has no font or text of its own, so text put there would
+--not be guaranteed to show. The percentage leads, so even if the caption's end
+--is cut off the figure is still the thing the player sees.
 function main.f_loadingDraw()
-	local text = motif.title_info.loading.wait.TextSpriteData
+	local text = motif.title_info.loading.TextSpriteData
 	local done, total = main.f_loadingProgress()
 	local pct = 0
 	if total > 0 then
@@ -693,18 +695,16 @@ function main.f_loadingDraw()
 	local ok = false
 	if text ~= nil then
 		--textImgSetText rewrites the sprite in place, so it keeps the position,
-		--alignment and font the motif already gave it; nothing else is touched.
+		--alignment, font and shear the motif already gave it.
 		ok = pcall(function()
-			textImgSetText(text, 'NOW LOADING... ' .. pct .. '%  (' .. done .. '/' .. total .. ')')
+			textImgSetText(text, 'LOADING... ' .. pct .. '%  ' .. done .. '/' .. total)
 			textImgDraw(text)
 		end)
 	end
 	if not ok then
 		--an older build without a writable caption still gets the load art
 		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
-		if text ~= nil then
-			textImgDraw(text)
-		end
+		textImgDraw(motif.title_info.loading.wait.TextSpriteData)
 	end
 end
 
