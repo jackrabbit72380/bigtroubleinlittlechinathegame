@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v18
+rem  BIG TROUBLE IN LITTLE CHINA - updater v19
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -49,13 +49,24 @@ set "GIT_CONFIG_NOSYSTEM=1"
 set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
+rem One bar, rewritten in place, needs a terminal that understands ANSI: Windows
+rem Terminal always does, conhost does once VirtualTerminalLevel is on. Without
+rem it the same information is printed as ordinary lines and the bar is never
+rem rewritten, because a rewrite an older console cannot read prints escapes
+rem across the screen instead.
+set "VT=0"
+if defined WT_SESSION set "VT=1"
+if defined TERM_PROGRAM set "VT=1"
+if not "%VT%"=="1" call :vtdetect
+if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
+
 echo.
 echo   ==============================================================
 echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v18
+echo                        updater v19
 echo.
 echo   ==============================================================
 echo.
@@ -124,8 +135,29 @@ rem kept, and the folders the game never uses - artifacts, art_src, tools -
 rem are outside the paths below and are left alone.
 :trygit
 echo            Git found - comparing with main.
+rem Git can be handed a certificate bundle path that only exists inside a Git
+rem Bash install - /usr/ssl/certs/ca-bundle.crt - and then every fetch dies with
+rem "error setting certificate file". The bundle that belongs to the git that is
+rem actually running is found here and passed to the fetch. Verification stays
+rem on: if no bundle turns up, git is left to fail and the verified download
+rem below takes over rather than being told to trust anything.
+set "GITBUNDLE="
+set "GITDIR="
+for /f "delims=" %%g in ('"%WHERE%" git 2^>nul') do if not defined GITDIR set "GITDIR=%%~dpg"
+if defined GITDIR if exist "%GITDIR%..\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%GITDIR%..\mingw64\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if defined GITDIR if exist "%GITDIR%..\usr\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%GITDIR%..\usr\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if exist "%ProgramFiles%\Git\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%ProgramFiles%\Git\mingw64\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if exist "%ProgramFiles%\Git\usr\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%ProgramFiles%\Git\usr\ssl\certs\ca-bundle.crt"
+if not defined GITBUNDLE if exist "%LOCALAPPDATA%\Programs\Git\mingw64\ssl\certs\ca-bundle.crt" set "GITBUNDLE=%LOCALAPPDATA%\Programs\Git\mingw64\ssl\certs\ca-bundle.crt"
+set "GITCA="
+if not defined GITBUNDLE goto gitca_done
+set "GIT_SSL_CAINFO=%GITBUNDLE%"
+set GITCA=-c http.sslCAInfo="%GITBUNDLE%"
+:gitca_done
 if exist ".git" goto githere
 echo            First run: reading what is here so only changes download.
+echo            That reads the art already in this folder; it is not downloaded.
+echo            It can take a minute before the bar moves.
 git init -q . >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 git config --local ikemen.updater 1 >>"%CACHE%\git.log" 2>&1
@@ -151,7 +183,7 @@ echo            Bring it up to date yourself with:  git pull
 goto launch
 
 :gitfetch
-git -c core.longpaths=true fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
+git %GITCA% -c core.longpaths=true fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
@@ -164,10 +196,26 @@ if errorlevel 1 goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 if "%NCH%"=="0" echo            Already current - nothing to download.
-if not "%NCH%"=="0" echo            %NCH% file(s) differ - fetching those.
-if not "%NCH%"=="0" git checkout-index -f --stdin <"%CACHE%\changed.txt" >>"%CACHE%\git.log" 2>&1
-if not "%NCH%"=="0" if errorlevel 1 goto gitfail
+if "%NCH%"=="0" goto gitdel
+echo            %NCH% file(s) differ - fetching those, named as they land.
+if "%VT%"=="1" echo.
+set /a NDONE=0
+for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
+call :dlend
+if defined GITBAD goto gitfail
 goto gitdel
+
+:gitone
+rem %1 = one path. Written on its own, so the name of the file being fetched is
+rem on the bar while it is fetched instead of a silent pause.
+set /a NDONE+=1
+set "GTXT=%~1"
+call :dragonbar %NDONE% %NCH%
+set "GITTXT=[%BAR%]  %NDONE%/%NCH%  %GTXT%"
+call :dltxt "%GITTXT%"
+git checkout-index -f -- "%GTXT%" >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 set "GITBAD=1"
+exit /b 0
 
 :gitdel
 rem Files main dropped would otherwise sit here for ever. Only paths this
@@ -191,6 +239,7 @@ if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 goto copied
 
 :gitfail
+call :dlend
 echo            Git could not fetch. It said:
 if not exist "%CACHE%\git.log" goto probe
 "%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
@@ -609,20 +658,22 @@ endlocal & set "BAR=%BAR%"
 exit /b 0
 
 :drawdl
-rem %1 = kilobytes so far, %2 = rate and time left. A plain line is printed
-rem every half minute. Writing one line in place needs a carriage return that
-rem cmd does not pass through set /p the way it looks - the terminal ran the
-rem bars together into unreadable rows - and clearing the window every five
-rem seconds made it blink, so neither is used any more.
+rem %1 = kilobytes so far, %2 = rate and time left. One status line, kept at
+rem the bottom and rewritten where the terminal understands ANSI. Elsewhere the
+rem same line is printed once every half minute, because neither a carriage
+rem return through set /p nor clearing the window works there: the first ran
+rem the bars together and the second blinked.
 if not defined DLHEAD goto drawdl_head
-set /a TICK=SECS%%30
-if not %TICK%==0 exit /b 0
 call :dragonbar %~1 194560
 set /a DLMB=%~1/1024
 set /a DLTENTH=%~1*10/1024-DLMB*10
-set "DLTLINE=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
-if not "%~2"=="" set "DLTLINE=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
-echo %DLTLINE%
+set "DLTLINE=[%BAR%]  %DLMB%.%DLTENTH%/190 MB"
+if not "%~2"=="" set "DLTLINE=[%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
+if "%VT%"=="1" call :dltxt "%DLTLINE%"
+if "%VT%"=="1" exit /b 0
+set /a TICK=SECS%%30
+if not %TICK%==0 exit /b 0
+echo      %DLTLINE%
 exit /b 0
 
 :drawdl_head
@@ -633,10 +684,31 @@ echo.
 echo   Keep this window open - the game starts by itself when the download
 echo   is done.
 echo.
-call :dragonbar %~1 194560
-set /a DLMB=%~1/1024
-set /a DLTENTH=%~1*10/1024-DLMB*10
-echo      [%BAR%]  %DLMB%.%DLTENTH%/190 MB
+call :drawdl %~1 ""
+exit /b 0
+
+:dltxt
+rem %1 = the whole status line. Where ANSI works the line is cleared and
+rem rewritten, so there is exactly one bar and it stays where it is; the caller
+rem prints ordinary lines where it does not.
+if not "%VT%"=="1" echo      %~1
+if not "%VT%"=="1" exit /b 0
+<nul set /p "=%ESC%[2K%ESC%[1G      %~1"
+exit /b 0
+
+:dlend
+rem finishes a status line that was written without a newline
+if not "%VT%"=="1" exit /b 0
+echo.
+exit /b 0
+
+:vtdetect
+rem conhost understands ANSI once this is switched on; the value is a REG_DWORD
+rem of 0x1, and anything else - or no key at all - leaves the plain display.
+if not exist "%SYS%\reg.exe" exit /b 0
+"%SYS%\reg.exe" query "HKCU\Console" /v VirtualTerminalLevel 2>nul | "%FINDSTR%" /c:"0x1" >nul
+if errorlevel 1 exit /b 0
+set "VT=1"
 exit /b 0
 
 :clock
