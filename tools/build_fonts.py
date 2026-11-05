@@ -217,6 +217,11 @@ PAUSE_LAYOUT = (
     ("movelist.title.scale", "1, 1"),
     ("movelist.glyphs.scale", "1, 1"),
     ("movelist.text.spacing", "4.5, 4"),
+    # The command list's text column is clipped to movelist.window.width from
+    # movelist.pos.x, and the motif still had the 1280-era 900: 283.5 + 900 cuts
+    # the right-hand key column mid-glyph at x=1183 on a 1920 frame. Widening the
+    # window only reveals text that was being clipped.
+    ("movelist.window.width", "1500"),
 )
 
 SECTION_LAYOUT = {
