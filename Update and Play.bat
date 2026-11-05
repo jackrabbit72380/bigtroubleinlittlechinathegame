@@ -1,13 +1,15 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v17
+rem  BIG TROUBLE IN LITTLE CHINA - updater v18
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
 rem
-rem  Double-click it. It gets the newest files on main, copies data\ chars\
-rem  stages\ font\ external\ sound\ over this folder, leaves save\ and the
-rem  engine alone, then starts the game and closes.
+rem  Double-click it. It gets the newest files on main, updates data\ chars\
+rem  stages\ font\ external\ sound\ in this folder, leaves save\ and the
+rem  engine alone, then starts the game and closes. Where git is installed
+rem  the folder itself is compared against main, so only the files that
+rem  really differ are downloaded; without git it falls back to the archive.
 rem
 rem  Every Windows tool below is called by full path on purpose. A Git for
 rem  Windows install that puts its usr\bin on PATH shadows System32 with MSYS
@@ -53,7 +55,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v17
+echo                        updater v18
 echo.
 echo   ==============================================================
 echo.
@@ -113,89 +115,105 @@ if "%ZIPOK%"=="1" goto havezip
 echo            That zip is incomplete - downloading instead.
 goto download
 
-rem ---- transport 1: git, which moves only the objects that differ ---------
-rem Depth 1 plus a blob filter: the first run still has to bring the art, but
-rem every run after that transfers only what a commit touched, usually a few
-rem small files. Sparse checkout also leaves out the folders the game never
-rem copies - artifacts, concept_art, art_src, tools - which is 128 MB of the
-rem committed tree.
+rem ---- transport 1: git, working on this folder's own files --------------
+rem The art already here is the thing being compared. Git is pointed at the
+rem folder and hashes what is in it, so a file that already matches main is
+rem never downloaded: only the blobs whose content really differs are fetched,
+rem and they are fetched straight into place. No second copy of the art is
+rem kept, and the folders the game never uses - artifacts, art_src, tools -
+rem are outside the paths below and are left alone.
 :trygit
 echo            Git found - comparing with main.
-if exist "%CACHE%\repo\.git" goto gitpull
-if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
-echo            First run: building the local copy. This is the big one.
-git -c core.longpaths=true -c http.version=HTTP/1.1 clone --depth 1 --filter=blob:none --sparse --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
-if errorlevel 1 goto gitplain
-git -C "%CACHE%\repo" sparse-checkout set data chars stages font external sound >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 git -C "%CACHE%\repo" checkout --quiet >>"%CACHE%\git.log" 2>&1
-goto gitdone
-
-:gitplain
-rem older git, or a server without partial clone: take the whole tree once
-git -c core.longpaths=true -c http.version=HTTP/1.1 clone --depth 1 --quiet "%GITURL%" "%CACHE%\repo" >"%CACHE%\git.log" 2>&1
+if exist ".git" goto githere
+echo            First run: reading what is here so only changes download.
+git init -q . >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
-goto gitdone
+git config --local ikemen.updater 1 >>"%CACHE%\git.log" 2>&1
+git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
+git remote add origin "%GITURL%" >>"%CACHE%\git.log" 2>&1
+git config --local remote.origin.promisor true >>"%CACHE%\git.log" 2>&1
+git config --local remote.origin.partialclonefilter blob:none >>"%CACHE%\git.log" 2>&1
+git config --local core.longpaths true >>"%CACHE%\git.log" 2>&1
+git config --local http.version HTTP/1.1 >>"%CACHE%\git.log" 2>&1
+goto gitfetch
 
-:gitpull
-for /f %%s in ('git -C "%CACHE%\repo" rev-parse HEAD 2^>nul') do set "OLDSHA=%%s"
-git -C "%CACHE%\repo" fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
-if errorlevel 1 goto gitfail
-git -C "%CACHE%\repo" reset --hard --quiet FETCH_HEAD >>"%CACHE%\git.log" 2>&1
-for /f %%s in ('git -C "%CACHE%\repo" rev-parse FETCH_HEAD 2^>nul') do set "NEWSHA=%%s"
-if not defined NEWSHA goto gitdone
-rem What differs, so the copy can be as small as the fix. The base is the
-rem revision this folder last applied, not what the local clone had: the
-rem folder can be further behind than the clone, and copying only the
-rem clone's own delta would leave those commits unapplied. A shallow clone
-rem usually cannot resolve an older base, which just means a whole copy.
-set "CHANGED="
-set "BASE="
-if exist "%CACHE%\applied.txt" set /p BASE=<"%CACHE%\applied.txt"
-if not defined BASE set "BASE=%OLDSHA%"
-if not defined BASE goto gitdiffdone
-if /i "%BASE%"=="%NEWSHA%" goto gitdiffdone
-git -C "%CACHE%\repo" diff --name-only --no-renames "%BASE%" "%NEWSHA%" >"%CACHE%\changed.txt" 2>nul
-if errorlevel 1 goto gitdiffdone
-set "CHANGED=%CACHE%\changed.txt"
-:gitdiffdone
-if "%OLDSHA%"=="%NEWSHA%" echo            Main has not moved - nothing to download.
-if not "%OLDSHA%"=="%NEWSHA%" echo            Fetched only the files that changed.
-
-:gitdone
-if not exist "%CACHE%\repo\data\fight.def" goto gitfail
-set "SRC=%CACHE%\repo"
-set "WHICH=git"
-for /f %%s in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%s"
-if not defined VER goto gitapply
-rem if this exact revision is already in the game folder, do not copy 340 MB
-rem over the top of itself just to launch
-set "APPLIED="
-if exist "%CACHE%\applied.txt" set /p APPLIED=<"%CACHE%\applied.txt"
-if not "%APPLIED%"=="%VER%" goto gitapply
-if not exist "%~dp0data\fight.def" goto gitapply
-echo   files  : main @ %VER%
-echo            Already up to date - launching what is here.
+:githere
+rem A folder somebody cloned themselves is their checkout: this launcher
+rem will not fetch into it, check anything out, or overwrite uncommitted
+rem work. It only says so and starts the game.
+set "MINE="
+for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
+if "%MINE%"=="1" goto gitfetch
+git rev-parse --verify -q HEAD >nul 2>&1
+if errorlevel 1 goto gitfetch
+echo            This folder is your own git checkout - left untouched.
+echo            Bring it up to date yourself with:  git pull
 goto launch
 
-:gitapply
-rem The clone holds main; this is the step that puts it into the game folder.
-rem It was missing: with git installed the launcher fetched and then went
-rem straight on to launching, so the copy only ever happened on the zip path.
-call :synctree
+:gitfetch
+git -c core.longpaths=true fetch --depth 1 --quiet origin main >"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfail
+git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfail
+rem The index now holds main and the working tree still holds this folder's
+rem files. diff names the paths whose content differs - hashing what is here
+rem instead of fetching it - and checkout-index writes exactly those, pulling
+rem each missing blob on demand.
+git -c core.quotepath=false diff --name-only -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
+if errorlevel 1 goto gitfail
+set "NCH=0"
+for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
+if "%NCH%"=="0" echo            Already current - nothing to download.
+if not "%NCH%"=="0" echo            %NCH% file(s) differ - fetching those.
+if not "%NCH%"=="0" git checkout-index -f --stdin <"%CACHE%\changed.txt" >>"%CACHE%\git.log" 2>&1
+if not "%NCH%"=="0" if errorlevel 1 goto gitfail
+goto gitdel
 
-rem what the folder should contain once this copy is done: the archive path
-rem reads the same list, so a later archive update deletes exactly the files
-rem main dropped, and never a file the player added
-git -C "%CACHE%\repo" ls-files data chars stages font external sound >"%CACHE%\applied.files" 2>nul
+:gitdel
+rem Files main dropped would otherwise sit here for ever. Only paths this
+rem launcher installed are deleted - the list in applied.files - so a
+rem character the player added themselves is never touched.
+git ls-files -- data chars stages font external sound >"%CACHE%\applied.new" 2>>"%CACHE%\git.log"
+if errorlevel 1 goto gitref
+if not exist "%CACHE%\applied.files" goto gitref
+"%FINDSTR%" /v /x /l /g:"%CACHE%\applied.new" "%CACHE%\applied.files" >"%CACHE%\dropped.txt" 2>nul
+if not exist "%CACHE%\dropped.txt" goto gitref
+for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
+
+:gitref
+if exist "%CACHE%\applied.new" move /Y "%CACHE%\applied.new" "%CACHE%\applied.files" >nul 2>&1
+git update-ref refs/heads/main FETCH_HEAD >>"%CACHE%\git.log" 2>&1
+git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
+set "WHICH=git"
+rem an older version of this launcher kept a second copy of the whole art
+rem here; the folder itself is the working tree now, so it is dead weight
+if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 goto copied
 
 :gitfail
 echo            Git could not fetch. It said:
-if not exist "%CACHE%\git.log" goto download
+if not exist "%CACHE%\git.log" goto probe
 "%FINDSTR%" /i /c:"fatal" /c:"error" /c:"unable" "%CACHE%\git.log"
 echo            Trying a direct download instead.
 goto probe
 
+:gitdrop
+rem %1 = a path this launcher installed before, which main no longer has
+set "REL=%~1"
+if not defined REL exit /b 0
+set "REL=%REL:/=\%"
+for /f "tokens=1 delims=\" %%t in ("%REL%") do set "TOP=%%t"
+if /i "%TOP%"=="data" goto gitdrop_do
+if /i "%TOP%"=="chars" goto gitdrop_do
+if /i "%TOP%"=="stages" goto gitdrop_do
+if /i "%TOP%"=="font" goto gitdrop_do
+if /i "%TOP%"=="external" goto gitdrop_do
+if /i "%TOP%"=="sound" goto gitdrop_do
+exit /b 0
+:gitdrop_do
+if not exist "%~dp0%REL%" exit /b 0
+del /q "%~dp0%REL%" >nul 2>&1
+exit /b 0
 rem ---- has main moved? ---------------------------------------------------
 rem The zip path used to fetch the whole ~190 MB archive on every launch: it
 rem recorded nothing about what it had applied, and nothing compared the
@@ -365,7 +383,7 @@ if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config
 rem the archive has been read; keeping it would only hold 190 MB of cache
 if defined ZIP if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 set "VER="
-if "%WHICH%"=="git" for /f %%v in ('git -C "%CACHE%\repo" rev-parse --short HEAD 2^>nul') do set "VER=%%v"
+if "%WHICH%"=="git" for /f %%v in ('git rev-parse --short HEAD 2^>nul') do set "VER=%%v"
 rem a zip run knows the version from the probe, and a fresh one asks now;
 rem without recording it the next launch cannot tell it is current. The feed
 rem is asked first: on a first run applied.txt is missing, so the probe never
