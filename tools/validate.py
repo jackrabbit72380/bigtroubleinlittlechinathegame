@@ -292,6 +292,23 @@ def check_select_screen(chars):
                 % (len(entries), rows * cols, len(entries) - rows * cols))
     except OSError:
         pass
+    # start.lua's f_animGet indexes params.scale as a table for every portrait
+    # group it loads, and the engine leaves scale nil for a group the screenpack
+    # never defines - so a missing done/random/loading scale is a hard crash on
+    # the key that draws it (selecting a fighter took the engine down at
+    # start.lua:755), not a cosmetic default. Any group that exists must carry
+    # a scale.
+    for side in (1, 2):
+        for base in ("face", "face2"):
+            for state in ("done", "random", "loading", "slot"):
+                prefix = "p%d.%s.%s." % (side, base, state)
+                if (any(k.startswith(prefix) for k in opts)
+                        and prefix + "scale" not in opts):
+                    err("select screen: %s has no scale, and start.lua's "
+                        "f_animGet indexes that as a table - it crashes the "
+                        "engine when the group is drawn" % (prefix + "scale"))
+            if "p%d.%s.scale" % (side, base) not in opts:
+                err("select screen: p%d.%s.scale is missing" % (side, base))
     if opts.get("portrait.spr") != "9000,0":
         err("select screen: portrait.spr is %r, expected 9000,0" % opts.get("portrait.spr"))
     if "p1.face.window" not in opts or "p2.face.window" not in opts:

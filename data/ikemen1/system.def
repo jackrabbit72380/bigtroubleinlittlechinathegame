@@ -847,6 +847,26 @@ searchemptyboxesup = 1
 cell.random.active.spr = 151,11
 cell.random.active.scale = 1,1
 cell.random.active.offset = 0,0
+p1.face.done.spr = -1, 0
+p1.face.done.offset = 420, 840
+p1.face.done.scale = 0.5, 0.5
+p1.face.done.facing = 1
+p1.face.done.window = 0,0,1,1
+p2.face.done.spr = -1, 0
+p2.face.done.offset = 1500, 840
+p2.face.done.scale = 0.5, 0.5
+p2.face.done.facing = -1
+p2.face.done.window = 0,0,1,1
+p1.face2.done.spr = -1, 0
+p1.face2.done.offset = 20, 510
+p1.face2.done.scale = 0.5,0.5
+p1.face2.done.facing = 1
+p1.face2.done.window = 18,508,402,1012
+p2.face2.done.spr = -1, 0
+p2.face2.done.offset = 1900, 510
+p2.face2.done.scale = 0.5,0.5
+p2.face2.done.facing = -1
+p2.face2.done.window = 1518,508,1902,1012
 [Begin Action 110]
 110,0, 0, 0, 8
 110,1, 0, 0, 8

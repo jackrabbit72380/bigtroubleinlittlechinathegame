@@ -529,6 +529,32 @@ KEYS = (
     # and the cancel flag so a new roll stops the previous sound.
     ("cell.random.switchtime", "48"),
     ("random.move.snd.cancel", "1"),
+    # The confirm portrait. start.lua confirms a pick through pCfg.face2.done
+    # (start.lua:3663) and f_animGet indexes params.scale as a table, so a group
+    # the screenpack never spells out leaves scale nil and the key that confirms
+    # a fighter kills the engine at start.lua:755. Both done groups are written
+    # out here with their parent group's scale and window, and no sprite of
+    # their own, so the flash costs nothing and cannot crash.
+    ("p1.face.done.spr", "-1, 0"),
+    ("p1.face.done.offset", "420, 840"),
+    ("p1.face.done.scale", "0.5, 0.5"),
+    ("p1.face.done.facing", "1"),
+    ("p1.face.done.window", "0,0,1,1"),
+    ("p2.face.done.spr", "-1, 0"),
+    ("p2.face.done.offset", "1500, 840"),
+    ("p2.face.done.scale", "0.5, 0.5"),
+    ("p2.face.done.facing", "-1"),
+    ("p2.face.done.window", "0,0,1,1"),
+    ("p1.face2.done.spr", "-1, 0"),
+    ("p1.face2.done.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
+    ("p1.face2.done.scale", "0.5,0.5"),
+    ("p1.face2.done.facing", "1"),
+    ("p1.face2.done.window", FACE2_WIN_P1),
+    ("p2.face2.done.spr", "-1, 0"),
+    ("p2.face2.done.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
+    ("p2.face2.done.scale", "0.5,0.5"),
+    ("p2.face2.done.facing", "-1"),
+    ("p2.face2.done.window", FACE2_WIN_P2),
 )
 for i, spr in enumerate(CURSOR, start=1):
     KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % spr),
