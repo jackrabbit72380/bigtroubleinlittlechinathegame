@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - updater v14
+rem  BIG TROUBLE IN LITTLE CHINA - updater v15
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,7 +53,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        t h e   g a m e
-echo                        updater v14
+echo                        updater v15
 echo.
 echo   ==============================================================
 echo.
@@ -458,18 +458,26 @@ if not defined CR for /f %%a in ('copy /Z "%~f0" nul') do set "CR=%%a"
 >>"%RUNB%" echo echo %%ERRORLEVEL%%^>"%DONE%"
 start "" /b "%RUNB%"
 set /a SECS=0
-call :drawdl 0 0:00
+set /a LASTKB=0
+call :drawdl 0 ""
 :cfpoll
 call :sleep 5
 set /a SECS+=5
 set "SZ=0"
 for %%A in ("%ZIP%") do set "SZ=%%~zA"
 set /a KB=SZ/1024
-set /a MINS=SECS/60
-set /a REST=SECS%%60
-set "CLOCK=%MINS%:%REST%"
-if %REST% LSS 10 set "CLOCK=%MINS%:0%REST%"
-call :drawdl %KB% %CLOCK%
+set /a DELTA=KB-LASTKB
+set /a LASTKB=KB
+rem The first reading has nothing to compare against, so it would read as a
+rem huge burst. Two polls are enough to average over.
+if %SECS% LSS 10 set /a DELTA=0
+set /a RATE=DELTA/5
+set "DLINFO="
+if %RATE% GTR 0 set /a LEFT=(194560-KB)/RATE
+if %RATE% GTR 0 call :clock %LEFT% LEFTCLOCK
+if %RATE% GTR 0 set "DLINFO=%RATE% KB/s   %LEFTCLOCK% left"
+if %SECS% GEQ 15 if %RATE% LSS 1 set "DLINFO=no data arriving"
+call :drawdl %KB% "%DLINFO%"
 if exist "%DONE%" goto cfdone
 if %SECS% LSS 1200 goto cfpoll
 echo.
@@ -598,19 +606,20 @@ endlocal & set "BAR=%BAR%"
 exit /b 0
 
 :drawdl
-rem %1 = kilobytes so far, %2 = elapsed clock. Only this one line is rewritten,
-rem where it stands. Clearing the window every five seconds made the whole
-rem screen blink and threw the cursor back to the top each time.
+rem %1 = kilobytes so far, %2 = rate and time left, once there is enough of a
+rem sample for them to mean anything. Only this one line is rewritten, where it
+rem stands: clearing the window every five seconds made the whole screen blink
+rem and threw the cursor back to the top each time.
 call :dragonbar %~1 194560
 if not defined DLHEAD goto drawdl_head
 set /a DLMB=%~1/1024
-set "DLSTATE=%DLMB% MB"
-if %~1 LSS 10240 set "DLSTATE=%~1 KB"
-if "%DLSTATE%"=="%DLLAST%" exit /b 0
-set "DLLAST=%DLSTATE%"
-set "DLTEXT=     [%BAR%]   %DLSTATE% of about 190 MB   %~2 elapsed"
+set /a DLTENTH=%~1*10/1024-DLMB*10
+set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
+if not "%~2"=="" set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB   %~2"
 set "DLTEXT=%DLTEXT%%PAD%"
-set "DLTEXT=%DLTEXT:~0,78%"
+set "DLTEXT=%DLTEXT:~0,76%"
+if "%DLTEXT%"=="%DLLAST%" exit /b 0
+set "DLLAST=%DLTEXT%"
 call :dlwrite
 exit /b 0
 
@@ -625,12 +634,11 @@ echo   done. If it stops part-way, run the updater again and it carries on from
 echo   here rather than starting over.
 echo.
 set /a DLMB=%~1/1024
-set "DLSTATE=%DLMB% MB"
-if %~1 LSS 10240 set "DLSTATE=%~1 KB"
-set "DLLAST=%DLSTATE%"
-set "DLTEXT=     [%BAR%]   %DLSTATE% of about 190 MB   %~2 elapsed"
+set /a DLTENTH=%~1*10/1024-DLMB*10
+set "DLTEXT=     [%BAR%]  %DLMB%.%DLTENTH%/190 MB"
 set "DLTEXT=%DLTEXT%%PAD%"
-set "DLTEXT=%DLTEXT:~0,78%"
+set "DLTEXT=%DLTEXT:~0,76%"
+set "DLLAST=%DLTEXT%"
 call :dlwrite
 exit /b 0
 
@@ -642,6 +650,15 @@ if defined CR (
   exit /b 0
 )
 echo %DLTEXT%
+exit /b 0
+
+:clock
+rem %1 = seconds, %2 = the variable to leave m:ss in.
+set /a "CK_M=%~1/60"
+set /a "CK_S=%~1%%60"
+set "CK_T=%CK_M%:%CK_S%"
+if %CK_S% LSS 10 set "CK_T=%CK_M%:0%CK_S%"
+set "%~2=%CK_T%"
 exit /b 0
 
 
