@@ -48,6 +48,7 @@ font6 = ikemen1/fonts/ComboCounter.def
 font7 = ikemen1/fonts/HitNum.def
 font8 = ikemen1/fonts/Pixel.def
 font9 = ikemen1/fonts/Round.def
+font10 = ikemen1/fonts/Display.def   ;VS-screen face, for the round banner
 fightfx.sff = fightfx.sff ;Legacy Mugen common effects
 fightfx.air = fightfx.air ;Legacy Mugen common effects
 common.snd = common.snd   ;Legacy Mugen common effects
@@ -2998,11 +2999,11 @@ round.default.offset = 630, 480
 ; Default component to show for each round. Text can include a %i to
 ; the round number. Use "round.default.anim" for animation instead of
 ; text.
-round.default.text = "R   %i"
+round.default.text = "ROUND %i"
 ;round.default.anim = 500
-round.default.font = 9,0,0, 255, 228, 140
+round.default.font = 10,0,0, 255, 228, 140
 round.default.displaytime = 55
-round.default.scale = 1,1
+round.default.scale = 2, 2
 round.default.snd = 0, 11
 ; Sounds to play for each round (optional, specify up to round 9)
 round1.snd = 0,1
@@ -3038,21 +3039,21 @@ round9.offset = 640, 380
 
 
 round.single.offset = 640, 480
-round.single.font = 9, 0, 0, 255, 228, 140
-round.single.text = "G   r"
+round.single.font = 10, 0, 0, 255, 228, 140
+round.single.text = "ROUND %i"
 round.single.displaytime = 55
-round.single.scale = 1, 1
+round.single.scale = 2, 2
 round.single.snd = 0, 11
 
 round.final.offset = 640, 480
-round.final.font = 9, 0, 0, 255, 228, 140
+round.final.font = 10,0,0, 255, 228, 140
 round.final.text = "F   R"
 round.final.text = " "
 ;round.final.anim = 510
 ;round.final.bg0.anim = 511
 ;round.final.bg0.offset = 640, 380
 round.final.displaytime = 55
-round.final.scale = 1, 1
+round.final.scale = 2, 2
 round.final.snd = 0, 10
 
 ; FIGHT
