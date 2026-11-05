@@ -5,6 +5,11 @@
 
 # Execute the following code during demo mode
 # See motif [Demo] section for more options
+#
+# This file used to print the engine's site URL here as well, centred at 95% of
+# the screen height. That is the line that sat under the demo fight with nothing
+# to do with the game, so it is gone; the demo screen now carries only the
+# "Demo Mode" caption from [Mode] in data/fight.def.
 ignoreHitPause if gameMode = "demo" && !isHelper {
 	assertSpecial{
 		flag: globalNoKO;			# Players cannot be KO'd
@@ -12,17 +17,5 @@ ignoreHitPause if gameMode = "demo" && !isHelper {
 		flag3: skipFightDisplay;	# Do not show "Fight" screen
 		flag4: skipRoundDisplay;	# Do not show "Round" screen
 		flag5: noLifeBarAction;		# Hide lifebar actions
-	}
-	# Print text from the first player only
-	if playerNo = 1 {
-		text{
-			removetime: 1;									# Refresh every frame
-			layerno: 2;										# Draw on top of everything
-			text: "https://ikemen-engine.github.io";		# Message to print
-			font: -1;										# Use the debug font since it exists everywhere
-			align: 0;										# Center alignment
-			pos: screenWidth * 0.5, screenHeight * 0.95;	# Centered horizontally. Near bottom of screen
-			scale: 0.5, 0.5;
-		}
 	}
 }
