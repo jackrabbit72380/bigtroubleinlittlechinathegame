@@ -384,6 +384,12 @@ def _patch_powerbar(body):
     body = re.sub(
         r"(?m)^(\s*p[12]\.counter(?:Max|\d+)?\.offset\s*=\s*)(-?\d+)\s*,\s*-?\d+\s*$",
         lambda m: "%s%s,%d" % (m.group(1), m.group(2), H + 4), body)
+    # A sine-modulated colour is the engine's blink. Every front and counter
+    # level had one, so the meter strobed - fastest at full power, where
+    # frontMax and counterMax pulsed on a 10-frame cycle. The tints stay, the
+    # flashing goes.
+    body = re.sub(r"(?m)^[ \t]*p[12]\.(?:front\w*|counter\w*)\.palfx\.sinmul"
+                  r"[ \t]*=[^\r\n]*(?:\r?\n)?", "", body)
     return body
 
 
@@ -404,10 +410,9 @@ def patch_fight_def():
 
 
 def main():
-    if os.environ.get("PAINT_METER_DRAGON") != "1":
-        print("meter art left alone: the HUD uses its original 206x18 bar.\n"
-              "Set PAINT_METER_DRAGON=1 to repaint the oversized dragon.")
-        return
+    # The dragon is the meter: its back is the health bar and its belly is the
+    # audacity bar. It used to be opt-in, and the shipped def kept the stock
+    # 206x18 range while the art grew, so the fill covered half the belly.
 
     if not os.path.isfile(FIGHT_SFF):
         raise SystemExit("data/fight.sff is missing - fetch the engine data first")

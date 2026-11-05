@@ -68,7 +68,7 @@ local RIGHT = {
 local NOTE = 'needs Options > Engine > Debug Keys enabled'
 
 -- Layout constants, in the screenpack's 1280x720 space.
-local KEYW = 14                          -- key column width, in characters
+local KEYW = 12                          -- key column width, in characters
 local ROWS = math.max(#LEFT, #RIGHT)     -- taller column decides the height
 local TOP, BOTTOM = 96, 700              -- first row, and the floor it must not hit
 local LEFT_X, COL_W = 70, 540            -- where the columns start and how wide
@@ -206,7 +206,7 @@ end
 local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
 	local lh = plainPitch(sec)
-	local COLS = {{0, LEFT}, {860, RIGHT}}
+	local COLS = {{0, LEFT}, {620, RIGHT}}
 	for _, col in ipairs(COLS) do
 		local x, rows = col[1], col[2]
 		for i, row in ipairs(rows) do
