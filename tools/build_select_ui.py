@@ -552,6 +552,12 @@ def retint_vs_art():
 # bgclearcolor showed through: black down the right-hand side and across the
 # bottom, right where the menu and the stage card sit.
 VS_SKY = (204, 0)
+# [VersusBG Background Clouds Bottom] is the layer that reaches the floor of the
+# screen, and it is 960 tall - the same 1280x720-era size the sky was. It stops
+# 120px short of the bottom, so the last strip of the frame was bare dark sky
+# with a hard line across it. It is baked to the frame's height here (tiled
+# horizontally by the layer itself, so the width is left alone).
+VS_CLOUD_BOTTOM = (102, 3)
 FRAME = (1920, 1080)
 
 
@@ -575,6 +581,15 @@ def paint_vs_backdrop():
             img = full_frame(sff.decode_sprite(raw, sp, palettes))
             grew = (sp["w"], sp["h"]) != FRAME
             out.append({"group": VS_SKY[0], "number": VS_SKY[1], "image": img,
+                        "axis": sp["axis"]})
+        elif (sp["group"], sp["number"]) == VS_CLOUD_BOTTOM:
+            img = sff.decode_sprite(raw, sp, palettes)
+            if img.height != FRAME[1]:
+                # a 12.5% vertical stretch: the layer is soft cloud, and it puts
+                # the last row of it on the last row of the frame
+                img = img.resize((img.width, FRAME[1]), Image.LANCZOS)
+            out.append({"group": VS_CLOUD_BOTTOM[0],
+                        "number": VS_CLOUD_BOTTOM[1], "image": img,
                         "axis": sp["axis"]})
         else:
             out.append({"group": sp["group"], "number": sp["number"],
@@ -668,6 +683,10 @@ def build():
     sky = next((sp for sp in sprites if (sp["group"], sp["number"]) == VS_SKY), None)
     if sky is None or (sky["w"], sky["h"]) != FRAME:
         raise SystemExit("the VS backdrop is not %dx%d" % FRAME)
+    cloud = next((sp for sp in sprites
+                  if (sp["group"], sp["number"]) == VS_CLOUD_BOTTOM), None)
+    if cloud is None or cloud["h"] != FRAME[1]:
+        raise SystemExit("the bottom cloud layer does not reach the frame's floor")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
