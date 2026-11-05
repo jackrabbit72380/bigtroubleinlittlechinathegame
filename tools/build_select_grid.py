@@ -397,6 +397,10 @@ KEYS = (
     # deliberately not set here, because the card hangs from the band now and
     # a pos written here would put the name somewhere else entirely.
     ("stage.font", "11, 0, 0, 236, 200, 120"),
+    # The stage caption was the one word on the screen at 1.5x, so the arena name
+    # read a size larger than VERSUS and the fighter names. Font 11 at 1 is the
+    # same size as the rest of them.
+    ("stage.scale", "1, 1"),
     ("stage.active.font", "11, 0, 0, 255, 228, 140"),
     # The arena thumbnail. It was commented out by an older build, which left
     # the preview box showing nothing but its own frame.
