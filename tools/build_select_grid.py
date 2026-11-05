@@ -57,14 +57,17 @@ CELL_SPR = (222, 0)
 CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
 # Big side portraits: the panel window the 9000,2 art is clipped to, left/right.
-# The grid's frame padding ends at x=361 and x=1559, so each window stops well
+# The grid's frame padding ends at x=426 and x=1494, so each window stops well
 # short of it and the standing fighters never meet the wall.
-# build_portraits.py paints the art 214x600 and it is drawn at x=2 and x=1278,
-# so the window is wider and taller than the art and no part of the fighter is
-# cut off by the screen edge.
-FACE2_WIN_P1 = "0,180,311,1080"
-FACE2_WIN_P2 = "1609,180,1920,1080"
+# The art is 310x900 and it used to be hung from x=0 and x=1920 - the two
+# fighters stood flush against the screen edges and read as cut off. Both are
+# inset by SIDE_INSET now, so each one has air on the outside as well as the
+# inside, and the window moves with it.
+SIDE_INSET = 48
+FACE2_WIN_P1 = "%d,180,%d,1080" % (SIDE_INSET, SIDE_INSET + 311)
+FACE2_WIN_P2 = "%d,180,%d,1080" % (1920 - SIDE_INSET - 311, 1920 - SIDE_INSET)
 
+GREEN = (72, 232, 96)          # player 1's cursor, the green the RANDOM frame uses
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
 GOLD_LIT = (244, 216, 120)
@@ -265,26 +268,41 @@ def random_card(size):
 
 
 def random_label(size=RANDOM_LABEL, lit=False):
-    """RANDOM as plain type: no plate, no frame, nothing but the word.
+    """RANDOM as plain type; and, when it is lit, the green selection frame.
 
-    The engine draws this at the cell's origin, so the cell stays 128 wide and the
-    word is fitted to it. The lit copy carries a rule underneath, because the
-    plate that marks every other pick is not drawn here.
+    The engine draws this sprite in place of both the cell plate and the box
+    cursor, so start.lua has nothing else to mark the RANDOM stop with. The lit
+    copy carries that frame itself - the same green the first player's cursor
+    uses, corner ticks and all - because brightening the word alone left RANDOM
+    the one position on the screen with no outline when it was selected.
     """
     w, h = size
+    if lit:
+        h += 4
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     ink = GOLD_LIT if lit else GOLD
-    room = w - 10
-    size_px = h - (6 if lit else 2)
+    if lit:
+        d.rounded_rectangle([0, 0, w - 1, h - 1], radius=7, outline=INK + (215,),
+                            width=1)
+        d.rounded_rectangle([1, 1, w - 2, h - 2], radius=6,
+                            outline=GREEN + (255,), width=3)
+        tick, inset = 12, 7
+        for x, y, dx, dy in ((inset, inset, 1, 1), (w - 1 - inset, inset, -1, 1),
+                             (inset, h - 1 - inset, 1, -1),
+                             (w - 1 - inset, h - 1 - inset, -1, -1)):
+            d.line([(x, y + dy * tick), (x, y), (x + dx * tick, y)],
+                   fill=GREEN + (255,), width=2)
+    room = w - (26 if lit else 10)
+    size_px = h - (14 if lit else 2)
     font = art.font(size_px)
-    while size_px > 8 and font.getlength("RANDOM") + 12 > room:
+    while size_px > 8 and (sum(font.getlength(c) for c in "RANDOM") + 10) > room:
         size_px -= 1
         font = art.font(size_px)
-    tracked(d, (w / 2.0, (h - (6 if lit else 2)) / 2.0 - size_px * 0.62), "RANDOM",
-            font, ink + (255,), tracking=2, anchor="ma")
-    if lit:
-        d.rectangle([w * 0.16, h - 4, w * 0.84, h - 2], fill=ink + (255,))
+    box = d.textbbox((0, 0), "RANDOM", font=font)
+    tw = sum(font.getlength(c) for c in "RANDOM") + 2 * (len("RANDOM") - 1)
+    tracked(d, ((w - tw) / 2.0, (h - (box[3] - box[1])) / 2.0 - box[1]), "RANDOM",
+            font, ink + (255,), tracking=2)
     return img
 
 
@@ -418,12 +436,12 @@ KEYS = (
     # from 300px-wide art and pushed a quarter of each fighter off the edge.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "0, 180"),
+    ("p1.face2.offset", "%d, 180" % SIDE_INSET),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1920, 180"),
+    ("p2.face2.offset", "%d, 180" % (1920 - SIDE_INSET)),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are font 11 at scale 1 - the same face
@@ -449,19 +467,19 @@ KEYS = (
     ("p1.face2.random.spr", "151,10"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
-    ("p1.face2.random.offset", "0, 180"),
+    ("p1.face2.random.offset", "%d, 180" % SIDE_INSET),
     ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "0, 180"),
+    ("p1.face2.loading.offset", "%d, 180" % SIDE_INSET),
     ("p1.face2.loading.scale", "0.3333, 0.3333"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
-    ("p2.face2.random.offset", "1920, 180"),
+    ("p2.face2.random.offset", "%d, 180" % (1920 - SIDE_INSET)),
     ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1920, 180"),
+    ("p2.face2.loading.offset", "%d, 180" % (1920 - SIDE_INSET)),
     ("p2.face2.loading.scale", "0.3333, 0.3333"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into

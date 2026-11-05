@@ -26,6 +26,7 @@ from __future__ import annotations
 import math
 import os
 import random
+import re
 import sys
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -601,13 +602,21 @@ def full_frame_sky(stock):
     return wide.convert("RGBA").crop((0, 0, FRAME[0], FRAME[1]))
 
 
+# Any background layer block: [TitleBG ...], [OptionBG ...], [HiscoreBG ...],
+# [VictoryBG ...] and so on. [Hiscore Info] and the like are not layers.
+BG_SECTION = re.compile(r"^\[[a-z0-9_]*bg(\s|def\])")
+
+
 def strip_dead_scale():
-    """Drop the "scale = 1.5" lines from the [TitleBG] layers.
+    """Drop the "scale = 1.5" lines from every screen's background layers.
 
     They were there to blow 1280x720-era art up to this motif's frame, but the
-    engine draws these layers 1:1, so they did nothing and only misread as a
-    statement about how the artwork is sized. The sky is painted at frame size
-    instead, so the lines go. Idempotent: a def without them is left untouched.
+    engine draws these layers 1:1 - a 1280-wide sky landed on the left two
+    thirds of a 1920 frame with the line in place - so they did nothing on the
+    title, and the same dead lines were still sitting on the option, ranking,
+    victory, replay and attract backgrounds. Every floor bitmap is now painted
+    at frame size, so all of them draw 1:1 and the lines go.
+    Idempotent: a def without them is left untouched.
     """
     path = os.path.join(ROOT, "data", "ikemen1", "system.def")
     if not os.path.isfile(path):
@@ -619,7 +628,7 @@ def strip_dead_scale():
         s = line.strip().lower()
         if s.startswith("["):
             section = s
-        elif section.startswith("[titlebg") \
+        elif BG_SECTION.match(section) \
                 and s.replace(" ", "").startswith("scale=1.5,1.5"):
             dropped += 1
             continue
@@ -719,7 +728,7 @@ def build():
         print("removed the black menu panel from the title background")
     dead = strip_dead_scale()
     if dead:
-        print(f"removed {dead} dead scale = 1.5 line(s) from the title layers")
+        print(f"removed {dead} dead scale = 1.5 line(s) from the background layers")
     print(f"sky painted at {sky_img.width}x{sky_img.height} to fill the "
           f"{FRAME[0]}x{FRAME[1]} frame")
     print(f"floor cloud layer at {floor_img.width}x{floor_img.height} - it now "

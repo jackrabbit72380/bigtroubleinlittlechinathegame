@@ -251,8 +251,22 @@ VS_PLATE = _card(998) + (
 # P2 a warmer amber. The stage name is under the card here as well.
 VS_TEXT = (
     # the VS portraits are baked at 2x and drawn at half the scale
-    ("p1.scale", "0.25, 0.25"),
-    ("p2.scale", "0.25, 0.25"),
+    # The VS portraits are painted 360x420 (build_portraits BIG) and the engine
+    # multiplies a portrait's scale by motif.localcoord / char.localcoord, so at
+    # scale 1 each fighter stands 360x420 on screen. 0.25 - the stock value,
+    # meant for the engine's own 120x140 art - drew a 90x105 stamp in the corner:
+    # the biggest screen in the game with the smallest fighters on it. 1.5 puts
+    # them at 540x630, filling most of the 838px portrait window.
+    ("p1.scale", "1.5, 1.5"),
+    ("p2.scale", "1.5, 1.5"),
+    # The portrait's axis is its top-left corner, so the offset is where the
+    # art's corner goes. The stock 666,810 was written for art anchored at its
+    # feet; with a corner anchor it hung the fighter off the bottom of the
+    # screen, and at the new width it also ran under the VS logo. 180 + 630
+    # lands the feet on 810 (the stock foot line) and 268 + 540 stops 0.5px
+    # inside the p1 window at 808.5.
+    ("p1.offset", "268, 180"),
+    ("p2.offset", "1652, 180"),
     # The fighter names belong on the caption row under the card, where the
     # stage name already is. At y=615 they sat across the middle of the screen,
     # which is the VS logo's own row, so the right-hand name printed on the
