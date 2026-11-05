@@ -43,7 +43,7 @@ SCREEN = (1920, 1080)
 # 8 * 128 + 7 * 2 = 1038 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
 # x=441 to x=1479 and the two side columns keep their air either side.
 CELL, CELL_H = 128, 160
-CELL_PAD = 6               # air inside each cell, so no two boxes touch
+CELL_PAD = 2               # air inside each cell, so no two boxes touch
 GAP = 2
 COLS, ROWS = 8, 7
 # The painted wall, its frame and the name row are the fighter rows only: the
