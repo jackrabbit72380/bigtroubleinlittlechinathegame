@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v23
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v24
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v23
+echo                        Updater v24
 echo.
 echo   ==============================================================
 echo.
@@ -532,22 +532,18 @@ echo.
 echo   [ 4/4 ]  Starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
-rem The game has been handed over, so this window has nothing left to do. The
-rem check runs once a second and stops the moment the process exists, instead of
-rem waiting a fixed ten seconds with the game already on screen; a game that
-rem dies on start is still caught, within twelve seconds.
-set /a LW=0
-:launchwait
-call :sleep 1
-set /a LW+=1
-"%TASKLIST%" /fi "imagename eq %EXE%" 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul
-if not errorlevel 1 goto launchok
-if %LW% LSS 12 goto launchwait
-goto launchfail
-
-:launchok
-rem exit, not exit /b: the shell goes with it, so no cmd window is left
-rem running behind the game
+rem The engine attaches to the console that started it and writes its log
+rem there, so this window becomes the game's log while the game runs. Closing
+rem it takes the log - and possibly the game - with it, so it says what it is
+rem and waits for a key instead of vanishing.
+echo.
+echo   The game is starting.
+echo.
+echo   This window is the game's log. The engine writes here, which is why the
+echo   text below is about characters and states and not about the update.
+echo   Leave it open while you play. Press any key here when you are done.
+echo.
+pause
 exit 0
 
 :skipver2

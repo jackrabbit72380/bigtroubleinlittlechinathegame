@@ -96,10 +96,11 @@ silently: the seconds are counted on the status line, git aborts itself
 after thirty seconds of less than 1 KB/s, and after three minutes without
 an answer the launcher takes the verified download instead of waiting.
 
-As soon as the game is running the updater closes itself - it checks once a
-second and stops the moment the process exists, rather than waiting behind
-the game it just started. A game that dies on start is reported with the
-usual reason, and that window waits for a keypress before closing.
+The game's log appears in the updater's own window: the engine attaches to the
+console that started it and writes there. That window therefore stays open
+while you play and closes when you press a key in it, and it says so on
+screen - the character warnings it fills with are the engine's own log, not
+the updater still working.
 
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
