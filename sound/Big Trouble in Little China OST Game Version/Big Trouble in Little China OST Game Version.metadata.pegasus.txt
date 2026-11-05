@@ -1,0 +1,85 @@
+collection: Soundtracks
+
+game: Big Trouble in Little China OST Game Version
+sort: Big Trouble in Little China OST Game Version
+developer: John Carpenter & Alan Howarth
+publisher: Varese Sarabande
+release: 1986-05-30
+genre: Soundtrack
+players: 0
+
+description: Original soundtrack album for the 1986 cult classic film Big Trouble in Little China. Composed by John Carpenter and Alan Howarth, featuring the iconic synthesizer-driven score and the film's memorable theme song.
+
+collection: Big Trouble in Little China OST Game Version
+
+game: 1 - Prologue
+file: sound/1 - Prologue.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 2 - Pork Chop Express
+file: sound/2 - Pork Chop Express.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 3 - Abduction at Airport
+file: sound/3 - Abduction at Airport.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 4 - Here Come the Storms
+file: sound/4 - Here Come the Storms.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 5 - Lo Pan's Domain
+file: sound/5 - Lo Pan's Domain.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 6 - Escape From Wing Kong
+file: sound/6 - Escape From Wing Kong.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 7 - Hide
+file: sound/7 - Hide.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 8 - The Great Arcade
+file: sound/8 - The Great Arcade.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 9 - (BONUS) - Overture - Written By Jason Flanagan
+file: sound/9 - (BONUS) - Overture - Written By Jason Flanagan.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 10 - Wing Kong Exchange
+file: sound/10 - Wing Kong Exchange.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 11 - The Final Escape
+file: sound/11 - The Final Escape.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
+
+game: 12 - Lopan's Wedding Arrival
+file: sound/12- Lopan's Wedding Arrival.ogg
+assets.boxFront: assets/boxFront.png
+assets.boxBack: assets/boxBack.png
+assets.box: assets/box.png
