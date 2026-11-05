@@ -12,13 +12,25 @@ Run:  python3 tools/validate.py
 
 from __future__ import annotations
 
-import os
 import re
+
+import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import sff
+
+def _portrait_sizes():
+    import os, re
+    here = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(here, "build_portraits.py"), encoding="utf-8") as f:
+        body = f.read()
+    def size(name):
+        m = re.search(r"^%s = \((\d+), (\d+)\)" % name, body, re.M)
+        return (int(m.group(1)), int(m.group(2)))
+    return size("CELL"), size("BIG"), size("SIDE")
+
 
 def _grid_cell():
     """The roster cell size, read from the grid generator.
@@ -34,6 +46,11 @@ def _grid_cell():
 
 
 CELL = _grid_cell()
+CELL_SIZE, BIG_SIZE, SIDE_SIZE = _portrait_sizes()
+MOTIF_WIDTH = int(re.search(r"^\s*localcoord\s*=\s*(\d+)",
+                  open(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir,
+                       "data", "ikemen1", "system.def"), encoding="utf-8").read(),
+                  re.M).group(1))
 
 
 
@@ -287,7 +304,7 @@ def check_select_screen(chars):
     # must draw inside the portrait rect. The engine scales a sprite's axis with
     # it, which is what pushed the stock 5x "?" out past the panel and left it
     # showing around the preview art.
-    portrait = (300.0, 520.0)          # 9000,2 / placeholder art at scale 1
+    portrait = (float(SIDE_SIZE[0]), float(SIDE_SIZE[1]))   # 9000,2 at scale 1
     for side, flip in (("p1", 1), ("p2", -1)):
         off = [float(v) for v in opts.get(side + ".face2.offset", "0,0").split(",")]
         psc = [float(v) for v in opts.get(side + ".face2.scale", "1,1").split(",")]
@@ -316,8 +333,10 @@ def check_select_screen(chars):
         if (group, number) not in have:
             err("select screen: system.sff has no sprite %d,%d" % (group, number))
     bg = have.get((220, 0))
-    if bg and (bg["w"], bg["h"]) != (1280, 720):
-        err("select screen: background is %dx%d, expected 1280x720" % (bg["w"], bg["h"]))
+    want_bg = (MOTIF_WIDTH, MOTIF_WIDTH * 9 // 16)
+    if bg and (bg["w"], bg["h"]) != want_bg:
+        err("select screen: background is %dx%d, expected %dx%d"
+            % (bg["w"], bg["h"], want_bg[0], want_bg[1]))
     if "spriteno = 220, 0" not in def_text:
         err("select screen: [SelectBGdef] does not draw the painted background")
 
@@ -336,9 +355,9 @@ def check_select_screen(chars):
         lc_match = re.search(r"^\s*localcoord\s*=\s*(\d+)", read(def_path),
                              re.M | re.I)
         localcoord = int(lc_match.group(1)) if lc_match else 320
-        factor = 1280.0 / localcoord      # motif [Info] localcoord width
-        want = {(9000, 0): (CELL, CELL), (9000, 1): (120, 140),
-                (9000, 2): (214, 600)}
+        factor = MOTIF_WIDTH / localcoord  # motif [Info] localcoord width
+        want = {(9000, 0): CELL_SIZE, (9000, 1): BIG_SIZE,
+                (9000, 2): SIDE_SIZE}
         for key, size in want.items():
             hit = {(sp["group"], sp["number"]): sp for sp in char_sprites}.get(key)
             if hit is None:
