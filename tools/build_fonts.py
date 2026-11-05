@@ -331,6 +331,15 @@ SECTION_LAYOUT = {
         # across the VS mark in the middle instead of under P2's portrait. P1's
         # name sits 20px from the left edge, so P2's ends 20px from the right.
         ("p2.name.offset", "1900, 615"),
+        # The stage preview was a 514x164 strip: the motif clipped the stage's
+        # 9000,1 art to the small panel behind it, so only a letterboxed band of
+        # the painting showed. It is a full 16:9 thumbnail now, sized off the art
+        # itself (stages/stage0.sff 9000,1 = 1215x398, axis 0,0) and parked
+        # clear of the stage name at y~1020, with the old panel moved off screen.
+        ("stage.portrait.scale", "0.5267, 0.5267"),
+        ("stage.portrait.offset", "-320.0000, -405.0000"),
+        ("stage.portrait.window", "640, 630, 1280, 990"),
+        ("stage.portrait.bg.offset", "-4000, -4000"),
     ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
