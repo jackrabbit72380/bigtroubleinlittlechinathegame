@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v30
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v31
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v30
+echo                        Updater v31
 echo.
 echo   ==============================================================
 echo.
@@ -101,6 +101,8 @@ set "BASE="
 set "NCOP=0"
 set "NDEL=0"
 set "FOUNDZIP="
+set "DLOK="
+set "GITTRIED="
 
 rem This window first makes sure it IS the current launcher. Until now the
 rem launcher was not in the six folders the update writes, so a fix to it
@@ -189,6 +191,11 @@ if exist ".git" goto githere
 echo            First run: reading what is already here, so only changes are downloaded.
 echo            This reads the art already in this folder; it does not download it.
 echo            This can take a minute before the bar moves.
+
+:gitinit
+rem Also reached when the updater's own .git has to be rebuilt. That folder
+rem holds no player data - the working tree is the game itself - so throwing it
+rem away costs a re-read of the folders, never a download.
 git init -q . >"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 git config --local ikemen.updater 1 >>"%CACHE%\git.log" 2>&1
@@ -292,6 +299,23 @@ if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
 goto copied
 
 :gitfail
+rem A half-written .git - an interrupted run, a full disk, settings an older
+rem launcher left behind - makes every git command in this folder fail, and the
+rem update then never applied here at all: it fell through to the 190 MB
+rem archive on every single launch. It is rebuilt once and tried again first.
+if not defined GITTRIED goto gitfail_rebuild
+goto gitfail_final
+:gitfail_rebuild
+set "GITTRIED=1"
+set "MINE="
+for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
+if not "%MINE%"=="1" goto gitfail_final
+echo.
+echo            The updater's git data in this folder is not usable, so it is
+echo            being rebuilt from scratch and the update tried once more.
+rd /s /q "%~dp0.git" >nul 2>&1
+goto gitinit
+:gitfail_final
 echo.
 echo            Git could not finish this update.
 echo            Its reason is in git's own lines just above this - no
@@ -432,16 +456,18 @@ echo.
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 --progress-bar -o "%ZIP%" "%ZIPURL%"
+rem A percentage on a bar needs the size before the bytes arrive, and only the
+rem request knows it: the total is read from the response and the bar is drawn
+rem from bytes received against it. PowerShell does that; curl is the fallback
+rem when there is no PowerShell to draw it.
+if defined POWERSHELL call :dl_ps "%ZIPURL%"
+if not defined DLOK if defined POWERSHELL echo            Trying GitHub's other archive address.
+if not defined DLOK if defined POWERSHELL call :dl_ps "%ZIPURL2%"
+if not defined DLOK call :dl_curl
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            Trying GitHub's other archive address.
-"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 --progress-bar -o "%ZIP%" "%ZIPURL2%"
-call :zipcheck
-if "%ZIPOK%"=="1" goto havezip
-if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            curl could not finish the download.
+echo            The archive did not arrive in one piece.
 echo.
 :dl_browser
 echo.
@@ -662,7 +688,7 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
@@ -725,6 +751,75 @@ rem a path main no longer has was deleted there: drop the local copy too
 if not exist "%~dp0%REL%" exit /b 0
 del /q "%~dp0%REL%" >nul 2>&1
 if not errorlevel 1 set /a NDEL+=1
+exit /b 0
+
+:dl_ps
+rem %1 = the archive address. Sets DLOK when the file arrived whole.
+set "DLOK="
+if not exist "%DLSCRIPT%" call :dl_make
+if not exist "%DLSCRIPT%" exit /b 0
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%"
+if errorlevel 1 exit /b 0
+set "DLOK=1"
+exit /b 0
+
+:dl_make
+rem The renderer lives in a file of its own: a twenty-line PowerShell script
+rem cannot be passed on a command line without a quoting argument, and every
+rem line below is plain text with no character cmd would eat.
+set "DLSCRIPT=%CACHE%\download.ps1"
+>  "%DLSCRIPT%" echo param([string]$Url, [string]$Out)
+>> "%DLSCRIPT%" echo $ErrorActionPreference = 'Stop'
+>> "%DLSCRIPT%" echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+>> "%DLSCRIPT%" echo $req = [Net.HttpWebRequest]::Create($Url)
+>> "%DLSCRIPT%" echo $req.UserAgent = 'btilc-updater'
+>> "%DLSCRIPT%" echo $req.Timeout = 60000
+>> "%DLSCRIPT%" echo $res = $req.GetResponse()
+>> "%DLSCRIPT%" echo $total = $res.ContentLength
+>> "%DLSCRIPT%" echo $stream = $res.GetResponseStream()
+>> "%DLSCRIPT%" echo $file = [IO.File]::Create($Out)
+>> "%DLSCRIPT%" echo $buffer = New-Object byte[] 262144
+>> "%DLSCRIPT%" echo $got = 0
+>> "%DLSCRIPT%" echo $start = Get-Date
+>> "%DLSCRIPT%" echo $drawn = 0.0
+>> "%DLSCRIPT%" echo while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
+>> "%DLSCRIPT%" echo   $file.Write($buffer, 0, $read)
+>> "%DLSCRIPT%" echo   $got = $got + $read
+>> "%DLSCRIPT%" echo   $elapsed = ((Get-Date) - $start).TotalSeconds
+>> "%DLSCRIPT%" echo   if (($elapsed - $drawn) -lt 0.25 -and ($total -le 0 -or $got -lt $total)) { continue }
+>> "%DLSCRIPT%" echo   $drawn = $elapsed
+>> "%DLSCRIPT%" echo   $width = 34
+>> "%DLSCRIPT%" echo   $fill = 0
+>> "%DLSCRIPT%" echo   if ($total -gt 0) { $fill = [int]($width * $got / $total) }
+>> "%DLSCRIPT%" echo   $bar = ('#' * $fill).PadRight($width, '-')
+>> "%DLSCRIPT%" echo   $pct = '   ?'
+>> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = ([int](100 * $got / $total)).ToString().PadLeft(3) + '%' }
+>> "%DLSCRIPT%" echo   $speed = 0.0
+>> "%DLSCRIPT%" echo   if ($elapsed -gt 0) { $speed = $got / $elapsed }
+>> "%DLSCRIPT%" echo   $line = [char]13 + '   [' + $bar + '] ' + $pct + '   ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB   ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
+>> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
+>> "%DLSCRIPT%" echo }
+>> "%DLSCRIPT%" echo $file.Close()
+>> "%DLSCRIPT%" echo $stream.Close()
+>> "%DLSCRIPT%" echo $res.Close()
+>> "%DLSCRIPT%" echo Write-Host ''
+>> "%DLSCRIPT%" echo if ($total -gt 0 -and $got -lt $total) { throw 'incomplete download' }
+exit /b 0
+
+:dl_curl
+rem No PowerShell, or it could not fetch: curl's own meter still reports the
+rem percentage and the speed, and both archive addresses are tried.
+if not defined CURL exit /b 0
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 -o "%ZIP%" "%ZIPURL%"
+call :zipcheck
+if "%ZIPOK%"=="1" set "DLOK=1"
+if defined DLOK exit /b 0
+if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
+"%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 -o "%ZIP%" "%ZIPURL2%"
+call :zipcheck
+if "%ZIPOK%"=="1" set "DLOK=1"
 exit /b 0
 
 :sleep
