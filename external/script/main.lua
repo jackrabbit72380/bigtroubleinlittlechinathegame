@@ -677,6 +677,23 @@ function main.f_loadingProgress()
 	return done, total
 end
 
+--The file the queue is on right now, from the same two lists the count uses:
+--the roster cell being built, then the stage portrait being built. The def
+--path is cut down to its own file name, which is what the player recognises.
+function main.f_loadingCurrent()
+	for _, ch in ipairs(main.t_selChars) do
+		if ch.playable and ch.char_ref ~= nil and not ch.cell_data_ready then
+			return (ch.char or ''):match('([^/]+)%.def$') or ch.char
+		end
+	end
+	for _, st in ipairs(main.t_selStages) do
+		if not st.anim_data_ready then
+			return (st.def or ''):match('([^/]+)%.def$') or st.name
+		end
+	end
+	return nil
+end
+
 --The boot screen used to draw anim 600, a ring that only ever looped, so it
 --looked like a progress bar while telling the player nothing. Write the live
 --figure into the loading caption instead. That caption is the one text sprite
@@ -692,12 +709,18 @@ function main.f_loadingDraw()
 		pct = math.floor(done * 100 / total)
 	end
 	if pct > 100 then pct = 100 end
+	--name first: if the caption runs out of room it is the figure that goes
+	local label = pct .. '%'
+	local current = main.f_loadingCurrent()
+	if current ~= nil then
+		label = current .. '  ' .. label
+	end
 	local ok = false
 	if text ~= nil then
 		--textImgSetText rewrites the sprite in place, so it keeps the position,
 		--alignment, font and shear the motif already gave it.
 		ok = pcall(function()
-			textImgSetText(text, 'LOADING... ' .. pct .. '%  ' .. done .. '/' .. total)
+			textImgSetText(text, label)
 			textImgDraw(text)
 		end)
 	end
