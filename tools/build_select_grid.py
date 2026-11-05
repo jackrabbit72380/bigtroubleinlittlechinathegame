@@ -34,7 +34,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
-SCREEN = (1280, 720)
+SCREEN = (1920, 1080)
 # 10x5 = 50 cells: the forty-eight fighters in data/select.def plus the random
 # box, which is the whole cast on one page.
 #
@@ -43,10 +43,10 @@ SCREEN = (1280, 720)
 # screen uses - and the 8px gutters between them came down to 2px to pay for it:
 # 10 * 80 + 9 * 2 = 818, so the wall spans x=231 to x=1049 and the two standing
 # fighters keep their own column either side of it.
-CELL = 80
-GAP = 2
+CELL = 123
+GAP = 4
 COLS, ROWS = 10, 5
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 34)
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 31)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = ROWS * CELL + (ROWS - 1) * GAP
 
@@ -59,8 +59,8 @@ AXIS = (0, 0)
 # build_portraits.py paints the art 214x600 and it is drawn at x=2 and x=1278,
 # so the window is wider and taller than the art and no part of the fighter is
 # cut off by the screen edge.
-FACE2_WIN_P1 = "0,86,221,712"
-FACE2_WIN_P2 = "1059,86,1280,712"
+FACE2_WIN_P1 = "0,129,327,1068"
+FACE2_WIN_P2 = "1593,129,1920,1068"
 
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
@@ -97,36 +97,36 @@ def rule(draw, x0, x1, y, fill, width=1):
 
 def background():
     """1280x720 select backdrop: stone, jade haze, gold frame, captions."""
-    img = art.vgrad(SCREEN, [(0, (5, 9, 10)), (260, (11, 20, 18)),
-                             (500, (7, 12, 12)), (720, (3, 6, 7))]).convert("RGBA")
-    img = Image.alpha_composite(img, art.radial_light(SCREEN, (640, 250), 560,
+    img = art.vgrad(SCREEN, [(0, (5, 9, 10)), (390, (11, 20, 18)),
+                             (750, (7, 12, 12)), (1080, (3, 6, 7))]).convert("RGBA")
+    img = Image.alpha_composite(img, art.radial_light(SCREEN, (960, 375), 840,
                                                       (32, 96, 78), peak=105))
 
     # Slow marble smoke: soft ellipses at low alpha, each one blurred hard.
     rng = random.Random(11)
     for _ in range(22):
         cx, cy = rng.randrange(0, SCREEN[0]), rng.randrange(0, SCREEN[1])
-        rx, ry = rng.randrange(140, 420), rng.randrange(70, 230)
+        rx, ry = rng.randrange(210, 630), rng.randrange(105, 345)
         layer = Image.new("RGBA", SCREEN, (0, 0, 0, 0))
         ImageDraw.Draw(layer).ellipse([cx - rx, cy - ry, cx + rx, cy + ry],
                                       fill=(96, 150, 128, rng.randrange(5, 13)))
         img = Image.alpha_composite(img, layer.filter(
-            ImageFilter.GaussianBlur(rng.randrange(34, 74))))
+            ImageFilter.GaussianBlur(rng.randrange(51, 111))))
 
     d = ImageDraw.Draw(img)
 
     # The frame the grid sits in: a plate, a double gold rule, corner diamonds.
-    pad = 10
+    pad = 15
     box = [GRID[0] - pad, GRID[1] - pad,
            GRID[0] + GRID_W + pad, GRID[1] + GRID_H + pad]
-    d.rectangle(box, fill=(6, 9, 9, 176), outline=GOLD_DIM + (255,), width=2)
+    d.rectangle(box, fill=(6, 9, 9, 176), outline=GOLD_DIM + (255,), width=3)
     d.rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4],
-                outline=GOLD + (232,), width=2)
+                outline=GOLD + (232,), width=3)
     d.rectangle([box[0] + 8, box[1] + 8, box[2] - 8, box[3] - 8],
-                outline=GOLD_DIM + (190,), width=1)
+                outline=GOLD_DIM + (190,), width=2)
     for cx, cy in ((box[0], box[1]), (box[2], box[1]),
                    (box[0], box[3]), (box[2], box[3])):
-        d.polygon([(cx, cy - 9), (cx + 9, cy), (cx, cy + 9), (cx - 9, cy)],
+        d.polygon([(cx, cy - 13), (cx + 13, cy), (cx, cy + 13), (cx - 13, cy)],
                   fill=GOLD + (255,), outline=(40, 32, 14, 255))
 
     # Side columns: rules marking where the two fighters stand, labelled on top.
@@ -134,16 +134,16 @@ def background():
     # the stage caption the engine draws under the arena thumbnail (font 11 =
     # the 13px Body face), so PLAYER 1, PLAYER 2 and VERSUS all read as one
     # caption line across the top instead of three unrelated sizes.
-    LABEL_Y = 2
-    LABEL_FONT = art.font(15)
-    for x in (20, SCREEN[0] - 21):
-        d.rectangle([x, LABEL_Y + 20, x + 2, SCREEN[1] - 46], fill=GOLD_DIM + (200,))
-        d.rectangle([x + 1, LABEL_Y + 20, x + 1, SCREEN[1] - 46], fill=GOLD + (110,))
+    LABEL_Y = 3
+    LABEL_FONT = art.font(22)
+    for x in (30, SCREEN[0] - 31):
+        d.rectangle([x, LABEL_Y + 30, x + 3, SCREEN[1] - 69], fill=GOLD_DIM + (200,))
+        d.rectangle([x + 1, LABEL_Y + 30, x + 1, SCREEN[1] - 69], fill=GOLD + (110,))
     cx1, cx2 = GRID[0] // 2, SCREEN[0] - GRID[0] // 2
     for cx, label in ((cx1, "PLAYER 1"), (cx2, "PLAYER 2")):
         tracked(d, (cx, LABEL_Y), label, LABEL_FONT, GOLD + (238,), tracking=2,
                 anchor="ma")
-        rule(d, cx - 58, cx + 58, LABEL_Y + 17, GOLD_DIM + (220,))
+        rule(d, cx - 87, cx + 87, LABEL_Y + 26, GOLD_DIM + (220,))
 
     # No painted "ARENA" caption: the engine draws the selected stage's own
     # name under the thumbnail, and the caption used to sit on top of the
@@ -159,14 +159,14 @@ def cell_frame():
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, s - 1, s - 1], fill=INK + (238,))
-    d.rectangle([0, 0, s - 1, s - 1], outline=GOLD + (255,), width=2)
-    d.rectangle([2, 2, s - 3, s - 3], outline=(26, 24, 20, 255), width=2)
-    d.rectangle([4, 4, s - 5, s - 5], outline=GOLD_DIM + (210,), width=1)
+    d.rectangle([0, 0, s - 1, s - 1], outline=GOLD + (255,), width=3)
+    d.rectangle([3, 3, s - 4, s - 4], outline=(26, 24, 20, 255), width=3)
+    d.rectangle([6, 6, s - 7, s - 7], outline=GOLD_DIM + (210,), width=2)
 
     shade = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shade)
-    for y in range(5, 30):
-        sd.line([(5, y), (s - 6, y)], fill=(0, 0, 0, int(74 * (1 - (y - 5) / 25.0))))
+    for y in range(7, 45):
+        sd.line([(7, y), (s - 8, y)], fill=(0, 0, 0, int(74 * (1 - (y - 7) / 37.0))))
     img.alpha_composite(shade)
     return img
 
@@ -176,10 +176,10 @@ def cursor_frame(colour):
     s = CELL
     img = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rectangle([2, 2, s - 3, s - 3], outline=colour + (255,), width=4)
-    d.rectangle([6, 6, s - 7, s - 7], outline=(255, 255, 255, 150), width=1)
+    d.rectangle([3, 3, s - 4, s - 4], outline=colour + (255,), width=6)
+    d.rectangle([9, 9, s - 10, s - 10], outline=(255, 255, 255, 150), width=2)
     d.rectangle([0, 0, s - 1, s - 1], outline=colour + (120,), width=1)
-    glow = img.filter(ImageFilter.GaussianBlur(7))
+    glow = img.filter(ImageFilter.GaussianBlur(10))
     out = Image.new("RGBA", (s, s), (0, 0, 0, 0))
     out.alpha_composite(glow)
     out.alpha_composite(img)
@@ -191,12 +191,12 @@ def cursor_frame(colour):
 # a recoloured 62px glyph blown up 4.8x in the panels, which is why the random
 # portrait read as blank next to the painted ones.
 RANDOM_CELL = (151, 0)
-RANDOM_CARD = (62, 63)
+RANDOM_CARD = (82, 84)
 RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
 # exactly - the validator refuses anything that would show around the art.
-RANDOM_PANEL = (300, 520)
+RANDOM_PANEL = (321, 900)
 
 
 def random_card(size):
@@ -332,7 +332,7 @@ KEYS = (
     ("stage.portrait.spr", "9000,1"),
     # VERSUS is drawn by the engine: same face as the stage caption (font 11),
     # on the top edge, so it matches PLAYER 1 / PLAYER 2 and the stage name.
-    ("title.offset", "640, 2"),
+    ("title.offset", "960, 3"),
     ("title.font", "11, 0, 0, 255, 228, 140"),
     ("title.scale", "1,1"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
@@ -343,12 +343,12 @@ KEYS = (
     # from 300px-wide art and pushed a quarter of each fighter off the edge.
     ("p1.face.window", "0,0,1,1"),
     ("p1.face2.spr", "9000,2"),
-    ("p1.face2.offset", "2,100"),
+    ("p1.face2.offset", "3,150"),
     ("p1.face2.scale", "1,1"),
     ("p1.face2.window", FACE2_WIN_P1),
     ("p2.face.window", "0,0,1,1"),
     ("p2.face2.spr", "9000,2"),
-    ("p2.face2.offset", "1278,100"),
+    ("p2.face2.offset", "1917,150"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
     # The fighter names under the panels are engine text and were still the
@@ -360,11 +360,11 @@ KEYS = (
     # the font's own size.
     ("p1.name.font", "11, 0, 0, 255, 228, 140"),
     ("p1.name.scale", "0.25, 0.25"),
-    ("p1.name.offset", "50, 690"),
+    ("p1.name.offset", "75, 1035"),
     ("p1.name.layerno", "2"),
     ("p2.name.font", "11, 0, -1, 255, 170, 96"),
     ("p2.name.scale", "0.25, 0.25"),
-    ("p2.name.offset", "1230, 690"),
+    ("p2.name.offset", "1845, 1035"),
     ("p2.name.layerno", "2"),
     # The "?" and the loading art stand in for the portrait, so they are drawn
     # inside the same rect and clipped by the same window. Left at the stock
@@ -376,19 +376,19 @@ KEYS = (
     ("p1.face2.random.spr", "151,10"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
-    ("p1.face2.random.offset", "2, 100"),
-    ("p1.face2.random.scale", "0.7, 0.7"),
+    ("p1.face2.random.offset", "3, 150"),
+    ("p1.face2.random.scale", "1, 1"),
     ("p1.face2.random.window", FACE2_WIN_P1),
-    ("p1.face2.loading.offset", "2, 200"),
+    ("p1.face2.loading.offset", "3, 300"),
     ("p1.face2.loading.scale", ".625, .625"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
     ("p2.face2.random.spr", "151,10"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
-    ("p2.face2.random.offset", "1278, 100"),
-    ("p2.face2.random.scale", "0.7, 0.7"),
+    ("p2.face2.random.offset", "1917, 150"),
+    ("p2.face2.random.scale", "1, 1"),
     ("p2.face2.random.window", FACE2_WIN_P2),
-    ("p2.face2.loading.offset", "1278, 200"),
+    ("p2.face2.loading.offset", "1917, 300"),
     ("p2.face2.loading.scale", ".625, .625"),
     ("p2.face2.loading.window", FACE2_WIN_P2),
     # The random box's "?" carries the same odd axis; at 1.6x it ran 20px into

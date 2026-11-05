@@ -37,8 +37,8 @@ SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 # The hint sits above the card, centred on the screen: the stage name moved
 # down to the fighters' row, and the strip used to be pinned to the left edge.
 SPRITE = (221, 0)
-STRIP = (300, 30)
-POS = (640, 430)
+STRIP = (450, 45)
+POS = (960, 645)
 
 GOLD = (255, 214, 96)
 GOLD_DEEP = (120, 78, 16)
@@ -131,12 +131,12 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
 # the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
-CARD_W = 460                  # the card's own width, independent of the grid
+CARD_W = 690                  # the card's own width, independent of the grid
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
 CARD_H = ART_H
-CARD_CX = 640
-NAME_ROW_Y = 690                        # the row the fighter names sit on
-CARD_CX = 640
+CARD_CX = 960
+NAME_ROW_Y = 1035                       # the row the fighter names sit on
+CARD_CX = 960
 # A stage's 9000,1 is drawn at (motif localcoord / stage localcoord) of the
 # scale in the .def, which is 1280/1920 = 2/3 for these 1920-wide stages. At
 # the card's own scale the picture landed 307px wide inside a 460px window - a
@@ -144,7 +144,7 @@ CARD_CX = 640
 # looked like. Overscaling by that ratio makes the art cover the window and the
 # window clip it, so the box is full whatever a stage's localcoord turns out
 # to be.
-MOTIF_LOCALCOORD = 1280
+MOTIF_LOCALCOORD = 1920
 STAGE_LOCALCOORD = 1920
 CARD_FILL = STAGE_LOCALCOORD / float(MOTIF_LOCALCOORD)
 # 20px of cap height. The name used to be font 11 (the 13px Body face) at
@@ -205,7 +205,7 @@ def _card(bottom_y, text_y=NAME_ROW_Y):
 # frames. The stock motif sets that to 2 and gives all three a different gold,
 # which is a 30Hz strobe. One colour and a switchtime longer than anyone will
 # sit on this screen makes the name hold still.
-NAME_SCALE = "1, 1"
+NAME_SCALE = "1.5, 1.5"
 NAME_GOLD = "236, 200, 120"
 SELECT_TEXT = (
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
@@ -221,14 +221,14 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(660)           # [Select Info]
+STAGE_PORTRAIT = _card(990)           # [Select Info]
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate
     ("stage.portrait.bg.anim", "-1"),
     ("stage.portrait.bg.spr", "110,0"),
 ) + SELECT_TEXT
-VS_PLATE = _card(665) + (
+VS_PLATE = _card(998) + (
     ("stage.portrait.bg.spr", "112,0"),
 )
 
