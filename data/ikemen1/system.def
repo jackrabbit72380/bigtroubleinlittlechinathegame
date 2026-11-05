@@ -1106,7 +1106,7 @@ p1.name.offset = 20,615      ;Position to put name
 p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
-p2.name.offset = 1260,615
+p2.name.offset = 1900, 615
 p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.spacing = -22.5, 37.5
 
