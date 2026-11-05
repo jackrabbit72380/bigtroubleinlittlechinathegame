@@ -658,6 +658,56 @@ main.preload = {
 	charHighlight = {},
 }
 
+--How much of the boot queue is really done. Ikemen gives the shell no load
+--percentage, but the shell owns the queue: f_preloadTick flips cell_data_ready
+--and anim_data_ready as each roster cell and stage portrait finishes, so
+--counting those flags is the actual work, not a guess at it.
+function main.f_loadingProgress()
+	local done, total = 0, 0
+	for _, ch in ipairs(main.t_selChars) do
+		if ch.playable and ch.char_ref ~= nil then
+			total = total + 1
+			if ch.cell_data_ready then done = done + 1 end
+		end
+	end
+	for _, st in ipairs(main.t_selStages) do
+		total = total + 1
+		if st.anim_data_ready then done = done + 1 end
+	end
+	return done, total
+end
+
+--The boot screen used to draw anim 600, a ring that only ever looped, so it
+--looked like a progress bar while telling the player nothing. Write the live
+--count into the loading caption instead: it is the one text sprite the engine
+--already draws here, while a freshly built textImg with a font set on it has
+--come up blank before, and the motif reports no percentage of its own.
+function main.f_loadingDraw()
+	local text = motif.title_info.loading.wait.TextSpriteData
+	local done, total = main.f_loadingProgress()
+	local pct = 0
+	if total > 0 then
+		pct = math.floor(done * 100 / total)
+	end
+	if pct > 100 then pct = 100 end
+	local ok = false
+	if text ~= nil then
+		--textImgSetText rewrites the sprite in place, so it keeps the position,
+		--alignment and font the motif already gave it; nothing else is touched.
+		ok = pcall(function()
+			textImgSetText(text, 'NOW LOADING... ' .. pct .. '%  (' .. done .. '/' .. total .. ')')
+			textImgDraw(text)
+		end)
+	end
+	if not ok then
+		--an older build without a writable caption still gets the load art
+		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
+		if text ~= nil then
+			textImgDraw(text)
+		end
+	end
+end
+
 function main.f_waitForPreloads(force)
 	if not preloading() then
 		return
@@ -677,11 +727,14 @@ function main.f_waitForPreloads(force)
 	end
 	while preloading() do
 		clearColor(0, 0, 0)
-		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
-		textImgDraw(motif.title_info.loading.wait.TextSpriteData)
 		main.f_preloadTick(2)
+		main.f_loadingDraw()
 		refresh()
 	end
+	--the loop leaves the last tick's count up, so paint the settled one too
+	clearColor(0, 0, 0)
+	main.f_loadingDraw()
+	refresh()
 end
 
 function main.f_syncCharPaletteData(ref)
