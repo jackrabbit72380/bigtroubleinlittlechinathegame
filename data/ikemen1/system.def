@@ -829,8 +829,8 @@ p2.palmenu.cancel.snd = 100, 2
 
 cell.bg.offset = 0,0
 title.scale = 1,1
-p1.name.scale = 0.25, 0.25
-p2.name.scale = 0.25, 0.25
+p1.name.scale = 1, 1
+p2.name.scale = 1, 1
 cell.random.offset = 0,0
 p1.cursor.active.spr = 223,0
 p1.cursor.active.offset = 0,0
