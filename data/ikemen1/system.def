@@ -439,7 +439,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0, 0
 portrait.loading.scale = .25,.25
 title.offset = 960, 3
-title.font = 10,0,0, 255, 228, 140
+title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -553,10 +553,10 @@ p1.face2.spr = 9000,2
 ;p1.face2.yangle = 70
 p1.face2.layerno = 2
 ;p1.face2.focallength = 400
-p1.face2.offset = 48, 180
+p1.face2.offset = 96, 180
 p1.face2.scale = 1,1
 p1.face2.facing = 1
-p1.face2.window = 48,180,359,1080
+p1.face2.window = 96,180,407,1080
 p1.face2.applypal = 1
 
 p2.face2.spr = 9000,2
@@ -564,14 +564,14 @@ p2.face2.spr = 9000,2
 ;p2.face2.yangle = -70
 p2.face2.layerno = 2
 ;p2.face2.focallength = 400
-p2.face2.offset = 1872, 180
+p2.face2.offset = 1824, 180
 p2.face2.scale = 1,1
 p2.face2.facing = -1
-p2.face2.window = 1561,180,1872,1080
+p2.face2.window = 1513,180,1824,1080
 p2.face2.applypal = 1
 
 p1.face2.random.spr = 151,10
-p1.face2.random.offset = 48, 180
+p1.face2.random.offset = 96, 180
 p1.face2.random.facing = 1
 p1.face2.random.scale = 1, 1
 p1.face2.random.layerno = 2
@@ -579,20 +579,20 @@ p1.face2.random.projection = perspective
 p1.face2.random.yangle = 70
 p1.face2.random.layerno = 2
 p1.face2.random.focallength = 400
-p1.face2.random.window = 48,180,359,1080
+p1.face2.random.window = 96,180,407,1080
 
 p2.face2.random.spr = 151,10
-p2.face2.random.offset = 1872, 180
+p2.face2.random.offset = 1824, 180
 p2.face2.random.facing = -1
 p2.face2.random.scale = 1, 1
 p2.face2.random.layerno = 2
-p2.face2.random.window = 1561,180,1872,1080
+p2.face2.random.window = 1513,180,1824,1080
 p2.face2.random.projection = perspective
 p2.face2.random.yangle = -70
 p2.face2.random.focallength = 400
 
 p1.face2.loading.spr = 1000, 1
-p1.face2.loading.offset = 48, 180
+p1.face2.loading.offset = 96, 180
 p1.face2.loading.facing = 1
 p1.face2.loading.scale = 0.3333, 0.3333
 p1.face2.loading.layerno = 2
@@ -600,31 +600,31 @@ p1.face2.loading.projection = perspective
 p1.face2.loading.yangle = 70
 p1.face2.loading.layerno = 2
 p1.face2.loading.focallength = 400
-p1.face2.loading.window = 48,180,359,1080
+p1.face2.loading.window = 96,180,407,1080
 
 p2.face2.loading.spr = 1000, 1
-p2.face2.loading.offset = 1872, 180
+p2.face2.loading.offset = 1824, 180
 p2.face2.loading.facing = -1
 p2.face2.loading.scale = 0.3333, 0.3333
 p2.face2.loading.layerno = 2
-p2.face2.loading.window = 1561,180,1872,1080
+p2.face2.loading.window = 1513,180,1824,1080
 p2.face2.loading.projection = perspective
 p2.face2.loading.yangle = -70
 p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 75, 1035
-p1.name.font = 10, 0, 1, 240, 196, 88
+p1.name.font = 11, 0, 0, 255, 228, 140
 p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1845, 1035
-p2.name.font = 10, 0, -1, 236, 158, 74
+p2.name.font = 11, 0, -1, 255, 170, 96
 p2.name.spacing = -22.5, 37.5
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 960, 1035
-stage.font = 11, 0, 0, 176, 126, 44
+stage.font = 11, 0, 0, 236, 200, 120
 stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 176, 126, 44
 stage.done.font = 11, 0, 0, 176, 126, 44
@@ -632,7 +632,7 @@ stage.layerno = 2
 
 ;Stage portraits
 ;stage.portrait.anim = 
-stage.portrait.spr = -1
+stage.portrait.spr = 9000,1
 stage.portrait.offset = 0, -100
 stage.portrait.scale = 0.4280, 0.4280
 stage.portrait.bg.anim = -1
@@ -840,7 +840,7 @@ stage.portrait.random.window = 703, 853, 1217, 1017
 stage.portrait.loading.window = 703, 853, 1217, 1017
 stage.text = %s
 stage.active.text = %s
-stage.scale = 1.5, 1.5
+stage.scale = 1, 1
 stage.active.switchtime = 300000
 searchemptyboxesdown = 1
 searchemptyboxesup = 1
