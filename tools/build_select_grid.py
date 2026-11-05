@@ -43,7 +43,7 @@ SCREEN = (1920, 1080)
 # 8 * 128 + 7 * 2 = 1038 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
 # x=441 to x=1479 and the two side columns keep their air either side.
 CELL, CELL_H = 128, 160
-CELL_PAD = 2               # air inside each cell, so no two boxes touch
+CELL_PAD = 0               # no air: cell.spacing alone separates the boxes
 GAP = 2
 COLS, ROWS = 8, 7
 # The painted wall, its frame and the name row are the fighter rows only: the
@@ -189,9 +189,9 @@ def _plate(accent, dim):
     The cell used to be a near-black plate filled to its own edges, so the wall
     read as a black board with gold boxes ruled onto it - and at a 2px cell
     spacing each box met the next one's box. The fill is gone, so the painted
-    backdrop shows through the middle of every cell, and the frame sits CELL_PAD
-    inside the cell, which leaves CELL_PAD of air plus the 2px spacing between
-    any two boxes. Nothing touches.
+    backdrop shows through the middle of every cell. The frame is drawn to the
+    cell's own edges, so the only thing between two boxes is the engine's 2px
+    cell.spacing: the gold rules of neighbours stand 2px apart and never touch.
     """
     w, h = CELL, CELL_H
     p = CELL_PAD
