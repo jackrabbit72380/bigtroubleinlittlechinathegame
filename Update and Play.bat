@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v29
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v30
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -66,7 +66,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v29
+echo                        Updater v30
 echo.
 echo   ==============================================================
 echo.
@@ -222,8 +222,14 @@ rem counted, polled or handed back.
 :gitfetch
 rem a log left by an earlier run must never be read as this run's answer
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo            Asking main for its latest commit - git prints its own progress.
-git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+echo            Reading main's file list - about 300 KB, not the art.
+rem The blob filter asks for the commit and the folder tree only, so this costs a
+rem fraction of a megabyte instead of the whole 190 MB of art. The few files that
+rem turn out to differ are fetched one at a time further down, and nothing else is
+rem ever asked for. Without it git downloads the entire art tree right here, on
+rem every launch, which is what made this step behave like a 190 MB download even
+rem when the folder was already current.
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
@@ -244,20 +250,24 @@ if "%NCH%"=="0" echo            Already current - nothing to download.
 if "%NCH%"=="0" goto gitdel
 echo            %NCH% file(s) differ - fetching them.
 set /a NDONE=0
+set "WRITEFAIL="
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
-echo            Writing them ...
-git -c core.longpaths=true checkout FETCH_HEAD -- data chars stages font external sound >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 goto gitfail
+if defined WRITEFAIL goto gitfail
+echo            %NDONE% file(s) written.
+rem skip over the :gitone subroutine below, which is only ever entered by call
 goto gitdel
 
 :gitone
-rem %1 = one path. The names are printed here so the list moves while it
-rem runs; the write itself is the one checkout after the loop. A checkout
-rem asks for every blob it still needs in a single request, while asking
-rem file by file meant thousands of them - and one failure in that storm
-rem was enough to send the whole 190 MB archive down instead.
+rem %1 = one path. Each file is asked for on its own, so git downloads exactly
+rem the files that differ - a one-file fix costs one file. Checking the six
+rem folders out wholesale instead fetches every blob in them, the whole 190 MB,
+rem because a partial clone holds the folder tree and no file contents at all
+rem until a particular file is asked for. The name is printed as it is written,
+rem so this list is the progress this step has to show.
 set /a NDONE+=1
 echo              %NDONE%/%NCH%  %~1
+git -c core.longpaths=true checkout FETCH_HEAD -- "%~1" >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 set "WRITEFAIL=1"
 exit /b 0
 
 :gitdel
@@ -283,10 +293,13 @@ goto copied
 
 :gitfail
 echo.
-echo            Git could not finish this update. Its last message:
+echo            Git could not finish this update.
+echo            Its reason is in git's own lines just above this - no
+echo            connection, a proxy, or a blocked github.com are the usual ones.
 if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
 set "GITFAILED=1"
-echo            Falling back to the archive download in step 2.
+echo.
+echo            Falling back to step 2, which downloads the whole 190 MB again.
 goto probe
 
 :gitfetch_retry
@@ -299,10 +312,10 @@ rem Windows certificate store, which is where a normal install looks.
 echo            Fetch failed. Retrying without the bundle this script found.
 set "GIT_SSL_CAINFO="
 set "GITBUNDLE="
-git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
 echo            Retrying with the Windows certificate store.
-git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
+git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
 exit /b 1
 
@@ -408,13 +421,12 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   [ 2/4 ]  Downloading the game files
-if defined GITFAILED echo            Git could not apply this update, so the archive is the fallback.
-if not defined GITOK echo            Git is not installed here, so the archive is the only way in.
-echo            GitHub sends the game as one archive, not as loose files,
-echo            so this step has no file list to print - the names appear
-echo            in step 3, as each file is written.
-echo            About 190 MB from %ZIPURL%
+echo   [ 2/4 ]  Downloading the game archive (about 190 MB)
+if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
+if not defined GITOK echo            Git is not installed here, so this is the only way in.
+echo.
+echo            The bar below is the download: percentage, size and speed.
+echo            File names appear in step 3 as each one is written.
 echo            Leave this window open until it finishes.
 echo.
 if not defined CURL goto dl_browser
@@ -443,9 +455,15 @@ echo.
 start "" "%ZIPURL%"
 echo            Waiting for the zip ...
 set /a WAIT=0
+set /a TICK=0
 :bwait
 call :sleep 5
 set /a WAIT+=5
+set /a TICK+=1
+if %TICK% LSS 6 goto bwait_check
+echo            still waiting ... %WAIT% seconds, watching Downloads
+set /a TICK=0
+:bwait_check
 call :findzip
 if defined FOUNDZIP goto bapply
 if %WAIT% LSS 1200 goto bwait
