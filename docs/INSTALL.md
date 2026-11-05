@@ -99,9 +99,20 @@ bytes as they arrive, so a slow line looks slow rather than broken:
    and `tools` are outside those paths and are never read. When nothing differs
    it prints `Already current` and starts the game in a couple of seconds, and
    there is no second copy of the art anywhere: `.update-cache` holds only logs,
-   and a copy left by an older launcher is deleted.
+   and a copy left by an older launcher is deleted. A certificate bundle that
+   a Git Bash install left pointing at `/usr/ssl/certs/ca-bundle.crt` is swapped
+   for the one that ships beside the git actually running, so a fetch is not
+   refused with `error setting certificate file`; if no bundle is found,
+   verification is left on and the archive download below takes over.
 2. **curl**, with `CURL_CA_BUNDLE`/`SSL_CERT_FILE` cleared for that window and
-   `--ssl-no-revoke`, printing `112.4/190 MB  640 KB/s  4:12 left` as it goes.
+   `--ssl-no-revoke`, and one status line at the bottom of the window:
+   `[####----------------]  86.2/190 MB  640 KB/s  4:12 left`. Where the
+   terminal understands ANSI - Windows Terminal, or conhost with
+   `VirtualTerminalLevel` switched on - that line is cleared and rewritten in
+   place, so there is one bar and not a column of them; older consoles get the
+   same line printed once every half minute instead of escapes they cannot
+   read. During a git update the line names the file being fetched, for
+   example `[########------------]  12/463  chars/rain_rig/rain.def`.
 3. **PowerShell**, which uses the .NET and Windows proxy settings.
 4. **BITS**, the Windows download service, when a corporate proxy only allows it.
 
