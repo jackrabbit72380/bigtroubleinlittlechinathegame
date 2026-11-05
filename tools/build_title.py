@@ -285,6 +285,11 @@ def ribbon(points, width=(30.0, 26.0), colors=(WHITE, BLUE_DEEP), seed=3):
 # 400-403, 500, 600, 610, 700, 800, 810, 921-923, 1000 - 205 is the first gap,
 # so the backdrop cannot overwrite real screen art.
 SCREEN = (1280, 720)
+# The screen's localcoord. The title layers draw 1:1 in this space - the
+# "scale = 1.5" written on them in the def has no effect - so the backdrop has
+# to be painted at this size to fill the frame.
+FRAME = (1920, 1080)
+SKY_SLOT = (100, 0)
 OVERLAY = (205, 0)
 SPLASHES = (os.path.join(ROOT, "art_src", "ui", "splash.png"),
             os.path.join(ROOT, "concept_art", "ui", "splash.png"))
@@ -569,11 +574,62 @@ def strip_menu_shade():
     return True
 
 
+def full_frame_sky(stock):
+    """Paint the stock sky at frame size.
+
+    The screenpack ships a 1280x960 sky, sized for a 1280x720 motif, but this
+    motif's title layers are drawn 1:1 in a 1920x1080 localcoord - the
+    "scale = 1.5" on each [TitleBG] layer is never applied - so the art covered
+    only the left two thirds of the frame and stopped 120px above the bottom.
+    What showed through was bgclearcolor: a blue rectangle with a black band
+    under the menu. Cover-cropping the sky here fills the frame while leaving
+    every layer's start, layerno and the cloud offsets exactly as they were.
+    Idempotent: a sky already at frame size is passed through untouched.
+    """
+    if tuple(stock.size) == FRAME:
+        return stock.convert("RGBA")
+    k = max(FRAME[0] / float(stock.width), FRAME[1] / float(stock.height))
+    wide = stock.resize((max(FRAME[0], int(round(stock.width * k))),
+                         max(FRAME[1], int(round(stock.height * k)))),
+                        Image.LANCZOS)
+    return wide.convert("RGBA").crop((0, 0, FRAME[0], FRAME[1]))
+
+
+def strip_dead_scale():
+    """Drop the "scale = 1.5" lines from the [TitleBG] layers.
+
+    They were there to blow 1280x720-era art up to this motif's frame, but the
+    engine draws these layers 1:1, so they did nothing and only misread as a
+    statement about how the artwork is sized. The sky is painted at frame size
+    instead, so the lines go. Idempotent: a def without them is left untouched.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return 0
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    out, section, dropped = [], "", 0
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            section = s
+        elif section.startswith("[titlebg") \
+                and s.replace(" ", "").startswith("scale=1.5,1.5"):
+            dropped += 1
+            continue
+        out.append(line)
+    if not dropped:
+        return 0
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
+    return dropped
+
+
 def build():
     if not os.path.isfile(SYSTEM_SFF):
         raise SystemExit("data/ikemen1/system.sff is missing - fetch the engine "
                          "data first")
-    _d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
     slots = {(0, 0), (0, 1), (0, 2), (0, 3)}
     found = {(sp["group"], sp["number"]) for sp in sprites} & slots
     if found != slots:
@@ -593,7 +649,14 @@ def build():
     # second element the engine drew on top of the first. The wordmark takes the
     # bright pair, a soft glow takes the shadows, and the second element is
     # cleared so no engine lettering survives on the screen.
-    replacement = {(0, 0): logo, (0, 2): glow, (0, 1): blank, (0, 3): blank}
+    sky = next((sp for sp in sprites
+                if (sp["group"], sp["number"]) == SKY_SLOT), None)
+    if sky is None:
+        raise SystemExit("system.sff has no sky sprite at 100,0")
+    sky_img = full_frame_sky(sff.decode_sprite(d, sky, palettes))
+
+    replacement = {(0, 0): logo, (0, 2): glow, (0, 1): blank, (0, 3): blank,
+                   SKY_SLOT: sky_img}
 
     out = []
     for sp in sprites:
@@ -636,6 +699,11 @@ def build():
     place_def(start)
     if strip_menu_shade():
         print("removed the black menu panel from the title background")
+    dead = strip_dead_scale()
+    if dead:
+        print(f"removed {dead} dead scale = 1.5 line(s) from the title layers")
+    print(f"sky painted at {sky_img.width}x{sky_img.height} to fill the "
+          f"{FRAME[0]}x{FRAME[1]} frame")
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
     where = bg_start("titlebg background sky") or (-640, 0)

@@ -228,10 +228,15 @@ SECTION_LAYOUT = {
     "Title Info": (
         # The menu under a wordmark that fills the top half of a 1080p screen.
         # At y=250 the list started inside the logo's bottom edge and "ARCADE"
-        # sat across "CHINA". The column keeps the right-hand side it always
-        # had and starts below the logo at 520, on a 56px pitch for the 45px
-        # face; the eight rows end at y=968, well clear of the bottom edge.
-        ("menu.pos", "1240, 520"),
+        # sat across "CHINA". The column is left-aligned at 800 - the wordmark
+        # is centred, so a list starting there reads as centred under it - and
+        # begins below the logo at 470 on a 56px pitch for the 45px face, so the
+        # rows end at 974 with the same headroom at the bottom as under the logo.
+        # It used to be right-aligned at 1240, which pushed the longest labels
+        # off the right-hand side of the frame.
+        ("menu.pos", "800, 470"),
+        ("menu.item.font", f"{D},0,1, {GOLD}"),
+        ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
         ("menu.item.spacing", "0, 56"),
         ("menu.window.visibleitems", "10"),
         # The engine's own footer ("I.K.E.M.E.N. GO" bottom-left, build number
