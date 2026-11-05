@@ -96,11 +96,12 @@ silently: the seconds are counted on the status line, git aborts itself
 after thirty seconds of less than 1 KB/s, and after three minutes without
 an answer the launcher takes the verified download instead of waiting.
 
-The game's log appears in the updater's own window: the engine attaches to the
-console that started it and writes there. That window therefore stays open
-while you play and closes when you press a key in it, and it says so on
-screen - the character warnings it fills with are the engine's own log, not
-the updater still working.
+The launcher closes as soon as the game starts. The engine attaches to
+whichever console launched it, so it used to print its log into the
+updater's window and that window had to be left open while the game ran.
+It is started in a console of its own now, minimised, with that output
+discarded; the engine still writes `save/logs/` beside the exe, which is
+where to look if it does not come up.
 
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:

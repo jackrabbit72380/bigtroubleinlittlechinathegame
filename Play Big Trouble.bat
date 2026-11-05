@@ -121,17 +121,15 @@ echo Starting the game - the window title should read
 echo "Big Trouble in Little China: The Game".
 echo.
 
-"%EXE%" -config "%CFG%"
-
-set "LOG="
-for /f "delims=" %%f in ('dir /b /o-d "save\logs\*.log" 2^>nul') do if not defined LOG set "LOG=save\logs\%%f"
-echo.
-if defined LOG (
-  echo ----- newest log: %LOG% -----
-  type "%LOG%"
-  echo ---------------------------------
-) else (
-  echo The game exited and left no log in save\logs.
-)
-echo.
-pause
+rem Start the game in a console of its own, minimised, with its output thrown
+rem away. The engine attaches to whichever console launched it, so running it
+rem here printed its whole log into this window and the window had to stay open
+rem for the game to keep running. The helper owns that console now, so this
+rem window closes as soon as the game starts; the engine still writes
+rem save\logs\<date>.log, which is where to look if it does not come up.
+set "RUN=%TEMP%\btilc-play.bat"
+>"%RUN%" echo @echo off
+>>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
+start "" /min "%RUN%"
+exit /b 0

@@ -541,19 +541,18 @@ echo.
 :launch
 echo   [ 4/4 ]  Starting the game
 echo.
-start "" "%EXE%" -config "save\config.ini"
-rem The engine attaches to the console that started it and writes its log
-rem there, so this window becomes the game's log while the game runs. Closing
-rem it takes the log - and possibly the game - with it, so it says what it is
-rem and waits for a key instead of vanishing.
-echo.
-echo   The game is starting.
-echo.
-echo   This window is the game's log. The engine writes here, which is why the
-echo   text below is about characters and states and not about the update.
-echo   Leave it open while you play. Press any key here when you are done.
-echo.
-pause
+rem Start the game in a console of its own, minimised, with its output thrown
+rem away. The engine attaches to whichever console launched it, so a child of
+rem this window printed the whole engine log here and this window had to stay
+rem open for the game to keep running - which read as the launcher hanging
+rem around after the game was already up. The helper below owns the engine's
+rem console instead, so this window closes as soon as the game starts and the
+rem engine still writes save\logs\<date>.log exactly as it did before.
+set "RUN=%CACHE%\play.bat"
+>"%RUN%" echo @echo off
+>>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>nul 2^>^&1
+start "" /min "%RUN%"
 exit 0
 
 :skipver2
