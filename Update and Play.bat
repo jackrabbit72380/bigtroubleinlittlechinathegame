@@ -119,6 +119,7 @@ if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip" >nul 2>&1
 if not exist "%WHERE%" goto download
 "%WHERE%" git >nul 2>&1
 if errorlevel 1 goto probe
+set "GITOK=1"
 goto trygit
 
 :manualzip
@@ -219,6 +220,8 @@ rem succeeded was reported as a failure and the folder was made to download the
 rem whole archive. Git prints its own progress here, so nothing has to be
 rem counted, polled or handed back.
 :gitfetch
+rem a log left by an earlier run must never be read as this run's answer
+if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
 echo            Asking main for its latest commit - git prints its own progress.
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=30 fetch --depth 1 origin main
 if errorlevel 1 goto gitfail
@@ -241,16 +244,19 @@ if "%NCH%"=="0" goto gitdel
 echo            %NCH% file(s) differ - fetching them.
 set /a NDONE=0
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
-if defined GITBAD goto gitfail
+echo            Writing them ...
+git -c core.longpaths=true checkout FETCH_HEAD -- data chars stages font external sound >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfail
 goto gitdel
 
 :gitone
-rem %1 = one path. Written on its own so the name shows while it is fetched.
+rem %1 = one path. The names are printed here so the list moves while it
+rem runs; the write itself is the one checkout after the loop. A checkout
+rem asks for every blob it still needs in a single request, while asking
+rem file by file meant thousands of them - and one failure in that storm
+rem was enough to send the whole 190 MB archive down instead.
 set /a NDONE+=1
-set "GTXT=%~1"
-echo              %NDONE%/%NCH%  %GTXT%
-git checkout-index -f -- "%GTXT%" >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 set "GITBAD=1"
+echo              %NDONE%/%NCH%  %~1
 exit /b 0
 
 :gitdel
@@ -276,8 +282,10 @@ goto copied
 
 :gitfail
 echo.
-echo            Git could not fetch - its own message is above.
-echo            Trying the archive download instead.
+echo            Git could not finish this update. Its last message:
+if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
+set "GITFAILED=1"
+echo            Falling back to the archive download in step 2.
 goto probe
 
 :gitdrop
@@ -383,6 +391,8 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  Downloading the game files
+if defined GITFAILED echo            Git could not apply this update, so the archive is the fallback.
+if not defined GITOK echo            Git is not installed here, so the archive is the only way in.
 echo            GitHub sends the game as one archive, not as loose files,
 echo            so this step has no file list to print - the names appear
 echo            in step 3, as each file is written.
