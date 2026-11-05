@@ -253,6 +253,12 @@ VS_TEXT = (
     # the VS portraits are baked at 2x and drawn at half the scale
     ("p1.scale", "0.25, 0.25"),
     ("p2.scale", "0.25, 0.25"),
+    # The fighter names belong on the caption row under the card, where the
+    # stage name already is. At y=615 they sat across the middle of the screen,
+    # which is the VS logo's own row, so the right-hand name printed on the
+    # logo's foot. One row, three captions: P1 left, the stage centred, P2 right.
+    ("p1.name.offset", f"20, {NAME_ROW_Y}"),
+    ("p2.name.offset", f"1900, {NAME_ROW_Y}"),
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
     # the VS screen's "Match %i" caption: same gold as every other caption
@@ -538,6 +544,81 @@ def retint_vs_art():
     return done
 
 
+# The VS screen's sky. [VersusBG Background Sky] in system.def points at sprite
+# 204,0, which the engine ships at 1280x960 - sized for a 1280x720 motif - while
+# these layers draw 1:1 in this motif's 1920x1080 localcoord, so the
+# "scale = 1.5" written on them does nothing. The backdrop therefore covered
+# only the left two thirds of the frame and stopped 120px above the bottom, and
+# bgclearcolor showed through: black down the right-hand side and across the
+# bottom, right where the menu and the stage card sit.
+VS_SKY = (204, 0)
+FRAME = (1920, 1080)
+
+
+def full_frame(img):
+    """Cover the frame with the sky, keeping its top edge where it was."""
+    if tuple(img.size) == FRAME:
+        return img.convert("RGBA")
+    k = max(FRAME[0] / float(img.width), FRAME[1] / float(img.height))
+    wide = img.resize((max(FRAME[0], int(round(img.width * k))),
+                       max(FRAME[1], int(round(img.height * k)))),
+                      Image.LANCZOS)
+    return wide.convert("RGBA").crop((0, 0, FRAME[0], FRAME[1]))
+
+
+def paint_vs_backdrop():
+    """Bake the sky at frame size so no layer has to be rescaled or moved."""
+    raw, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    out, grew = [], False
+    for sp in sprites:
+        if (sp["group"], sp["number"]) == VS_SKY:
+            img = full_frame(sff.decode_sprite(raw, sp, palettes))
+            grew = (sp["w"], sp["h"]) != FRAME
+            out.append({"group": VS_SKY[0], "number": VS_SKY[1], "image": img,
+                        "axis": sp["axis"]})
+        else:
+            out.append({"group": sp["group"], "number": sp["number"],
+                        "raw": sp["raw"], "format": sp["format"],
+                        "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
+                        "axis": sp["axis"], "pal": sp["pal"],
+                        "link": sp["link"]})
+    blob = sff.write_sff(out, [p["rgba"] for p in palettes])
+    if blob[:12] != sff.SIG:
+        raise SystemExit("refusing to write: rebuilt system.sff has no signature")
+    with open(SYSTEM_SFF + ".tmp", "wb") as f:
+        f.write(blob)
+    os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
+    return grew
+
+
+def strip_dead_scale():
+    """Drop the "scale = 1.5" lines from the [VersusBG] layers.
+
+    They were meant to blow the 1280x720-era backdrop up to this motif's frame
+    and the engine never applied them - the layers draw 1:1. With the sky baked
+    at frame size they only misread as a statement about how the art is sized.
+    Idempotent: a def without them is left untouched.
+    """
+    with open(SYSTEM_DEF, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    out, section, dropped = [], "", 0
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            section = s
+        elif section.startswith("[versusbg") \
+                and s.replace(" ", "").startswith("scale=1.5,1.5"):
+            dropped += 1
+            continue
+        out.append(line)
+    if not dropped:
+        return 0
+    with open(SYSTEM_DEF + ".tmp", "w", encoding="utf-8") as f:
+        f.write("\n".join(out) + "\n")
+    os.replace(SYSTEM_DEF + ".tmp", SYSTEM_DEF)
+    return dropped
+
+
 def patch_def():
     """Fix the stage preview, then add the hint layer to [SelectBGdef] once.
 
@@ -571,6 +652,8 @@ def build():
     frames = clean_frames()
     centred = normalise_stage_previews()
     tinted = retint_vs_art()
+    grew = paint_vs_backdrop()
+    dropped = strip_dead_scale()
     added = patch_def()
 
     # Read back: the hint is worth nothing if the layer points at nothing.
@@ -582,6 +665,9 @@ def build():
         text = f.read()
     if f"spriteno = {SPRITE[0]}, {SPRITE[1]}" not in text:
         raise SystemExit("system.def does not reference the hint sprite")
+    sky = next((sp for sp in sprites if (sp["group"], sp["number"]) == VS_SKY), None)
+    if sky is None or (sky["w"], sky["h"]) != FRAME:
+        raise SystemExit("the VS backdrop is not %dx%d" % FRAME)
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
@@ -589,6 +675,9 @@ def build():
           f"({'added' if total else 'kept'}), frame repaints {frames}, "
           f"stage previews centred {centred}, "
           f"VS art retinted {tinted}, "
+          f"VS backdrop {FRAME[0]}x{FRAME[1]} "
+          f"({'painted' if grew else 'already frame size'}), "
+          f"{dropped} dead scale line(s) dropped, "
           f"SelectBG layer {'added' if added else 'already present'}")
 
 
