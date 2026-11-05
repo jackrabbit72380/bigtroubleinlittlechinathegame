@@ -1067,7 +1067,7 @@ match.scale = 2.25, 2.25
 
 ;Big portraits
 p1.num = 4
-p1.anim = -1
+p1.anim = 9000
 p1.spr = 9000, 1
 p1.offset = 268, 180
 p1.facing = 1
@@ -1078,7 +1078,7 @@ p1.padding = 1
 p1.applypal = 1
 
 p2.num = 4
-p2.anim = -1
+p2.anim = 9000
 p2.spr = 9000, 1
 p2.offset = 1652, 180
 p2.facing = -1
@@ -1088,8 +1088,8 @@ p2.spacing = 150, 0
 p2.padding = 1
 p2.applypal = 1
 
-p1.done.anim = 181
-p2.done.anim = 181
+p1.done.anim = 9000
+p2.done.anim = 9000
 
 ;Names
 p1.name.num = 1              ;Not used for co-op

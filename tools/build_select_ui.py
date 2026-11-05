@@ -284,15 +284,23 @@ VS_TEXT = (
     ("p2.name.offset", f"1900, {NAME_ROW_Y}"),
     ("p1.name.font", "10, 0, 1, 255, 228, 140"),
     ("p2.name.font", "10, 0, -1, 255, 170, 96"),
-    # The motif ships "p1.anim = 0" with "p1.spr" commented out, which asks each
-    # character for its own VS animation. Ours have none, so the screen came up
-    # with two names, the stage card and no fighters at all. The layout above is
-    # measured against the 360x420 portrait art in 9000,1, so both sides are
-    # pinned to it: anim -1 turns the character anim off and lets spr through.
-    ("p1.anim", "-1"),
+    # The motif ships "p1.anim = 0", which asks each character for action 0 - the
+    # fighting stance. That is anchored at the fighter's own axis, so at the 1.5
+    # portrait scale the body was drawn upward out of the top of the frame and
+    # the screen came up with two names, the card and no fighters.
+    #
+    # Action 9000 is the portrait entrance now: every character carries it
+    # (tools/add_vs_portrait_anim.py) and it plays the 9000,1 picture, whose
+    # 0,0 axis is what the offsets and windows above are measured from. The done
+    # variants point at it too, or finishing order selection would swap the
+    # fighting stance back in on top of it. spr stays as the fallback for a
+    # character added later that has the art but not the action.
+    ("p1.anim", "9000"),
     ("p1.spr", "9000, 1"),
-    ("p2.anim", "-1"),
+    ("p2.anim", "9000"),
     ("p2.spr", "9000, 1"),
+    ("p1.done.anim", "9000"),
+    ("p2.done.anim", "9000"),
     # the VS screen's "Match %i" caption: same gold as every other caption
     ("match.font", "2, 0, 0, " + NAME_GOLD),
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
