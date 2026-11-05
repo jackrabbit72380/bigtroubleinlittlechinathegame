@@ -83,6 +83,10 @@ REWRITES = (
     ("menu.item.info.font", f"{B},0,-1, {GOLD}"),
     ("menu.item.info.active.font", f"{B},0,-1, {BRIGHT}"),
     ("title.font", f"{D},0,0, {BRIGHT}"),
+    # The title screen's own clear colour. It was white, so every pixel the
+    # painted sky and clouds did not reach - the bottom third of a 1080p
+    # screen - was a white band with the menu floating above it.
+    ("bgclearcolor", "0, 0, 0"),
     ("loading.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
     # The engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is not rewritten
     # here but removed outright - see DROP_KEYS below.
@@ -164,7 +168,7 @@ REWRITES = (
 # footer.* key makes sec.footer nil in the engine, so neither the rect nor the
 # text is drawn and the menus use the full height. Idempotent: stock keys that
 # survive a re-stage are dropped again on every build.
-DROP_KEYS = ("footer.",)
+DROP_KEYS = ()
 
 
 def drop_keys(text, prefixes):
@@ -217,9 +221,30 @@ PAUSE_LAYOUT = (
 
 SECTION_LAYOUT = {
     "Title Info": (
-        ("menu.pos", "1240, 250"),
-        ("menu.item.spacing", "0, 46"),
+        # The menu under a wordmark that fills the top half of a 1080p screen.
+        # At y=250 the list started inside the logo's bottom edge and "ARCADE"
+        # sat across "CHINA". The column keeps the right-hand side it always
+        # had and starts below the logo at 520, on a 56px pitch for the 45px
+        # face; the eight rows end at y=968, well clear of the bottom edge.
+        ("menu.pos", "1240, 520"),
+        ("menu.item.spacing", "0, 56"),
         ("menu.window.visibleitems", "10"),
+        # The engine's own footer ("I.K.E.M.E.N. GO" bottom-left, build number
+        # bottom-right) is drawn from these keys. Deleting them did not remove
+        # it - the engine falls back to its stock footer - so they are written
+        # parked below the screen with an empty overlay window instead.
+        ("footer.title.font", f"{B}, 0, 1, {GOLD}, 255, -1"),
+        ("footer.title.offset", "5, 5000"),
+        ("footer.title.scale", "1, 1"),
+        ("footer.info.font", f"{B}, 0, 0, {GOLD}, 255, -1"),
+        ("footer.info.offset", "640, 5000"),
+        ("footer.info.scale", "1, 1"),
+        ("footer.version.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
+        ("footer.version.offset", "1275, 5000"),
+        ("footer.version.scale", "1, 1"),
+        ("footer.overlay.col", "0, 0, 0"),
+        ("footer.overlay.alpha", "0, 0"),
+        ("footer.overlay.window", "0, 0, 1, 1"),
     ),
     "Option Info": (
         # Thirteen rows at the stock 42px pitch overlapped by 3px under the 45px
