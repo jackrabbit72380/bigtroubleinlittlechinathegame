@@ -621,7 +621,7 @@ p2.name.layerno = 2
 ;Stage select
 stage.pos = 960, 1035
 stage.font = 11, 0, 0, 236, 200, 120
-stage.active.font = 11, 0, 0, 236, 200, 120
+stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 236, 200, 120
 stage.done.font = 11, 0, 0, 236, 200, 120
 stage.layerno = 2
