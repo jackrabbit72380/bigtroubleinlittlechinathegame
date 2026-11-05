@@ -183,14 +183,13 @@ function ms.open()
 		}
 	end
 
-	local bg = nil
-	local okSff, systemSff = pcall(sffNew, motif.files and motif.files.spr or 'data/ikemen1/system.sff')
-	if okSff then
-		local okBg, made = pcall(bgNew, systemSff, gameOption('Config.Motif'), 'musicBG')
-		if okBg then
-			bg = made
-		end
-	end
+	-- The background. sffNew and bgNew are not part of this engine's Lua API:
+	-- both calls raised, the pcall swallowed them, and the browser went on to
+	-- draw its list over nothing at all - which is the black screen MUSIC led
+	-- to. A screen's background in this codebase is the motif's own definition,
+	-- cleared and drawn with clearColor/bgReset/bgDraw, exactly as every menu in
+	-- external/script/main.lua does it.
+	local bgSec = motif.titlebgdef or nil
 	local okArt, albumData = pcall(sffNew, 'data/albums.sff')
 	if not okArt then
 		albumData = nil
@@ -221,9 +220,11 @@ function ms.open()
 		local album = albums[albumNo]
 		local song = album.songs[songNo]
 
-		if bg then
-			bgReset(bg)
-			bgDraw(bg, 0)
+		if bgSec then
+			clearColor(bgSec.bgclearcolor[1], bgSec.bgclearcolor[2], bgSec.bgclearcolor[3])
+			bgReset(bgSec.BGDef)
+			bgDraw(bgSec.BGDef, 0)
+			bgDraw(bgSec.BGDef, 1)
 		end
 		drawAlbumArt(albumData, album, COVER.x, COVER.y)
 

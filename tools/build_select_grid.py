@@ -63,7 +63,12 @@ AXIS = (0, 0)
 # fighters stood flush against the screen edges and read as cut off. Both are
 # inset by SIDE_INSET now, so each one has air on the outside as well as the
 # inside, and the window moves with it.
-SIDE_INSET = 48
+#
+# 48 was not enough: the window began 48px in while the art still reached the
+# screen edge, so what the player saw was a fighter with its leading arm cut off
+# by its own clip rect - the cut had moved, not gone. The window is built from
+# the same number as the offset here, so the two can never disagree again.
+SIDE_INSET = 96
 FACE2_WIN_P1 = "%d,180,%d,1080" % (SIDE_INSET, SIDE_INSET + 311)
 FACE2_WIN_P2 = "%d,180,%d,1080" % (1920 - SIDE_INSET - 311, 1920 - SIDE_INSET)
 
