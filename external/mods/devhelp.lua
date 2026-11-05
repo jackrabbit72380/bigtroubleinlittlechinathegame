@@ -68,7 +68,10 @@ local RIGHT = {
 local NOTE = 'needs Options > Engine > Debug Keys enabled'
 
 -- Layout constants, in the screenpack's 1280x720 space.
-local KEYW = 12                          -- key column width, in characters
+-- 14, not 12: 'Ctrl+Shift+F3' and 'Ctrl+Alt+1..9' are 13 characters, so a
+-- 12-wide field did not pad them at all and the description ran straight on from
+-- the key with no space between ("Ctrl+Shift+F3max power mode").
+local KEYW = 14                          -- key column width, in characters
 local ROWS = math.max(#LEFT, #RIGHT)     -- taller column decides the height
 local TOP, BOTTOM = 96, 700              -- first row, and the floor it must not hit
 local LEFT_X, COL_W = 70, 540            -- where the columns start and how wide
@@ -203,20 +206,73 @@ end
 -- an empty screen (the dim overlay drew, the rows did not), so the whole screen
 -- is drawn with the one sprite the engine demonstrably renders: two columns,
 -- offset with AddPos, no font swapping.
+-- The advance of the face the pause menu draws its list in, in motif units, so
+-- the column pitch below can be measured instead of guessed.
+local function plainAdvance(sec)
+	local adv = 7
+	pcall(function()
+		local f = motif.files.font['font' .. sec.movelist.text.font[1]]
+		adv = f.size[1] * sec.movelist.text.scale[1]
+	end)
+	if adv == nil or adv < 4 then adv = 7 end
+	return adv
+end
+
+local function widestChars(rows)
+	local n = 0
+	for _, row in ipairs(rows) do
+		local len = string.len(lineOf(row))
+		if len > n then n = len end
+	end
+	return n
+end
+
+-- Both columns are centred on the list's own anchor, and they used to sit a
+-- fixed 620 units apart whatever they held. At this face's ~22.5 units a
+-- character, the longest left line ("Ctrl+Shift+D" + "readout, extended", 29
+-- characters) reached 326 units either side of its centre and the right
+-- column's widest reached another 349, so their halves crossed a good 40 units
+-- past the middle: the readouts printed through "F1", "F2" and "F8" on the
+-- right-hand keys.
+--
+-- The pitch is now built from the two columns' own widths, with a gap between
+-- them that nothing can close, and the whole block shrinks to fit AVAIL if the
+-- roster of keys ever grows again. Centring is kept, so the block stays where it
+-- is on the screen rather than needing to know the engine's own anchor.
+local AVAIL = 1150          -- room the block may use in the 1280-wide motif space
+local COL_GAP = 48          -- clear space between the two columns' inner edges
+
 local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
 	local lh = plainPitch(sec)
-	local COLS = {{0, LEFT}, {620, RIGHT}}
+	local adv = plainAdvance(sec)
+	local lw, rw = widestChars(LEFT), widestChars(RIGHT)
+	local room = AVAIL - COL_GAP
+	if room < 1 then room = 1 end
+	local scale = 1
+	local need = (lw + rw) * adv
+	if need > room then
+		scale = room / need
+	end
+	local a = adv * scale
+	local pitch = COL_GAP + (lw + rw) / 2 * a
+	local COLS = {{-pitch / 2, LEFT}, {pitch / 2, RIGHT}}
 	for _, col in ipairs(COLS) do
 		local x, rows = col[1], col[2]
 		for i, row in ipairs(rows) do
 			textImgReset(txt)
 			textImgSetAlign(txt, 1)
+			-- probed like every other engine call here: a build without
+			-- textImgSetScale still gets the list, just at its own size
+			pcall(textImgSetScale, txt, scale, scale)
 			textImgSetText(txt, lineOf(row))
 			textImgAddPos(txt, x, lh * (i - 1))
 			textImgDraw(txt)
 		end
 	end
+	-- leave the shared sprite as the pause menu expects to find it
+	textImgReset(txt)
+	pcall(textImgSetScale, txt, 1, 1)
 end
 
 local function devhelpDraw(sec)
