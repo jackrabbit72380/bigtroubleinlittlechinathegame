@@ -290,6 +290,12 @@ SCREEN = (1280, 720)
 # to be painted at this size to fill the frame.
 FRAME = (1920, 1080)
 SKY_SLOT = (100, 0)
+# [TitleBG Background Clouds Bottom] is the layer that reaches the floor of the
+# screen, and it is 960 tall - the same 1280x720-era size the sky was. It stops
+# 120px short of the bottom, so the last strip of the main menu was bare sky
+# under the menu list with a hard line across it. It is baked to the frame's
+# height here; the layer tiles horizontally, so its width is left alone.
+CLOUD_BOTTOM = (100, 3)
 OVERLAY = (205, 0)
 SPLASHES = (os.path.join(ROOT, "art_src", "ui", "splash.png"),
             os.path.join(ROOT, "concept_art", "ui", "splash.png"))
@@ -655,8 +661,20 @@ def build():
         raise SystemExit("system.sff has no sky sprite at 100,0")
     sky_img = full_frame_sky(sff.decode_sprite(d, sky, palettes))
 
+    floor = next((sp for sp in sprites
+                  if (sp["group"], sp["number"]) == CLOUD_BOTTOM), None)
+    if floor is None:
+        raise SystemExit("system.sff has no floor cloud sprite at 100,3")
+    floor_img = sff.decode_sprite(d, floor, palettes)
+    if floor_img.height != FRAME[1]:
+        # a 12.5% vertical stretch of soft cloud: it puts the layer's last row
+        # on the frame's last row, so the art runs off the bottom edge
+        floor_img = floor_img.resize((floor_img.width, FRAME[1]), Image.LANCZOS)
+    if floor_img.height != FRAME[1]:
+        raise SystemExit("the floor cloud layer does not reach the frame's floor")
+
     replacement = {(0, 0): logo, (0, 2): glow, (0, 1): blank, (0, 3): blank,
-                   SKY_SLOT: sky_img}
+                   SKY_SLOT: sky_img, CLOUD_BOTTOM: floor_img}
 
     out = []
     for sp in sprites:
@@ -704,6 +722,8 @@ def build():
         print(f"removed {dead} dead scale = 1.5 line(s) from the title layers")
     print(f"sky painted at {sky_img.width}x{sky_img.height} to fill the "
           f"{FRAME[0]}x{FRAME[1]} frame")
+    print(f"floor cloud layer at {floor_img.width}x{floor_img.height} - it now "
+          f"reaches the bottom of the frame")
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
     where = bg_start("titlebg background sky") or (-640, 0)
