@@ -314,6 +314,50 @@ def check_select_screen(chars):
     if "p1.face.window" not in opts or "p2.face.window" not in opts:
         err("select screen: the big side portraits have no window")
 
+    # The VS screen loads its portraits the same way, out of its own section:
+    # start.lua:4427 hands the player table itself to f_animGet as the animation
+    # params, and hands the same table over again as the velocity source, then
+    # swaps in pX.done once the order is confirmed. Every field that function
+    # indexes therefore has to exist there too - choosing VS MODE took the
+    # engine down at start.lua:755 because p1.done carried only its anim.
+    vs_parts = def_text.split("[VS Screen]", 1)
+    if len(vs_parts) < 2:
+        err("system.def: no [VS Screen] block")
+    else:
+        vs = {}
+        for line in vs_parts[1].split("\n[", 1)[0].splitlines():
+            if "=" in line and not line.strip().startswith(";"):
+                key, value = line.split("=", 1)
+                vs[key.strip().lower()] = value.split(";")[0].strip()
+        # Every group handed to f_animGet as `params` needs the drawing fields.
+        # The groups handed over as `velParams` (the player table and face2)
+        # need the motion tables as well: f_animGet indexes those on the
+        # velocity source, not on the anim params.
+        portrait_fields = ("scale", "facing", "xshear", "angle", "xangle",
+                           "yangle", "projection", "focallength", "window",
+                           "layerno")
+        motion_fields = ("velocity", "maxdist", "accel", "friction")
+        for side in ("p1", "p2"):
+            for group in (side, side + ".done", side + ".face2",
+                          side + ".face2.done"):
+                for field in portrait_fields:
+                    if "%s.%s" % (group, field) not in vs:
+                        err("vs screen: %s.%s is missing, and start.lua's f_animGet "
+                            "indexes it as a table when VS MODE builds the "
+                            "portraits" % (group, field))
+            for group in (side, side + ".face2"):
+                for field in motion_fields:
+                    if "%s.%s" % (group, field) not in vs:
+                        err("vs screen: %s.%s is missing, and start.lua's f_animGet "
+                            "indexes it on the velocity source when VS MODE "
+                            "builds the portraits" % (group, field))
+            for group in (side + ".face2", side + ".face2.done"):
+                for field in ("anim", "spr"):
+                    if "%s.%s" % (group, field) not in vs:
+                        err("vs screen: %s.%s is missing, so start.lua indexes a "
+                            "nil portrait group when VS MODE builds them"
+                            % (group, field))
+
     # The "?" and loading art are drawn in the portrait panels; sharing the
     # panel window is what keeps them from spilling onto the grid.
     for side in ("p1", "p2"):
