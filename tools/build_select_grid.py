@@ -43,6 +43,7 @@ SCREEN = (1920, 1080)
 # 8 * 128 + 7 * 2 = 1038 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
 # x=441 to x=1479 and the two side columns keep their air either side.
 CELL, CELL_H = 128, 160
+CELL_PAD = 6               # air inside each cell, so no two boxes touch
 GAP = 2
 COLS, ROWS = 8, 7
 # The painted wall, its frame and the name row are the fighter rows only: the
@@ -141,7 +142,10 @@ def background():
     pad = 15
     box = [GRID[0] - pad, GRID[1] - pad,
            GRID[0] + GRID_W + pad, GRID[1] + GRID_H + pad]
-    d.rectangle(box, fill=(6, 9, 9, 176), outline=GOLD_DIM + (255,), width=3)
+    # No plate behind the wall: the stone, the jade haze and the smoke are the
+    # background, and the old near-black wash turned the middle of the screen
+    # into a black board that the cells sat on.
+    d.rectangle(box, outline=GOLD_DIM + (255,), width=3)
     d.rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4],
                 outline=GOLD + (232,), width=3)
     d.rectangle([box[0] + 8, box[1] + 8, box[2] - 8, box[3] - 8],
@@ -177,30 +181,29 @@ def background():
 
 
 def _plate(accent, dim):
-    """One portrait plate: a tall coin shape with a double rule in ``accent``.
+    """One portrait cell: a hollow gold frame, inset inside its cell.
 
     The cells are 128x160, not squares: the grid reads as columns of figures
     rather than a wall of buttons, and the extra 32px is head room for the bust.
-    Only an empty cell is this filled plate: a player's cursor is a hollow frame
-    (see cursor_frame), because the plate's dark fill hid the very portrait the
-    cursor was marking.
+
+    The cell used to be a near-black plate filled to its own edges, so the wall
+    read as a black board with gold boxes ruled onto it - and at a 2px cell
+    spacing each box met the next one's box. The fill is gone, so the painted
+    backdrop shows through the middle of every cell, and the frame sits CELL_PAD
+    inside the cell, which leaves CELL_PAD of air plus the 2px spacing between
+    any two boxes. Nothing touches.
     """
     w, h = CELL, CELL_H
-    r = min(w, h) // 8
+    p = CELL_PAD
+    r = max(4, min(w, h) // 8 - p)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, fill=INK + (238,),
-                        outline=accent + (255,), width=4)
-    d.rounded_rectangle([4, 4, w - 5, h - 5], radius=max(2, r - 2),
-                        outline=(26, 24, 20, 255), width=4)
-    d.rounded_rectangle([9, 9, w - 10, h - 10], radius=max(2, r - 5),
-                        outline=dim + (215,), width=3)
-
-    shade = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    sd = ImageDraw.Draw(shade)
-    for y in range(7, 45):
-        sd.line([(7, y), (w - 8, y)], fill=(0, 0, 0, int(74 * (1 - (y - 7) / 37.0))))
-    img.alpha_composite(shade)
+    box = [p, p, w - 1 - p, h - 1 - p]
+    d.rounded_rectangle(box, radius=r, outline=accent + (255,), width=4)
+    d.rounded_rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4],
+                        radius=max(2, r - 2), outline=(26, 24, 20, 255), width=4)
+    d.rounded_rectangle([box[0] + 9, box[1] + 9, box[2] - 9, box[3] - 9],
+                        radius=max(2, r - 5), outline=dim + (215,), width=3)
     return img
 
 
@@ -218,18 +221,19 @@ def cursor_frame(colour):
     rule, and nothing at all in the middle, so the fighter shows through.
     """
     w, h = CELL, CELL_H
-    r = min(w, h) // 8
+    p = CELL_PAD
+    r = max(4, min(w, h) // 8 - p)
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     dim = tuple(int(c * 0.60) for c in colour)
-    d.rounded_rectangle([0, 0, w - 1, h - 1], radius=r, outline=INK + (215,),
-                        width=1)
-    d.rounded_rectangle([1, 1, w - 2, h - 2], radius=max(2, r - 1),
-                        outline=colour + (255,), width=4)
-    d.rounded_rectangle([7, 7, w - 8, h - 8], radius=max(2, r - 4),
-                        outline=dim + (235,), width=2)
+    d.rounded_rectangle([p, p, w - 1 - p, h - 1 - p], radius=r,
+                        outline=INK + (215,), width=1)
+    d.rounded_rectangle([p + 1, p + 1, w - 2 - p, h - 2 - p],
+                        radius=max(2, r - 1), outline=colour + (255,), width=4)
+    d.rounded_rectangle([p + 7, p + 7, w - 8 - p, h - 8 - p],
+                        radius=max(2, r - 4), outline=dim + (235,), width=2)
     # corner ticks: the frame still reads when its rules run over bright art
-    tick, inset = 22, 12
+    tick, inset = 22, p + 6
     for x, y, dx, dy in ((inset, inset, 1, 1), (w - 1 - inset, inset, -1, 1),
                          (inset, h - 1 - inset, 1, -1),
                          (w - 1 - inset, h - 1 - inset, -1, -1)):
