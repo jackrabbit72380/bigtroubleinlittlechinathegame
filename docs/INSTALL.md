@@ -96,6 +96,11 @@ silently: the seconds are counted on the status line, git aborts itself
 after thirty seconds of less than 1 KB/s, and after three minutes without
 an answer the launcher takes the verified download instead of waiting.
 
+As soon as the game is running the updater closes itself - it checks once a
+second and stops the moment the process exists, rather than waiting behind
+the game it just started. A game that dies on start is reported with the
+usual reason, and that window waits for a keypress before closing.
+
 The launcher gets the files four ways before it gives up, and it counts the
 bytes as they arrive, so a slow line looks slow rather than broken:
 
