@@ -309,6 +309,7 @@ if not exist "%~dp0data\fight.def" goto download
 set "APPLIED="
 set /p APPLIED=<"%CACHE%\applied.txt"
 if not defined APPLIED goto probe_first
+echo            Asking GitHub for main's latest build number.
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
@@ -382,8 +383,11 @@ rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
 echo   [ 2/4 ]  Downloading the game files
-echo            About 190 MB. curl draws its own progress bar; leave this
-echo            window open until it finishes.
+echo            GitHub sends the game as one archive, not as loose files,
+echo            so this step has no file list to print - the names appear
+echo            in step 3, as each file is written.
+echo            About 190 MB from %ZIPURL%
+echo            Leave this window open until it finishes.
 echo.
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
@@ -431,9 +435,11 @@ goto downloadfailed
 rem ---- unpack and copy ---------------------------------------------------
 :havezip
 echo.
+if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
 echo   [ 3/4 ]  Copying the game files over this folder
+echo            Every file that really differs is named as it is written.
 echo.
 call :ziptree
 if "%PSOK%"=="1" goto copied
@@ -608,7 +614,7 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; $shown=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; if ($shown -lt 25) { Write-Host ('             ' + $rel); $shown++ } } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
@@ -633,6 +639,8 @@ rem No list means no git history to diff - a first run, or a folder updated
 rem from the archive. robocopy still skips every file whose size and time
 rem already match, so only the files that changed are actually written; the
 rem scan is the cost, not the bytes.
+echo            Robocopy compares the six game folders itself, so this
+echo            fallback prints folder names and the count, not file names.
 for %%F in (data chars stages font external sound) do (
   if exist "%SRC%\%%F" echo            %%F
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
