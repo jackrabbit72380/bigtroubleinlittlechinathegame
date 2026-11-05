@@ -4,11 +4,11 @@
 
 [Data]
 ;Amount of life to start with
-life = 1112
+life = 1094
 ;attack power (more is stronger)
-attack = 94
+attack = 118
 ;defensive power (more is stronger)
-defence = 104
+defence = 101
 ;Percentage to increase defense everytime player is knocked down
 fall.defence_up = 50
 ;Time which player lies down for, before getting up

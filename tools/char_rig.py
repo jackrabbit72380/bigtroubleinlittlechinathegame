@@ -900,8 +900,14 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                       _joint_radius(part, ss) + 2,
                       _near_rgb(part["image"], *part["pivot"]),
                       feather=1.0 * ss)
-            elif name in links:
+            elif name in links and not name.startswith("foot"):
                 par, ch = links[name]
+                # The feet are exempt. The shoe is a 44px part at the ankle and
+                # the capsule reaches 48px toward the toe, so its radius is wider
+                # than the boot: clipped to the air around the sole it painted a
+                # rounded pad under each foot instead of closing a seam. Jack is
+                # baked from his own art, which never had one - that is why he
+                # was the only fighter with clean feet.
                 # Always weld, not just when the joint is turned: the capsule
                 # only fills AIR, so in the rest pose it lands behind the art
                 # and changes nothing, and in a swing it closes the seam the
