@@ -2,9 +2,9 @@
 
 The staged screenpack lays the roster out as a 10x8 wall of 24px cells seen in
 perspective, which reads nothing like the arcade game this project chases. This
-paints the arcade layout instead: five framed portraits on the top row, three
-beneath them, the selected fighters standing large down the left and right
-edges, and the arena name under the grid.
+paints the arcade layout instead: eight framed portraits across, six rows down -
+the whole cast, no empty cells - the selected fighters standing large down the
+left and right edges, and RANDOM set as a plain word under the wall.
 
 Every sprite is written into data/ikemen1/system.sff and every layout key into
 the [Select Info] block of data/ikemen1/system.def, so a build-assets run from a
@@ -35,21 +35,22 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SYSTEM_DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 SCREEN = (1920, 1080)
-# 9x6 = 54 cells for the forty-eight fighters in data/select.def, the random box
-# and five spare slots. Nine across kept the wall narrow enough for the two
-# standing fighters, and six down is what lets the cells keep their 128x160 size
-# instead of being shrunk to fit: the wall ends at y=1010, inside the screen,
-# with the name row still clear under it. The stage preview that used to hang
-# under the grid is gone, which is where the extra row comes from.
+# 8x6 = 48 cells, exactly the cast in data/select.def: eight portraits across and
+# six rows down, so not one cell of the wall is empty. RANDOM is not a cell any
+# more - it is a label under the wall, and the seventh row of the grid is only
+# there to give it a cursor stop (seven skipslot slots and the randomselect).
 #
-# 9 * 128 + 8 * 2 = 1168 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
-# x=376 to x=1544 and the two side columns keep 65px of air either side.
+# 8 * 128 + 7 * 2 = 1038 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
+# x=441 to x=1479 and the two side columns keep their air either side.
 CELL, CELL_H = 128, 160
 GAP = 2
-COLS, ROWS = 9, 6
+COLS, ROWS = 8, 7
+# The painted wall, its frame and the name row are the fighter rows only: the
+# last logical row is the RANDOM stop, drawn as text outside the frame.
+FIGHTER_ROWS = ROWS - 1
 GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 40)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
-GRID_H = ROWS * CELL_H + (ROWS - 1) * GAP
+GRID_H = FIGHTER_ROWS * CELL_H + (FIGHTER_ROWS - 1) * GAP
 
 BG_SPR = (220, 0)
 CELL_SPR = (222, 0)
@@ -193,12 +194,13 @@ def cursor_frame(colour):
     return _plate(colour, tuple(int(c * 0.62) for c in colour))
 
 
-# The random slot: a grey stone card with a question mark, drawn at the cell's
-# size and, separately, at the size of the big side panels. The stock slot drew
-# a recoloured 62px glyph blown up 4.8x in the panels, which is why the random
-# portrait read as blank next to the painted ones.
+# The random slot is a word under the wall, not a portrait: 151,0 is RANDOM set
+# in gold with nothing behind it, and 151,11 is the same word with the selection
+# rule under it, which start.lua draws where the cell cursor would have been.
+# The big side panels keep the stone card with the question mark.
 RANDOM_CELL = (151, 0)
-RANDOM_CARD = (128, 160)
+RANDOM_MARK = (151, 11)
+RANDOM_LABEL = (128, 30)
 RANDOM_PORTRAIT = (151, 10)
 # The big panels clip to their portrait rect (8,150-308,670 on the left,
 # 966,150-1266,670 on the right), so the random card is cut to fit that
@@ -237,6 +239,30 @@ def random_card(size):
     return img
 
 
+def random_label(size=RANDOM_LABEL, lit=False):
+    """RANDOM as plain type: no plate, no frame, nothing but the word.
+
+    The engine draws this at the cell's origin, so the cell stays 128 wide and the
+    word is fitted to it. The lit copy carries a rule underneath, because the
+    plate that marks every other pick is not drawn here.
+    """
+    w, h = size
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    ink = GOLD_LIT if lit else GOLD
+    room = w - 10
+    size_px = h - (6 if lit else 2)
+    font = art.font(size_px)
+    while size_px > 8 and font.getlength("RANDOM") + 12 > room:
+        size_px -= 1
+        font = art.font(size_px)
+    tracked(d, (w / 2.0, (h - (6 if lit else 2)) / 2.0 - size_px * 0.62), "RANDOM",
+            font, ink + (255,), tracking=2, anchor="ma")
+    if lit:
+        d.rectangle([w * 0.16, h - 4, w * 0.84, h - 2], fill=ink + (255,))
+    return img
+
+
 def repaint_random_mark():
     """Paint the random slot at cell size and at side-panel size.
 
@@ -246,7 +272,8 @@ def repaint_random_mark():
     per-cell offset to undo that with.
     """
     d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    wanted = {RANDOM_CELL: random_card(RANDOM_CARD),
+    wanted = {RANDOM_CELL: random_label(),
+              RANDOM_MARK: random_label(lit=True),
               RANDOM_PORTRAIT: random_card(RANDOM_PANEL)}
     out, done = [], set()
     for sp in sprites:
@@ -313,11 +340,14 @@ KEYS = (
     ("columns", str(COLS)),
     ("wrapping", "1"),
     ("pos", "%d,%d" % GRID),
-    # The five cells past the random box are drawn as the same gold plate as
-    # every other cell. Hidden, they showed as black holes at the end of the
-    # last row, which looked like art that had failed to load.
-    ("showemptyboxes", "1"),
+    # There are no empty cells: the wall is eight by six and the cast fills it,
+    # so nothing is drawn for a cell without a fighter. The last row is the
+    # RANDOM stop, and searchemptyboxesdown walks right along it, which is what
+    # lets any column on the wall reach RANDOM by pressing down.
+    ("showemptyboxes", "0"),
     ("moveoveremptyboxes", "0"),
+    ("searchemptyboxesdown", "1"),
+    ("searchemptyboxesup", "1"),
     ("cell.size", "%d,%d" % (CELL, CELL_H)),
     ("cell.spacing", str(GAP)),
     ("cell.bg.spr", "%d,%d" % CELL_SPR),
@@ -325,6 +355,11 @@ KEYS = (
     ("cell.bg.offset", "0,0"),
     ("cell.random.spr", "151,0"),
     ("cell.random.scale", "1,1"),
+    # RANDOM is a word, so it takes no plate and no box cursor: start.lua skips
+    # both on that slot and draws this brighter copy of the word instead.
+    ("cell.random.active.spr", "151,11"),
+    ("cell.random.active.scale", "1,1"),
+    ("cell.random.active.offset", "0,0"),
     ("portrait.spr", "9000,0"),
     # the portrait art is painted at the cell's own size (build_portraits.py
     # CELL) and the bust is inset inside it, so it sits at the cell's origin -

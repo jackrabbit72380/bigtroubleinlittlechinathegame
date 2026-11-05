@@ -1279,6 +1279,18 @@ function start.f_drawCursor(pn, x, y, param, done)
 	cd.currentPos[2] = cd.targetPos[2] + cd.slideOffset[2]
 	-- draw
 	-- per cell cursor variant fully defines the cursor on its cell, so cell transformations apply to cursors that have no variant there
+	-- The random slot is a word, not a cell: no plate is drawn on it. The word
+	-- itself stands in for the cursor, brighter if the motif supplies
+	-- cell.random.active, so a player on RANDOM still sees where the pick is.
+	if cellData ~= nil and cellData.char == 'randomselect' then
+		local lit = motif.select_info.cell.random.active
+		if lit ~= nil and lit.AnimData ~= nil then
+			animSetPos(lit.AnimData, motif.select_info.pos[1] + cellData.x + motif.select_info.portrait.offset[1], motif.select_info.pos[2] + cellData.y + motif.select_info.portrait.offset[2])
+			animDraw(lit.AnimData)
+			animUpdate(lit.AnimData)
+		end
+		return
+	end
 	local variant = getOverride(pData.cursor[param], x, y)
 	local params = variant or pData.cursor[param].default
 	local cx, cy
@@ -1592,6 +1604,15 @@ for i = 1, motif.select_info.rows * motif.select_info.columns do
 		x = (col - 1) * (motif.select_info.cell.size[1] + cell_spacing[1]) + cell_offset[1],
 		y = (row - 1) * (motif.select_info.cell.size[2] + cell_spacing[2]) + cell_offset[2]
 	}
+	if start.f_selGrid(i).char == 'randomselect' then
+		-- RANDOM is a word under the wall, not a cell in it. The randomselect slot
+		-- is the last cell of the last row and every other slot in that row is a
+		-- skipslot, so the cursor reaches it from any column by pressing down.
+		-- Centre it under the wall here, one line below the grid's own rows,
+		-- instead of leaving it in the corner of the grid.
+		start.t_grid[row][col].x = (motif.info.localcoord[1] - motif.select_info.cell.size[1]) / 2 - motif.select_info.pos[1]
+		start.t_grid[row][col].y = (motif.select_info.rows - 1) * (motif.select_info.cell.size[2] + motif.select_info.cell.spacing[2]) + 20
+	end
 	if start.f_selGrid(i).char ~= nil then
 		start.t_grid[row][col].char = start.f_selGrid(i).char
 		start.t_grid[row][col].char_ref = start.f_selGrid(i).char_ref
@@ -2526,7 +2547,9 @@ function start.f_updateDrawList()
 					}
 				end
 
-				if (charData and charData.char ~= nil and (charData.hidden == 0 or charData.hidden == 3)) or motif.select_info.showemptyboxes then
+				-- the random slot is a word under the wall and gets no plate; every other
+				-- cell that can be picked keeps its framed one
+				if (charData and charData.char ~= nil and charData.char ~= 'randomselect' and (charData.hidden == 0 or charData.hidden == 3)) or motif.select_info.showemptyboxes then
 					local item = getTransforms(motif.select_info.cell.bg)
 					item.anim = motif.select_info.cell.bg.AnimData
 					item.x = motif.select_info.pos[1] + t.x
