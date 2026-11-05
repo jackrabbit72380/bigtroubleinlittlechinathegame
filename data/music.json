@@ -6,8 +6,43 @@
       }
     }
   },
-  "Big Trouble in Little China OST Movie Version": {
+  "Big Trouble in Little China OST Game Version": {
     "Art": 1,
+    "Songs": {
+      "01 - Prologue": {
+        "file": "sound/Big Trouble in Little China OST Game Version/01 - Prologue.ogg",
+        "Title": "01 - Prologue",
+        "Order": 1
+      },
+      "02 - Pork Chop Express": {
+        "file": "sound/Big Trouble in Little China OST Game Version/02 - Pork Chop Express.ogg",
+        "Title": "02 - Pork Chop Express",
+        "Order": 2
+      },
+      "03 - Abduction At Airport": {
+        "file": "sound/Big Trouble in Little China OST Game Version/03 - Abduction At Airport.ogg",
+        "Title": "03 - Abduction At Airport",
+        "Order": 3
+      },
+      "04 - Here Come The Storms": {
+        "file": "sound/Big Trouble in Little China OST Game Version/04 - Here Come The Storms.ogg",
+        "Title": "04 - Here Come The Storms",
+        "Order": 4
+      },
+      "05 - Lo Pan's Domain": {
+        "file": "sound/Big Trouble in Little China OST Game Version/05 - Lo Pan's Domain.ogg",
+        "Title": "05 - Lo Pan's Domain",
+        "Order": 5
+      },
+      "06 - Escape From Wing Kong": {
+        "file": "sound/Big Trouble in Little China OST Game Version/06 - Escape From Wing Kong.ogg",
+        "Title": "06 - Escape From Wing Kong",
+        "Order": 6
+      }
+    }
+  },
+  "Big Trouble in Little China OST Movie Version": {
+    "Art": 2,
     "Songs": {
       "1 - Prologue": {
         "file": "sound/Big Trouble in Little China OST Movie Version/1 - Prologue.ogg",
@@ -103,6 +138,11 @@
         "file": "sound/Big Trouble in Little China OST Movie Version/18 - The Final Escape (Lo Pans Demise-Getaway).ogg",
         "Title": "18 - The Final Escape (Lo Pan's Demise-Getaway)",
         "Order": 19
+      },
+      "19 - Goodbye Jack": {
+        "file": "sound/Big Trouble in Little China OST Movie Version/19 - GoodBye Jack.ogg",
+        "Title": "19 - Goodbye Jack",
+        "Order": 20
       }
     }
   }
