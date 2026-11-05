@@ -340,6 +340,11 @@ SECTION_LAYOUT = {
         ("stage.portrait.offset", "-320.0000, -405.0000"),
         ("stage.portrait.window", "640, 630, 1280, 990"),
         ("stage.portrait.bg.offset", "-4000, -4000"),
+        # The placeholder card and the loading portrait share the stage's slot,
+        # so they follow the preview into the new window instead of clipping to
+        # the old strip.
+        ("stage.portrait.random.window", "640, 630, 1280, 990"),
+        ("stage.portrait.loading.window", "640, 630, 1280, 990"),
     ),
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
