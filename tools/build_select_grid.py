@@ -133,12 +133,13 @@ def background():
                   fill=GOLD + (255,), outline=(40, 32, 14, 255))
 
     # Side columns: rules marking where the two fighters stand, labelled on top.
-    # The labels sit on the screen's top edge and are set at the same size as
-    # the stage caption the engine draws under the arena thumbnail (font 11 =
-    # the 13px Body face), so PLAYER 1, PLAYER 2 and VERSUS all read as one
-    # caption line across the top instead of three unrelated sizes.
+    # One size for every word on this screen. VERSUS, the stage caption and both
+    # fighter names are font 11 - the Body face, a 7x20 cell - so the painted
+    # labels are set to that cell's cap height (art.font(19) gives 14px caps)
+    # rather than the 16px they were, which read a size larger than everything
+    # the engine draws.
     LABEL_Y = 3
-    LABEL_FONT = art.font(22)
+    LABEL_FONT = art.font(19)
     for x in (30, SCREEN[0] - 31):
         d.rectangle([x, LABEL_Y + 30, x + 3, SCREEN[1] - 69], fill=GOLD_DIM + (200,))
         d.rectangle([x + 1, LABEL_Y + 30, x + 1, SCREEN[1] - 69], fill=GOLD + (110,))
@@ -421,19 +422,17 @@ KEYS = (
     ("p2.face2.offset", "1920, 180"),
     ("p2.face2.scale", "1,1"),
     ("p2.face2.window", FACE2_WIN_P2),
-    # The fighter names under the panels are engine text and were still the
-    # stock face at the stock size - the largest type on the screen, which is
-    # backwards: the panel exists to show the portrait, and the name was set
-    # bigger than the PLAYER 1 / VERSUS captions above it. They are font 11 now
-    # like the rest of the captions, and 0.25 because name text is drawn in a
-    # 320x240 space inside a 1280x720 motif (x4), so a quarter scale lands it at
-    # the font's own size.
+    # The fighter names under the panels are font 11 at scale 1 - the same face
+    # and the same scale as VERSUS and the stage caption, so every word on the
+    # screen is one size. They were at 0.25 on the belief that name text is
+    # drawn in a quarter-size space; it is not, so the names came out a quarter
+    # of the caption size and could not be read beside PLAYER 1 / PLAYER 2.
     ("p1.name.font", "11, 0, 0, 255, 228, 140"),
-    ("p1.name.scale", "0.25, 0.25"),
+    ("p1.name.scale", "1, 1"),
     ("p1.name.offset", "75, 1035"),
     ("p1.name.layerno", "2"),
     ("p2.name.font", "11, 0, -1, 255, 170, 96"),
-    ("p2.name.scale", "0.25, 0.25"),
+    ("p2.name.scale", "1, 1"),
     ("p2.name.offset", "1845, 1035"),
     ("p2.name.layerno", "2"),
     # The "?" and the loading art stand in for the portrait, so they are drawn
