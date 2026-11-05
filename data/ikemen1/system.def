@@ -2372,7 +2372,7 @@ movelist.text.text = Command List not found.
 movelist.glyphs.offset = 0, 9
 movelist.glyphs.scale = 1, 1
 movelist.glyphs.spacing = 9
-movelist.window.width = 900
+movelist.window.width = 1500
 movelist.window.margins.y = 60, 3
 movelist.window.visibleitems = 20
 ;movelist.overlay.window = 0, 0, 1280, 720
@@ -2400,6 +2400,7 @@ menu.itemname.devkeys = Developer Keys
 ;-------------------------------------------------------------------
 ;Training menu screen definition
 [Training Pause Menu]
+movelist.window.width = 1500
 p2.teammenu.item.cursor.spr = 180,0
 p2.teammenu.item.cursor.anim = -1
 p1.teammenu.item.cursor.spr = 180,0
