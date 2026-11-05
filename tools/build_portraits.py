@@ -35,7 +35,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # art beside it gets a 214px column; painting the art at the column width is
 # what keeps the whole fighter visible instead of cropped by the frame.
 CELL = (128, 160)          # the grid's cell, in build_select_grid.py
-BUST = 100                 # the bust sits inside the cell bevel
+# The cell's clear inside (build_select_grid.cell_frame: rules 0..11px) and
+# the air left between a bust and those rules, both in screen pixels.
+OPENING = (104, 136)
+ART_MARGIN = 3
+BUST_SLICE = 0.52          # how much of the standing figure is the bust
 # The standing art beside the grid. A fighter is 0.77 as wide as it is tall, so
 # a column narrower than that cannot hold him whole: containing a 0.77-aspect
 # figure in 310x900 gave 310x402 and left 500px of the column empty, and the old
@@ -147,21 +151,49 @@ def fit_whole(img, size):
 
 
 def cell_art(img, cell=CELL):
-    """The roster cell: a head-and-shoulders crop centred on the cell plate.
+    """The roster cell: the bust contained inside the frame's opening.
 
-    Same height rule as fit(): the bust fills the plate vertically so no head
-    in the grid is smaller than its neighbour.
+    The cell's gold rules take 12px on every side of the 128x160 cell, so the
+    clear opening is 104x136; anything painted beyond that is hidden under the
+    rules, which is how half the roster came to sit off-centre in its box. The
+    bust is cropped to its own pixels and scaled to the opening's height, so
+    every head lands the same size and every figure stands on the same floor
+    with the same air under the frame. A bust wider than the opening keeps its
+    height and is cropped at the sides - a portrait crops a shoulder or a rifle
+    - instead of being shrunk until the fighter is lost inside the box.
+
+    The opening is given in screen pixels and converted through this sprite's
+    own size, because the sprite is painted at target / (motif / localcoord):
+    the 320px roster gets a 21x27 canvas and the 960px rigs a 64x80 one, and
+    both have to land on the same 128x160 cell.
     """
-    bust_target = max(1, int(round(cell[0] * BUST / float(CELL[0]))))
-    bust = img.crop((0, 0, img.width, max(1, int(img.height * 0.52))))
-    art = fit(bust, (bust_target, bust_target))
-    # the sprite itself stays the size of the grid cell: the engine draws it at
-    # scale 1, so a 63px canvas would land 84px on screen instead of the 84 the
-    # cell is. It used to be 100, which is 16px wider than the cell it is
-    # clipped to and is why every portrait hung over its neighbour's frame.
+    sx, sy = float(CELL[0]), float(CELL[1])
+    ix = (sx - OPENING[0]) / 2.0 * cell[0] / sx
+    iy = (sy - OPENING[1]) / 2.0 * cell[1] / sy
+    mx = ART_MARGIN * cell[0] / sx
+    my = ART_MARGIN * cell[1] / sy
+    inner_w = max(1.0, cell[0] - 2.0 * (ix + mx))
+    inner_h = max(1.0, cell[1] - 2.0 * (iy + my))
+
     out = Image.new("RGBA", cell, (0, 0, 0, 0))
-    out.alpha_composite(art, ((cell[0] - art.width) // 2,
-                              (cell[1] - art.height) // 2))
+    bust = img.crop((0, 0, img.width,
+                     max(1, int(round(img.height * BUST_SLICE)))))
+    bb = bust.getchannel("A").getbbox()
+    if bb is None or bust.width < 1 or bust.height < 1:
+        return out
+    bust = bust.crop(bb)
+
+    k = inner_h / float(bust.height)
+    if bust.width * k > inner_w:
+        keep = max(1, int(round(inner_w / k)))
+        left = max(0, int(round((bust.width - keep) / 2.0)))
+        bust = bust.crop((left, 0, left + keep, bust.height))
+        k = inner_h / float(bust.height)
+
+    art = bust.resize((max(1, int(round(bust.width * k))),
+                       max(1, int(round(bust.height * k)))), Image.LANCZOS)
+    out.alpha_composite(art, (int(round((cell[0] - art.width) / 2.0)),
+                              int(round(cell[1] - (iy + my) - art.height))))
     return out
 
 
