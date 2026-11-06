@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v47
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v48
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -62,7 +62,7 @@ if defined BS set "BSS=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%"
 if defined BS set "BSX=%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%"
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v47
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v48
 echo   ==============================================================
 
 set "EXE="
