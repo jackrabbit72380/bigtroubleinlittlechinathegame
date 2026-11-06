@@ -259,7 +259,14 @@ local ok, err = pcall(function()
 				print('devhelp: could not draw the key list: ' .. tostring(drawErr))
 				menu.itemname = ''
 			end
-			return main.pauseMenuActive
+			-- the same bookkeeping the pause menu's own f_run does before it
+			-- returns, so an unpause while this screen is open still clears the
+			-- exit delay instead of carrying it into the next pause
+			local active = main.pauseMenuActive
+			if not active then
+				menu.pauseExitDelay = -1
+			end
+			return active
 		end
 		return baseRun()
 	end
