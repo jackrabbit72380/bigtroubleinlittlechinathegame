@@ -69,6 +69,8 @@ def _problems_for(name, raw):
     # 2. parenthesised blocks have to close
     depth = 0
     for line in lines:
+        if depth == 0 and re.match(r"^\s*echo", line, re.I):
+            continue          # at this depth a parenthesis is only printed
         bare = re.sub(r'"[^"]*"', '""', line)
         depth += bare.count("(") - bare.count(")")
     if depth:

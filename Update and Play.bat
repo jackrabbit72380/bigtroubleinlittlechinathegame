@@ -19,7 +19,7 @@ rem  "Cannot connect to H:", and curl looks for its CA bundle at
 rem  /usr/ssl/certs/ca-bundle.crt. Full paths avoid all three.
 rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
-color 07
+color 0E
 cd /d "%~dp0"
 title Big Trouble in Little China: The Game - Updater
 
@@ -62,9 +62,19 @@ if defined TERM_PROGRAM set "VT=1"
 if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
-echo.
-echo Big Trouble in Little China - The Game  -  Updater v47
-echo.
+rem The gauge is rewritten where it stands without needing ANSI: every
+rem console understands a backspace, so the cursor walks back over the old
+rem line and the new one lands on top of it. prompt $H writes exactly that
+rem character. copy /Z was used before - on this machine it prints
+rem "1 file(s) copied" instead of a carriage return, which is why the bars
+rem ran together on one line.
+for /f "delims=" %%b in ('"prompt $H&for %%c in (1) do rem"') do set "BS=%%b"
+if defined BS set "BSS=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%"
+if defined BS set "BSX=%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%"
+
+echo   ==============================================================
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v47
+echo   ==============================================================
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -318,7 +328,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-set "BARLABEL=Updating %NCH% file(s)"
+set "BARWHAT=Updating"
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -411,34 +421,63 @@ if errorlevel 1 set "WRITEFAIL=1"
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
-:bar
-rem %1 = done, %2 = total. One gauge and one percentage on a single line:
-rem redrawn in place where the console can do that, printed as coarse
-rem milestones where it cannot. No ASCII art, no line per percent.
+:gun
+rem Jack's pistol, in the characters the concept art was drawn with: it sits
+rem above the progress bar and the shot is the progress, so the bar reads as
+rem rounds going downrange instead of an abstract gauge.
+echo.
+echo    ..._...^|..____________________, ,
+echo    ....../ '---___________----_____^|]=
+echo    ...../_==o;;;;;;;;_______.:/
+echo    .....), ---.(_(__) /
+echo    ....// (..) ), ----"
+echo    ...//___//
+echo    ..//___//
+echo    .//___//
+set "GUNSHOWN=1"
+exit /b 0
+
+rem %1 = done, %2 = total. One line under the pistol, rewritten where it
+rem stands. The line is a fixed 54 characters, so a shorter reading can
+rem never leave the tail of a longer one behind: 80 backspaces always put
+rem the cursor at the start of the line. Tracers are ">", which an echo
+rem reads as a redirection, so the fallback prints the escaped copy and
+rem only at the ends, never a line per file.
 if "%~2"=="0" exit /b 0
+if not defined GUNSHOWN call :gun
+if not defined BARWHAT set "BARWHAT=Updating"
 set /a BPCT=%~1*100/%~2
-set /a BFILL=%~1*20/%~2
-if %BFILL% GTR 20 set /a BFILL=20
+set /a BFILL=%~1*24/%~2
+if %BFILL% GTR 24 set /a BFILL=24
 if %BFILL% LSS 0 set "BFILL=0"
-set "FILLED=####################"
-set "EMPTY=--------------------"
-call set "BFILLED=%%FILLED:~0,%BFILL%%%"
-set /a BGAP=20-BFILL
-call set "BEMPTY=%%EMPTY:~0,%BGAP%%%"
-set "BARLINE=  [%BFILLED%%BEMPTY%] %BPCT%%"
-if defined BARLABEL set "BARLINE=  %BARLABEL%  [%BFILLED%%BEMPTY%] %BPCT%%"
+set "SHOT=>>>>>>>>>>>>>>>>>>>>>>>>"
+set "REST=........................"
+call set "BFILLED=%%SHOT:~0,%BFILL%%%"
+set /a BGAP=24-BFILL
+call set "BEMPTY=%%REST:~0,%BGAP%%%"
+set "PC3=   %BPCT%"
+call set "PC3=%%PC3:~-3%%"
+set "N5=     %~1"
+call set "N5=%%N5:~-5%%"
+set "BARLINE=  %BARWHAT% %N5% files  %BFILLED%%BEMPTY%  %PC3%%"
+set "BARSAFE=%BARLINE:>=^>%"
+if not defined BS goto bar_lines
+<nul set /p "=%BSX%%BARLINE%"
 set "BARDRAWN=1"
-if not "%VT%"=="1" goto bar_lines
-<nul set /p "=%ESC%[2K%ESC%[0G  %BARLINE%"
 exit /b 0
 :bar_lines
-echo   %BARLINE%
+rem No backspace, or nothing done yet: the ends only, printed as ordinary
+rem lines. Two lines at worst, never one per file.
+if not "%BPCT%"=="0" if not "%BPCT%"=="100" exit /b 0
+echo %BARSAFE%
 exit /b 0
+
 :barflush
-rem the redrawn bar leaves the cursor on its line: end it before the next one
-if "%VT%"=="1" if defined BARDRAWN echo.
+rem The redrawn gauge leaves the cursor on its line: end it before the next
+rem line of output, or that output would land on top of the gauge.
+if defined BARDRAWN echo.
 set "BARDRAWN="
-set "BARLABEL="
+set "BARWHAT="
 exit /b 0
 
 :spin
@@ -446,9 +485,13 @@ rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
 set /a SMOD=%~1 %% 4
 set "SPIN=|/-\"
 call set "SCH=%%SPIN:~%SMOD%,1%%"
-if "%VT%"=="1" <nul set /p "=%ESC%[2K      %SCH%   %~2   %~1s"
-if not "%VT%"=="1" set /a SDOT=%~1 %% 5
-if not "%VT%"=="1" if %SDOT%==0 echo       %SCH%   %~2   %~1s
+if not defined BS goto spin_plain
+<nul set /p "=%BSX%      %SCH%   %~2   %~1s"
+set "BARDRAWN=1"
+exit /b 0
+:spin_plain
+set /a SDOT=%~1 %% 5
+if %SDOT%==0 echo       %SCH%   %~2   %~1s
 exit /b 0
 
 :spinwait
@@ -466,13 +509,16 @@ if exist "%~2" goto spinwait_bad
 if %SW% GEQ %~4 goto spinwait_late
 goto spinwait_loop
 :spinwait_ok
-if "%VT%"=="1" echo.
+if defined BARDRAWN echo.
+set "BARDRAWN="
 exit /b 0
 :spinwait_bad
-if "%VT%"=="1" echo.
+if defined BARDRAWN echo.
+set "BARDRAWN="
 exit /b 1
 :spinwait_late
-if "%VT%"=="1" echo.
+if defined BARDRAWN echo.
+set "BARDRAWN="
 exit /b 2
 :confirm
 rem A file that was just written is checked against main by CONTENT: it is
@@ -495,7 +541,7 @@ set /a NBAD=0
 for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
 if "%NBAD%"=="0" exit /b 0
 echo Retrying %NBAD% file(s) that did not write correctly.
-set "BARLABEL=Rechecking %NBAD% file(s)"
+set "BARWHAT=Checking"
 copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
 set "NCH=%NBAD%"
 set /a NDONE=0
@@ -702,7 +748,7 @@ if not exist "%MISS%" exit /b 0
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 if "%NMISS%"=="0" exit /b 0
-if "%WHICH%"=="git" set "BARLABEL=Fetching %NMISS% file(s)"
+if "%WHICH%"=="git" set "BARWHAT=Fetching"
 if not "%WHICH%"=="git" echo Fetching %NMISS% file(s)
 set "NCH=%NMISS%"
 set /a NDONE=0
@@ -1133,7 +1179,7 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('Installed ' + $n + ' file(s), removed ' + $gone)"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('Installed ' + $n + ' file(s), removed ' + $gone)"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
