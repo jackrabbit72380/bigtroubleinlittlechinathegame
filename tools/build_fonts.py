@@ -286,9 +286,17 @@ SECTION_LAYOUT = {
         # The face is wider on the shipped screen than the stock one this was
         # measured against: "RETURN WITHOUT SAVING" is 777px at this size, so at
         # 784 it began at x=7 and ran off the left edge of a 1920-wide screen.
-        # 1200 leaves that worst case 423px of margin, and the value column
-        # (menu.pos.x + 40) runs 1240..1832, inside the right edge.
-        ("menu.pos", "1200, 99"),
+        # The list is centred on the frame's own width: labels are right
+        # aligned (they end at menu.pos.x) and values start 40px further on, so
+        # 940 leaves that 777px worst case starting at 163 and puts the label
+        # column's edge and the value column's start either side of 960 instead
+        # of both on the right-hand half of a 1920 frame.
+        ("menu.pos", "940, 99"),
+        # The title was still at 640 - a number carried over from the 1280-wide
+        # stock motif - so on a 1920 frame it sat a third of the screen to the
+        # left of centre while the list sat to the right of it. Font field 0 is
+        # centre alignment, so 960 is the middle of the screen.
+        ("title.offset", "960, 48"),
         ("menu.item.font", f"{D},0,-1, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,-1, {BRIGHT}"),
         # The highlighted row used to switch to 1 (left), so it jumped to the
