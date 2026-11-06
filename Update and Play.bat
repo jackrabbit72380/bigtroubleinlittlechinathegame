@@ -73,7 +73,7 @@ echo.
 echo   ==============================================================
 echo    B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo                     THE GAME
-echo              Updater v37   -   dragon edition
+echo              Updater v38   -   dragon edition
 echo   ==============================================================
 echo    Folder:  %~dp0
 echo   ==============================================================
@@ -83,6 +83,7 @@ set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto wrongfolder
+call :log folder %~dp0  exe %EXE%
 
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
@@ -95,6 +96,10 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
+rem Every run leaves this behind. When a window closes before the game appears,
+rem this file is the only record of how far it got and why it stopped.
+set "LOG=%CACHE%\last-run.log"
+>"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1
 set "ZIP="
 set "SRC="
 set "WHICH="
@@ -295,6 +300,7 @@ if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
 echo         main @ %NEWSHORT%
+call :log main is %NEWSHORT%
 call :gamelock
 git -c core.quotepath=false ls-tree -r FETCH_HEAD -- data chars stages font external sound >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 goto gitfail
@@ -304,6 +310,7 @@ if errorlevel 1 goto gitfail
 if not exist "%CACHE%\changed.txt" goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
+call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
 echo.
 echo   --------------------------------------------------------------
@@ -730,6 +737,7 @@ call :gitflush
 "%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%VPS%" -Tree "%LIST%" -Root "%~dp0" -Missing "%MISS%" >nul 2>&1
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
+call :log missing after repair: %NMISS%
 if "%NMISS%"=="0" echo         every file main lists is here
 if not "%NMISS%"=="0" echo         still missing %NMISS% file(s) - run this again before playing
 exit /b 0
@@ -968,20 +976,55 @@ echo.
 echo   --------------------------------------------------------------
 echo     3/3   Starting the game
 echo.
-rem Start the game in a console of its own, minimised, with its output thrown
-rem away. The engine attaches to whichever console launched it, so a child of
-rem this window printed the whole engine log here and this window had to stay
-rem open for the game to keep running - which read as the launcher hanging
-rem around after the game was already up. The helper below owns the engine's
-rem console instead, so this window closes as soon as the game starts and the
-rem engine still writes save\logs\<date>.log exactly as it did before.
+rem The engine runs in a helper of its own, so this window can close as soon as
+rem the game is up - but its output is kept instead of being thrown away. A
+rem game that dies on a missing file or a renderer setting used to write its
+rem reason to nul and leave the window closing over it, which read as "it did
+rem nothing". Now the game has a few seconds to appear, and if it does not its
+rem own words are printed here and the window waits so they can be read.
 set "RUN=%CACHE%\play.bat"
+set "GLOG=%CACHE%\game.log"
+set "GCODE=%CACHE%\game.code"
+if exist "%GLOG%" del /q "%GLOG%" >nul 2>&1
+if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
->>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>nul 2^>^&1
+>>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
+>>"%RUN%" echo echo %%errorlevel%% ^>"%GCODE%"
+call :log starting %EXE%
 start "" /min "%RUN%"
+rem Without tasklist there is no way to tell whether the game came up, so
+rem the window closes as it did before rather than reporting a false failure.
+if not exist "%TASKLIST%" exit 0
+set /a LW=0
+:launch_wait
+call :sleep 1
+set /a LW+=1
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+if not errorlevel 1 goto launch_ok
+if %LW% GEQ 12 goto launch_died
+goto launch_wait
+:launch_ok
+call :log game is running after %LW%s
 exit 0
-
+:launch_died
+call :log game did not stay open
+echo.
+echo   The game did not stay open. Its own output:
+echo.
+if exist "%GLOG%" type "%GLOG%"
+if not exist "%GLOG%" echo   (the engine wrote nothing at all)
+if exist "%GCODE%" echo.
+if exist "%GCODE%" echo   Exit code:
+if exist "%GCODE%" type "%GCODE%"
+echo.
+echo   This is also saved as:  %GLOG%
+echo   and the run log:        %LOG%
+echo.
+echo   If a game window is behind this one, close this window and play.
+echo.
+pause
+exit 1
 :skipver2
 goto skipver
 
@@ -1221,6 +1264,12 @@ if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 "%CURL%" -L --fail --ssl-no-revoke --retry 2 --retry-delay 3 --connect-timeout 30 --max-time 1800 -o "%ZIP%" "%ZIPURL2%"
 call :zipcheck
 if "%ZIPOK%"=="1" set "DLOK=1"
+exit /b 0
+
+:log
+rem Appends one line to the run log. Cheap enough to call at every step.
+if not defined LOG exit /b 0
+>>"%LOG%" echo [%TIME%] %*
 exit /b 0
 
 :sleep
