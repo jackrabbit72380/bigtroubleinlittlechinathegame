@@ -2878,8 +2878,8 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 			if motif.files.logo.storyboard ~= '' then
 				main.f_storyboard(motif.files.logo.storyboard)
 			end
-			if motif.files.intro.storyboard ~= '' then
-				main.f_storyboard(motif.files.intro.storyboard)
+			if (motif.files.intro and motif.files.intro.storyboard or '') ~= '' then
+				main.f_storyboard((motif.files.intro and motif.files.intro.storyboard or ''))
 			end
 		end
 		if bool_bgreset then
@@ -2964,7 +2964,8 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 						motif.infobox.title.TextSpriteData,
 						motif.infobox.text.TextSpriteData
 					)
-				elseif motif.attract_mode.enabled and getKey(motif.attract_mode.options.keycode) then
+				elseif motif.attract_mode.enabled and (motif.attract_mode.options ~= nil
+							and getKey(motif.attract_mode.options.keycode)) then
 					main.f_default()
 					main.menu.f = main.t_itemname.options()
 					sndPlay(motif.Snd, motif[main.group].cursor.done.snd.default[1], motif[main.group].cursor.done.snd.default[2])
@@ -3541,7 +3542,8 @@ function main.f_attractStart()
 			creditsCnt = getCredits()
 		end
 		--options
-		if motif.attract_mode.enabled and getKey(motif.attract_mode.options.keycode) then
+		if motif.attract_mode.enabled and (motif.attract_mode.options ~= nil
+							and getKey(motif.attract_mode.options.keycode)) then
 			main.f_default()
 			main.menu.f = main.t_itemname.options()
 			local doneSnd = motif[main.group].cursor.done.snd.options or motif[main.group].cursor.done.snd.default
@@ -3706,8 +3708,8 @@ function main.f_demoStart()
 	if not motif.attract_mode.enabled then
 		if introWaitCycles >= motif.demo_mode.intro.waitcycles then
 			main.f_hiscore("arcade", -1)
-			if motif.files.intro.storyboard ~= '' then
-				main.f_storyboard(motif.files.intro.storyboard)
+			if (motif.files.intro and motif.files.intro.storyboard or '') ~= '' then
+				main.f_storyboard((motif.files.intro and motif.files.intro.storyboard or ''))
 			end
 			introWaitCycles = 0
 		else
@@ -3715,7 +3717,7 @@ function main.f_demoStart()
 		end
 		bgReset(motif[main.background].BGDef)
 		--start title BGM only if it has been interrupted
-		if motif.demo_mode.fight.stopbgm or motif.demo_mode.fight.playbgm or (introWaitCycles == 0 and motif.files.intro.storyboard ~= '') then
+		if motif.demo_mode.fight.stopbgm or motif.demo_mode.fight.playbgm or (introWaitCycles == 0 and (motif.files.intro and motif.files.intro.storyboard or '') ~= '') then
 			playBgm({source = "motif.title", interrupt = true})
 		end
 	end
