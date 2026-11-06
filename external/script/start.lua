@@ -3278,7 +3278,10 @@ function start.f_selectScreen()
 				main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
 				--draw stage portrait (random)
 				if stageListNo == 0 then
-					main.f_animPosDraw(motif.select_info.stage.portrait.random.AnimData)
+					-- this build rejects stage.portrait.random.* at load, so the table can be
+					-- absent; reading .AnimData off it unguarded crashed the stage screen
+					local rndPortrait = motif.select_info.stage.portrait.random
+					if rndPortrait then main.f_animPosDraw(rndPortrait.AnimData) end
 				--draw stage portrait loaded from stage SFF
 				else
 					stageRef = start.f_stageMenuRef()

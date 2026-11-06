@@ -639,7 +639,6 @@ stage.portrait.bg.spr = 110,0
 stage.portrait.bg.offset = -4000, -4000
 stage.portrait.bg.scale = 1.0, 1.0
 stage.portrait.bg.layerno = 2
-;stage.portrait.random.anim = 113
 ; stage.portrait.loading.spr = 
 stage.portrait.loading.anim = -1
 stage.portrait.loading.offset = -4000, -4000
@@ -1440,22 +1439,6 @@ p2.face2.done.focallength = 2048
 p2.face2.done.layerno = 0
 p2.face2.done.window = 0, 0, 1, 1
 p2.face2.done.applypal = 0
-p1.face2.velocity = 0, 0
-p1.face2.maxdist = 0, 0
-p1.face2.accel = 0, 0
-p1.face2.friction = 1, 1
-p1.face2.done.velocity = 0, 0
-p1.face2.done.maxdist = 0, 0
-p1.face2.done.accel = 0, 0
-p1.face2.done.friction = 1, 1
-p2.face2.velocity = 0, 0
-p2.face2.maxdist = 0, 0
-p2.face2.accel = 0, 0
-p2.face2.friction = 1, 1
-p2.face2.done.velocity = 0, 0
-p2.face2.done.maxdist = 0, 0
-p2.face2.done.accel = 0, 0
-p2.face2.done.friction = 1, 1
 [Begin Action 600]
 600,0, 0, 0, 3
 600,1, 0, 0, 3
