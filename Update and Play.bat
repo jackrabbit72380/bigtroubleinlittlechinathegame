@@ -129,7 +129,6 @@ call :selfupdate %1
 echo.
 echo   --------------------------------------------------------------
 echo     1/3   Checking main
-echo   --------------------------------------------------------------
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -953,7 +952,6 @@ echo.
 echo.
 echo   --------------------------------------------------------------
 echo     3/3   Starting the game
-echo   --------------------------------------------------------------
 echo.
 rem Start the game in a console of its own, minimised, with its output thrown
 rem away. The engine attaches to whichever console launched it, so a child of
