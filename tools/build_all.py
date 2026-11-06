@@ -163,6 +163,8 @@ def main():
                                  "lopans_throne_preview.png")
     if os.path.isfile(preview_stage):
         scripts.append("preview_hud.py")
+    # The updater compares this with main before it trusts "already up to date".
+    scripts.append("build_stamp.py")
     scripts.append("validate.py")
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry

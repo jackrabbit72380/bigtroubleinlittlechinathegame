@@ -1,0 +1,12 @@
+# Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
+# Update and Play.bat compares this file with main's copy: a difference means
+# the folder needs an update, whatever the recorded commit says.
+8fde7448f5e12caf6c336a69f1ebea54f97e0550875128ca6410409967a6557f  data/ikemen1/system.def
+6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
+63c593951c936dca3cd85399786543b09b903c9c0ed995a287d88ff936dcdec0  data/fight.def
+7dfe5b848633cf55cf5bf04eae9d7a30093755bcf40746deab618a453bbb5daa  data/select.def
+d9d94f7dfc51ca7a3fdedfdbd6622a23cc853654fc9f2f19f5b79aa6e6eaad52  data/ikemen1/logo.def
+e90e5d1dd663287a57d44592f1fa00d5f410ad43fb16c22119c4dc86bd6bd8f0  data/ikemen1/credits.def
+ff555ad42848272a9fef0dc6a689bad80343854e17134e122cdf791b3f3dfb47  external/script/start.lua
+1f4d73a12ffa0acd63318ea41aabff2468b363e00d069c12aa0c7b637a70ae08  external/script/options.lua
+fc0ed05177dc4a5f66922bb87b9538a092d13356b8e44f8fc5e7dc06bbec6f79  external/mods/musicselect.lua
