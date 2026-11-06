@@ -464,9 +464,13 @@ KEYS = (
     # same size as the rest of them.
     ("stage.scale", "1.5, 1.5"),
     ("stage.active.font", "11, 0, 0, 255, 228, 140"),
-    # The arena thumbnail. It was commented out by an older build, which left
-    # the preview box showing nothing but its own frame.
-    ("stage.portrait.spr", "9000,1"),
+    # No arena thumbnail on the character wall. tools/build_select_ui.py owns
+    # this card - its window, its plate, its caption - and switches it off for
+    # this screen, so this line was the only thing still drawing it: a 520x170
+    # picture with its plate parked off-screen, hanging over the bottom row of
+    # portraits. The preview is 2x and centred on the VS screen, where the
+    # engine actually shows it.
+    ("stage.portrait.spr", "-1"),
     # VERSUS is drawn by the engine: same face as the stage caption (font 11),
     # on the top edge, so it matches PLAYER 1 / PLAYER 2 and the stage name.
     # The wall's frame starts at y=25. The title's face is the bitmap Body face,

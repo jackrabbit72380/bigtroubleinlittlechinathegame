@@ -31,7 +31,12 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STAGE = os.path.join(ROOT, "stages", "stage0")
 
 SCREEN = (1920, 1080)
-TRAVEL = 260                       # camera travel each way ([Camera] bound)
+# 900, not 260. boundleft/boundright clamp the FIGHTERS as much as the camera:
+# at +-260 the two of them start 170 apart and could walk 90 units before the
+# bound stopped them, the camera never left the middle of a room that is a
+# screen wide plus its travel, and the backdrop never scrolled. Half a screen
+# of travel each way is what a stage this size wants.
+TRAVEL = 900                       # camera travel each way ([Camera] bound)
 # A BG element's start x is measured from the CENTRE of the screen, not from its
 # left edge - tools/stages_hd.py relies on that when it parks its back wall at
 # 960 - 2057 + 0.35 * 3136 = 0. This plate was 1920 + 2*260 wide and started at
