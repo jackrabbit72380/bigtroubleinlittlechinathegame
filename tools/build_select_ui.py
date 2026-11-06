@@ -234,6 +234,16 @@ SELECT_TEXT = (
     ("stage.active.text", "%s"),
     ("stage.scale", NAME_SCALE),
     ("stage.active.switchtime", "300000"),
+    # Stage select. f_stageMenu reads motif.select_info.stage.previous.key and its
+    # three siblings (next, skip.previous, skip.next) straight off this section,
+    # and the motif declared none of them - so opening the stage screen indexed
+    # nil with 'key' and the engine closed the game with an error box. These are
+    # the stock defaults, in the motif's own key names.
+    ("stage.randomselect", "1"),
+    ("stage.previous.key", "U"),
+    ("stage.next.key", "D"),
+    ("stage.skip.previous.key", "L"),
+    ("stage.skip.next.key", "R"),
 )
 
 

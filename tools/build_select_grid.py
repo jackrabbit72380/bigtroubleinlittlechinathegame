@@ -438,10 +438,10 @@ KEYS = (
     ("cell.random.spr", "151,0"),
     ("cell.random.scale", "1,1"),
     # RANDOM is a word, so it takes no plate and no box cursor: start.lua skips
-    # both on that slot and draws this brighter copy of the word instead.
-    ("cell.random.active.spr", "151,11"),
-    ("cell.random.active.scale", "1,1"),
-    ("cell.random.active.offset", "0,0"),
+    # both on that slot and draws its own bright RANDOM text. This used to declare
+    # cell.random.active.{spr,scale,offset} for that copy, but the engine's cell
+    # struct has no "active" field: it rejected all three on every launch
+    # ("field 'active' not found as struct or map field") and drew nothing.
     ("portrait.spr", "9000,0"),
     # the portrait art is painted at the cell's own size (build_portraits.py
     # CELL) and the bust is inset inside it, so it sits at the cell's origin -
