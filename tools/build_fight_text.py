@@ -115,14 +115,14 @@ def place_round_banner(text):
     return head + body + tail, made
 
 
-# The demo caption. "Demo Mode" was drawn in the Pixel face, whose 18px cell
-# lands 27px tall on a 1920 screen - half again the size of every other word in
-# the game, and in a face nothing else uses. It is set in the motif's own Body
-# face now, the one the menus, the select captions and the fighter names use,
-# scaled so its 20px cell lands on the same 20px those are set at. The demo
-# screen then reads at one size with everything else instead of shouting.
+# The demo caption. It is set in the motif's own Body face, the one the menus,
+# the select captions and the fighter names use, but at 1.5x that cell: the
+# caption sits alone in the top corner of a running fight next to a round banner
+# drawn 68px tall, so setting it at the menus' own 20px left it reading as a
+# footnote. Body's 20px cell scaled 1.5 lands 30px in the 1280 fight space, 45px
+# on a 1920 screen - half the round banner, and still the menus' face.
 BODY = "ikemen1/fonts/Body.def"
-MODE_SCALE = "0.667, 0.667"     # Body's 20px cell in the 1280 fight space
+MODE_SCALE = "1.5, 1.5"       # Body's 20px cell in the 1280 fight space
 
 
 def font_slot(text, path):
