@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v32
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v33
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -28,6 +28,7 @@ set "PING=%SYS%\ping.exe"
 set "TAR=%SYS%\tar.exe"
 set "CURL=%SYS%\curl.exe"
 set "FINDSTR=%SYS%\findstr.exe"
+set "FIND=%SYS%\find.exe"
 set "TASKLIST=%SYS%\tasklist.exe"
 set "ROBOCOPY=%SYS%\robocopy.exe"
 set "WHERE=%SYS%\where.exe"
@@ -36,6 +37,7 @@ if not exist "%TAR%" set "TAR="
 if not exist "%CURL%" set "CURL="
 if not exist "%POWERSHELL%" set "POWERSHELL="
 if not exist "%WHERE%" set "WHERE="
+if not exist "%FIND%" set "FIND="
 
 rem Git Bash can also leave these set, pointing at a path that only exists
 rem inside its own filesystem. They are cleared for this window only.
@@ -66,7 +68,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v32
+echo                        Updater v33
 echo.
 echo   ==============================================================
 echo.
@@ -285,7 +287,9 @@ call :gamelock
 git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitfail
 echo            Checking which files in this folder differ.
-git -c core.quotepath=false diff --name-only -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
+echo            Comparing the game folders already on disk with main - this
+echo            reads the art here, it does not download anything.
+call :compare
 if errorlevel 1 goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
@@ -299,6 +303,69 @@ if defined WRITEFAIL goto gitfail
 echo            %NDONE% file(s) written.
 rem skip over the :gitone subroutine below, which is only ever entered by call
 goto gitdel
+
+:compare
+rem This step used to be one silent "git diff": it re-read every file in the six
+rem game folders - about 190 MB of art - hashed it, and printed nothing until it
+rem finished, so the window sat on one line for minutes and read as hung. The
+rem comparison is what an exact answer costs, but the wait is no longer hidden:
+rem the number of files main holds is printed before it starts, the work runs in
+rem a helper of its own, and this window keeps saying how long it has been going.
+rem The first run has no index yet and must read every file; later runs only
+rem re-read what changed, which is why a routine update is quick.
+rem
+rem The helper reports through ok/bad marker files rather than an exit code, and
+rem the files hold "x" rather than a number: cmd parses "echo 0>file" as a
+rem redirect of handle 0, so that file would read "ECHO is on." and every run
+rem would then look like a failed comparison that never happened.
+set "CMPRUN=%CACHE%\compare.bat"
+set "CMPOK=%CACHE%\compare.ok"
+set "CMPBAD=%CACHE%\compare.bad"
+set "OUT=%CACHE%\changed.txt"
+if exist "%CMPOK%" del /q "%CMPOK%" >nul 2>&1
+if exist "%CMPBAD%" del /q "%CMPBAD%" >nul 2>&1
+if exist "%OUT%" del /q "%OUT%" >nul 2>&1
+set "CNT=0"
+if defined FIND for /f %%n in ('git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound 2^>nul ^| "%FIND%" /c /v ""') do set "CNT=%%n"
+if not "%CNT%"=="0" echo            main holds %CNT% file(s) in those six folders.
+>"%CMPRUN%" echo @echo off
+>>"%CMPRUN%" echo cd /d "%~dp0."
+>>"%CMPRUN%" echo git -c core.quotepath=false -c core.preloadIndex=true diff --name-only -- data chars stages font external sound ^>"%OUT%" 2^>^>"%CACHE%\git.log"
+>>"%CMPRUN%" echo if errorlevel 1 (echo x^>"%CMPBAD%") else (echo x^>"%CMPOK%")
+if not exist "%CMPRUN%" exit /b 1
+start "" /b cmd /c ""%CMPRUN%""
+set /a CMPT=0
+:compare_wait
+call :sleep 1
+set /a CMPT+=1
+if exist "%CMPOK%" goto compare_end
+if exist "%CMPBAD%" goto compare_failed
+if %CMPT%==4 echo            ... still comparing
+if %CMPT%==15 echo            ... still comparing (%CMPT%s) - a first run reads every file
+if %CMPT%==30 echo            ... still comparing (%CMPT%s) - a scanner or a slow disk adds to this
+if %CMPT%==60 echo            ... still comparing (60s) - still reading, not stuck
+if %CMPT% GEQ 120 goto compare_slow
+goto compare_wait
+:compare_slow
+set /a CMPQ=CMPT %% 30
+if %CMPQ%==0 echo            ... still comparing (%CMPT%s)
+if %CMPT% GEQ 900 goto compare_timeout
+goto compare_wait
+:compare_timeout
+echo.
+echo            The comparison has not finished after 15 minutes, so this run
+echo            stops instead of sitting on that line. Close the game and any
+echo            scanner or backup tool reading this folder, then run it again.
+echo.
+pause
+exit /b 1
+:compare_failed
+echo            Could not compare this folder with main.
+if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 6" 2>nul
+exit /b 1
+:compare_end
+if %CMPT% GEQ 3 echo            Compared in %CMPT%s.
+exit /b 0
 
 :gitone
 rem %1 = one path. Each file is asked for on its own, so git downloads exactly
