@@ -2951,7 +2951,7 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 					if not bool_main or esc() then
 						break
 					end
-				elseif bool_f1 and (getKey(motif.infobox.keycode) or gameOption('Config.FirstRun')) then
+				elseif bool_f1 and (getKey(motif.infobox.keycode or 0) or gameOption('Config.FirstRun')) then
 					if gameOption('Config.FirstRun') then
 						modifyGameOption('Config.FirstRun', false)
 						options.f_saveCfg(false)
