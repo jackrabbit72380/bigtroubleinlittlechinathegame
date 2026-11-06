@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v33
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v34
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -68,7 +68,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v33
+echo                        Updater v34
 echo.
 echo   ==============================================================
 echo.
@@ -122,7 +122,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo   [ 1/4 ]  Looking for the newest files
+echo   [ 1/3 ]  Checking main
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -258,169 +258,124 @@ echo            This folder is your own git checkout - left untouched.
 echo            Bring it up to date yourself with:  git pull
 goto launch
 
-rem ---- transport 1: git, in this window ---------------------------------
-rem This used to run in a helper batch whose exit code was read back through a
-rem file. When that file could not be written, a fetch that had already
-rem succeeded was reported as a failure and the folder was made to download the
-rem whole archive. Git prints its own progress here, so nothing has to be
-rem counted, polled or handed back.
+rem ---- transport 1: git ----------------------------------------------------
+rem Only main's commit and its file list are fetched, a few hundred KB. The art
+rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
-rem a log left by an earlier run must never be read as this run's answer
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo            Reading main's file list - about 300 KB, not the art.
-rem The blob filter asks for the commit and the folder tree only, so this costs a
-rem fraction of a megabyte instead of the whole 190 MB of art. The few files that
-rem turn out to differ are fetched one at a time further down, and nothing else is
-rem ever asked for. Without it git downloads the entire art tree right here, on
-rem every launch, which is what made this step behave like a 190 MB download even
-rem when the folder was already current.
-git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
+echo         reading main's file list (about 300 KB)
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags origin main >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
-set "HAVE="
-if exist "%CACHE%\applied.txt" set /p HAVE=<"%CACHE%\applied.txt"
-if not defined GITQUIET call :gitchoose "%NEWSHORT%" "%HAVE%"
-if not defined GITQUIET if errorlevel 1 goto quit
+echo         main @ %NEWSHORT%
 call :gamelock
-rem No "read-tree" here any more. It reset the index the comparison needs:
-rem with the index emptied, git has no size or timestamp to trust and re-reads
-rem every file - the 190 MB - on every launch. The comparison below now runs
-rem against the index this launcher wrote when it last updated the folder, and
-rem leaves that index in place afterwards, so an unchanged folder costs a stat
-rem per file and a launch that has nothing to do finishes in a second.
-echo            Checking which files in this folder differ.
-echo            Comparing the game folders already on disk with main - this
-echo            reads the art here, it does not download anything.
-call :compare
+git -c core.quotepath=false ls-tree -r FETCH_HEAD -- data chars stages font external sound >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 goto gitfail
+call :plan
+rem a comparison that could not run must never pass as "already current"
+if errorlevel 1 goto gitfail
+if not exist "%CACHE%\changed.txt" goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
-if "%NCH%"=="0" echo            Already current - nothing to download.
-if "%NCH%"=="0" goto gitdel
-echo            %NCH% file(s) differ - fetching them.
+if "%NCH%"=="0" goto gitnone
+echo   [ 2/3 ]  Updating %NCH% file(s)
 set /a NDONE=0
+set /a BCOUNT=0
+set /a BSTEP=NCH/10
+if %BSTEP% LSS 1 set "BSTEP=1"
+set "BATCH="
 set "WRITEFAIL="
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
+call :gitflush
 if defined WRITEFAIL goto gitfail
-echo            %NDONE% file(s) written.
-rem skip over the :gitone subroutine below, which is only ever entered by call
-goto gitdel
-
-:compare
-rem This step used to be one silent "git diff": it re-read every file in the six
-rem game folders - about 190 MB of art - hashed it, and printed nothing until it
-rem finished, so the window sat on one line for minutes and read as hung. The
-rem comparison is what an exact answer costs, but the wait is no longer hidden:
-rem the number of files main holds is printed before it starts, the work runs in
-rem a helper of its own, and this window keeps saying how long it has been going.
-rem The first run has no index yet and must read every file; later runs only
-rem re-read what changed, which is why a routine update is quick.
-rem
-rem The helper reports through ok/bad marker files rather than an exit code, and
-rem the files hold "x" rather than a number: cmd parses "echo 0>file" as a
-rem redirect of handle 0, so that file would read "ECHO is on." and every run
-rem would then look like a failed comparison that never happened.
-set "CMPRUN=%CACHE%\compare.bat"
-set "CMPOK=%CACHE%\compare.ok"
-set "CMPBAD=%CACHE%\compare.bad"
-set "OUT=%CACHE%\changed.txt"
-if exist "%CMPOK%" del /q "%CMPOK%" >nul 2>&1
-if exist "%CMPBAD%" del /q "%CMPBAD%" >nul 2>&1
-if exist "%OUT%" del /q "%OUT%" >nul 2>&1
-set "CNT=0"
-if defined FIND for /f %%n in ('git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound 2^>nul ^| "%FIND%" /c /v ""') do set "CNT=%%n"
-if not "%CNT%"=="0" echo            main holds %CNT% file(s) in those six folders.
->"%CMPRUN%" echo @echo off
->>"%CMPRUN%" echo cd /d "%~dp0."
->>"%CMPRUN%" echo git -c core.quotepath=false -c core.preloadIndex=true diff-index --name-only FETCH_HEAD -- data chars stages font external sound ^>"%OUT%" 2^>^>"%CACHE%\git.log"
->>"%CMPRUN%" echo if errorlevel 1 (echo x^>"%CMPBAD%") else (echo x^>"%CMPOK%")
-if not exist "%CMPRUN%" exit /b 1
-start "" /b cmd /c ""%CMPRUN%""
-set /a CMPT=0
-:compare_wait
-call :sleep 1
-set /a CMPT+=1
-if exist "%CMPOK%" goto compare_end
-if exist "%CMPBAD%" goto compare_failed
-if %CMPT%==4 echo            ... still comparing
-if %CMPT%==15 echo            ... still comparing (%CMPT%s) - a first run reads every file
-if %CMPT%==30 echo            ... still comparing (%CMPT%s) - a scanner or a slow disk adds to this
-if %CMPT%==60 echo            ... still comparing (60s) - still reading, not stuck
-if %CMPT% GEQ 120 goto compare_slow
-goto compare_wait
-:compare_slow
-set /a CMPQ=CMPT %% 30
-if %CMPQ%==0 echo            ... still comparing (%CMPT%s)
-if %CMPT% GEQ 900 goto compare_timeout
-goto compare_wait
-:compare_timeout
-echo.
-echo            The comparison has not finished after 15 minutes, so this run
-echo            stops instead of sitting on that line. Close the game and any
-echo            scanner or backup tool reading this folder, then run it again.
-echo.
-pause
-exit /b 1
-:compare_failed
-echo            Could not compare this folder with main.
-if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 6" 2>nul
-exit /b 1
-:compare_end
-if %CMPT% GEQ 3 echo            Compared in %CMPT%s.
+call :bar %NDONE% %NCH%
+goto gitdrop_list
+:gitnone
+echo         already current - nothing to download
+goto gitdrop_list
+:plan
+rem A file is fetched only when main's hash for it differs from the hash this
+rem launcher recorded when it last wrote the folder. Nothing on disk is read,
+rem so an unchanged folder is two small lists compared as text - a second or
+rem two, where the old build re-hashed 190 MB of art on every launch.
+if not defined POWERSHELL goto plan_first
+if not exist "%CACHE%\manifest.txt" goto plan_first
+call :plan_ps
+if errorlevel 1 goto plan_first
 exit /b 0
-
-:gitone
-rem %1 = one path. Each file is asked for on its own, so git downloads exactly
-rem the files that differ - a one-file fix costs one file. Checking the six
-rem folders out wholesale instead fetches every blob in them, the whole 190 MB,
-rem because a partial clone holds the folder tree and no file contents at all
-rem until a particular file is asked for. The name is printed as it is written,
-rem so this list is the progress this step has to show.
-set /a NDONE+=1
-echo              %NDONE%/%NCH%  %~1
-git -c core.longpaths=true checkout FETCH_HEAD -- "%~1" >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 set "WRITEFAIL=1"
+:plan_first
+rem Nothing recorded yet - the first run on this folder. Prime git's index in
+rem ONE pass: that hashes the files already here instead of downloading them,
+rem and then git can say exactly which of them differ from main.
+git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\paths.txt" 2>>"%CACHE%\git.log"
+if errorlevel 1 exit /b 1
+git update-index --add --replace --stdin <"%CACHE%\paths.txt" >>"%CACHE%\git.log" 2>&1
+git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
+if errorlevel 1 exit /b 1
+echo.>"%CACHE%\dropped.txt"
 exit /b 0
-
-:gitdel
-rem Files main dropped would otherwise sit here for ever. Only paths this
-rem launcher installed are deleted - the list in applied.files - so a
-rem character the player added themselves is never touched.
-git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\applied.new" 2>>"%CACHE%\git.log"
-if errorlevel 1 goto gitref
-if not exist "%CACHE%\applied.files" goto gitref
-"%FINDSTR%" /v /x /l /g:"%CACHE%\applied.new" "%CACHE%\applied.files" >"%CACHE%\dropped.txt" 2>nul
-if not exist "%CACHE%\dropped.txt" goto gitref
-for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
-
-:gitref
-if exist "%CACHE%\applied.new" move /Y "%CACHE%\applied.new" "%CACHE%\applied.files" >nul 2>&1
-git update-ref refs/heads/main FETCH_HEAD >>"%CACHE%\git.log" 2>&1
-git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
-rem Park main's files in the index as they now are. That is what makes the next
-rem launch cheap: git answers "unchanged" from a size and a timestamp instead of
-rem reading the file, and a file whose content really differs still shows up,
-rem because the hash recorded here is the one on disk, not main's.
-rem
-rem The list comes from main's tree, NOT from "git add -A": a character or stage
-rem the player dropped in these folders would otherwise be indexed too, the next
-rem comparison would call it a difference, and checking out a path main has
-rem never heard of fails - which used to fall through to the 190 MB archive.
-git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound | git update-index --add --replace --stdin >>"%CACHE%\git.log" 2>&1
-set "WHICH=git"
-rem an older version of this launcher kept a second copy of the whole art
-rem here; the folder itself is the working tree now, so it is dead weight
-if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
-goto copied
-
-:gitchoose
-rem %1 = main's short commit, %2 = the one recorded for this folder
-call :sayupdate "%~1" "%~2"
-call :choose
+:plan_ps
+set "PLANPS=%CACHE%\plan.ps1"
+>  "%PLANPS%" echo param([string]$Tree, [string]$Old, [string]$Changed, [string]$Dropped)
+>> "%PLANPS%" echo $ErrorActionPreference = 'Stop'
+>> "%PLANPS%" echo $old = @{}
+>> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Old)) { $i = $l.IndexOf([char]9); if ($i -gt 0) { $old[$l.Substring($i + 1)] = $l.Substring(0, $i) } }
+>> "%PLANPS%" echo $new = @{}
+>> "%PLANPS%" echo $chg = New-Object System.Collections.ArrayList
+>> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $meta = $l.Substring(0, $i).Split(' '); $sha = $meta[$meta.Length - 1]; $p = $l.Substring($i + 1); $new[$p] = $sha; if ($old.ContainsKey($p) -and $old[$p] -eq $sha) { continue }; [void]$chg.Add($p) }
+>> "%PLANPS%" echo $drop = New-Object System.Collections.ArrayList
+>> "%PLANPS%" echo foreach ($p in $old.Keys) { if (-not $new.ContainsKey($p)) { [void]$drop.Add($p) } }
+>> "%PLANPS%" echo Set-Content -LiteralPath $Changed -Value @($chg) -Encoding ASCII
+>> "%PLANPS%" echo Set-Content -LiteralPath $Dropped -Value @($drop) -Encoding ASCII
+>> "%PLANPS%" echo Write-Host ('         ' + $chg.Count + ' to write, ' + $drop.Count + ' to remove')
+if not exist "%PLANPS%" exit /b 1
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PLANPS%" -Tree "%CACHE%\tree.txt" -Old "%CACHE%\manifest.txt" -Changed "%CACHE%\changed.txt" -Dropped "%CACHE%\dropped.txt"
 if errorlevel 1 exit /b 1
 exit /b 0
+:gitone
+rem %1 = one path. Paths are collected into one checkout of a dozen files: one
+rem git process per file is what made a first run crawl.
+set /a NDONE+=1
+set "BATCH=%BATCH% "%~1""
+set /a BCOUNT+=1
+if %BCOUNT% GEQ 12 call :gitflush
+set /a BMOD=NDONE %% BSTEP
+if %BMOD%==0 echo         %NDONE%/%NCH%
+exit /b 0
+:gitflush
+if not defined BATCH exit /b 0
+git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 set "WRITEFAIL=1"
+set "BATCH="
+set /a BCOUNT=0
+exit /b 0
+:bar
+rem %1 = written, %2 = total. One bar, drawn when the writing finishes.
+set "CHARS=####################"
+set /a BFILL=%~1*20/%~2
+if %BFILL% GTR 20 set /a BFILL=20
+call set "BFILLED=%%CHARS:~0,%BFILL%%%"
+set /a BGAP=20-BFILL
+call set "BEMPTY=%%CHARS:~0,%BGAP%%%"
+echo         [%BFILLED%%BEMPTY%] %~1/%~2
+exit /b 0
+:gitdrop_list
+rem Paths main no longer has, and which this launcher wrote, are removed. Only
+rem the six game folders are ever touched - see :gitdrop.
+if not exist "%CACHE%\dropped.txt" goto gitref
+for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
+:gitref
+rem Record what this folder now holds: main's file list with the hash of each.
+rem The next launch compares against it as text, so it never re-reads the art.
+if exist "%CACHE%\tree.txt" move /Y "%CACHE%\tree.txt" "%CACHE%\manifest.txt" >nul 2>&1
+if defined NEWSHORT >"%CACHE%\applied.txt" echo %NEWSHORT%
+git update-ref refs/heads/main FETCH_HEAD >>"%CACHE%\git.log" 2>&1
+git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
+set "WHICH=git"
+if exist "%CACHE%\repo" rd /s /q "%CACHE%\repo" >nul 2>&1
+goto copied
 
 :gitwhy
 rem Reads the log git just wrote and decides whether the failure was a file
@@ -596,24 +551,15 @@ call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
 echo   Version: main @ %APPLIED%
-call :sayupdate "%RSHA7%" "%APPLIED%"
-call :choose
-if errorlevel 1 goto quit
 goto launch
 
 :probe_offer
-call :sayupdate "%RSHA7%" "%APPLIED%"
-call :choose
-if errorlevel 1 goto quit
 goto download
 
 :probe_first
 rem nothing recorded for this folder yet, so there is no build to compare with
 set "APPLIED="
 call :atoms
-call :sayupdate "%RSHA7%" ""
-call :choose
-if errorlevel 1 goto quit
 goto download
 
 :probe_api
@@ -664,7 +610,7 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   [ 2/4 ]  Downloading the game archive (about 190 MB)
+echo   [ 2/3 ]  Downloading the game archive (about 190 MB)
 if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
 if not defined GITOK echo            Git is not installed here, so this is the only way in.
 echo.
@@ -730,7 +676,7 @@ call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
-echo   [ 3/4 ]  Copying the game files over this folder
+echo   [ 2/3 ]  Copying the game files over this folder
 echo            Every file that really differs is named as it is written.
 echo.
 call :ziptree
@@ -785,7 +731,7 @@ if not defined VER echo   Version: zip build
 echo.
 
 :launch
-echo   [ 4/4 ]  Starting the game
+echo   [ 3/3 ]  Starting the game
 echo.
 rem Start the game in a console of its own, minimised, with its output thrown
 rem away. The engine attaches to whichever console launched it, so a child of
@@ -1109,57 +1055,4 @@ if not exist "%SYS%\reg.exe" exit /b 0
 "%SYS%\reg.exe" query "HKCU\Console" /v VirtualTerminalLevel 2>nul | "%FINDSTR%" /c:"0x1" >nul
 if errorlevel 1 exit /b 0
 set "VT=1"
-exit /b 0
-
-:sayupdate
-rem %1 = main's short commit (may be empty when the check could not ask),
-rem %2 = the commit this folder last applied (may be empty). Says plainly
-rem whether there is anything to fetch, so Enter/Escape is an informed choice.
-echo   ==============================================================
-echo.
-if "%~2"=="" goto sayupdate_first
-if "%~1"=="" goto sayupdate_unknown
-if "%~1"=="%~2" goto sayupdate_same
-echo   Update available: main @ %~1
-echo   This folder has:  %~2
-goto sayupdate_done
-:sayupdate_same
-echo   Up to date:       main @ %~1 is already in this folder.
-echo   Nothing to download.
-goto sayupdate_done
-:sayupdate_first
-if "%~1"=="" echo   Update available: could not read main's version.
-if not "%~1"=="" echo   Update available: main @ %~1
-echo   This folder has:  nothing recorded yet - the first update is the big one.
-goto sayupdate_done
-:sayupdate_unknown
-echo   Update available: main's version could not be read, so this run would
-echo                      fetch the whole archive (%APPLIED% is what is here).
-:sayupdate_done
-echo.
-exit /b 0
-
-:choose
-rem Enter continues, Escape leaves. choice.exe can only answer to letters, so
-rem the key is read through PowerShell, which can tell Enter and Escape apart.
-rem If PowerShell is missing, or cannot read this console, the letter prompt
-rem below still works and never runs past the question by itself.
-if defined ASKED exit /b 0
-set "ASKED=1"
-if not defined POWERSHELL goto choose_choice
-<nul set /p "=   Enter = continue    Esc = exit   "
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "try { while ($true) { $k = [Console]::ReadKey($true); if ($k.Key -eq 'Enter') { exit 0 } elseif ($k.Key -eq 'Escape') { exit 1 } } } catch { exit 2 }"
-echo.
-if errorlevel 2 goto choose_choice
-if errorlevel 1 exit /b 1
-exit /b 0
-:choose_choice
-rem No PowerShell, or it could not read the console: letters still work.
-if not exist "%SYS%\choice.exe" goto choose_pause
-"%SYS%\choice.exe" /c ce /n /m "   C = continue    E = exit   "
-echo.
-if errorlevel 2 exit /b 1
-exit /b 0
-:choose_pause
-pause
 exit /b 0
