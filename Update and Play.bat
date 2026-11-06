@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v48
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v49
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -62,7 +62,7 @@ if defined BS set "BSS=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%"
 if defined BS set "BSX=%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%"
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v48
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v49
 echo   ==============================================================
 
 set "EXE="
@@ -427,7 +427,9 @@ set "GUNSHOWN=1"
 exit /b 0
 
 :bar
-rem %1 = done, %2 = total. One line under the pistol, rewritten where it
+rem %1 = done, %2 = total. One line under the pistol: the round is the
+rem progress, so the bar reads as a bullet leaving the muzzle - spent tracers
+rem behind it, dots still to go, and the last cell is the round at the end.
 rem stands. The line is a fixed 54 characters, so a shorter reading can
 rem never leave the tail of a longer one behind: 80 backspaces always put
 rem the cursor at the start of the line. Tracers are ">", which an echo
@@ -440,16 +442,20 @@ set /a BPCT=%~1*100/%~2
 set /a BFILL=%~1*24/%~2
 if %BFILL% GTR 24 set /a BFILL=24
 if %BFILL% LSS 0 set "BFILL=0"
-set "SHOT=>>>>>>>>>>>>>>>>>>>>>>>>"
+set "SPENT========================="
 set "REST=........................"
-call set "BFILLED=%%SHOT:~0,%BFILL%%%"
+set /a BHEAD=BFILL-1
+set "BTRAIL="
+if %BHEAD% GTR 0 call set "BTRAIL=%%SPENT:~0,%BHEAD%%%"
+set "BROUND=>"
+if %BFILL%==0 set "BROUND="
 set /a BGAP=24-BFILL
 call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set "PC3=   %BPCT%"
 call set "PC3=%%PC3:~-3%%"
 set "N5=     %~1"
 call set "N5=%%N5:~-5%%"
-set "BARLINE=  %BARWHAT% %N5% files  %BFILLED%%BEMPTY%  %PC3%%"
+set "BARLINE=  %BARWHAT% %N5% files  %BTRAIL%%BROUND%%BEMPTY%  %PC3%%"
 set "BARSAFE=%BARLINE:>=^>%"
 if not defined BS goto bar_lines
 <nul set /p "=%BSX%%BARLINE%"
@@ -686,7 +692,7 @@ echo git window or backup tool here, then run this launcher again.
 echo An antivirus can hold a file for a few seconds after it is
 echo written, so a second run often just works.
 echo.
-pause
+call :close_soon 20
 exit 1
 
 :gitfail_final
@@ -1025,7 +1031,7 @@ echo and the run log:        %LOG%
 echo.
 echo If a game window is behind this one, close this window and play.
 echo.
-pause
+call :close_soon 20
 exit 1
 :skipver2
 goto skipver
@@ -1112,7 +1118,7 @@ echo The game did not stay open. Start it by hand to see the engine's
 echo message, and check docs/INSTALL.md - the renderer setting is the
 echo usual reason, and deleting save\config.ini resets it.
 echo.
-pause
+call :close_soon 20
 exit 1
 
 :folder_denied
@@ -1128,14 +1134,14 @@ goto launch
 :folder_denied_noexe
 echo There is no %EXE% here either, so there is nothing to start.
 echo.
-pause
+call :close_soon 20
 exit 1
 
 :wrongfolder
 echo This file belongs in your game folder - the one that has
 echo BigTroubleInLittleChinaTheGame.exe in it.
 echo.
-pause
+call :close_soon 20
 exit 1
 
 :downloadfailed
@@ -1148,7 +1154,7 @@ echo        %ZIPURL%
 echo     2. Save the zip in this folder.
 echo     3. Run "Apply main.zip.bat".
 echo.
-pause
+call :close_soon 20
 exit 1
 
 rem ===========================================================================
@@ -1306,6 +1312,13 @@ exit /b 0
 rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
 >>"%LOG%" echo [%TIME%] %* 2>nul
+exit /b 0
+
+:close_soon
+rem Nothing here waits for a key. A window that has said its piece counts
+rem down and closes, and everything it printed is also in the log on disk.
+echo This window closes by itself in %~1 seconds.
+call :sleep %~1
 exit /b 0
 
 :sleep
