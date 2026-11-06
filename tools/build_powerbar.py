@@ -371,17 +371,17 @@ def _patch_section(text, name, fn):
 
 def _patch_powerbar(body):
     # the meter is W wide, anchored on its right edge
-    body = re.sub(r"(?m)^(\s*p1\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
+    body = re.sub(r"(?m)^([ \t]*p1\.range\.x[ \t]*=[ \t]*)-?\d+[ \t]*,[ \t]*-?\d+[ \t]*$",
                   r"\g<1>-4, -%d" % (W - 4), body)
-    body = re.sub(r"(?m)^(\s*p2\.range\.x\s*=\s*)-?\d+\s*,\s*-?\d+\s*$",
+    body = re.sub(r"(?m)^([ \t]*p2\.range\.x[ \t]*=[ \t]*)-?\d+[ \t]*,[ \t]*-?\d+[ \t]*$",
                   r"\g<1>4, %d" % (W - 4), body)
     # AUDACITY is painted into the full-power sprite itself (see the meter
     # art above), so the counterMax WORD was the same caption twice - the small
     # one printed under the meter beside the big painted one. The text is
     # emptied and the tint left in place, so nothing is drawn there.
-    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.text\s*=\s*).*$",
+    body = re.sub(r"(?m)^([ \t]*p[12]\.counterMax\.text[ \t]*=[ \t]*).*$",
                   r"\g<1>", body)
-    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.palfx\.mul\s*=\s*).*$",
+    body = re.sub(r"(?m)^([ \t]*p[12]\.counterMax\.palfx\.mul[ \t]*=[ \t]*).*$",
                   r"\g<1>255, 214, 120", body)
     # the bar is H tall, so the counters sit below it, not buried in the art
     body = re.sub(
