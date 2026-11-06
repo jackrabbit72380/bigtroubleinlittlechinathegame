@@ -19,10 +19,17 @@ from the files actually present:
 
 Stems are matched case-insensitively. Only extensions the engine can decode are
 eligible (it picks its decoder from the extension), and when several encodings of
-one track exist the first of EXTS wins. A slot with a matching file points at it;
-a slot without one still names the conventional path (sound/Title.ogg and so on),
-so a player who drops their own track into sound/ gets music without editing
-anything. Volume, loop and loop-point lines are never touched.
+one track exist the first of EXTS wins. A slot with a matching file points at it.
+
+A slot without one borrows the nearest track that does exist (FALLBACK below), and
+only falls back to naming the conventional path when even that is missing, because
+a named file that is not on disk only ever produced a console warning on the way
+into that screen:
+
+    Failed to open BGM: open sound/Options.ogg: The system cannot find the file
+
+Dropping the real track in (sound/Winner.ogg and so on) takes the slot back without
+editing anything. Volume, loop and loop-point lines are never touched.
 
 Music select albums
 -------------------
@@ -96,11 +103,16 @@ SLOTS = (
     ("Hiscore", "hiscore.bgm"),
 )
 
-MUSIC_BGDEF = """[MusicBGdef]
-; Background for the music select browser (external/mods/musicselect.lua). It
-; draws its own covers and text, so the block only has to clear the screen.
-bgclearcolor = 0, 0, 0
-"""
+# Slots whose own track is not in sound/ borrow one instead of naming a file that
+# is not there. These are the six that ship without a track of their own.
+FALLBACK = {
+    "Winner": "Versus",     # victory: the versus theme
+    "Continue": "Select",   # and the calm menu theme for the rest
+    "Options": "Select",
+    "Replay": "Select",
+    "Results": "Select",
+    "Hiscore": "Title",
+}
 
 
 def sound_files():
@@ -411,28 +423,6 @@ def write_albums_sff(albums):
     print(f"  data/albums.sff: {len(sprites)} cover(s)")
 
 
-def ensure_music_bgdef():
-    """The browser's background block has to exist in the motif it loads.
-
-    Both copies are checked: the base def so a rebuilt motif inherits it, and the
-    staged motif because build_fonts rewrites that file in place rather than
-    regenerating it from the base, so anything appended to one does not reach the
-    other on its own."""
-    for path in (BASE_DEF, MOTIF):
-        if not os.path.isfile(path):
-            print(f"  warning: {os.path.relpath(path, ROOT)} missing", file=sys.stderr)
-            continue
-        with open(path, "r", encoding="utf-8", errors="surrogateescape") as fh:
-            text = fh.read()
-        if re.search(r"(?mi)^\[MusicBGdef\]", text):
-            continue
-        if not text.endswith("\n"):
-            text += "\n"
-        with open(path, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
-            fh.write(text + "\n" + MUSIC_BGDEF)
-        print(f"  [MusicBGdef] added to {os.path.relpath(path, ROOT)}")
-
-
 def main():
     files = sound_files()
 
@@ -454,12 +444,20 @@ def main():
     text = original
     for stem, key in SLOTS:
         found = find_track(stem, files)
+        borrowed = None
+        if found is None:
+            donor = FALLBACK.get(stem)
+            borrowed = find_track(donor, files) if donor else None
+            found = borrowed
         path = found or f"sound/{stem}.ogg"
         text, count = set_key(text, key, path)
         if count == 0:
             print(f"  warning: {key} not found in {os.path.basename(MOTIF)}")
             continue
-        print(f"  {key} = {path}" + ("" if found else " (track not present yet)"))
+        note = " (track not present yet)" if found is None else ""
+        if borrowed:
+            note = f" (no sound/{stem} yet, using {borrowed})"
+        print(f"  {key} = {path}{note}")
 
     if text != original:
         with open(MOTIF, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
@@ -472,7 +470,6 @@ def main():
         print("note: no menu tracks in sound/ yet; every slot still names its conventional\n"
               "      filename, so dropping sound/Title.ogg in is enough to start the music")
 
-    ensure_music_bgdef()
 
     albums = []
     for name in album_dirs():

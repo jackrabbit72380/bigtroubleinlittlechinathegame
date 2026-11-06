@@ -594,7 +594,11 @@ for i, (active, done) in enumerate(zip(CURSOR_WHITE, CURSOR), start=1):
              (f"p{i}.cursor.done.offset", "0,0"))
 
 # Keys that belong to the wall-of-cells layout and would fight the grid.
-DROP = re.compile(r"^\s*cell\.\*-\d+\.", re.IGNORECASE)
+# cell.*-N. keys belong to the old per-slot layout, and cell.random.active.* keys
+# were never readable at all (the engine's cell struct has no "active" field), so
+# both are removed rather than left in the block for the engine to reject.
+DROP = re.compile(r"^\s*(cell\.\*-\d+\.|cell\.random\.active\.)",
+                  re.IGNORECASE)
 # Anim-based overrides that would draw the old cursor or the perspective face2
 # art on top of the new layout. stage.portrait.spr is deliberately NOT here:
 # it is the arena thumbnail, and disabling it left the preview box empty.
