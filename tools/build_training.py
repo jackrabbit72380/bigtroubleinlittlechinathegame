@@ -8,7 +8,8 @@ scaling, because the source art is 50 pixels wide.
 
 This paints the room at the size the rest of the game is drawn at and writes it
 out as stages/stage0.sff + stage0.def: localcoord 1920x1080, a 2440-wide
-backdrop (one screen plus the camera's travel each way), floor at row 900, and
+backdrop (one screen plus the camera's travel each way and a little slack),
+floor at row 900, and
 the select screen's 1215x398 preview as 9000,1 like every other stage.
 
 Run:  python3 tools/build_training.py
@@ -30,9 +31,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STAGE = os.path.join(ROOT, "stages", "stage0")
 
 SCREEN = (1920, 1080)
-TRAVEL = 260                       # camera travel each way
-W = SCREEN[0] + 2 * TRAVEL         # 2440: the painted backdrop
-START_X = -TRAVEL
+TRAVEL = 260                       # camera travel each way ([Camera] bound)
+# A BG element's start x is measured from the CENTRE of the screen, not from its
+# left edge - tools/stages_hd.py relies on that when it parks its back wall at
+# 960 - 2057 + 0.35 * 3136 = 0. This plate was 1920 + 2*260 wide and started at
+# -260, so it was drawn from x = 960 - 260 = 700: the left third of the screen
+# was black, and panning left turned the whole view black. It is now a screen
+# wide, plus the camera's travel each side, plus the same overscan the HD stages
+# carry, and centred, so the room fills the frame at every camera position.
+OVERSCAN = 96
+W = SCREEN[0] + 2 * (TRAVEL + OVERSCAN)   # 2632: the painted backdrop
+START_X = -(W // 2)                       # -1316: centred on screen x = 960
 FLOOR_Y = 900                      # zoffset
 PREVIEW = (1215, 398)              # the card art every stage bakes
 
@@ -75,31 +84,27 @@ def backdrop():
         y += step
         step *= 1.28
 
-    # --- banner across the back wall --------------------------------------
-    # Hung clear of the top of the screen: the life bars, portraits and player
-    # names occupy roughly the first 180px of a 1080p frame, so a sign at y=120
-    # read as lettering smeared behind P2's name. The round and FIGHT callouts
-    # sit around y=600, and the floor starts at 900, so the wall's clear band is
-    # between those and the sign goes in the middle of it.
-    banner_y = 300
-    f = art.font(96)
-    text = "TRAINING ROOM"
-    tw = d.textlength(text, font=f)
-    d.text(((W - tw) / 2.0, banner_y), text, font=f, fill=GOLD + (255,),
-           stroke_width=6, stroke_fill=INK + (255,))
-    d.line([(W // 2 - 420, banner_y + 130), (W // 2 + 420, banner_y + 130)],
-           fill=GOLD_DIM + (255,), width=4)
+    # --- nothing lettered on the wall -------------------------------------
+    # There used to be a painted "TRAINING ROOM" sign here. A stage is scenery:
+    # the mode, the stage name and the rest of the status are the engine's to
+    # draw, in the fighter HUD and the motif, and baking a caption into the art
+    # duplicates them and dates the room. The wall is left as panelled concrete.
 
     # --- two work lights on the wall --------------------------------------
     # Below the HUD too, so they light the wall instead of the health bars.
     light_y = 230
     for x in (W // 2 - 470, W // 2 + 470):
+        img = Image.alpha_composite(img, art.radial_light(
+            (W, SCREEN[1]), (x, light_y + 60), 330, (255, 210, 130), peak=64))
+    # alpha_composite returns a new image, so the draw handle above is stale
+    # from here on: the fixtures and the centre line have to go on the new one
+    # or they are painted into a picture nothing reads
+    d = ImageDraw.Draw(img)
+    for x in (W // 2 - 470, W // 2 + 470):
         d.rectangle([x - 46, light_y, x + 46, light_y + 48], fill=(22, 24, 24),
                     outline=(58, 54, 44), width=3)
         d.ellipse([x - 34, light_y + 22, x + 34, light_y + 78],
                   fill=(255, 226, 158, 210))
-        img = Image.alpha_composite(img, art.radial_light(
-            (W, SCREEN[1]), (x, light_y + 60), 330, (255, 210, 130), peak=64))
 
     # chalk centre line the fighters square up on
     cx = W // 2
@@ -113,7 +118,8 @@ def backdrop():
 
 def preview(img):
     """The card art: the on-screen window, cropped to the card's 3:1 strip."""
-    view = img.crop((TRAVEL, 0, TRAVEL + SCREEN[0], SCREEN[1]))
+    x0 = (W - SCREEN[0]) // 2
+    view = img.crop((x0, 0, x0 + SCREEN[0], SCREEN[1]))
     top = FLOOR_Y - 500
     band = view.crop((0, top, SCREEN[0], top + int(SCREEN[0] * PREVIEW[1] / PREVIEW[0])))
     return band.resize(PREVIEW, Image.LANCZOS)
@@ -217,8 +223,9 @@ def main():
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     img.save(os.path.join(ROOT, "artifacts", "training_room.png"))
-    print("  training room: %dx%d backdrop, preview %dx%d, localcoord 1920x1080"
-          % (img.width, img.height, PREVIEW[0], PREVIEW[1]))
+    print("  training room: %dx%d backdrop, start %d, preview %dx%d, "
+          "localcoord 1920x1080" % (img.width, img.height, START_X,
+                                    PREVIEW[0], PREVIEW[1]))
 
 
 if __name__ == "__main__":
