@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v50
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v51
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -51,18 +51,9 @@ set "GIT_CONFIG_NOSYSTEM=1"
 set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
-rem The gauge is rewritten where it stands without needing ANSI: every
-rem console understands a backspace, so the cursor walks back over the old
-rem line and the new one lands on top of it. prompt $H writes exactly that
-rem character. copy /Z was used before - on this machine it prints
-rem "1 file(s) copied" instead of a carriage return, which is why the bars
-rem ran together on one line.
-for /f "delims=" %%b in ('"prompt $H&for %%c in (1) do rem"') do set "BS=%%b"
-if defined BS set "BSS=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%"
-if defined BS set "BSX=%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%"
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v50
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v51
 echo   ==============================================================
 
 set "EXE="
@@ -446,71 +437,50 @@ echo    .//___//
 set "GUNSHOWN=1"
 exit /b 0
 
+rem Progress is one plain line per milestone. It never moves the cursor: the
+rem first version redrew a single line by walking backwards with the backspace
+rem `prompt $H` produces, and where a backspace does not erase - Windows Terminal,
+rem conhost with VT off, any log redirect - the longer previous line stayed on
+rem screen and the update became a wall of overlapping text with the bar broken
+rem across itself.
 :gauge
-rem %1 = percent of the whole job, %2 = what it is doing. ONE line for the
-rem entire run: label, the round, the spent tracers and the percentage. It is
-rem a fixed 52 characters wide, so a shorter reading can never leave the tail
-rem of a longer one behind, and 80 backspaces always put the cursor at its start.
 if "%~1"=="" exit /b 0
-if not defined GUNSHOWN call :gun
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
 if %GPCT% GTR 100 set "GPCT=100"
-set /a BFILL=GPCT*24/100
-if %BFILL% GTR 24 set /a BFILL=24
-if %BFILL% LSS 0 set "BFILL=0"
-set "SPENT========================="
-set "REST=........................"
-set /a BHEAD=BFILL-1
-set "BTRAIL="
-if %BHEAD% GTR 0 call set "BTRAIL=%%SPENT:~0,%BHEAD%%%"
-set "BROUND=>"
-if %BFILL%==0 set "BROUND="
-set /a BGAP=24-BFILL
-call set "BEMPTY=%%REST:~0,%BGAP%%%"
-set "PC3=   %GPCT%"
-call set "PC3=%%PC3:~-3%%"
-set "L20=%~2                    "
-call set "L20=%%L20:~0,20%%"
-set "BARLINE=  %L20% %BTRAIL%%BROUND%%BEMPTY% %PC3%%"
-set "BARSAFE=%BARLINE:>=^>%"
-if not defined BS goto bar_lines
-<nul set /p "=%BSX%%BARLINE%"
-set "BARDRAWN=1"
+set /a GBUCKET=GPCT/10
+set "GKEY=%GBUCKET%|%~2"
+if defined GLAST if "%GLAST%"=="%GKEY%" exit /b 0
+set "GLAST=%GKEY%"
+set "PCT3=  %GPCT%"
+call set "PCT3=%%PCT3:~-3%%"
+echo   %PCT3%%%  %~2
 exit /b 0
-:bar_lines
-rem No backspace on this console: the ends only, never a line per step.
-if not "%GPCT%"=="0" if not "%GPCT%"=="100" exit /b 0
-echo %BARSAFE%
-exit /b 0
+
 :bar
-rem %1 = files written, %2 = files to write. Writing is 25-80% of the job, so
-rem the same gauge carries it instead of starting a second bar.
+rem %1 = files written, %2 = files to write. Writing is 25-80% of the job.
 if "%~2"=="0" exit /b 0
 set /a GSTEP=%~1*55/%~2
 set /a GOPCT=25+GSTEP
-call :gauge %GOPCT% "Writing %~1 of %~2"
+call :gauge %GOPCT% "Writing files"
 exit /b 0
+
 :pct
-rem %1 = percent, %2 = the label for it. Every phase reports here.
+rem %1 = percent, %2 = the label for it.
 call :gauge %~1 "%~2"
 exit /b 0
 
 :barflush
-rem The redrawn gauge leaves the cursor on its line: end it before the next
-rem line of output, or that output would land on top of the gauge.
-if defined BARDRAWN echo.
-set "BARDRAWN="
+rem Every line ends itself now, so there is nothing to flush.
 exit /b 0
 
+rem %1 = seconds waited, %2 = what is being waited for. One plain line every
+rem five seconds: a spinner would have to redraw in place, which is the cursor
+rem movement that broke the old progress bar on this console.
 :spin
-rem %1 = seconds waited, %2 = what is being waited for: the same line as the
-rem rest of the run, with the spinner and the seconds in its label.
-set /a SMOD=%~1 %% 4
-set "SPIN=|/-\"
-call set "SCH=%%SPIN:~%SMOD%,1%%"
-if not defined BS goto spin_plain
-call :gauge %GPCT% "%~2 %~1s %SCH%"
+set /a SMOD=%~1 %% 5
+if %SMOD% NEQ 0 exit /b 0
+echo   %~2 (%~1s)
 exit /b 0
 :spin_plain
 set /a SDOT=%~1 %% 5
@@ -532,16 +502,10 @@ if exist "%~2" goto spinwait_bad
 if %SW% GEQ %~4 goto spinwait_late
 goto spinwait_loop
 :spinwait_ok
-if defined BARDRAWN echo.
-set "BARDRAWN="
 exit /b 0
 :spinwait_bad
-if defined BARDRAWN echo.
-set "BARDRAWN="
 exit /b 1
 :spinwait_late
-if defined BARDRAWN echo.
-set "BARDRAWN="
 exit /b 2
 :confirm
 call :pct 82 "Checking the writes"
