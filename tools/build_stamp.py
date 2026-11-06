@@ -35,6 +35,7 @@ FILES = (
     "external/script/start.lua",
     "external/script/options.lua",
     "external/mods/musicselect.lua",
+    "external/mods/devhelp.lua",
 )
 
 
