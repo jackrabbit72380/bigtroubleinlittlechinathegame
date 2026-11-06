@@ -249,9 +249,8 @@ local ok, err = pcall(function()
 	end
 
 	-- menu.f_run draws keyboard/gamepad/commandlist screens itself; this adds
-	-- ours to that list. Our own drawing never raises: if the two-column path
-	-- cannot work it uses the plain list, so this stays open instead of closing
-	-- the moment something in the engine disagrees with a call.
+	-- ours to that list. Every engine call inside the drawing is probed, so a
+	-- build that is missing one draws what it can instead of closing the screen.
 	local baseRun = menu.f_run
 	menu.f_run = function()
 		if menu.itemname == 'devkeys' then
