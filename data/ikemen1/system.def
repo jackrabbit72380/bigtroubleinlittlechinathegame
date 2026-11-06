@@ -439,7 +439,7 @@ portrait.scale = 0.5,0.5
 portrait.loading.spr = 1000,0
 portrait.loading.offset = 0, 0
 portrait.loading.scale = .25,.25
-title.offset = 960, 3
+title.offset = 960, 2
 title.font = 11, 0, 0, 255, 228, 140
 title.layerno = 2
 
