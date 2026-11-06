@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v49
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v50
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -62,7 +62,7 @@ if defined BS set "BSS=%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%%BS%"
 if defined BS set "BSX=%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%%BSS%"
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v49
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v50
 echo   ==============================================================
 
 set "EXE="
@@ -143,7 +143,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo Checking for updates
+call :pct 2 "Checking for updates"
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -157,6 +157,7 @@ set "GITOK=1"
 goto trygit
 
 :manualzip
+call :barflush
 echo Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0main.zip" "%ZIP%" >nul
@@ -166,6 +167,7 @@ echo That main.zip is incomplete - downloading instead.
 goto download
 
 :manualzip2
+call :barflush
 echo Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0bigtroubleinlittlechinathegame-main.zip" "%ZIP%" >nul
@@ -182,6 +184,7 @@ rem and they are fetched straight into place. No second copy of the art is
 rem kept, and the folders the game never uses - artifacts, art_src, tools -
 rem are outside the paths below and are left alone.
 :trygit
+call :pct 4 "Contacting GitHub"
 
 rem Git can be handed a certificate bundle path that only exists inside a Git
 rem Bash install - /usr/ssl/certs/ca-bundle.crt - and then every fetch dies with
@@ -206,6 +209,7 @@ if not defined GITBUNDLE goto gitca_done
 set "GIT_SSL_CAINFO=%GITBUNDLE%"
 set GITCA=-c http.sslCAInfo="%GITBUNDLE%"
 :gitca_done
+call :barflush
 rem A bundle git names but cannot read fails every fetch, and git can sit on
 rem the connection for a long time before it says so. That is knowable here: if
 rem git points at a file this machine does not have and no bundle was found
@@ -220,9 +224,9 @@ echo Using the verified download instead.
 goto probe
 :gitca_checked
 if exist ".git" goto githere
-echo First launch here: indexing this folder once. No files are downloaded.
 
 :gitinit
+call :pct 6 "Preparing the index"
 rem Also reached when the updater's own repository has to be rebuilt. It holds
 rem no player data - the game folder is the working tree - so throwing it away
 rem costs a re-read of the folders, never a download.
@@ -253,6 +257,7 @@ git config --local http.version HTTP/1.1 >>"%CACHE%\git.log" 2>&1
 goto gitfetch
 
 :gitmigrate
+call :pct 8 "Moving the index"
 rem An older launcher kept its repository in the game folder. That is the copy
 rem a scanner, a backup tool or the game itself holds open, and a file held
 rem open is what turned an update into "The process cannot access the file
@@ -260,11 +265,11 @@ rem because it is being used by another process" and then into the 190 MB
 rem archive. The repository lives outside the game folder now, so the one here
 rem is removed; nothing in it is player-visible, and if it cannot be removed it
 rem is simply ignored, because every git command below names the new one.
-echo Moving the updater's index out of the game folder.
 rd /s /q "%~dp0.git" >nul 2>&1
 goto gitinit
 
 :githere
+call :pct 10 "Reading the index"
 rem A folder somebody cloned themselves is their checkout: this launcher
 rem will not fetch into it, check anything out, or overwrite uncommitted
 rem work. It only says so and starts the game.
@@ -273,6 +278,7 @@ for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%
 if "%MINE%"=="1" goto gitmigrate
 git rev-parse --verify -q HEAD >nul 2>&1
 if errorlevel 1 goto gitfetch
+call :barflush
 echo This is your own git checkout - run: git pull
 goto launch
 
@@ -280,6 +286,7 @@ rem ---- transport 1: git ----------------------------------------------------
 rem Only main's commit and its file list are fetched, a few hundred KB. The art
 rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
+call :pct 12 "Fetching the list"
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
 rem The fetch runs in a helper so this window can show that it is waiting and
 rem for how long, instead of sitting on one line while the network answers.
@@ -317,7 +324,6 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-set "BARWHAT=Updating"
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -332,9 +338,12 @@ call :barflush
 call :confirm
 goto gitdrop_list
 :gitnone
+call :pct 100 "Already up to date"
+call :barflush
 echo Already up to date - nothing to download
 goto gitdrop_list
 :plan
+call :pct 16 "Comparing with main"
 rem A file is fetched only when main's hash for it differs from the hash this
 rem launcher recorded when it last wrote the folder. Nothing on disk is read,
 rem so an unchanged folder is two small lists compared as text - a second or
@@ -345,6 +354,7 @@ call :plan_ps
 if errorlevel 1 goto plan_first
 exit /b 0
 :plan_first
+call :pct 18 "Reading this folder"
 rem Nothing recorded yet - the first run on this folder. Prime git's index in
 rem ONE pass: that hashes the files already here instead of downloading them,
 rem and then git can say exactly which of them differ from main. It runs in a
@@ -377,6 +387,7 @@ if errorlevel 1 exit /b 1
 echo.>"%CACHE%\dropped.txt"
 exit /b 0
 :plan_ps
+call :pct 20 "Listing the files"
 set "PLANPS=%CACHE%\plan.ps1"
 >  "%PLANPS%" echo param([string]$Tree, [string]$Old, [string]$Changed, [string]$Dropped)
 >> "%PLANPS%" echo $ErrorActionPreference = 'Stop'
@@ -426,20 +437,17 @@ echo    .//___//
 set "GUNSHOWN=1"
 exit /b 0
 
-:bar
-rem %1 = done, %2 = total. One line under the pistol: the round is the
-rem progress, so the bar reads as a bullet leaving the muzzle - spent tracers
-rem behind it, dots still to go, and the last cell is the round at the end.
-rem stands. The line is a fixed 54 characters, so a shorter reading can
-rem never leave the tail of a longer one behind: 80 backspaces always put
-rem the cursor at the start of the line. Tracers are ">", which an echo
-rem reads as a redirection, so the fallback prints the escaped copy and
-rem only at the ends, never a line per file.
-if "%~2"=="0" exit /b 0
+:gauge
+rem %1 = percent of the whole job, %2 = what it is doing. ONE line for the
+rem entire run: label, the round, the spent tracers and the percentage. It is
+rem a fixed 52 characters wide, so a shorter reading can never leave the tail
+rem of a longer one behind, and 80 backspaces always put the cursor at its start.
+if "%~1"=="" exit /b 0
 if not defined GUNSHOWN call :gun
-if not defined BARWHAT set "BARWHAT=Updating"
-set /a BPCT=%~1*100/%~2
-set /a BFILL=%~1*24/%~2
+set "GPCT=%~1"
+if %GPCT% LSS 0 set "GPCT=0"
+if %GPCT% GTR 100 set "GPCT=100"
+set /a BFILL=GPCT*24/100
 if %BFILL% GTR 24 set /a BFILL=24
 if %BFILL% LSS 0 set "BFILL=0"
 set "SPENT========================="
@@ -451,21 +459,32 @@ set "BROUND=>"
 if %BFILL%==0 set "BROUND="
 set /a BGAP=24-BFILL
 call set "BEMPTY=%%REST:~0,%BGAP%%%"
-set "PC3=   %BPCT%"
+set "PC3=   %GPCT%"
 call set "PC3=%%PC3:~-3%%"
-set "N5=     %~1"
-call set "N5=%%N5:~-5%%"
-set "BARLINE=  %BARWHAT% %N5% files  %BTRAIL%%BROUND%%BEMPTY%  %PC3%%"
+set "L20=%~2                    "
+call set "L20=%%L20:~0,20%%"
+set "BARLINE=  %L20% %BTRAIL%%BROUND%%BEMPTY% %PC3%%"
 set "BARSAFE=%BARLINE:>=^>%"
 if not defined BS goto bar_lines
 <nul set /p "=%BSX%%BARLINE%"
 set "BARDRAWN=1"
 exit /b 0
 :bar_lines
-rem No backspace, or nothing done yet: the ends only, printed as ordinary
-rem lines. Two lines at worst, never one per file.
-if not "%BPCT%"=="0" if not "%BPCT%"=="100" exit /b 0
+rem No backspace on this console: the ends only, never a line per step.
+if not "%GPCT%"=="0" if not "%GPCT%"=="100" exit /b 0
 echo %BARSAFE%
+exit /b 0
+:bar
+rem %1 = files written, %2 = files to write. Writing is 25-80% of the job, so
+rem the same gauge carries it instead of starting a second bar.
+if "%~2"=="0" exit /b 0
+set /a GSTEP=%~1*55/%~2
+set /a GOPCT=25+GSTEP
+call :gauge %GOPCT% "Writing %~1 of %~2"
+exit /b 0
+:pct
+rem %1 = percent, %2 = the label for it. Every phase reports here.
+call :gauge %~1 "%~2"
 exit /b 0
 
 :barflush
@@ -473,21 +492,20 @@ rem The redrawn gauge leaves the cursor on its line: end it before the next
 rem line of output, or that output would land on top of the gauge.
 if defined BARDRAWN echo.
 set "BARDRAWN="
-set "BARWHAT="
 exit /b 0
 
 :spin
-rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
+rem %1 = seconds waited, %2 = what is being waited for: the same line as the
+rem rest of the run, with the spinner and the seconds in its label.
 set /a SMOD=%~1 %% 4
 set "SPIN=|/-\"
 call set "SCH=%%SPIN:~%SMOD%,1%%"
 if not defined BS goto spin_plain
-<nul set /p "=%BSX%      %SCH%   %~2   %~1s"
-set "BARDRAWN=1"
+call :gauge %GPCT% "%~2 %~1s %SCH%"
 exit /b 0
 :spin_plain
 set /a SDOT=%~1 %% 5
-if %SDOT%==0 echo       %SCH%   %~2   %~1s
+if %SDOT%==0 echo       %~2 %~1s
 exit /b 0
 
 :spinwait
@@ -517,6 +535,7 @@ if defined BARDRAWN echo.
 set "BARDRAWN="
 exit /b 2
 :confirm
+call :pct 82 "Checking the writes"
 rem A file that was just written is checked against main by CONTENT: it is
 rem hashed and compared with the hash main holds for that exact path. A name, a
 rem size or a timestamp that looks right is not evidence, and a write that
@@ -536,8 +555,7 @@ if not exist "%CACHE%\bad.txt" exit /b 0
 set /a NBAD=0
 for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
 if "%NBAD%"=="0" exit /b 0
-echo Retrying %NBAD% file(s) that did not write correctly.
-set "BARWHAT=Checking"
+call :pct 82 "Rechecking the writes"
 copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
 set "NCH=%NBAD%"
 set /a NDONE=0
@@ -572,6 +590,7 @@ if exist "%BADL%" del /q "%BADL%" >nul 2>&1
 exit /b 0
 
 :gitdrop_list
+call :pct 88 "Checking extra files"
 rem Paths main no longer has, and which this launcher wrote, are removed. Only
 rem the six game folders are ever touched - see :gitdrop.
 if not exist "%CACHE%\dropped.txt" goto gitref
@@ -581,6 +600,7 @@ if %NDR% GTR 200 goto gitdrop_many
 for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
 goto gitref
 :gitdrop_many
+call :barflush
 rem Two hundred files do not disappear from main in one update. A list this
 rem long means the comparison itself went wrong, and deleting on it would take
 rem the game apart - which is exactly how external\script\main.lua once went
@@ -626,6 +646,7 @@ del /q "%GITSTORE%\.git\refs\remotes\origin\main.lock" >nul 2>&1
 exit /b 0
 
 :gamelock
+call :barflush
 rem The engine keeps its data files open while it runs and Windows will not let
 rem git replace one. Updating under a running game fails with "being used by
 rem another process", so this waits for it to close rather than writing into a
@@ -665,6 +686,7 @@ if defined GITLOCKED goto gitlocked
 goto gitfail_final
 
 :gitfail_fix
+call :barflush
 set "GITFIXED=1"
 set "GITQUIET=1"
 echo.
@@ -674,6 +696,7 @@ call :sleep 3
 goto gitfetch
 
 :gitfail_rebuild
+call :barflush
 set "GITTRIED=1"
 set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
@@ -685,6 +708,7 @@ if exist "%GITSTORE%" rd /s /q "%GITSTORE%" >nul 2>&1
 goto gitinit
 
 :gitlocked
+call :barflush
 echo.
 echo A file in this folder is open in another program.
 echo Close the game, any other copy of this updater, and any editor,
@@ -696,6 +720,7 @@ call :close_soon 20
 exit 1
 
 :gitfail_final
+call :barflush
 echo.
 echo Git could not finish this update. Its reason is in the lines above.
 if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
@@ -707,6 +732,7 @@ echo Falling back to the archive download (about 190 MB).
 goto probe
 
 :gitfetch_retry
+call :barflush
 rem The fetch above runs with GIT_SSL_CAINFO pointing at a bundle this
 rem script went looking for on disk. When that bundle belongs to another
 rem git install - or to one that reads the Windows store instead - every
@@ -724,6 +750,7 @@ if not errorlevel 1 exit /b 0
 exit /b 1
 
 :verify
+call :pct 90 "Verifying every file"
 rem A file the engine needs that is missing here is silent until the game
 rem panics on it, so after updating the folder is checked against main's own
 rem list and anything absent is fetched by name before the game is started.
@@ -744,7 +771,7 @@ if not exist "%MISS%" exit /b 0
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 if "%NMISS%"=="0" exit /b 0
-if "%WHICH%"=="git" set "BARWHAT=Fetching"
+if "%WHICH%"=="git" call :pct 86 "Fetching missing files"
 if not "%WHICH%"=="git" echo Fetching %NMISS% file(s)
 set "NCH=%NMISS%"
 set /a NDONE=0
@@ -812,6 +839,8 @@ if not defined APPLIED goto probe_first
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
+call :pct 100 "Already up to date"
+call :barflush
 echo Already up to date - main @ %APPLIED%
 goto launch
 
@@ -830,6 +859,8 @@ rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto probe_offer
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
+call :pct 100 "Already up to date"
+call :barflush
 echo Already up to date - main @ %APPLIED%
 goto launch
 
@@ -870,8 +901,8 @@ if defined RSHA set "RSHA7=%RSHA:~0,7%"
 exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
+call :pct 50 "Downloading 190 MB"
 echo.
-echo Downloading the game files - about 190 MB. Leave this window open.
 echo.
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
@@ -896,7 +927,6 @@ echo Save it anywhere in Downloads - this window finishes the update
 echo and starts the game by itself once the file arrives.
 echo.
 start "" "%ZIPURL%"
-echo Waiting for the zip ...
 set /a WAIT=0
 set /a TICK=0
 :bwait
@@ -904,7 +934,7 @@ call :sleep 5
 set /a WAIT+=5
 set /a TICK+=1
 if %TICK% LSS 6 goto bwait_check
-echo still waiting ... %WAIT% seconds, watching Downloads
+call :pct 55 "Watching Downloads %WAIT%s"
 set /a TICK=0
 :bwait_check
 call :findzip
@@ -914,6 +944,7 @@ echo Nothing arrived after 20 minutes.
 goto downloadfailed
 
 :bapply
+call :barflush
 echo Got it: %FOUNDZIP%
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%FOUNDZIP%" "%ZIP%" >nul
@@ -923,9 +954,9 @@ goto downloadfailed
 
 rem ---- unpack and copy ---------------------------------------------------
 :havezip
+call :pct 85 "Installing the archive"
 echo.
 call :gamelock
-echo Installing the archive...
 echo.
 call :ziptree
 if "%PSOK%"=="1" goto copied
@@ -968,6 +999,7 @@ if defined VER (>"%CACHE%\applied.txt" echo %VER%)
 call :verify
 
 :sync
+call :pct 95 "Finishing up"
 if not "%WHICH%"=="git" goto skipver2
 
 :skipver
@@ -977,7 +1009,8 @@ if defined VER echo main @ %VER%
 if not defined VER echo main @ local archive
 
 :launch
-echo Starting the game
+call :pct 100 "Starting the game"
+call :barflush
 rem The engine runs in a helper of its own, so this window can close as soon as
 rem the game is up - but its output is kept instead of being thrown away. A
 rem game that dies on a missing file or a renderer setting used to write its
@@ -1016,6 +1049,7 @@ goto launch_wait
 call :log game is running after %LW%s
 exit 0
 :launch_died
+call :barflush
 call :log game did not stay open
 echo.
 echo The game did not stay open. Its own output:
@@ -1114,6 +1148,7 @@ call :log self-update refused, running this copy
 exit /b 0
 
 :launchfail
+call :barflush
 echo The game did not stay open. Start it by hand to see the engine's
 echo message, and check docs/INSTALL.md - the renderer setting is the
 echo usual reason, and deleting save\config.ini resets it.
@@ -1122,6 +1157,7 @@ call :close_soon 20
 exit 1
 
 :folder_denied
+call :barflush
 echo.
 echo This folder will not let anything be written into it:
 echo     %~dp0
@@ -1138,6 +1174,7 @@ call :close_soon 20
 exit 1
 
 :wrongfolder
+call :barflush
 echo This file belongs in your game folder - the one that has
 echo BigTroubleInLittleChinaTheGame.exe in it.
 echo.
@@ -1145,6 +1182,7 @@ call :close_soon 20
 exit 1
 
 :downloadfailed
+call :barflush
 echo.
 echo Could not get the files automatically.
 echo.
@@ -1192,6 +1230,7 @@ set "NDEL=0"
 if not defined CHANGED goto synctree_full
 if not exist "%CHANGED%" goto synctree_full
 for /f "usebackq delims=" %%p in ("%CHANGED%") do call :syncfile "%%p"
+call :barflush
 echo Updated %NCOP% file(s), removed %NDEL%.
 exit /b 0
 
