@@ -311,6 +311,9 @@ rem ONE pass: that hashes the files already here instead of downloading them,
 rem and then git can say exactly which of them differ from main.
 git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\paths.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
+echo         first run here - one read of this folder, nothing downloaded
+rem This is the only pass that reads the art. Every launch after it compares
+rem main's file list with the manifest saved from this one, and reads nothing.
 git update-index --add --replace --stdin <"%CACHE%\paths.txt" >>"%CACHE%\git.log" 2>&1
 git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
