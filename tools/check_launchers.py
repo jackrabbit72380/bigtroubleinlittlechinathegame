@@ -53,9 +53,13 @@ def _problems_for(name, raw):
         if not ECHO.match(line) or re.match(r"^\s*echo\.?>", line):
             continue
         for m in re.finditer(r"(?<!\^)([|&<>])", line):
-            after = line[m.end():m.end() + 1]
-            if after == '"' or after in ("n", "N") or after.isdigit():
-                continue          # deliberate redirect / pipe, or 2>nul
+            before = line[m.start() - 1:m.start()]
+            after = line[m.end():m.end() + 3]
+            if after[:1] == '"':
+                continue          # a redirect to a quoted path, or a pipe into
+                #                   a program named by its full path
+            if m.group(1) in "<>" and (before.isdigit() or after.lower().startswith(("nul", "&"))):
+                continue          # a stream redirect: 2>nul, 2>&1, >nul
             out.append("%s:%d: echo text holds an unescaped %r, which cmd reads "
                        "as an operator: %s" % (name, i, m.group(1), line.strip()[:70]))
             break
@@ -87,11 +91,10 @@ def _problems_for(name, raw):
     for m in re.finditer(r'(?i)\bset\s+(?:/a\s+|/p\s+)?"?([A-Za-z0-9_()]+)=', text):
         defined.add(m.group(1).lower())
     for i, line in enumerate(lines, 1):
-        for m in re.finditer(r"%([A-Za-z0-9_()]+)%", line):
-            var = m.group(1).lower()
-            if var.isdigit() or var in defined or var in BUILTIN:
+        for var in _variable_refs(line):
+            if var.isdigit() or var.lower() in defined or var.lower() in BUILTIN:
                 continue
-            out.append("%s:%d: %%%s%% is never set" % (name, i, m.group(1)))
+            out.append("%s:%d: %%%s%% is never set" % (name, i, var))
 
     # 5. the PowerShell helpers written at run time: a parameter and a local that
     #    differ only in case are the same variable, and the parameter loses
@@ -111,6 +114,32 @@ def _problems_for(name, raw):
                        % (name, helper, clash))
 
     return out
+
+
+def _variable_refs(line):
+    """The %NAME% references on one line, read the way cmd reads them.
+
+    "%%" is an escaped percent (a for variable, or part of a URL), so the scan
+    steps over it instead of pairing it with the percent that follows. A lone
+    "%" with no partner is text, which is how "100%" survives in an echo.
+    """
+    found = []
+    i = 0
+    while i < len(line):
+        if line[i] != "%":
+            i += 1
+            continue
+        if line[i + 1:i + 2] == "%":
+            i += 2
+            continue
+        j = line.find("%", i + 1)
+        if j < 0:
+            break
+        name = line[i + 1:j]
+        if re.fullmatch(r"[A-Za-z0-9_()]+", name):
+            found.append(name)
+        i = j + 1
+    return found
 
 
 def problems(root):
