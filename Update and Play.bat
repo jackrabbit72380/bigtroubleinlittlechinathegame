@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v46
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v47
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,7 +63,7 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo.
-echo Big Trouble in Little China - The Game   |   Updater v46
+echo Big Trouble in Little China - The Game  -  Updater v47
 echo.
 
 set "EXE="

@@ -26,7 +26,7 @@ if not exist "%TAR%" set "TAR="
 if not exist "%POWERSHELL%" set "POWERSHELL="
 
 echo.
-echo Big Trouble in Little China - The Game   |   Apply update
+echo Big Trouble in Little China - The Game  -  Apply update
 echo.
 echo Folder: %~dp0
 echo.
