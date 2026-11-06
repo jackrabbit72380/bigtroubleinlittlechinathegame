@@ -12,7 +12,7 @@ rem  its usr\bin on PATH shadows System32, and its tar reads H:\... as a remote
 rem  host ("Cannot connect to H:").
 rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
-color 0E
+color 07
 cd /d "%~dp0"
 title Big Trouble in Little China: The Game - Zip Applier
 
@@ -26,15 +26,9 @@ if not exist "%TAR%" set "TAR="
 if not exist "%POWERSHELL%" set "POWERSHELL="
 
 echo.
-echo   ==============================================================
+echo Big Trouble in Little China - The Game   |   Apply update
 echo.
-echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
-echo.
-echo                    a p p l y   u p d a t e
-echo.
-echo   ==============================================================
-echo.
-echo   Folder:  %~dp0
+echo Folder: %~dp0
 echo.
 
 set "EXE="
@@ -57,7 +51,7 @@ pause
 exit /b 1
 
 :unzip
-echo   [ 1/3 ]  unpacking
+echo   [1/3]  unpacking
 echo            %ZIP%
 set "SRC="
 set "TMP=%~dp0.update-cache"
@@ -79,7 +73,7 @@ mkdir "%TMP%\unpack" 2>nul
 for /d %%D in ("%TMP%\unpack\*") do set "SRC=%%~fD"
 if not defined SRC goto badzip
 echo.
-echo   [ 2/3 ]  copying the game files over this folder
+echo   [2/3]  copying the game files over this folder
 for %%F in (data chars stages font external sound) do (
   if exist "%SRC%\%%F" echo            %%F
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /NFL /NDL /NJH /NJS /NP >nul
@@ -90,19 +84,11 @@ if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
 if not exist "%~dp0save\config.ini" copy /Y "%SRC%\config.ini" "%~dp0save\config.ini" >nul
 
 :copied
-echo.
-"%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
-if errorlevel 1 echo   HUD:     old - the copy did not land
-if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
-"%FINDSTR%" /c:"'Ctrl+Alt+1..9'" "%~dp0external\mods\devhelp.lua" >nul 2>nul
-if errorlevel 1 echo   Keys:    old developer keys screen
-if not errorlevel 1 echo   Keys:    two columns, no scrolling
-echo.
 if not defined EXE goto noexe
-echo   [ 3/3 ]  starting the game
+echo   [3/3]  starting the game
 echo.
 start "" "%EXE%" -config "save\config.ini"
-echo   started. have fun.
+echo   started.
 call :sleep 3
 exit /b 0
 
