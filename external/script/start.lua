@@ -4162,6 +4162,14 @@ function start.f_buildLoadStartParams(arg, doSelectMissing, t_orderRemap)
 	if musicParams and musicParams ~= "" then
 		parts[#parts + 1] = musicParams
 	end
+	-- Music select (external/mods/musicselect.lua) hands the track picked on the
+	-- title menu's MUSIC screen through here, so the pick travels with the match
+	-- instead of being written into config. "Default" leaves params empty and the
+	-- mode's own music stays in charge.
+	if type(main.t_musicSelect) == "table" and main.t_musicSelect.params ~= nil
+		and main.t_musicSelect.params ~= "" then
+		parts[#parts + 1] = main.t_musicSelect.params
+	end
 	local function addParam(k, v)
 		if v == nil or v == "" then
 			return

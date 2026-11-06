@@ -10,17 +10,31 @@
 -- main.t_musicSelect.params, which start.f_buildLoadStartParams appends to the
 -- next match's params. Nothing else in the game changes: leaving the browser
 -- without picking a track leaves the mode's own music alone.
+--
+-- How it draws. A text sprite built here has no font until one is assigned, and
+-- with no font it renders nothing at all - which is what turned this screen into
+-- a frozen sky with the background drawn and every row invisible. The sequence
+-- below is copied from start.lua's RANDOM label, the one text sprite this game
+-- is known to put on screen in front of a menu: textImgNew, then the font
+-- (object or index, whichever this build takes), then align/scale/colour/pos,
+-- then per frame textImgReset + textImgSetText + textImgDraw. The motif's own
+-- TextSpriteData is deliberately not reused: those sprites are shared with the
+-- options and title menus, and textImgSetPos rewrites a sprite's starting offset
+-- permanently, so moving them here would leave those menus misplaced after one
+-- visit.
 
 main.t_musicSelect = main.t_musicSelect or {}
 local ms = main.t_musicSelect
 
--- 1080p layout. The album cover sits left of the list, which is right of centre,
--- so the two never overlap at any cover size up to the 640px cap.
-local COVER = {x = 560, y = 470, cap = 640}
-local LIST = {x = 1010, y = 300, pitch = 52, rows = 13}
-local HEAD = {x = 1010, y = 190}
-local HINT = {x = 960, y = 1010}
-local CHOICE = {x = 960, y = 1050}
+-- 1080p layout: cover on the left, track list to its right, all inside 1920x1080.
+local COVER = {x = 470, y = 470}
+local LIST = {x = 880, y = 330, pitch = 40, rows = 13}
+local HEAD = {x = 960, y = 210}
+local HINT = {x = 960, y = 990}
+local CHOICE = {x = 960, y = 1030}
+
+local ROWSCALE = 1.5
+local SMALLSCALE = 1.0
 
 ms.params = nil
 ms.chosen = nil
@@ -68,17 +82,13 @@ local function albumsFromJson()
 	return albums
 end
 
--- textImgSetFont is the call that puts a face on a text sprite. The nightly
--- this ships against has no textImgApplyFontTuple at all, and calling the
--- missing one is what took the whole browser down ("attempt to call a
--- non-function object" at this line). Builds also disagree about whether the
--- font goes in as the table or as its index, so both are tried once and the
--- one that works is remembered - the same probe devhelp.lua uses.
+-- Which way this build wants the font: the font table itself, its index into
+-- motif.files.font, or that resolved object. Probed once, then reused.
 local fontMode = nil
 
-local function applyFont(t, font)
+local function newText(font, align, scale, x, y)
 	if font == nil then
-		return
+		return nil
 	end
 	local idx = type(font) == 'table' and font[1] or font
 	local tries = {}
@@ -95,25 +105,27 @@ local function applyFont(t, font)
 		end
 	end
 	for _, try in ipairs(tries) do
-		if pcall(textImgSetFont, t, try.value) then
+		local t = textImgNew()
+		if t ~= nil and pcall(textImgSetFont, t, try.value) then
 			fontMode = try.mode
-			return
+			pcall(textImgSetAlign, t, align or 1)
+			pcall(textImgSetScale, t, scale or 1, scale or 1)
+			pcall(textImgSetColor, t, 255, 255, 255, 255)
+			pcall(textImgSetPos, t, x or 0, y or 0)
+			pcall(textImgSetText, t, '')
+			return t
 		end
 	end
+	return nil
 end
 
-local function makeText(font, x, y, scale)
-	local t = textImgNew()
-	applyFont(t, font)
-	-- A sprite built with textImgNew inherits neither the motif font's colour nor
-	-- its alignment, so both are set here rather than left to the build's default.
-	pcall(textImgSetAlign, t, 1)
-	pcall(textImgSetColor, t, 255, 255, 255)
-	textImgSetPos(t, x, y)
-	if scale then
-		textImgSetScale(t, scale, scale)
+local function drawAt(spr, text)
+	if spr == nil then
+		return
 	end
-	return t
+	pcall(textImgReset, spr)
+	pcall(textImgSetText, spr, text or '')
+	pcall(textImgDraw, spr)
 end
 
 -- The browser borrows the option menu's sound and confirm keys, and falls back
@@ -142,88 +154,65 @@ local function doneKeys()
 	return motif.title_info.menu.done.key
 end
 
-local function setText(sprite, text)
-	textImgSetText(sprite, text or '')
-	return sprite
-end
-
--- Everything the browser paints is asked for layer 2.
---
--- This is why choosing MUSIC showed the clouds and the logo and nothing else:
--- a text sprite built with textImgNew starts on layer 0, and Ikemen draws a
--- background definition's front layer - the title artwork - above every sprite
--- on layer 0. The list was there the whole time, underneath the backdrop. The
--- engine's own menu text never hits this because it draws at the motif's
--- menu.item.layerno, which this screenpack sets to 2; textImgDraw takes the
--- layer as its optional second argument, so the browser asks for the same one.
-local LAYER = 2
-
-local function drawText(t)
-	if pcall(textImgDraw, t, LAYER) then
-		return
-	end
-	-- A build whose textImgDraw takes one argument still gets the text, just at
-	-- its own layer; see the background comment for what is done about that.
-	textImgDraw(t)
-end
-
-local function drawAlbumArt(albumData, album, x, y)
-	if albumData == nil or album.art == nil then
+-- data/albums.sff holds every boxFront.png; sffNew is the engine call that opens
+-- one at runtime, and animNew takes "group, image, x, y, ..." the same way the
+-- motif does.
+local function drawAlbumArt(albumData, album)
+	if albumData == nil or album == nil or album.art == nil then
 		return
 	end
 	local ok, anim = pcall(animNew, albumData, tostring(album.art) .. ', 0, 0, 0, -1')
 	if not ok or anim == nil then
 		return
 	end
-	local scale = 1
-	local w = math.max(1, album.artWidth or 0)
-	if w > COVER.cap then
-		scale = COVER.cap / w
-	end
-	pcall(animSetScale, anim, scale, scale)
-	pcall(animSetLayerno, anim, LAYER)
 	pcall(animUpdate, anim)
-	main.f_animPosDraw(anim, x, y)
+	main.f_animPosDraw(anim, COVER.x, COVER.y)
 end
 
--- Opens the browser. Runs its own frame loop, like the reference module, and
--- returns once the player confirms or backs out.
+-- Opens the browser. Runs its own frame loop, like main.f_warning, and returns
+-- once the player confirms or backs out.
 function ms.open()
 	local albums = albumsFromJson()
 	if #albums == 0 then
 		return false
 	end
 
-	local titleFont = motif.title_info.menu.item.font
-	local activeFont = motif.title_info.menu.item.active.font or titleFont
-	local smallFont = titleFont
-	local head = makeText(titleFont, HEAD.x, HEAD.y)
-	local hint = makeText(smallFont, HINT.x, HINT.y, 0.5)
-	local choice = makeText(smallFont, CHOICE.x, CHOICE.y, 0.5)
+	local ui = motif.option_info
+	local titleFont = ui and ui.title and ui.title.font
+	local rowFont = ui and ui.keymenu and ui.keymenu.item and ui.keymenu.item.font or titleFont
+
+	local head = newText(titleFont, 0, 1.5, HEAD.x, HEAD.y)
 	local rows = {}
 	for i = 1, LIST.rows do
+		local y = LIST.y + (i - 1) * LIST.pitch
 		rows[i] = {
-			normal = makeText(smallFont, LIST.x, LIST.y + (i - 1) * LIST.pitch),
-			active = makeText(activeFont, LIST.x, LIST.y + (i - 1) * LIST.pitch),
+			normal = newText(rowFont, 1, ROWSCALE, LIST.x, y),
+			active = newText(rowFont, 1, ROWSCALE, LIST.x, y),
 		}
 	end
+	local hint = newText(rowFont, 0, SMALLSCALE, HINT.x, HINT.y)
+	local choice = newText(rowFont, 0, SMALLSCALE, CHOICE.x, CHOICE.y)
 
-	-- The background. sffNew and bgNew are not part of this engine's Lua API:
-	-- both calls raised, the pcall swallowed them, and the browser went on to
-	-- draw its list over nothing at all - which is the black screen MUSIC led
-	-- to. A screen's background in this codebase is the motif's own definition,
-	-- cleared and drawn with clearColor/bgReset/bgDraw, exactly as every menu in
-	-- external/script/main.lua does it.
-	local bgSec = motif.titlebgdef or nil
+	if head == nil and rows[1] ~= nil and rows[1].normal == nil then
+		print('musicselect: no text sprite could be created, cannot draw the browser')
+		return false
+	end
+
+	-- Background: the motif's own definition, cleared and drawn with
+	-- clearColor/bgReset/bgDraw like every menu in external/script/main.lua, and
+	-- only its back layer - the front layer is the title logo, which would sit
+	-- on top of this screen's text.
+	local bgSec = ui and motif.optionbgdef or motif.titlebgdef or nil
 	local okArt, albumData = pcall(sffNew, 'data/albums.sff')
 	if not okArt then
 		albumData = nil
 	end
 
-	-- Input comes from the engine's getInput. main.f_input belongs to the
-	-- reference module this file was written against and does not exist in this
-	-- codebase, so the first frame of the browser would have raised on it.
-	local titleMenu = motif.title_info and motif.title_info.menu
+	-- Direction keys by their engine names. getInput takes key names ('U', 'D',
+	-- 'L', 'R'), never the word "UP": passing a string where the engine wants a
+	-- table of names is why no arrow did anything on this screen.
+	local UP, DOWN, LEFT, RIGHT = {'U'}, {'D'}, {'L'}, {'R'}
+	local OK_FALLBACK = {'a', 'b', 'c', 'x', 'y', 'z', 's'}
 	local function hit(keys)
 		if keys == nil then
 			return false
@@ -231,15 +220,12 @@ function ms.open()
 		local ok, res = pcall(getInput, -1, keys)
 		return (ok and res ~= nil and res ~= false) and true or false
 	end
-	local function pressed(name, fallback)
-		if titleMenu and titleMenu[name] and hit(titleMenu[name].key) then
-			return true
-		end
-		return hit(fallback)
-	end
 
 	local albumNo, songNo, scroll = 1, 1, 1
-	textImgSetText(hint, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back')
+	local confirmKeys = doneKeys()
+
+	-- A stale Escape from the menu that opened this would close it on frame one.
+	esc(false)
 
 	while true do
 		local album = albums[albumNo]
@@ -248,16 +234,11 @@ function ms.open()
 		if bgSec then
 			clearColor(bgSec.bgclearcolor[1], bgSec.bgclearcolor[2], bgSec.bgclearcolor[3])
 			bgReset(bgSec.BGDef)
-			-- Back layer only. The front layer is the title logo, and it is drawn
-			-- above layer-0 sprites, so painting it here buried the list on any
-			-- build that ignores the layer argument above. The clouds are the back
-			-- layer, so the screen keeps its backdrop without ever hiding text.
 			bgDraw(bgSec.BGDef, 0)
 		end
-		drawAlbumArt(albumData, album, COVER.x, COVER.y)
+		drawAlbumArt(albumData, album)
 
-		textImgSetText(head, main.f_itemnameUpper(album.name ~= '' and album.name or 'Options', true))
-		drawText(head)
+		drawAt(head, main.f_itemnameUpper(album.name ~= '' and album.name or 'Default (stage music)', true))
 
 		if songNo < scroll then
 			scroll = songNo
@@ -268,28 +249,23 @@ function ms.open()
 			local s = album.songs[scroll + i - 1]
 			local pair = rows[i]
 			if s == nil then
-				textImgSetText(pair.normal, '')
-				textImgSetText(pair.active, '')
-			end
-			if s ~= nil then
-				local label = (scroll + i - 1 == songNo and '> ' or '  ') .. s.title
-				textImgSetText(pair.normal, label)
-				textImgSetText(pair.active, label)
-			end
-			if s ~= nil then
-				drawText((scroll + i - 1 == songNo) and pair.active or pair.normal)
+				drawAt(pair.normal, '')
+			elseif scroll + i - 1 == songNo then
+				drawAt(pair.active, '> ' .. s.title)
+			else
+				drawAt(pair.normal, '  ' .. s.title)
 			end
 		end
 
-		textImgSetText(choice, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music')
-		drawText(choice)
-		drawText(hint)
+		drawAt(choice, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music')
+		drawAt(hint, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back')
 
 		refresh()
 
 		if esc() then
+			resetKey()
 			return false
-		elseif pressed('up', 'UP') then
+		elseif hit(UP) then
 			moveSnd()
 			songNo = songNo - 1
 			if songNo < 1 then
@@ -299,7 +275,7 @@ function ms.open()
 				end
 				songNo = #albums[albumNo].songs
 			end
-		elseif pressed('down', 'DOWN') then
+		elseif hit(DOWN) then
 			moveSnd()
 			songNo = songNo + 1
 			if songNo > #album.songs then
@@ -309,21 +285,21 @@ function ms.open()
 				end
 				songNo = 1
 			end
-		elseif pressed('left', 'LEFT') then
+		elseif hit(LEFT) then
 			moveSnd()
 			albumNo = albumNo - 1
 			if albumNo < 1 then
 				albumNo = #albums
 			end
 			songNo, scroll = 1, 1
-		elseif pressed('right', 'RIGHT') then
+		elseif hit(RIGHT) then
 			moveSnd()
 			albumNo = albumNo + 1
 			if albumNo > #albums then
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-		elseif hit(doneKeys()) then
+		elseif hit(confirmKeys) or hit(OK_FALLBACK) then
 			doneSnd()
 			if song ~= nil and song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
@@ -334,6 +310,7 @@ function ms.open()
 				ms.params = nil
 				ms.chosen = nil
 			end
+			resetKey()
 			return true
 		end
 	end
