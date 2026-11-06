@@ -602,9 +602,9 @@ def patch_def():
     # AUDACITY is already painted into the full-power art (build_meter_label
     # repaints sprite 44,0), so the counterMax WORD was the same caption twice
     # in two sizes. The text is emptied; the tint and offsets stay.
-    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.text\s*=\s*).*$",
+    body = re.sub(r"(?m)^([ \t]*p[12]\.counterMax\.text[ \t]*=[ \t]*).*$",
                   r"\g<1>", body)
-    body = re.sub(r"(?m)^(\s*p[12]\.counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
+    body = re.sub(r"(?m)^([ \t]*p[12]\.counter\w*\.offset[ \t]*=[ \t]*)(-?\d+),[ \t]*-?\d+[ \t]*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
     lines[s:e] = body.split("\n")
 
@@ -621,13 +621,13 @@ def patch_def():
 
     s, e = _section(lines, "Time")
     body = "\n".join(lines[s:e])
-    body = re.sub(r"(?m)^(\s*pos\s*=\s*).*$",
+    body = re.sub(r"(?m)^([ \t]*pos[ \t]*=[ \t]*).*$",
                   lambda m: "%s%d,%d" % (m.group(1), SCREEN, TIME_Y), body)
     body = _set(body, "bg.spr", "%d,%d" % (TIMER_GROUP, 0))
     body = _set(body, "bg.offset", "0,0")
-    body = re.sub(r"(?m)^(\s*counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
+    body = re.sub(r"(?m)^([ \t]*counter\w*\.offset[ \t]*=[ \t]*)(-?\d+),[ \t]*-?\d+[ \t]*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), TIME_NUM_Y), body)
-    body = re.sub(r"(?m)^(\s*counter\w*\.scale\s*=\s*)\d+(\.\d+)?\s*,\s*\d+(\.\d+)?\s*$",
+    body = re.sub(r"(?m)^([ \t]*counter\w*\.scale[ \t]*=[ \t]*)\d+(\.\d+)?[ \t]*,[ \t]*\d+(\.\d+)?[ \t]*$",
                   lambda m: "%s%.2f, %.2f" % (m.group(1), TIME_NUM_SCALE,
                                                TIME_NUM_SCALE), body)
     lines[s:e] = body.split("\n")
