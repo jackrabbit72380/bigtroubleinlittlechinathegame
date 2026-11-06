@@ -158,7 +158,7 @@ loading.text = NOW LOADING...
 
 
 ;Network menu
-connecting.offset = 960, 589.5
+connecting.offset = 960, 590
 connecting.font = 7,0,0
 connecting.scale = 1.5, 1.5
 connecting.text = Waiting for player 2... (%s)
@@ -166,7 +166,7 @@ connecting.join.text = Now connecting to %s... (%s)
 ;connecting.overlay.window = 0, 0, 1280, 720
 connecting.overlay.col = 0, 0, 0
 connecting.overlay.alpha = 0, 128
-textinput.offset = 283.5, 589.5
+textinput.offset = 284, 590
 textinput.font = 7,0,1
 textinput.scale = 1.5, 1.5
 ;textinput.overlay.window = 0, 0, 1280, 720
@@ -288,7 +288,7 @@ layerno = 0
 start = -960, -75
 tile = 1,0
 velocity = -0.15, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [TitleBG Background Clouds Bottom]
@@ -298,7 +298,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 
@@ -353,7 +353,7 @@ title.offset = 640,38
 title.font = 10,0,0, 255, 228, 140
 title.scale = 1.0, 1.0
 title.text = 
-text.offset = 283.5, 589.5
+text.offset = 284, 590
 text.font = 11, 0, 1, 240, 196, 88
 text.scale = 1.5, 1.5
 ;overlay.window = 0, 0, 1280, 720
@@ -616,11 +616,11 @@ p2.face2.loading.focallength = 400
 ;Name
 p1.name.offset = 75, 1035
 p1.name.font = 11, 0, 0, 255, 228, 140
-p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
+p1.name.spacing = 23, 38;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1845, 1035
 p2.name.font = 11, 0, -1, 255, 170, 96
-p2.name.spacing = -22.5, 37.5
+p2.name.spacing = -22, 38
 p2.name.layerno = 2
 
 ;Stage select
@@ -657,7 +657,7 @@ stage.portrait.layerno = 2
 ;Stage Slot Indicator
 stage.portrait.slot.anim = 156
 ;stage.portrait.slot.spr = 155, 0
-stage.portrait.slot.offset = -40.5, -295.5
+stage.portrait.slot.offset = -40, -295
 stage.portrait.slot.facing = 1
 stage.portrait.slot.angle = 0
 stage.portrait.slot.scale = 0.165, 0.165
@@ -681,7 +681,7 @@ p1.teammenu.pos = 120, 240
 p1.teammenu.selftitle.font = 11, 0, 0, 255, 228, 140
 p1.teammenu.selftitle.text = TEAM MODE              ;\n can create a line break here.
 p1.teammenu.selftitle.scale = 1.125, 1.125
-p1.teammenu.selftitle.offset = 195, 22.5
+p1.teammenu.selftitle.offset = 195, 23
 p1.teammenu.selftitle.layerno = 2
 p1.teammenu.selftitle.projection = perspective
 p1.teammenu.selftitle.yangle = 52.5
@@ -690,7 +690,7 @@ p1.teammenu.enemytitle.font = 11, 0, 0, 255, 228, 140
 p1.teammenu.enemytitle.text = TEAM MODE
 p1.teammenu.enemytitle.layerno = 2
 p1.teammenu.enemytitle.scale = 1.125, 1.125
-p1.teammenu.enemytitle.offset = 195, 22.5
+p1.teammenu.enemytitle.offset = 195, 23
 p1.teammenu.enemytitle.projection = perspective
 p1.teammenu.enemytitle.yangle = 52.5
 p1.teammenu.enemytitle.focallength = 200
@@ -716,13 +716,13 @@ p1.teammenu.value.empty.icon.layerno = 2
 p1.teammenu.value.spacing = 45, 0
 
 ;P2 Team menu
-p2.teammenu.pos = 1795.5, 240
+p2.teammenu.pos = 1796, 240
 ;p2.teammenu.bg.spr = 
 p2.teammenu.selftitle.font = 11, 0, 0, 240, 196, 88
 p2.teammenu.selftitle.text = TEAM MODE
 p2.teammenu.selftitle.scale = 1.125, 1.125
 p2.teammenu.selftitle.layerno = 2
-p2.teammenu.selftitle.offset = -195, 22.5
+p2.teammenu.selftitle.offset = -195, 23
 p2.teammenu.selftitle.projection = perspective
 p2.teammenu.selftitle.yangle = -52.5
 p2.teammenu.selftitle.focallength = 200
@@ -730,7 +730,7 @@ p2.teammenu.enemytitle.font = 11, 0, 0, 240, 196, 88
 p2.teammenu.enemytitle.text = TEAM MODE
 p2.teammenu.enemytitle.scale = 1.125, 1.125
 p2.teammenu.enemytitle.layerno = 2
-p2.teammenu.enemytitle.offset = -195, 22.5
+p2.teammenu.enemytitle.offset = -195, 23
 p2.teammenu.enemytitle.projection = perspective
 p2.teammenu.enemytitle.yangle = -52.5
 p2.teammenu.enemytitle.focallength = 200
@@ -747,10 +747,10 @@ p2.teammenu.item.active.layerno = 2
 p2.teammenu.item.cursor.offset = 45, 0
 p2.teammenu.item.cursor.anim = -1
 p2.teammenu.item.cursor.layerno = 2
-p2.teammenu.value.icon.offset = -316.5, 1.5
+p2.teammenu.value.icon.offset = -316, 2
 p2.teammenu.value.icon.spr = 191,0
 p2.teammenu.value.icon.layerno = 2
-p2.teammenu.value.empty.icon.offset = -316.5, 1.5
+p2.teammenu.value.empty.icon.offset = -316, 2
 p2.teammenu.value.empty.icon.spr = 192,0
 p2.teammenu.value.empty.icon.layerno = 2
 p2.teammenu.value.spacing = -45, 0
@@ -1042,7 +1042,7 @@ layerno = 0
 start = -960, -75
 tile = 1,0
 velocity = -0.15, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [SelectBG Background Clouds Bottom]
@@ -1052,7 +1052,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 
@@ -1082,7 +1082,7 @@ fadeout.time = 25
 
 ;Match text in arcade modes
 match.text = Match %i        ;%i can be used for the match number
-match.offset = 960, 127.5
+match.offset = 960, 128
 match.font = 2, 0, 0, 236, 200, 120
 match.scale = 2.25, 2.25
 
@@ -1093,7 +1093,7 @@ p1.spr = 9000, 1
 p1.offset = 268, 180
 p1.facing = 1
 p1.scale = 1.5, 1.5
-p1.window = 0, 45, 808.5, 883.5
+p1.window = 0, 45, 809, 884
 p1.spacing = -150, 0
 p1.padding = 1
 p1.applypal = 1
@@ -1104,7 +1104,7 @@ p2.spr = 9000, 1
 p2.offset = 1652, 180
 p2.facing = -1
 p2.scale = 1.5, 1.5
-p2.window = 1111.5, 45, 1920, 883.5
+p2.window = 1112, 45, 1920, 884
 p2.spacing = 150, 0
 p2.padding = 1
 p2.applypal = 1
@@ -1116,11 +1116,11 @@ p2.done.anim = 9000
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20, 1035
 p1.name.font = 10, 0, 1, 240, 196, 88
-p1.name.spacing = 22.5, 37.5  ;Space between each name for players on the same team
+p1.name.spacing = 23, 38;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
 p2.name.offset = 1900, 1035
 p2.name.font = 10, 0, -1, 236, 158, 74
-p2.name.spacing = -22.5, 37.5
+p2.name.spacing = -22, 38
 
 orderselect.enabled = 1
 
@@ -1240,29 +1240,29 @@ p8.icon.done.scale = 1.5, 1.5
 ;Player 1
 ;p1.value.icon.anim = -1
 p1.value.icon.spr = 810, 0
-p1.value.icon.offset = 565.5, 952.5
+p1.value.icon.offset = 566, 953
 p1.value.icon.facing = 1
 p1.value.icon.scale = 1.5, 1.2
 ;p1.value.empty.icon.anim = -1
 p1.value.empty.icon.spr = 810, 1
-p1.value.empty.icon.offset = 565.5, 952.5
+p1.value.empty.icon.offset = 566, 953
 p1.value.empty.icon.facing = 1
 p1.value.empty.icon.scale = 1.5, 1.2
-p1.value.icon.spacing = -187.5, 0
+p1.value.icon.spacing = -187, 0
 p1.value.snd = 100, 1
 
 ;Player 2
 ;p2.value.icon.anim = -1
 p2.value.icon.spr = 810, 5
-p2.value.icon.offset = 1144.5, 952.5
+p2.value.icon.offset = 1145, 953
 p2.value.icon.facing = 1
 p2.value.icon.scale = 1.5, 1.2
 ;p2.value.empty.icon.anim = -1
 p2.value.empty.icon.spr = 810, 6
-p2.value.empty.icon.offset = 1144.5, 952.5
+p2.value.empty.icon.offset = 1145, 953
 p2.value.empty.icon.facing = 1
 p2.value.empty.icon.scale = 1.5, 1.2
-p2.value.icon.spacing = 187.5, 0
+p2.value.icon.spacing = 188, 0
 p2.value.snd = 100, 1
 
 ;Player 3
@@ -1306,7 +1306,7 @@ stage.portrait.window = 513, 706, 1407, 995
 
 ;Order timer
 ; Change timer.count to positive number to enable order selection timer
-timer.offset = 958.5, 825
+timer.offset = 959, 825
 timer.font = 8,0, 0, 255,255,242
 timer.scale = 1.5, 1.5
 timer.text = %i
@@ -1372,7 +1372,7 @@ p1.done.spr = 9000, 1
 p1.done.offset = 268, 180
 p1.done.facing = 1
 p1.done.scale = 1.5, 1.5
-p1.done.window = 0, 45, 808.5, 883.5
+p1.done.window = 0, 45, 809, 884
 p1.done.xshear = 0
 p1.done.angle = 0
 p1.done.xangle = 0
@@ -1384,7 +1384,7 @@ p2.done.spr = 9000, 1
 p2.done.offset = 1652, 180
 p2.done.facing = -1
 p2.done.scale = 1.5, 1.5
-p2.done.window = 1111.5, 45, 1920, 883.5
+p2.done.window = 1112, 45, 1920, 884
 p2.done.xshear = 0
 p2.done.angle = 0
 p2.done.xangle = 0
@@ -1516,7 +1516,7 @@ start = -960, -75
 tile = 1,0
 velocity = -0.075, 0
 trans = add1
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [VersusBG Background Clouds Bottom]
@@ -1526,7 +1526,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [VersusBG Background Black Bars]
@@ -1969,7 +1969,7 @@ p1.spr = 9000,2
 p1.layerno = 2
 p1.facing = 1
 p1.scale = 0.5333, 0.5333
-p1.window = 0, 141, 1918.5, 750
+p1.window = 0, 141, 1919, 750
 p1.name.offset = 40,570
 p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.layerno = 2
@@ -1980,16 +1980,16 @@ p2.spr = 9000,2
 p2.layerno = 1
 p2.facing = -1
 p2.scale = 0.5333, 0.5333
-p2.window = 0, 141, 1918.5, 750
+p2.window = 0, 141, 1919, 750
 p2.applypal = 1
 p2.lose.brightness = 75
 ;Win quote text
 winquote.text = Winner! ;Default win quote text to show
 winquote.layerno = 2
-winquote.offset = 60, 922.5
+winquote.offset = 60, 923
 winquote.textspacing = 0
 winquote.font = 11, 0, 1, 240, 196, 88
-winquote.window = 57, 781.5, 1861.5, 1062
+winquote.window = 57, 782, 1862, 1062
 winquote.textwrap = w   ;Word wrap
 winquote.textdelay = 2
 
@@ -2011,7 +2011,7 @@ start = -960, -75
 tile = 1,0
 velocity = -0.075, 0
 trans = add1
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [VictoryBG Background Clouds Bottom]
@@ -2021,7 +2021,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [VictoryBG Background Black Bars]
@@ -2254,12 +2254,12 @@ menu.boxbg.col = 40, 10, 14
 menu.boxbg.alpha = 0, 128
 ;menu.arrow.up.anim = 
 menu.arrow.up.spr = 400, 0
-menu.arrow.up.offset = 642, -76.5
+menu.arrow.up.offset = 642, -76
 menu.arrow.up.facing = 1
 menu.arrow.up.scale = 1.5, 1.5
 ;menu.arrow.down.anim = 
 menu.arrow.down.spr = 401, 0
-menu.arrow.down.offset = 642, 787.5
+menu.arrow.down.offset = 642, 788
 menu.arrow.down.facing = 1
 menu.arrow.down.scale = 1.5, 1.5
 menu.title.uppercase = 1
@@ -2280,7 +2280,7 @@ cursor.done.snd = 100, 1
 cancel.snd = 100, 2
 
 textinput.font = 7,0,1
-textinput.offset = 112.5, 144
+textinput.offset = 113, 144
 textinput.scale = 1.5, 1.5
 ;textinput.overlay.window = 0, 0, 1280, 720
 textinput.overlay.col = 0, 0, 0
@@ -2351,7 +2351,7 @@ layerno = 0
 start = -960, -75
 tile = 1,0
 velocity = -0.15, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [OptionBG Background Clouds Bottom]
@@ -2361,7 +2361,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 ;-------------------------------------------------------------------
@@ -2375,7 +2375,7 @@ title.offset = 640,48
 title.font = 10,0,0, 255, 228, 140
 title.scale = 1.0, 1.0
 title.text = REPLAY SELECT
-menu.pos = 621, 148.5
+menu.pos = 621, 149
 menu.item.offset = 0, 0
 menu.item.font = 10,0,-1, 240, 196, 88
 menu.item.scale = 1.5, 1.5
@@ -2394,12 +2394,12 @@ menu.boxbg.col = 40, 10, 14
 menu.boxbg.alpha = 0, 128
 ;menu.arrow.up.anim = 
 menu.arrow.up.spr = 400, 0
-menu.arrow.up.offset = 642, -76.5
+menu.arrow.up.offset = 642, -76
 menu.arrow.up.facing = 1
 menu.arrow.up.scale = 1.5, 1.5
 ;menu.arrow.down.anim = 
 menu.arrow.down.spr = 401, 0
-menu.arrow.down.offset = 642, 787.5
+menu.arrow.down.offset = 642, 788
 menu.arrow.down.facing = 1
 menu.arrow.down.scale = 1.5, 1.5
 menu.title.uppercase = 1
@@ -2426,7 +2426,7 @@ start = -960, -75
 tile = 1,0
 velocity = -0.075, 0
 trans = add1
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [ReplayBG Background Clouds Bottom]
@@ -2436,7 +2436,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 ---------------------------------------------
 ;Pause menu screen definition
@@ -2484,12 +2484,12 @@ menu.boxbg.col = 40, 10, 14
 menu.boxbg.alpha = 0, 128
 ;menu.arrow.up.anim = 
 menu.arrow.up.spr = 400, 0
-menu.arrow.up.offset = 642, -76.5
+menu.arrow.up.offset = 642, -76
 menu.arrow.up.facing = 1
 menu.arrow.up.scale = 1.5, 1.5
 ;menu.arrow.down.anim = 
 menu.arrow.down.spr = 401, 0
-menu.arrow.down.offset = 642, 787.5
+menu.arrow.down.offset = 642, 788
 menu.arrow.down.facing = 1
 menu.arrow.down.scale = 1.5, 1.5
 menu.title.uppercase = 1
@@ -2511,7 +2511,7 @@ movelist.title.uppercase = 1
 movelist.text.offset = 0, 54
 movelist.text.font = 10, 0, 1, 240, 196, 88
 movelist.text.scale = 1, 1
-movelist.text.spacing = 4.5, 4
+movelist.text.spacing = 5, 4
 movelist.text.text = Command List not found.
 movelist.glyphs.offset = 0, 0
 movelist.glyphs.scale = 1, 1
@@ -2554,7 +2554,7 @@ p2.teammenu.item.cursor.spr = 180,0
 p2.teammenu.item.cursor.anim = -1
 p1.teammenu.item.cursor.spr = 180,0
 p1.teammenu.item.cursor.anim = -1
-movelist.text.spacing = 4.5, 4
+movelist.text.spacing = 5, 4
 movelist.glyphs.scale = 1, 1
 movelist.title.scale = 1, 1
 movelist.text.scale = 1, 1
@@ -2591,12 +2591,12 @@ intro.storyboard = intro.def
 start.storyboard = 
 start.time = 600
 start.insert.text = Insert Coin
-start.insert.offset = 960, 826.5
+start.insert.offset = 960, 827
 start.insert.font = 10, 0, 0, 255, 228, 140
 start.insert.scale = 1.5, 1.5
 start.insert.blinktime = 30
 start.press.text = Press Start
-start.press.offset = 960, 826.5
+start.press.offset = 960, 827
 start.press.font = 10, 0, 0, 255, 228, 140
 start.press.scale = 1.5, 1.5
 start.press.blinktime = 30
@@ -2636,7 +2636,7 @@ layerno = 0
 start = -960, -75
 tile = 1,0
 velocity = -0.15, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [AttractBG Background Clouds Bottom]
@@ -2646,7 +2646,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 
@@ -2720,7 +2720,7 @@ bg.facing = 1
 bg.scale = 1.5, 1.5
 bg.displaytime = 0
 ;text.text = Here Comes A New Challenger!!
-text.offset = 319.5, 180
+text.offset = 320, 180
 text.font = 11, 0, 1, 240, 196, 88
 text.scale = 4.5, 4.5
 text.displaytime = 0
@@ -2782,12 +2782,12 @@ p2.bg.offset = 0, 648
 p2.bg.facing = 1
 p2.bg.scale = 4.5, 4.5
 p1.face.spr = 9000,3
-p1.face.offset = 3, 1.5
+p1.face.offset = 3, 2
 p1.face.facing = 1
 p1.face.scale = 0.34, 0.34
 ;p1.face.window = 0, 0, 1280, 720
 p2.face.spr = 9000,3
-p2.face.offset = 1920, 505.5
+p2.face.offset = 1920, 506
 p2.face.facing = -1
 p2.face.scale = 0.34, 0.34
 ;p2.face.window = 0, 0, 1280, 720
@@ -2797,14 +2797,14 @@ p1.name.scale = 1.0, 1.0
 p2.name.offset = 30, 421
 p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.scale = 1.0, 1.0
-p1.text.offset = 405, 220.5
+p1.text.offset = 405, 221
 p1.text.font = 7,0,1
 p1.text.scale = 1.5, 1.5
 p1.text.textspacing = 0
 p1.text.textdelay = 3
 p1.text.textwrap = w
 p1.text.window = 405, 144, 1800, 432
-p2.text.offset = 45, 724.5
+p2.text.offset = 45, 725
 p2.text.font = 7,0,1
 p2.text.scale = 1.5, 1.5
 p2.text.textspacing = 0
@@ -2874,7 +2874,7 @@ title.timeattack.text = Ranking Time Attack
 title.survival.text = Ranking Survival
 title.survivalcoop.text = Ranking Survival Cooperative
 title.uppercase = 1
-title.rank.offset = 157.5, 210
+title.rank.offset = 158, 210
 title.rank.font = 3,0,0
 title.rank.scale = 0.99, 0.99
 title.rank.text = Rank
@@ -2903,7 +2903,7 @@ item.rank.3.text = %drd
 item.rank.active.font = 11, 0, -1, 240, 196, 88
 item.rank.active.switchtime = 4
 item.rank.active2.font = 11, 0, -1, 255, 228, 140
-item.result.offset = 598.5, 285
+item.result.offset = 599, 285
 item.result.font = 11, 0, -1, 176, 126, 44
 item.result.scale = 1.5, 1.5
 item.result.spacing = 0, 39
@@ -2913,7 +2913,7 @@ item.result.win.text = Stage %d
 item.result.active.font = 11, 0, -1, 240, 196, 88
 item.result.active.switchtime = 4
 item.result.active2.font = 11, 0, -1, 255, 228, 140
-item.name.offset = 796.5, 285
+item.name.offset = 797, 285
 item.name.font = 11, 0, 1, 240, 196, 88
 item.name.scale = 1.5, 1.5
 item.name.spacing = 0, 39
@@ -2975,7 +2975,7 @@ layerno = 0
 start = -960, -75
 tile = 1,0
 velocity = -0.15, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 [HiscoreBG Background Clouds Bottom]
@@ -2985,7 +2985,7 @@ layerno = 0
 start = -960, 0
 tile = 1,0
 velocity = -1.05, 0
-window = 0, 0, 1918.5, 1438.5
+window = 0, 0, 1919, 1439
 mask = 1
 
 ;-------------------------------------------------------------------
@@ -2994,7 +2994,7 @@ mask = 1
 title.offset = 640, 48
 title.font = 10,0,0, 255, 228, 140
 title.scale = 1.0, 1.0
-text.offset = 283.5, 589.5
+text.offset = 284, 590
 text.font = 11, 0, 1, 240, 196, 88
 text.scale = 1.5, 1.5
 ;overlay.window = 0, 0, 1280, 720
