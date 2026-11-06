@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v40
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v42
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,7 +63,7 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo   ==============================================================
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v41
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v42
 echo    %~dp0
 echo   ==============================================================
 
@@ -72,14 +72,30 @@ if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTh
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto wrongfolder
 call :log folder %~dp0  exe %EXE%
-rem Windows refusing one write means it will refuse every write, one file at a
-rem time, each with the same "Access is denied" line. It is tested once here,
-rem while there is still room to explain what to do about it.
+rem A refused write here means every write below will be refused too, one file
+rem at a time with the same "Access is denied" line. But a scanner can hold a
+rem file that was created a moment ago, and a copied folder carries a read-only
+rem flag, so this is tried three times and the flag cleared before believing it.
+rem Whatever Windows says is kept, so the message can name the real reason.
 set "WT=%~dp0.btilc-write-test"
->"%WT%" echo x 2>nul
-if not exist "%WT%" goto folder_denied
+set "WERR=%CACHE%\wtest.err"
+if exist "%WERR%" del /q "%WERR%" >nul 2>&1
+attrib -r "%~dp0." >nul 2>&1
+set /a WTRY=0
+:writecheck
+set /a WTRY+=1
+>"%WT%" echo x 2>"%WERR%"
+if exist "%WT%" goto writeok
+attrib -r "%WT%" >nul 2>&1
+if %WTRY% GEQ 3 goto folder_denied
+call :sleep 1
+goto writecheck
+:writeok
+del /q "%WT%" >nul 2>&1
+attrib -r "%WT%" >nul 2>&1
 del /q "%WT%" >nul 2>&1
 set "WT="
+call :log folder accepts writes (try %WTRY%)
 
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
@@ -1088,10 +1104,7 @@ if exist "%CACHE%\swap.attempts" del /q "%CACHE%\swap.attempts" >nul 2>&1
 exit /b 0
 
 :selfupdate_stuck
-echo   This launcher could not replace itself (access denied on its own file).
-echo   Carrying on with this copy - the game files still update normally.
-echo   To refresh the launcher itself, close any window using it and run it
-echo   again from a folder you can write to.
+echo   Launcher file is read-only - running this copy, game files still update.
 call :log self-update refused, running this copy
 exit /b 0
 
@@ -1105,19 +1118,17 @@ exit 1
 
 :folder_denied
 echo.
-echo   This folder does not let the updater write to it:
+echo   This folder will not let anything be written into it:
 echo     %~dp0
+if exist "%WERR%" type "%WERR%"
+echo   Tried three times. The files here are left exactly as they are - so they
+echo   may be older than main. Starting the game with what is installed.
+call :log folder refused writes after %WTRY% tries: %~dp0
+if not exist "%~dp0%EXE%" goto folder_denied_noexe
+goto launch
+:folder_denied_noexe
+echo   There is no %EXE% here either, so there is nothing to start.
 echo.
-echo   Windows answered "Access is denied", so no file can be put here and the
-echo   update has nowhere to go. Common reasons:
-echo.
-echo     - the folder is under Program Files or another protected place:
-echo       move it somewhere you own, such as H:\Games
-echo     - the files came from a zip and are marked read-only: select the
-echo       folder, right-click, Properties, clear Read-only, Apply
-echo     - a security tool is blocking writes to this drive
-echo.
-call :log folder refused writes: %~dp0
 pause
 exit 1
 
