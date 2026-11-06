@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v45
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v46
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -19,7 +19,7 @@ rem  "Cannot connect to H:", and curl looks for its CA bundle at
 rem  /usr/ssl/certs/ca-bundle.crt. Full paths avoid all three.
 rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
-color 0E
+color 07
 cd /d "%~dp0"
 title Big Trouble in Little China: The Game - Updater
 
@@ -62,9 +62,9 @@ if defined TERM_PROGRAM set "VT=1"
 if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
-echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v45
-echo   ==============================================================
+echo.
+echo Big Trouble in Little China - The Game   |   Updater v46
+echo.
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -107,11 +107,8 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem The progress bar is one line that advances, not a new bar per percent. A
-rem carriage return puts the cursor back at the start of the line it is on;
-rem copy /Z prints a progress line that for /f can be split on its CR. If this
-rem produces nothing, the bar falls back to printing separate lines.
-for /f %%a in ('copy /Z "%~f0" nul 2^>nul') do set "CR=%%a"
+rem Progress is one gauge redrawn on a single line where the console supports
+rem it, and coarse milestones where it does not - never a line per percent.
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
@@ -147,7 +144,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo Checking main
+echo Checking for updates
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -224,9 +221,7 @@ echo Using the verified download instead.
 goto probe
 :gitca_checked
 if exist ".git" goto githere
-echo First run: reading what is already here, so only changes are downloaded.
-echo This reads the art already in this folder; it does not download it.
-echo This can take a minute before the bar moves.
+echo First launch here: indexing this folder once. No files are downloaded.
 
 :gitinit
 rem Also reached when the updater's own repository has to be rebuilt. It holds
@@ -266,7 +261,7 @@ rem because it is being used by another process" and then into the 190 MB
 rem archive. The repository lives outside the game folder now, so the one here
 rem is removed; nothing in it is player-visible, and if it cannot be removed it
 rem is simply ignored, because every git command below names the new one.
-echo Moving the updater's git data out of the game folder.
+echo Moving the updater's index out of the game folder.
 rd /s /q "%~dp0.git" >nul 2>&1
 goto gitinit
 
@@ -279,7 +274,7 @@ for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%
 if "%MINE%"=="1" goto gitmigrate
 git rev-parse --verify -q HEAD >nul 2>&1
 if errorlevel 1 goto gitfetch
-echo your own git checkout - run: git pull
+echo This is your own git checkout - run: git pull
 goto launch
 
 rem ---- transport 1: git ----------------------------------------------------
@@ -287,7 +282,6 @@ rem Only main's commit and its file list are fetched, a few hundred KB. The art
 rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo reading main's file list
 rem The fetch runs in a helper so this window can show that it is waiting and
 rem for how long, instead of sitting on one line while the network answers.
 rem The helper inherits GIT_DIR and GIT_WORK_TREE from this shell, so it works
@@ -312,7 +306,6 @@ if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
-echo main @ %NEWSHORT%
 call :log main is %NEWSHORT%
 call :gamelock
 git -c core.quotepath=false ls-tree -r FETCH_HEAD -- data chars stages font external sound >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
@@ -340,7 +333,7 @@ call :barflush
 call :confirm
 goto gitdrop_list
 :gitnone
-echo already current - nothing to download
+echo Already up to date - nothing to download
 goto gitdrop_list
 :plan
 rem A file is fetched only when main's hash for it differs from the hash this
@@ -357,7 +350,6 @@ rem Nothing recorded yet - the first run on this folder. Prime git's index in
 rem ONE pass: that hashes the files already here instead of downloading them,
 rem and then git can say exactly which of them differ from main. It runs in a
 rem helper for the same reason the fetch does: so the window shows it working.
-echo first run: reading this folder once
 set "QOK=%CACHE%\plan.ok"
 set "QBAD=%CACHE%\plan.bad"
 if exist "%QOK%" del /q "%QOK%" >nul 2>&1
@@ -389,18 +381,17 @@ exit /b 0
 set "PLANPS=%CACHE%\plan.ps1"
 >  "%PLANPS%" echo param([string]$Tree, [string]$Old, [string]$Changed, [string]$Dropped)
 >> "%PLANPS%" echo $ErrorActionPreference = 'Stop'
->> "%PLANPS%" echo $old = @{}
+>> "%PLANPS%" echo $prev = @{}
 >> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Old)) { $i = $l.IndexOf([char]9); if ($i -gt 0) { $old[$l.Substring($i + 1)] = $l.Substring(0, $i) } }
 >> "%PLANPS%" echo $new = @{}
 >> "%PLANPS%" echo $chg = New-Object System.Collections.ArrayList
->> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $meta = $l.Substring(0, $i).Split(' '); $sha = $meta[$meta.Length - 1]; $p = $l.Substring($i + 1); $new[$p] = $sha; if ($old.ContainsKey($p) -and $old[$p] -eq $sha) { continue }; [void]$chg.Add($p) }
+>> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $meta = $l.Substring(0, $i).Split(' '); $sha = $meta[$meta.Length - 1]; $p = $l.Substring($i + 1); $new[$p] = $sha; if ($prev.ContainsKey($p) -and $prev[$p] -eq $sha) { continue }; [void]$chg.Add($p) }
 >> "%PLANPS%" echo $drop = New-Object System.Collections.ArrayList
->> "%PLANPS%" echo foreach ($p in $old.Keys) { if (-not $new.ContainsKey($p)) { [void]$drop.Add($p) } }
+>> "%PLANPS%" echo foreach ($p in $prev.Keys) { if (-not $new.ContainsKey($p)) { [void]$drop.Add($p) } }
 >> "%PLANPS%" echo Set-Content -LiteralPath $Changed -Value @($chg) -Encoding ASCII
 >> "%PLANPS%" echo Set-Content -LiteralPath $Dropped -Value @($drop) -Encoding ASCII
->> "%PLANPS%" echo Write-Host ('         ' + $chg.Count + ' to write, ' + $drop.Count + ' to remove')
 if not exist "%PLANPS%" exit /b 1
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PLANPS%" -Tree "%CACHE%\tree.txt" -Old "%CACHE%\manifest.txt" -Changed "%CACHE%\changed.txt" -Dropped "%CACHE%\dropped.txt"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PLANPS%" -Tree "%CACHE%\tree.txt" -Old "%CACHE%\manifest.txt" -Changed "%CACHE%\changed.txt" -Dropped "%CACHE%\dropped.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
 exit /b 0
 :gitone
@@ -420,52 +411,31 @@ if errorlevel 1 set "WRITEFAIL=1"
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
-:gun
-rem Jack's pistol, in the characters the concept art was drawn with: it sits
-rem above the progress bar and the shot is the progress, so the bar reads as
-rem rounds going downrange instead of an abstract gauge.
-echo.
-echo    ..._...^|..____________________, ,
-echo    ....../ '---___________----_____^|]=
-echo    ...../_==o;;;;;;;;_______.:/
-echo    .....), ---.(_(__) /
-echo    ....// (..) ), ----"
-echo    ...//___//
-echo    ..//___//
-echo    .//___//
-set "GUNSHOWN=1"
-exit /b 0
-
 :bar
-rem %1 = done, %2 = total. One bar, rewritten where it stands: CR back to the
-rem start of the line, then the text padded, so a growing bar never leaves the
-rem tail of the previous one behind it. The tracers are ">", which an echo would
-rem read as a redirection and abort the script over, so the fallback path
-rem escapes them - and is only used when the console cannot do the redraw.
+rem %1 = done, %2 = total. One gauge and one percentage on a single line:
+rem redrawn in place where the console can do that, printed as coarse
+rem milestones where it cannot. No ASCII art, no line per percent.
 if "%~2"=="0" exit /b 0
-if not defined GUNSHOWN call :gun
-set /a BFILL=%~1*24/%~2
-if %BFILL% GTR 24 set /a BFILL=24
-if %BFILL% LSS 0 set "BFILL=0"
-set "SHOT=>>>>>>>>>>>>>>>>>>>>>>>>"
-set "REST=........................"
-call set "BFILLED=%%SHOT:~0,%BFILL%%%"
-set /a BGAP=24-BFILL
-call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set /a BPCT=%~1*100/%~2
-set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%"
-set "BARSAFE=%BARLINE:>=^>%"
+set /a BFILL=%~1*20/%~2
+if %BFILL% GTR 20 set /a BFILL=20
+if %BFILL% LSS 0 set "BFILL=0"
+set "FILLED=####################"
+set "EMPTY=--------------------"
+call set "BFILLED=%%FILLED:~0,%BFILL%%%"
+set /a BGAP=20-BFILL
+call set "BEMPTY=%%EMPTY:~0,%BGAP%%%"
+set "BARLINE=[%BFILLED%%BEMPTY%] %BPCT%%"
 set "BARDRAWN=1"
-if not defined CR goto bar_lines
-<nul set /p "=%CR%%BARLINE%      "
+if not "%VT%"=="1" goto bar_lines
+<nul set /p "=%ESC%[2K%ESC%[0G  %BARLINE%"
 exit /b 0
 :bar_lines
-echo %BARSAFE%
+echo   %BARLINE%
 exit /b 0
 :barflush
-rem The in-place bar leaves the cursor on its own line; without this the next
-rem echo prints straight over it.
-if defined BARDRAWN echo.
+rem the redrawn bar leaves the cursor on its line: end it before the next one
+if "%VT%"=="1" if defined BARDRAWN echo.
 set "BARDRAWN="
 exit /b 0
 
@@ -522,7 +492,7 @@ if not exist "%CACHE%\bad.txt" exit /b 0
 set /a NBAD=0
 for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
 if "%NBAD%"=="0" exit /b 0
-echo         %NBAD% written file(s) do not match main - fetching them again
+echo Retrying %NBAD% file(s) that did not write correctly.
 copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
 set "NCH=%NBAD%"
 set /a NDONE=0
@@ -537,8 +507,7 @@ git hash-object --stdin-paths <"%CACHE%\changed.txt" >"%CACHE%\hashes.txt" 2>>"%
 call :confirm_ps
 set /a NBAD=0
 for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
-if "%NBAD%"=="0" echo         every written file now matches main
-if not "%NBAD%"=="0" echo         %NBAD% file(s) still do not match main - run this again
+if not "%NBAD%"=="0" echo %NBAD% file(s) still do not match - run this launcher again.
 exit /b 0
 
 :confirm_ps
@@ -551,9 +520,9 @@ if exist "%BADL%" del /q "%BADL%" >nul 2>&1
 >> "%CPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $m = $l.Substring(0, $i).Split(' '); $want[$l.Substring($i + 1)] = $m[$m.Length - 1] }
 >> "%CPS%" echo $ps = @(Get-Content -LiteralPath $Paths)
 >> "%CPS%" echo $hs = @(Get-Content -LiteralPath $Hashes)
->> "%CPS%" echo $bad = New-Object System.Collections.ArrayList
->> "%CPS%" echo for ($k = 0; $k -lt $ps.Count; $k++) { $p = $ps[$k]; if (-not $want.ContainsKey($p)) { continue }; if ($k -ge $hs.Count) { continue }; if ($hs[$k] -ne $want[$p]) { [void]$bad.Add($p) } }
->> "%CPS%" echo Set-Content -LiteralPath $Bad -Value @($bad) -Encoding ASCII
+>> "%CPS%" echo $mismatch = New-Object System.Collections.ArrayList
+>> "%CPS%" echo for ($k = 0; $k -lt $ps.Count; $k++) { $p = $ps[$k]; if (-not $want.ContainsKey($p)) { continue }; if ($k -ge $hs.Count) { continue }; if ($hs[$k] -ne $want[$p]) { [void]$mismatch.Add($p) } }
+>> "%CPS%" echo Set-Content -LiteralPath $Bad -Value @($mismatch) -Encoding ASCII
 "%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%CPS%" -Tree "%CACHE%\tree.txt" -Paths "%CACHE%\changed.txt" -Hashes "%CACHE%\hashes.txt" -Bad "%BADL%" >nul 2>&1
 exit /b 0
 
@@ -571,7 +540,7 @@ rem Two hundred files do not disappear from main in one update. A list this
 rem long means the comparison itself went wrong, and deleting on it would take
 rem the game apart - which is exactly how external\script\main.lua once went
 rem missing and the engine panicked on the next start.
-echo         %NDR% file(s) would be removed - that looks wrong, so nothing is deleted
+echo %NDR% file(s) would be removed - that looks wrong, so nothing is deleted.
 :gitref
 rem Record what this folder now holds: main's file list with the hash of each.
 rem The next launch compares against it as text, so it never re-reads the art.
@@ -621,8 +590,7 @@ if not defined TASKLIST exit /b 0
 "%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
 if errorlevel 1 exit /b 0
 echo.
-echo The game is still running. Its files are open, so they cannot
-echo be replaced. Close the game - this window carries on by itself.
+echo The game is running. Close it - this window continues by itself.
 set /a GWAIT=0
 :gamelock_wait
 call :sleep 3
@@ -633,7 +601,7 @@ if errorlevel 1 (
   exit /b 0
 )
 if %GWAIT% LSS 60 goto gamelock_wait
-echo Still open after %GWAIT% seconds - carrying on anyway.
+echo Still running after %GWAIT% seconds - continuing.
 exit /b 0
 
 :gitfail
@@ -655,9 +623,7 @@ goto gitfail_final
 set "GITFIXED=1"
 set "GITQUIET=1"
 echo.
-echo A file git needs was in use. Clearing the lock files it leaves
-echo behind and trying that step again - this costs a few hundred
-echo KB, not the archive.
+echo A file was in use - clearing git's lock files and retrying.
 call :gitunlock
 call :sleep 3
 goto gitfetch
@@ -668,42 +634,31 @@ set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
 if not "%MINE%"=="1" goto gitfail_final
 echo.
-echo The updater's git data is not usable, so it is rebuilt and the
-echo update tried once more. That folder holds no player data, so
-echo this costs a re-read of the folders, never a download.
+echo Rebuilding the updater's index and retrying once.
 call :gitunlock
 if exist "%GITSTORE%" rd /s /q "%GITSTORE%" >nul 2>&1
 goto gitinit
 
 :gitlocked
 echo.
-echo Git could not write a file because another program has it open.
-echo.
-echo Nothing has been downloaded for this: the archive takes the
-echo same locks and would fail the same way, which is why the whole
-echo            190 MB used to be spent here and change nothing.
-echo.
-echo Close these and run this launcher again:
-echo              - the game, if it is still open
-echo              - any other copy of this updater
-echo              - an editor, git window or backup tool in this folder
-echo An antivirus can hold a file for a few seconds after writing
-echo it, so running this a second time often just works.
+echo A file in this folder is open in another program.
+echo Close the game, any other copy of this updater, and any editor,
+echo git window or backup tool here, then run this launcher again.
+echo An antivirus can hold a file for a few seconds after it is
+echo written, so a second run often just works.
 echo.
 pause
 exit 1
 
 :gitfail_final
 echo.
-echo Git could not finish this update.
-echo Its reason is in git's own lines just above this - no
-echo connection, a proxy, or a blocked github.com are the usual ones.
+echo Git could not finish this update. Its reason is in the lines above.
 if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
 if exist "%CACHE%\git.log" if not defined POWERSHELL "%FINDSTR%" /i /c:"fatal" /c:"error:" "%CACHE%\git.log" >nul 2>&1
 if exist "%CACHE%\git.log" if not defined POWERSHELL if not errorlevel 1 type "%CACHE%\git.log"
 set "GITFAILED=1"
 echo.
-echo Falling back to step 2, which downloads the whole 190 MB again.
+echo Falling back to the archive download (about 190 MB).
 goto probe
 
 :gitfetch_retry
@@ -744,7 +699,7 @@ if not exist "%MISS%" exit /b 0
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 if "%NMISS%"=="0" exit /b 0
-echo         %NMISS% file(s) main has are missing here - fetching them
+echo Fetching %NMISS% missing file(s).
 set "NCH=%NMISS%"
 set /a NDONE=0
 set /a BCOUNT=0
@@ -765,7 +720,6 @@ call :gitflush
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 call :log missing after repair: %NMISS%
-if "%NMISS%"=="0" echo         every file main lists is here
 if not "%NMISS%"=="0" echo         still missing %NMISS% file(s) - run this again before playing
 exit /b 0
 
@@ -809,11 +763,10 @@ if not exist "%~dp0data\fight.def" goto download
 set "APPLIED="
 set /p APPLIED=<"%CACHE%\applied.txt"
 if not defined APPLIED goto probe_first
-echo Asking GitHub for main's latest build number.
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo Version: main @ %APPLIED%
+echo Already up to date - main @ %APPLIED%
 goto launch
 
 :probe_offer
@@ -831,8 +784,7 @@ rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto probe_offer
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo Version: main @ %APPLIED%
-echo Main has not moved - nothing to download.
+echo Already up to date - main @ %APPLIED%
 goto launch
 
 :atoms
@@ -873,13 +825,7 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo Downloading the game archive (about 190 MB)
-if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
-if not defined GITOK echo            Git is not installed here, so this is the only way in.
-echo.
-echo The bar below is the download: percentage, size and speed.
-echo File names appear in step 3 as each one is written.
-echo Leave this window open until it finishes.
+echo Downloading the game files - about 190 MB. Leave this window open.
 echo.
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
@@ -899,12 +845,9 @@ echo The archive did not arrive in one piece.
 echo.
 :dl_browser
 echo.
-echo This window is not allowed out to GitHub, but your browser is.
-echo Opening the download now.
-echo.
-echo Save it anywhere in Downloads. This window watches for it
-echo and starts the game as soon as it is complete - you do not
-echo have to come back here or run anything else.
+echo Opening the download in your browser.
+echo Save it anywhere in Downloads - this window finishes the update
+echo and starts the game by itself once the file arrives.
 echo.
 start "" "%ZIPURL%"
 echo Waiting for the zip ...
@@ -936,11 +879,7 @@ rem ---- unpack and copy ---------------------------------------------------
 :havezip
 echo.
 call :gamelock
-if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
-echo   ==============================================================
-echo.
-echo Copying the game files over this folder
-
+echo Installing the archive...
 echo.
 call :ziptree
 if "%PSOK%"=="1" goto copied
@@ -986,13 +925,10 @@ call :verify
 if not "%WHICH%"=="git" goto skipver2
 
 :skipver
-echo.
 "%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
-if errorlevel 1 echo   HUD:     old - the copy did not land
-if not errorlevel 1 echo   HUD:     dragon - the back bar is health, the belly bar is audacity
-if defined VER echo   Version: main @ %VER%
-if not defined VER echo   Version: zip build
-echo.
+if errorlevel 1 echo Warning: data\fight.def does not match the new build.
+if defined VER echo main @ %VER%
+if not defined VER echo main @ local archive
 
 :launch
 echo Starting the game
@@ -1193,7 +1129,7 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('Installed ' + $n + ' file(s), removed ' + $gone)"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
@@ -1210,7 +1146,7 @@ set "NDEL=0"
 if not defined CHANGED goto synctree_full
 if not exist "%CHANGED%" goto synctree_full
 for /f "usebackq delims=" %%p in ("%CHANGED%") do call :syncfile "%%p"
-echo            %NCOP% file(s) updated, %NDEL% removed
+echo Updated %NCOP% file(s), removed %NDEL%.
 exit /b 0
 
 :synctree_full
@@ -1220,7 +1156,7 @@ rem already match, so only the files that changed are actually written; the
 rem scan is the cost, not the bytes.
 
 for %%F in (data chars stages font external sound) do (
-  if exist "%SRC%\%%F" echo            %%F
+  if exist "%SRC%\%%F" echo   %%F
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
 )
 exit /b 0
@@ -1246,7 +1182,7 @@ if not exist "%SRC%\%REL%" goto syncfile_gone
 rem a new build can add folders, so the parent has to exist first
 for %%d in ("%~dp0%REL%") do if not exist "%%~dpd" mkdir "%%~dpd" 2>nul
 copy /Y "%SRC%\%REL%" "%~dp0%REL%" >nul 2>&1
-if not errorlevel 1 echo              %REL%
+if not errorlevel 1 echo   %REL%
 if not errorlevel 1 set /a NCOP+=1
 exit /b 0
 
