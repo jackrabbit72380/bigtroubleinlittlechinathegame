@@ -7,25 +7,12 @@
 --   pause menu -> Developer Keys   the whole list on one screen
 --   Ctrl+F1                        the same list printed into the console
 --
--- The screen draws with its own text sprite rather than the motif's movelist
--- one, for two reasons: the size can be picked here (big, two columns, no
--- scrolling) and changing it does not make the pause menu's Move List bigger as
--- a side effect.
---
--- Everything the engine is asked to do with that sprite is PROBED, not assumed.
--- A previous version set the font with the motif's font table and the whole
--- screen vanished: the call raised, the frame handler caught it, and the handler
--- closes the screen when drawing fails. So each engine call is tried, the call
--- that works is remembered, and if the fancy path cannot work at all the screen
--- falls back to the motif's own text sprite - smaller, but it always opens.
-
-local devhelp = {
-	body = nil,        -- big two-column sprite
-	sub = nil,         -- the small note above the list
-	failed = false,    -- the big path is out; stay on the plain list
-	warned = false,    -- only print the fallback reason once
-	fontMode = nil,    -- 'object' | 'index' | 'none', decided by probing
-}
+-- The screen borrows the pause menu's own text sprite instead of building one:
+-- that is the sprite the engine is known to render here (a sprite made with
+-- textImgNew and given a font opened an empty screen on a real build), and it
+-- already carries the command list's face, so the columns are measured in the
+-- face they are drawn in. It is reset at the end of every frame, so the pause
+-- menu finds it exactly as it left it.
 
 -- Colour groups: display and view, time and speed, match, players.
 local PALE  = {246, 222, 158}
@@ -73,116 +60,10 @@ local NOTE = 'needs Options > Engine > Debug Keys enabled'
 -- the key with no space between ("Ctrl+Shift+F3max power mode").
 local KEYW = 14                          -- key column width, in characters
 local ROWS = math.max(#LEFT, #RIGHT)     -- taller column decides the height
-local TOP, BOTTOM = 96, 720              -- first row, and the floor it must not hit
-local LEFT_X, COL_W = 70, 540            -- where the columns start and how wide
-local RIGHT_X = LEFT_X + COL_W + 60
-local MAXSCALE, MINSCALE = 2.0, 1.0
+local BOTTOM = 720                       -- the floor the last row must not cross
 
 local function lineOf(row)
 	return string.format('%-' .. KEYW .. 's%s', row[1], row[2])
-end
-
-local function sceneFont(sec)
-	local okf, font = pcall(function()
-		return motif.files.font['font' .. sec.movelist.text.font[1]]
-	end)
-	if okf then return font end
-	return nil
-end
-
--- Real glyph metrics, so the scale below is chosen from the font that is
--- actually loaded instead of from a guess.
-local function metrics(font)
-	local adv, cell, gap = 7, 20, 0
-	if font ~= nil then
-		local okm, a, c, g = pcall(function()
-			return font.size[1], font.size[2], font.spacing[2]
-		end)
-		if okm then
-			if a ~= nil and a > 0 then adv = a end
-			if c ~= nil and c > 0 then cell = c end
-			if g ~= nil then gap = g end
-		end
-	end
-	return adv, cell, gap
-end
-
--- Largest text that still shows every row and stays inside the column, so
--- scrolling is not needed on a normal screen.
-local function fit(adv, cell, gap)
-	local widest = 0
-	for _, col in ipairs({LEFT, RIGHT}) do
-		for _, row in ipairs(col) do
-			local n = string.len(lineOf(row))
-			if n > widest then widest = n end
-		end
-	end
-	local scale = MAXSCALE
-	while scale > MINSCALE do
-		local lh = math.floor((cell + gap) * scale + 4)
-		if lh * ROWS <= BOTTOM - TOP and widest * adv * scale <= COL_W then
-			break
-		end
-		scale = scale - 0.05
-	end
-	return scale, math.floor((cell + gap) * scale + 4)
-end
-
--- textImgSetFont takes the font table in some builds and its index in others,
--- and raises on the wrong one. Try once, remember what worked, and if neither
--- does, leave the sprite on its own font rather than losing the screen.
-local function applyFont(ti, font, idx)
-	if devhelp.fontMode == 'none' then return end
-	if devhelp.fontMode == 'object' then
-		pcall(textImgSetFont, ti, font)
-		return
-	end
-	if devhelp.fontMode == 'index' then
-		pcall(textImgSetFont, ti, idx)
-		return
-	end
-	if font ~= nil and pcall(textImgSetFont, ti, font) then
-		devhelp.fontMode = 'object'
-		return
-	end
-	if idx ~= nil and pcall(textImgSetFont, ti, idx) then
-		devhelp.fontMode = 'index'
-		return
-	end
-	devhelp.fontMode = 'none'
-end
-
--- One sprite per role, built on first use and reused every frame. The probe
--- covers every call the draw path makes, so a build missing any of them fails
--- here once instead of raising in the middle of a frame.
-local function ensure(name)
-	if devhelp[name] ~= nil then return devhelp[name] end
-	if devhelp.failed then return nil end
-	local ok, ti = pcall(function()
-		local t = textImgNew()
-		textImgSetAlign(t, 1)
-		textImgSetScale(t, 1.0, 1.0)
-		textImgSetColor(t, 255, 255, 255)
-		textImgSetPos(t, 0, 0)
-		textImgSetText(t, '')
-		return t
-	end)
-	if ok and ti ~= nil then
-		devhelp[name] = ti
-		return ti
-	end
-	devhelp.failed = true
-	return nil
-end
-
-local function put(ti, font, idx, text, col, x, y, scale)
-	applyFont(ti, font, idx)
-	textImgSetAlign(ti, 1)
-	textImgSetText(ti, text)
-	textImgSetColor(ti, col[1], col[2], col[3])
-	textImgSetScale(ti, scale, scale)
-	textImgSetPos(ti, x, y)
-	textImgDraw(ti)
 end
 
 -- The list is drawn with the pause menu's own text sprite - the one call the
@@ -279,9 +160,10 @@ local function drawPlain(sec)
 	-- bottom: only the last row's top has to stay inside, its glyph may sit on
 	-- the edge exactly as the command list's last line does
 	local room = BOTTOM - cy
-	if room > 0 and lh * (ROWS - 1) > room then
+	if room > 0 and ROWS > 1 and lh * (ROWS - 1) > room then
 		lh = math.floor(room / (ROWS - 1))
 	end
+	if lh < 4 then lh = 4 end
 	local lw, rw = 0, 0
 	for i = 1, ROWS do
 		local l, r = LEFT[i], RIGHT[i]
@@ -376,7 +258,6 @@ local ok, err = pcall(function()
 			local drawn, drawErr = pcall(devhelpDraw, motif.pause_menu.pause_menu)
 			if not drawn then
 				print('devhelp: could not draw the key list: ' .. tostring(drawErr))
-				devhelp.failed = true
 				menu.itemname = ''
 			end
 			return main.pauseMenuActive
