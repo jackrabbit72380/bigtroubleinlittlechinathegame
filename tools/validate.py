@@ -740,6 +740,26 @@ def check_stage_aspect():
     notes.append("stages: 16:9 canvases, no letterbox bars")
 
 
+def check_launchers():
+    """The Windows launchers must parse before they can run.
+
+    cmd has no second chance at syntax: an unescaped | in an echo line is a
+    pipe into a program that does not exist, and the window dies on its first
+    breath. That shipped twice, so every launcher is read by
+    tools/check_launchers.py here rather than being taken on trust.
+    """
+    path = os.path.join(ROOT, "tools", "check_launchers.py")
+    if not os.path.isfile(path):
+        err("launchers: tools/check_launchers.py is missing")
+        return
+    with open(path, encoding="utf-8") as fh:
+        source = fh.read()
+    namespace = {"__name__": "check_launchers"}
+    exec(compile(source, path, "exec"), namespace)
+    for problem in namespace["problems"](ROOT):
+        err("launchers: " + problem)
+    notes.append("launchers: no stray operators, labels and variables resolve")
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -748,6 +768,7 @@ def main():
     check_ladder()
     check_intro_states()
     check_stage_aspect()
+    check_launchers()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
