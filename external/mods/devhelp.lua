@@ -73,7 +73,7 @@ local NOTE = 'needs Options > Engine > Debug Keys enabled'
 -- the key with no space between ("Ctrl+Shift+F3max power mode").
 local KEYW = 14                          -- key column width, in characters
 local ROWS = math.max(#LEFT, #RIGHT)     -- taller column decides the height
-local TOP, BOTTOM = 96, 700              -- first row, and the floor it must not hit
+local TOP, BOTTOM = 96, 720              -- first row, and the floor it must not hit
 local LEFT_X, COL_W = 70, 540            -- where the columns start and how wide
 local RIGHT_X = LEFT_X + COL_W + 60
 local MAXSCALE, MINSCALE = 2.0, 1.0
@@ -185,89 +185,141 @@ local function put(ti, font, idx, text, col, x, y, scale)
 	textImgDraw(ti)
 end
 
--- The always-available screen: the pause menu's own text sprite, one column,
--- drawn exactly the way the working version drew it. It sets its own pitch from
--- the motif's font and scale - the two-column pitch is far too tall for a single
--- column of every row.
-local function plainPitch(sec)
-	local h = 26
-	pcall(function()
-		local f = motif.files.font['font' .. sec.movelist.text.font[1]]
-		h = math.floor((f.size[2] + f.spacing[2]) * sec.movelist.text.scale[2]
-			+ sec.movelist.text.spacing[2])
-	end)
-	if h < 8 then h = 8 end
-	return h
-end
-
--- The list is drawn with the pause menu's own text sprite, the same call the
--- engine makes to draw the command list. The earlier two-column path built a
--- text sprite with textImgNew and set a font on it; on a real build that opened
--- an empty screen (the dim overlay drew, the rows did not), so the whole screen
--- is drawn with the one sprite the engine demonstrably renders: two columns,
--- offset with AddPos, no font swapping.
--- The advance of the face the pause menu draws its list in, in motif units, so
--- the column pitch below can be measured instead of guessed.
-local function plainAdvance(sec)
-	local adv = 7
-	pcall(function()
-		local f = motif.files.font['font' .. sec.movelist.text.font[1]]
-		adv = f.size[1] * sec.movelist.text.scale[1]
-	end)
-	if adv == nil or adv < 4 then adv = 7 end
-	return adv
-end
-
-local function widestChars(rows)
-	local n = 0
-	for _, row in ipairs(rows) do
-		local len = string.len(lineOf(row))
-		if len > n then n = len end
-	end
-	return n
-end
-
--- Both columns are centred on the list's own anchor, and they used to sit a
--- fixed 620 units apart whatever they held. At this face's ~22.5 units a
--- character, the longest left line ("Ctrl+Shift+D" + "readout, extended", 29
--- characters) reached 326 units either side of its centre and the right
--- column's widest reached another 349, so their halves crossed a good 40 units
--- past the middle: the readouts printed through "F1", "F2" and "F8" on the
--- right-hand keys.
+-- The list is drawn with the pause menu's own text sprite - the one call the
+-- engine demonstrably renders - but the placement no longer guesses how wide a
+-- character is. Two guesses were wrong at once here: the advance was taken as
+-- size[1] alone, while the motif adds spacing[1] to every glyph, so the pitch
+-- came out a sixth short; and the block was centred on the list's own anchor
+-- (100 units in), which pushed the left column's first half off the screen and
+-- let the right one print through it.
 --
--- The pitch is now built from the two columns' own widths, with a gap between
--- them that nothing can close, and the whole block shrinks to fit AVAIL if the
--- roster of keys ever grows again. Centring is kept, so the block stays where it
--- is on the screen rather than needing to know the engine's own anchor.
-local AVAIL = 1150          -- room the block may use in the 1280-wide motif space
-local COL_GAP = 48          -- clear space between the two columns' inner edges
+-- So: the face is read from the motif, each field on its own, and the widths are
+-- then measured through the engine. Every row is placed from those measurements.
+local function motifText(sec)
+	local charw, cell, gap, vscale, vgap = 7, 0, 0, 1, 0
+	pcall(function()
+		local m = sec.movelist.text
+		local f = motif.files.font['font' .. m.font[1]]
+		local w = 0
+		if f ~= nil then
+			if f.size ~= nil then
+				if f.size[1] ~= nil and f.size[1] > 0 then w = f.size[1] end
+				if f.size[2] ~= nil and f.size[2] > 0 then cell = f.size[2] end
+			end
+			-- read on its own: a build that does not expose font.spacing used
+			-- to raise here and take the whole lookup with it, leaving the
+			-- list on a guessed pitch
+			if f.spacing ~= nil and f.spacing[2] ~= nil and f.spacing[2] > 0 then
+				gap = f.spacing[2]
+			end
+		end
+		if m.spacing ~= nil and m.spacing[1] ~= nil and m.spacing[1] > 0 then
+			w = w + m.spacing[1]
+		end
+		if w > 0 then charw = w end
+		if m.scale ~= nil and m.scale[2] ~= nil and m.scale[2] > 0 then
+			vscale = m.scale[2]
+		end
+		if m.spacing ~= nil and m.spacing[2] ~= nil then
+			vgap = m.spacing[2]
+		end
+	end)
+	if cell < 1 then cell = charw * 3 end
+	-- the engine's own pitch for this list, the one the command list is drawn on
+	return charw, math.floor((cell + gap) * vscale + vgap)
+end
 
+-- Measured width of one cell, through the engine. The face is proportional, so
+-- the only honest way to know where the second column starts is to ask.
+local function cellWidth(ti, text, charw)
+	local ok, w = pcall(textImgGetTextWidth, ti, text)
+	if ok and type(w) == 'number' and w > 1 then
+		return w
+	end
+	return string.len(text) * charw
+end
+
+local AVAIL = 1150                 -- room the block may use on the 1280-wide screen
+local COL_GAP = 48                 -- clear space between the columns' inner edges
+local FALLBACK_CX, FALLBACK_Y = 640, 96
+
+-- Where the screenpack puts a centred thing: the pause title is centred on
+-- movelist.pos + title.offset, and the block sits on that same point, so the
+-- heading stays over the middle of the columns.
+local function anchor(sec)
+	local cx, cy = FALLBACK_CX, FALLBACK_Y
+	pcall(function()
+		local m = sec.movelist
+		if m == nil then return end
+		if m.pos ~= nil then
+			if m.pos[1] ~= nil then cx = m.pos[1] end
+			if m.pos[2] ~= nil then cy = m.pos[2] end
+		end
+		if m.title ~= nil and m.title.offset ~= nil and m.title.offset[1] ~= nil then
+			cx = cx + m.title.offset[1]
+		end
+		if m.text ~= nil and m.text.offset ~= nil and m.text.offset[2] ~= nil then
+			cy = cy + m.text.offset[2]
+		end
+	end)
+	return cx, cy
+end
+
+-- Each row is two cells drawn from their measured widths - the left one starts
+-- half the block left of the anchor, the right one exactly past the left column
+-- and the gap - so the two cannot print through each other whatever the face
+-- does. The block only shrinks if a longer key list ever outgrows the screen.
+-- Positions are set, not added: the sprite's own base is the list's left margin,
+-- which is not where a centred block belongs.
 local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
-	local lh = plainPitch(sec)
-	local adv = plainAdvance(sec)
-	local lw, rw = widestChars(LEFT), widestChars(RIGHT)
-	local room = AVAIL - COL_GAP
-	if room < 1 then room = 1 end
-	local scale = 1
-	local need = (lw + rw) * adv
-	if need > room then
-		scale = room / need
+	local charw, lh = motifText(sec)
+	local cx, cy = anchor(sec)
+	local room = BOTTOM - cy
+	if room > 0 and lh * ROWS > room then
+		lh = math.floor(room / ROWS)
 	end
-	local a = adv * scale
-	local pitch = COL_GAP + (lw + rw) / 2 * a
-	local COLS = {{-pitch / 2, LEFT}, {pitch / 2, RIGHT}}
-	for _, col in ipairs(COLS) do
-		local x, rows = col[1], col[2]
-		for i, row in ipairs(rows) do
-			textImgReset(txt)
-			textImgSetAlign(txt, 1)
-			-- probed like every other engine call here: a build without
-			-- textImgSetScale still gets the list, just at its own size
-			pcall(textImgSetScale, txt, scale, scale)
-			textImgSetText(txt, lineOf(row))
-			textImgAddPos(txt, x, lh * (i - 1))
-			textImgDraw(txt)
+	local lw, rw = 0, 0
+	for i = 1, ROWS do
+		local l, r = LEFT[i], RIGHT[i]
+		if l ~= nil then
+			local w = cellWidth(txt, lineOf(l), charw)
+			if w > lw then lw = w end
+		end
+		if r ~= nil then
+			local w = cellWidth(txt, lineOf(r), charw)
+			if w > rw then rw = w end
+		end
+	end
+	local total = lw + COL_GAP + rw
+	local scale = 1
+	if total > AVAIL then scale = AVAIL / total end
+	local xl = cx - total * scale / 2
+	local xr = xl + (lw + COL_GAP) * scale
+	for i = 1, ROWS do
+		local y = cy + lh * (i - 1)
+		local l, r = LEFT[i], RIGHT[i]
+		if l ~= nil then
+			pcall(function()
+				textImgReset(txt)
+				textImgSetAlign(txt, 1)          -- 1 = left, the engine's font convention
+				textImgSetScale(txt, scale, scale)
+				textImgSetColor(txt, l[3][1], l[3][2], l[3][3], 255)
+				textImgSetText(txt, lineOf(l))
+				textImgSetPos(txt, xl, y)
+				textImgDraw(txt)
+			end)
+		end
+		if r ~= nil then
+			pcall(function()
+				textImgReset(txt)
+				textImgSetAlign(txt, 1)
+				textImgSetScale(txt, scale, scale)
+				textImgSetColor(txt, r[3][1], r[3][2], r[3][3], 255)
+				textImgSetText(txt, lineOf(r))
+				textImgSetPos(txt, xr, y)
+				textImgDraw(txt)
+			end)
 		end
 	end
 	-- leave the shared sprite as the pause menu expects to find it
