@@ -338,7 +338,7 @@ id = 1501
 pos = 40,-70
 postype = p1
 sprpriority = 4
-removetime = -2
+; removetime = -2
 trans = add
 
 [State 1500, burst 2]
@@ -349,7 +349,7 @@ id = 1501
 pos = 40,-70
 postype = p1
 sprpriority = 4
-removetime = -2
+; removetime = -2
 trans = add
 
 [State 1500, burst 3]
@@ -360,7 +360,7 @@ id = 1501
 pos = 40,-70
 postype = p1
 sprpriority = 4
-removetime = -2
+; removetime = -2
 trans = add
 
 [State 1500, ring 1]
@@ -369,7 +369,7 @@ trigger1 = AnimElem = 4
 projanim = 7000
 projhitanim = 7002
 velocity = 13, 0
-removetime = -1
+; removetime = -1
 projshadow = -1
 damage = 37
 attr = S, SP
@@ -392,7 +392,7 @@ trigger1 = AnimElem = 6
 projanim = 7000
 projhitanim = 7002
 velocity = 13, 0
-removetime = -1
+; removetime = -1
 projshadow = -1
 damage = 33
 attr = S, SP
@@ -415,7 +415,7 @@ trigger1 = AnimElem = 8
 projanim = 7000
 projhitanim = 7002
 velocity = 13, 0
-removetime = -1
+; removetime = -1
 projshadow = -1
 damage = 30
 attr = S, SP
@@ -479,7 +479,7 @@ trigger1 = AnimElem = 4
 projanim = 7010
 projhitanim = 7002
 velocity = 9, 0
-removetime = -1
+; removetime = -1
 projshadow = -1
 damage = 92
 attr = S, SP
@@ -515,7 +515,7 @@ id = 7300
 postype = p1
 pos = 0,-186
 sprpriority = 4
-removetime = 14
+; removetime = 14
 trans = add
 """
 
