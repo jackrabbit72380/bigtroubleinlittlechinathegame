@@ -1352,6 +1352,87 @@ function start.f_drawRandomStop()
 	pcall(textImgDraw, t)
 end
 
+-- PLAYER 1 and PLAYER 2: the same font object, the same scale and the same row
+-- as the mode title the engine draws between them. They used to be part of the
+-- background art, set in a TrueType face at their own size, so the three words
+-- on the header row never matched; drawn here off the title's own keys they
+-- cannot drift apart. Positioned where the painted ones were - a quarter and
+-- three quarters of the way across the frame, centred - so the row reads as
+-- PLAYER 1 / mode / PLAYER 2.
+local playerLabels = {[1] = nil, [2] = nil}
+
+local function labelSprite(pn)
+	if playerLabels[pn] == nil then
+		local ok, made = pcall(textImgNew)
+		if not ok or made == nil then
+			return nil
+		end
+		local title = motif.select_info and motif.select_info.title
+		local font = title and title.font
+		if font == nil then
+			return nil
+		end
+		local idx = type(font) == 'table' and font[1] or font
+		local tries = {{'object', font}}
+		if idx ~= nil then
+			tries[#tries + 1] = {'index', idx}
+			if motif.files and motif.files.font and motif.files.font['font' .. tostring(idx)] then
+				tries[#tries + 1] = {'object', motif.files.font['font' .. tostring(idx)]}
+			end
+		end
+		local set = false
+		for _, try in ipairs(tries) do
+			if pcall(textImgSetFont, made, try[2]) then
+				set = true
+				break
+			end
+		end
+		if not set then
+			playerLabels[pn] = false
+			return nil
+		end
+		playerLabels[pn] = made
+	end
+	if playerLabels[pn] == false then
+		return nil
+	end
+	return playerLabels[pn]
+end
+
+function start.f_drawPlayerLabels()
+	local si = motif.select_info
+	local title = si and si.title
+	local pos = si and si.pos
+	if title == nil or pos == nil then
+		return
+	end
+	local y = 2
+	if type(title.offset) == 'table' and title.offset[2] ~= nil then
+		y = title.offset[2]
+	end
+	local scale = title.scale
+	local col = title.font
+	local cx1 = math.floor(pos[1] / 2)
+	for pn = 1, 2 do
+		local t = labelSprite(pn)
+		if t ~= nil then
+			pcall(textImgReset, t)
+			pcall(textImgSetText, t, pn == 1 and 'PLAYER 1' or 'PLAYER 2')
+			-- centred like the title itself, set every frame: the reset above
+			-- may drop the alignment set when the sprite was made
+			pcall(textImgSetAlign, t, 0)
+			if scale ~= nil then
+				pcall(textImgSetScale, t, scale[1] or 1, scale[2] or 1)
+			end
+			if type(col) == 'table' and col[4] ~= nil then
+				pcall(textImgSetColor, t, col[4], col[5] or col[4], col[6] or col[4])
+			end
+			pcall(textImgSetPos, t, pn == 1 and cx1 or (1920 - cx1), y)
+			pcall(textImgDraw, t)
+		end
+	end
+end
+
 function start.f_drawCursor(pn, x, y, param, done)
 	local pData = start.f_getCursorData(pn)
 	-- select appropriate cursor table and initialize if needed
@@ -3033,6 +3114,7 @@ function start.f_selectScreen()
 			-- because its lit state depends on all of them.
 			if side == 1 then
 				start.f_drawRandomStop()
+				start.f_drawPlayerLabels()
 			end
 			--draw done cursors
 			local persist = motif.select_info['p' .. side].cursor.persist

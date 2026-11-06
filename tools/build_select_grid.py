@@ -155,22 +155,16 @@ def background():
         d.polygon([(cx, cy - 13), (cx + 13, cy), (cx, cy + 13), (cx - 13, cy)],
                   fill=GOLD + (255,), outline=(40, 32, 14, 255))
 
-    # Side columns: rules marking where the two fighters stand, labelled on top.
-    # One size for every word on this screen. VERSUS, the stage caption and both
-    # fighter names are font 11 - the Body face, a 7x20 cell - so the painted
-    # labels are set to that cell's cap height (art.font(19) gives 14px caps)
-    # rather than the 16px they were, which read a size larger than everything
-    # the engine draws.
-    LABEL_Y = 3
-    LABEL_FONT = art.font(19)
+    # Side columns: rules marking where the two fighters stand. The PLAYER 1 /
+    # PLAYER 2 captions are no longer painted here: they were set in a TrueType
+    # face at their own size, while the mode title between them is the engine's
+    # bitmap font 11, so the three words never matched in face, size or height.
+    # start.lua draws both labels now, with the title's own font object on the
+    # title's own row, so the three cannot drift apart.
+    LABEL_Y = 2
     for x in (30, SCREEN[0] - 31):
         d.rectangle([x, LABEL_Y + 30, x + 3, SCREEN[1] - 69], fill=GOLD_DIM + (200,))
         d.rectangle([x + 1, LABEL_Y + 30, x + 1, SCREEN[1] - 69], fill=GOLD + (110,))
-    cx1, cx2 = GRID[0] // 2, SCREEN[0] - GRID[0] // 2
-    for cx, label in ((cx1, "PLAYER 1"), (cx2, "PLAYER 2")):
-        tracked(d, (cx, LABEL_Y), label, LABEL_FONT, GOLD + (238,), tracking=2,
-                anchor="ma")
-        rule(d, cx - 87, cx + 87, LABEL_Y + 26, GOLD_DIM + (220,))
 
     # No painted "ARENA" caption: the engine draws the selected stage's own
     # name under the thumbnail, and the caption used to sit on top of the
@@ -450,7 +444,12 @@ KEYS = (
     ("stage.portrait.spr", "9000,1"),
     # VERSUS is drawn by the engine: same face as the stage caption (font 11),
     # on the top edge, so it matches PLAYER 1 / PLAYER 2 and the stage name.
-    ("title.offset", "960, 3"),
+    # The wall's frame starts at y=25. The title's face is the bitmap Body face,
+    # a 7x20 cell, so at scale 1,1 it is 20px of row from y=2 - clear of the
+    # frame instead of lying across it. The two PLAYER labels take this very
+    # offset, scale and font (start.lua reads them from the motif), so the three
+    # words are one size, one face and one row by construction.
+    ("title.offset", "960, 2"),
     ("title.font", "11, 0, 0, 255, 228, 140"),
     ("title.scale", "1,1"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
