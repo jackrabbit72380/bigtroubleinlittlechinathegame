@@ -351,10 +351,11 @@ VS_FACE2 = tuple(
         ("xangle", "0"), ("yangle", "0"), ("projection", "orthographic"),
         ("focallength", "2048"), ("layerno", "0"),
         ("window", "0, 0, 1, 1"), ("applypal", "0"),
-        # face2 is also handed over as the velocity source for its own done
-        # group, so it needs the four motion tables even while it draws nothing.
-        ("velocity", "0, 0"), ("maxdist", "0, 0"), ("accel", "0, 0"),
-        ("friction", "1, 1"),
+        # No velocity/maxdist/accel/friction here. The engine rejects all four on a
+        # face2 group ("field 'velocity' not found as struct or map field") and
+        # discards them, so declaring them only ever added warning lines to the
+        # launch console; start.lua reads the velocity source through pair(), which
+        # covers the nil.
     )
 )
 

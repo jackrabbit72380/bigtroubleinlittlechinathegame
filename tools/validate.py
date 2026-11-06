@@ -345,7 +345,10 @@ def check_select_screen(chars):
                         err("vs screen: %s.%s is missing, and start.lua's f_animGet "
                             "indexes it as a table when VS MODE builds the "
                             "portraits" % (group, field))
-            for group in (side, side + ".face2"):
+            # face2 has no motion tables to require: this build rejects
+            # face2.velocity/maxdist/accel/friction at load, so the motif never
+            # carried them and start.lua's pair() covers the nil.
+            for group in (side,):
                 for field in motion_fields:
                     if "%s.%s" % (group, field) not in vs:
                         err("vs screen: %s.%s is missing, and start.lua's f_animGet "
