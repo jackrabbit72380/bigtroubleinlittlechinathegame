@@ -275,9 +275,12 @@ local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
 	local charw, lh = motifText(sec)
 	local cx, cy = anchor(sec)
+	-- keep the screenpack's own pitch unless a future key list would run off the
+	-- bottom: only the last row's top has to stay inside, its glyph may sit on
+	-- the edge exactly as the command list's last line does
 	local room = BOTTOM - cy
-	if room > 0 and lh * ROWS > room then
-		lh = math.floor(room / ROWS)
+	if room > 0 and lh * (ROWS - 1) > room then
+		lh = math.floor(room / (ROWS - 1))
 	end
 	local lw, rw = 0, 0
 	for i = 1, ROWS do
