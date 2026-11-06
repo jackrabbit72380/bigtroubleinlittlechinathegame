@@ -3114,7 +3114,7 @@ function start.f_selectScreen()
 			-- because its lit state depends on all of them.
 			if side == 1 then
 				start.f_drawRandomStop()
-				start.f_drawPlayerLabels()
+				-- PLAYER 1 / PLAYER 2 are painted into the select backdrop
 			end
 			--draw done cursors
 			local persist = motif.select_info['p' .. side].cursor.persist

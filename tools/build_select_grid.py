@@ -98,7 +98,10 @@ ARENA_Y = 604
 BLANKED = ((101, 0), (101, 2), (101, 3), (100, 1), (102, 0), (102, 1))
 
 # Cursor colour per player, in the order the grid draws players 1-4.
-PLAYER_COLOURS = ((72, 232, 96), (240, 186, 64), (176, 132, 240), (96, 208, 232))
+PLAYER_COLOURS = ((72, 232, 96), (236, 62, 62), (176, 132, 240), (96, 208, 232))
+# Before a pick is confirmed the outline flashes white for both players; the
+# colour is the done state. Same geometry, only the ink differs.
+CURSOR_WHITE = ((224, 0), (224, 1), (224, 2), (224, 3))
 
 
 def tracked(draw, xy, text, font, fill, tracking=2, anchor="la"):
@@ -145,11 +148,11 @@ def background():
     # No plate behind the wall: the stone, the jade haze and the smoke are the
     # background, and the old near-black wash turned the middle of the screen
     # into a black board that the cells sat on.
-    d.rectangle(box, outline=GOLD_DIM + (255,), width=3)
+    d.rectangle(box, outline=GOLD_DIM + (255,), width=5)
     d.rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4],
-                outline=GOLD + (232,), width=3)
+                outline=GOLD + (255,), width=5)
     d.rectangle([box[0] + 8, box[1] + 8, box[2] - 8, box[3] - 8],
-                outline=GOLD_DIM + (190,), width=2)
+                outline=GOLD_DIM + (235,), width=3)
     for cx, cy in ((box[0], box[1]), (box[2], box[1]),
                    (box[0], box[3]), (box[2], box[3])):
         d.polygon([(cx, cy - 13), (cx + 13, cy), (cx, cy + 13), (cx - 13, cy)],
@@ -161,16 +164,38 @@ def background():
     # bitmap font 11, so the three words never matched in face, size or height.
     # start.lua draws both labels now, with the title's own font object on the
     # title's own row, so the three cannot drift apart.
-    LABEL_Y = 2
-    for x in (30, SCREEN[0] - 31):
-        d.rectangle([x, LABEL_Y + 30, x + 3, SCREEN[1] - 69], fill=GOLD_DIM + (200,))
-        d.rectangle([x + 1, LABEL_Y + 30, x + 1, SCREEN[1] - 69], fill=GOLD + (110,))
+    # Every portrait cell's frame is painted here and the engine's own plate is
+    # switched off (cell.bg.spr = -1). The grid reserves a seventh row so the
+    # RANDOM stop has somewhere to sit, and with cell.bg.spr set the engine
+    # ruled that empty row too - the stray box under the wall. Painted frames
+    # only exist where a fighter does.
+    frame = cell_frame()
+    for row in range(FIGHTER_ROWS):
+        for col in range(COLS):
+            img.alpha_composite(frame, (GRID[0] + col * (CELL + GAP),
+                                        GRID[1] + row * (CELL_H + GAP)))
 
     # No painted "ARENA" caption: the engine draws the selected stage's own
     # name under the thumbnail, and the caption used to sit on top of the
     # preview box with nothing beneath it.
 
     img = art.vignette(img, strength=0.55)
+
+    # The frame that used to be two gold lines near the side edges is now one
+    # rule around the whole picture, on the very edge, in the same gold as the
+    # portrait boxes.
+    d2 = ImageDraw.Draw(img)
+    d2.rectangle([0, 0, SCREEN[0] - 1, SCREEN[1] - 1], outline=INK + (255,), width=1)
+    d2.rectangle([1, 1, SCREEN[0] - 2, SCREEN[1] - 2], outline=GOLD + (255,), width=4)
+    d2.rectangle([5, 5, SCREEN[0] - 6, SCREEN[1] - 6], outline=GOLD_DIM + (230,), width=2)
+
+    # PLAYER 1 and PLAYER 2, painted at the title row's own height. start.lua
+    # used to draw them with textImgSetFont, which needs a font object this
+    # script cannot hand it, so they came out as nothing at all.
+    face = art.font(26)
+    for text, cx in (("PLAYER 1", 232), ("PLAYER 2", SCREEN[0] - 232)):
+        tracked(d2, (cx, 3), text, face, GOLD_LIT + (255,), tracking=4, anchor="ma")
+
     return art.grain(img, amount=5, seed=5)
 
 
@@ -407,7 +432,7 @@ KEYS = (
     ("searchemptyboxesup", "1"),
     ("cell.size", "%d,%d" % (CELL, CELL_H)),
     ("cell.spacing", str(GAP)),
-    ("cell.bg.spr", "%d,%d" % CELL_SPR),
+    ("cell.bg.spr", "-1"),
     ("cell.bg.scale", "1,1"),
     ("cell.bg.offset", "0,0"),
     ("cell.random.spr", "151,0"),
@@ -437,7 +462,7 @@ KEYS = (
     # The stage caption was the one word on the screen at 1.5x, so the arena name
     # read a size larger than VERSUS and the fighter names. Font 11 at 1 is the
     # same size as the rest of them.
-    ("stage.scale", "1, 1"),
+    ("stage.scale", "1.5, 1.5"),
     ("stage.active.font", "11, 0, 0, 255, 228, 140"),
     # The arena thumbnail. It was commented out by an older build, which left
     # the preview box showing nothing but its own frame.
@@ -449,9 +474,9 @@ KEYS = (
     # frame instead of lying across it. The two PLAYER labels take this very
     # offset, scale and font (start.lua reads them from the motif), so the three
     # words are one size, one face and one row by construction.
-    ("title.offset", "960, 2"),
+    ("title.offset", "960, 0"),
     ("title.font", "11, 0, 0, 255, 228, 140"),
-    ("title.scale", "1,1"),
+    ("title.scale", "1.5,1.5"),
     # The big side art is the uniform 9000,2 portrait, so the two columns match
     # each other no matter how tall the fighter is in play. Its axis is the
     # top-left corner, so the offset is where that corner goes: SIDE_INSET in
@@ -479,11 +504,11 @@ KEYS = (
     # drawn in a quarter-size space; it is not, so the names came out a quarter
     # of the caption size and could not be read beside PLAYER 1 / PLAYER 2.
     ("p1.name.font", "11, 0, 0, 255, 228, 140"),
-    ("p1.name.scale", "1, 1"),
+    ("p1.name.scale", "1.5, 1.5"),
     ("p1.name.offset", "75, 1035"),
     ("p1.name.layerno", "2"),
     ("p2.name.font", "11, 0, -1, 255, 170, 96"),
-    ("p2.name.scale", "1, 1"),
+    ("p2.name.scale", "1.5, 1.5"),
     ("p2.name.offset", "1845, 1035"),
     ("p2.name.layerno", "2"),
     # The "?" and the loading art stand in for the portrait, so they are drawn
@@ -556,11 +581,11 @@ KEYS = (
     ("p2.face2.done.facing", "-1"),
     ("p2.face2.done.window", FACE2_WIN_P2),
 )
-for i, spr in enumerate(CURSOR, start=1):
-    KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % spr),
+for i, (active, done) in enumerate(zip(CURSOR_WHITE, CURSOR), start=1):
+    KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % active),
              (f"p{i}.cursor.active.scale", "1,1"),
              (f"p{i}.cursor.active.offset", "0,0"),
-             (f"p{i}.cursor.done.spr", "%d,%d" % spr),
+             (f"p{i}.cursor.done.spr", "%d,%d" % done),
              (f"p{i}.cursor.done.scale", "1,1"),
              (f"p{i}.cursor.done.offset", "0,0"))
 
@@ -653,6 +678,8 @@ def main():
     images = {BG_SPR: background(), CELL_SPR: cell_frame()}
     for spr, colour in zip(CURSOR, PLAYER_COLOURS):
         images[spr] = cursor_frame(colour)
+    for spr in CURSOR_WHITE:
+        images[spr] = cursor_frame((255, 255, 255))
 
     rewrite_system_sff(images)
     marks = repaint_random_mark()
