@@ -1,4 +1,4 @@
-"""Add the Developer Keys entry to the pause menus.
+"""Add the Developer Keys and Music entries to the pause menus.
 
 The pause menu is built from `menu.itemname.*` keys in the motif, so the item has
 to be declared in data/ikemen1/system.def. The asset build replaces data/ with the
@@ -19,27 +19,36 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 MOTIF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
-ENTRY = "menu.itemname.devkeys = Developer Keys"
+ENTRIES = (
+    "menu.itemname.devkeys = Developer Keys",
+    # MUSIC. The browser itself is external/mods/musicselect.lua; this is the row
+    # that opens it, so the track can be picked from a paused fight as well as
+    # from the title menu.
+    "menu.itemname.music = MUSIC",
+)
 SECTIONS = ("[Pause Menu]", "[Training Pause Menu]")
 
-# Anything already declaring the key, so a second run cannot add it twice.
-EXISTING = re.compile(r"^\s*menu\.itemname\.devkeys\s*=", re.IGNORECASE)
+# Anything already declaring one of the keys, so a second run cannot add twice.
+EXISTING = re.compile(r"^\s*menu\.itemname\.(devkeys|music)\s*=", re.IGNORECASE)
 
 
 def patch(text):
-    """Append ENTRY to each pause menu section that does not declare it yet."""
+    """Append every ENTRY a pause menu section does not declare yet."""
     lines = text.splitlines()
     out = []
     current = None
     added = []
     in_section = {name: False for name in SECTIONS}
-    has_key = {name: False for name in SECTIONS}
+    has_key = {name: set() for name in SECTIONS}
 
     def close_section():
-        if current in SECTIONS and not has_key[current]:
-            out.append(ENTRY)
-            has_key[current] = True
-            added.append(current)
+        if current in SECTIONS:
+            for entry in ENTRIES:
+                key = entry.split("=", 1)[0].strip().lower()
+                if key not in has_key[current]:
+                    out.append(entry)
+                    has_key[current].add(key)
+                    added.append(current)
 
     for line in lines:
         stripped = line.strip()
@@ -48,8 +57,10 @@ def patch(text):
             current = stripped
             if current in SECTIONS:
                 in_section[current] = True
-        if current in SECTIONS and EXISTING.match(line):
-            has_key[current] = True
+        if current in SECTIONS:
+            m = EXISTING.match(line)
+            if m:
+                has_key[current].add("menu.itemname." + m.group(1).lower())
         out.append(line)
     close_section()
 
@@ -72,12 +83,13 @@ def main():
         return 0
 
     if text == original:
-        print("pause menu already offers Developer Keys")
+        print("pause menu already offers Developer Keys and Music")
         return 0
 
     with open(MOTIF, "w", encoding="utf-8", newline="") as handle:
         handle.write(text)
-    print("added the Developer Keys entry to %s" % (", ".join(added) or "nothing"))
+    print("added the pause menu entries to %s"
+          % (", ".join(sorted(set(added))) or "nothing"))
     return 0
 
 
