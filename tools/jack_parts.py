@@ -30,7 +30,7 @@ import json
 import os
 import sys
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -76,6 +76,14 @@ BROW = (54, 34, 20)
 LIP = (150, 88, 76)
 BUCKLE = (198, 178, 120)
 
+# The chest emblem is the real illustration, reduced, not a shape-by-shape
+# redraw. It was drawn in code first: at the 20px the chest occupies in game
+# that reduction collapsed into a pink arc with a blank face, so the painted
+# version is gone and this path is used instead. Drop the transparent PNG here
+# and the torso picks it up; with no file the chest stays plain, which is what
+# this screenpack shipped before.
+REF_EMBLEM = os.path.join(ROOT, "art_src", "chars", "jackburton", "ref", "emblem.png")
+
 
 def _blank(size):
     return Image.new("RGBA", size, (0, 0, 0, 0))
@@ -92,6 +100,35 @@ def _capsule(draw, p0, p1, r0, r1, fill=255):
                   (p0[0] - nx * r0, p0[1] - ny * r0)], fill=fill)
     draw.ellipse([p0[0] - r0, p0[1] - r0, p0[0] + r0, p0[1] + r0], fill=fill)
     draw.ellipse([p1[0] - r1, p1[1] - r1, p1[0] + r1, p1[1] + r1], fill=fill)
+
+
+def _emblem_ref(width):
+    """The chest graphic from the reference art, resampled onto the chest.
+
+    Two things matter at this size. The art is cropped to its own pixels first,
+    so the illustration's own white margin does not shrink the mark, and the
+    resize runs on premultiplied alpha: a straight RGBA downscale pulls the ink
+    outline into the pale face and greys the whole mark out.
+    """
+    if not os.path.isfile(REF_EMBLEM):
+        return None
+    art = Image.open(REF_EMBLEM).convert("RGBA")
+    box = art.getchannel("A").getbbox()
+    if box:
+        art = art.crop(box)
+    height = max(6, int(round(width * art.height / max(1, art.width))))
+    small = art.convert("RGBa").resize((width, height), Image.LANCZOS).convert("RGBA")
+    # The only source is a JPEG of the print on fabric, so the reduction comes
+    # out grey and soft: the shirt's own shading is baked into the colours and
+    # the ink lines blur into the fills. Put the saturation and the line back
+    # where the flat art has them - at 48px the mark is a smudge otherwise.
+    rgb = ImageEnhance.Color(small.convert("RGB")).enhance(1.35)
+    rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
+    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=1.0, percent=80, threshold=0))
+    out = rgb.quantize(colors=12, method=Image.MEDIANCUT,
+                       dither=Image.NONE).convert("RGB").convert("RGBA")
+    out.putalpha(small.getchannel("A"))
+    return out
 
 
 # ------------------------------------------------------------------------ torso
@@ -128,6 +165,13 @@ def torso():
                 (cx - HIP_HALF - 6, int(H * 0.80))], fill=255)
     img.alpha_composite(char_rig._shade(tank, TANK, TANK_LIT, TANK_DK))
     d = ImageDraw.Draw(img)
+
+    # --- the chest emblem -------------------------------------------------
+    # Width comes off the shoulders, so it stays on the chest if the rig's
+    # metrics are ever re-measured. Height follows the art's own aspect.
+    emblem = _emblem_ref(max(10, int(SH_HALF * 1.20)))
+    if emblem is not None:
+        img.alpha_composite(emblem, (cx - emblem.width // 2, int(H * 0.24)))
 
     for sx in (-1, 1):
         # one soft fold under each pectoral, nothing drawn across the chest
@@ -329,10 +373,23 @@ def shin():
     bd.rectangle([6, H - 6, 27, H - 1], fill=255)
     img.alpha_composite(char_rig._shade(bootmask, BOOT, BOOT_LIT, BOOT_DK))
     d = ImageDraw.Draw(img)
-    d.line([(4, int(H * 0.34)), (30, int(H * 0.34))], fill=BOOT_LIT + (200,), width=1)
-    for i in range(3):
-        y = int(H * (0.48 + i * 0.14))
-        d.line([(9, y), (25, y - 1)], fill=BOOT_LIT + (110,), width=1)
+    # The reference boot, in the order its shapes read at sprite size: a stiff
+    # cuff, a seam running down the outer side, a row of buttons on the outer
+    # edge, and a treaded sole. The button row is what identifies the boot when
+    # the whole man is 106px tall, so it gets the contrast; seams stay faint.
+    top = int(H * 0.34)
+    d.line([(4, top), (30, top)], fill=BOOT_LIT + (210,), width=1)
+    d.line([(5, top + 3), (29, top + 3)], fill=BOOT_DK + (150,), width=1)
+    d.line([(25, top + 5), (24, H - 6)], fill=BOOT_LIT + (120,), width=1)
+    for i in range(8):
+        by = top + 6 + i * max(2, (H - 14 - top) // 8)
+        if by > H - 8:
+            break
+        d.ellipse([27, by, 29, by + 2], fill=BOOT_LIT + (235,))
+        d.point([(28, by + 1)], fill=BOOT_DK + (235,))
+    d.rectangle([6, H - 4, 27, H - 2], fill=BOOT_DK + (255,))
+    for x in range(7, 27, 3):
+        d.point([(x, H - 3)], fill=BOOT_LIT + (120,))
     return img
 
 
@@ -346,6 +403,10 @@ def foot():
     img = char_rig._shade(mask, BOOT, BOOT_LIT, BOOT_DK)
     d = ImageDraw.Draw(img)
     d.line([(5, H - 4), (37, H - 5)], fill=BOOT_DK + (255,), width=2)
+    # tread notches on the sole edge and the toe-cap seam from the reference
+    for x in range(7, 36, 3):
+        d.point([(x, H - 3)], fill=BOOT_LIT + (120,))
+    d.arc([16, 2, 34, H - 3], 300, 40, fill=BOOT_LIT + (120,), width=1)
     d.line([(7, 7), (20, 5)], fill=BOOT_LIT + (140,), width=1)
     return img
 
