@@ -85,37 +85,37 @@ vs.bgm.loop = 0
 vs.bgm.loopstart = 
 vs.bgm.loopend = 
   ;Music to play at victory screen.
-victory.bgm = sound/Winner.ogg
+victory.bgm = sound/Versus.ogg
 victory.bgm.volume = 100
 victory.bgm.loop = 0
 victory.bgm.loopstart = 
 victory.bgm.loopend = 
   ;Music to play at option screen.
-option.bgm = sound/Options.ogg
+option.bgm = sound/Select.ogg
 option.bgm.volume = 100
 option.bgm.loop = 1
 option.bgm.loopstart = 
 option.bgm.loopend = 
   ;Music to play at replay screen.
-replay.bgm = sound/Replay.ogg
+replay.bgm = sound/Select.ogg
 replay.bgm.volume = 100
 replay.bgm.loop = 1
 replay.bgm.loopstart = 
 replay.bgm.loopend = 
   ;Music to play at continue screen.
-continue.bgm = sound/Continue.ogg
+continue.bgm = sound/Select.ogg
 continue.bgm.volume = 100
 continue.bgm.loop = 0
 continue.bgm.loopstart = 
 continue.bgm.loopend = 
   ;Music to play at results screen.
-results.bgm = sound/Results.ogg
+results.bgm = sound/Select.ogg
 results.bgm.volume = 100
 results.bgm.loop = 1
 results.bgm.loopstart = 
 results.bgm.loopend = 
   ;Music to play at hiscore screen.
-hiscore.bgm = sound/Hiscore.ogg
+hiscore.bgm = sound/Title.ogg
 hiscore.bgm.volume = 100
 hiscore.bgm.loop = 1
 hiscore.bgm.loopstart = 
@@ -626,7 +626,7 @@ p2.name.layerno = 2
 ;Stage select
 stage.pos = 960, 1035
 stage.font = 11, 0, 0, 236, 200, 120
-stage.active.font = 11, 0, 0, 236, 200, 120
+stage.active.font = 11, 0, 0, 255, 228, 140
 stage.active2.font = 11, 0, 0, 236, 200, 120
 stage.done.font = 11, 0, 0, 236, 200, 120
 stage.layerno = 2
@@ -845,9 +845,6 @@ stage.scale = 1.5, 1.5
 stage.active.switchtime = 300000
 searchemptyboxesdown = 1
 searchemptyboxesup = 1
-cell.random.active.spr = 151,11
-cell.random.active.scale = 1,1
-cell.random.active.offset = 0,0
 p1.face.done.spr = -1, 0
 p1.face.done.offset = 420, 840
 p1.face.done.scale = 0.5, 0.5
@@ -2446,10 +2443,6 @@ mask = 1
 ---------------------------------------------
 ;Pause menu screen definition
 [Pause Menu]
-p2.teammenu.item.cursor.spr = 180,0
-p2.teammenu.item.cursor.anim = -1
-p1.teammenu.item.cursor.spr = 180,0
-p1.teammenu.item.cursor.anim = -1
 fadein.time = 0
 fadein.col = 0, 0, 0
 fadeout.time = 0
@@ -2556,10 +2549,6 @@ movelist.title.text = Command List - %s
 movelist.title.offset = 540, -18
 menu.boxbg.visible = 0
 movelist.window.width = 1500
-p2.teammenu.item.cursor.spr = 180,0
-p2.teammenu.item.cursor.anim = -1
-p1.teammenu.item.cursor.spr = 180,0
-p1.teammenu.item.cursor.anim = -1
 movelist.text.spacing = 5, 4
 movelist.glyphs.scale = 1, 1
 movelist.title.scale = 1, 1
@@ -3010,7 +2999,3 @@ overlay.alpha = 0, 128
 done.snd = 100, 0
 cancel.snd = 100, 2
 
-[MusicBGdef]
-; Background for the music select browser (external/mods/musicselect.lua). It
-; draws its own covers and text, so the block only has to clear the screen.
-bgclearcolor = 0, 0, 0
