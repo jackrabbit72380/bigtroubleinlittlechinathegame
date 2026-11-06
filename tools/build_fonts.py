@@ -199,7 +199,7 @@ PAUSE_LAYOUT = (
     # 460 put the list's own highlight band (462 wide from -15) at 445..907 on
     # a 1280-wide frame: 75px right of centre with the value column hanging off
     # it. 402 centres the band on 640.
-    ("menu.pos", "402, 140"),
+    ("menu.pos", "736, 140"),
     # No dark plate behind the pause list.
     ("menu.boxbg.visible", "0"),
     ("menu.item.spacing", "0, 50"),
@@ -231,7 +231,7 @@ PAUSE_LAYOUT = (
     ("movelist.text.scale", "1, 1"),
     ("movelist.title.scale", "1, 1"),
     ("movelist.glyphs.scale", "1, 1"),
-    ("movelist.text.spacing", "4.5, 4"),
+    ("movelist.text.spacing", "5, 4"),
     # The command list's text column is clipped to movelist.window.width from
     # movelist.pos.x, and the motif still had the 1280-era 900: 283.5 + 900 cuts
     # the right-hand key column mid-glyph at x=1183 on a 1920 frame. Widening the
@@ -351,28 +351,28 @@ SECTION_LAYOUT = {
         ("keymenu.item.active.font", f"{B},0,1, {BRIGHT}"),
         ("keymenu.item.selected.font", f"{B},0,1, {BRIGHT}"),
         ("keymenu.item.selected.active.font", f"{B},0,1, {BRIGHT}"),
-        ("keymenu.item.scale", "1.2, 1.2"),
-        ("keymenu.item.active.scale", "1.2, 1.2"),
-        ("keymenu.item.selected.scale", "1.2, 1.2"),
-        ("keymenu.item.selected.active.scale", "1.2, 1.2"),
+        ("keymenu.item.scale", "1.5, 1.5"),
+        ("keymenu.item.active.scale", "1.5, 1.5"),
+        ("keymenu.item.selected.scale", "1.5, 1.5"),
+        ("keymenu.item.selected.active.scale", "1.5, 1.5"),
         ("keymenu.item.value.font", f"{B},0,-1, {GOLD}"),
         ("keymenu.item.value.active.font", f"{B},1,-1, {BRIGHT}"),
         ("keymenu.item.value.conflict.font", f"{B},0,-1, {RED}"),
-        ("keymenu.item.value.scale", "1.2, 1.2"),
-        ("keymenu.item.value.active.scale", "1.2, 1.2"),
-        ("keymenu.item.value.conflict.scale", "1.2, 1.2"),
+        ("keymenu.item.value.scale", "1.5, 1.5"),
+        ("keymenu.item.value.active.scale", "1.5, 1.5"),
+        ("keymenu.item.value.conflict.scale", "1.5, 1.5"),
         ("keymenu.item.info.font", f"{B},0,-1, {GOLD}"),
         ("keymenu.item.info.active.font", f"{B},1,-1, {BRIGHT}"),
-        ("keymenu.item.info.scale", "1.2, 1.2"),
-        ("keymenu.item.info.active.scale", "1.2, 1.2"),
+        ("keymenu.item.info.scale", "1.5, 1.5"),
+        ("keymenu.item.info.active.scale", "1.5, 1.5"),
         # One label column and one value column per pane: the label is drawn
         # from the pane's left edge and the bound key ends on its right edge,
         # 540px in. The two panes are identical, so P1 and P2 mirror each other.
-        ("keymenu.item.value.offset", "540, 0"),
-        ("keymenu.item.value.active.offset", "540, 0"),
-        ("keymenu.item.value.conflict.offset", "540, 0"),
-        ("keymenu.item.info.offset", "540, 0"),
-        ("keymenu.item.info.active.offset", "540, 0"),
+        ("keymenu.item.value.offset", "675, 0"),
+        ("keymenu.item.value.active.offset", "675, 0"),
+        ("keymenu.item.value.conflict.offset", "675, 0"),
+        ("keymenu.item.info.offset", "675, 0"),
+        ("keymenu.item.info.active.offset", "675, 0"),
         ("menu.item.value.offset", "40, 0"),
         ("menu.item.value.active.offset", "40, 0"),
         ("menu.item.value.conflict.offset", "40, 0"),
@@ -390,18 +390,18 @@ SECTION_LAYOUT = {
         # Two panes of the same width with an 80px gutter: 60..600 and
         # 680..1220 on the 1280-wide motif, so both columns sit fully on screen
         # and the pair reads as one centred block.
-        ("keymenu.p1.menuoffset", "60, 128"),
-        ("keymenu.p2.menuoffset", "680, 128"),
+        ("keymenu.p1.menuoffset", "210, 128"),
+        ("keymenu.p2.menuoffset", "1035, 128"),
         # The stock 54px pitch put the 18th row (Config all, the 15 bindings,
         # Back) at y=1017, off a 720-tall screen. 30 fits them from 128 to 638.
-        ("keymenu.item.spacing", "0, 30"),
+        ("keymenu.item.spacing", "0, 36"),
         # The band covers the row it is on, not a 35px slice of the one above.
-        ("keymenu.boxcursor.coords", "-8, 0, 548, 28"),
+        ("keymenu.boxcursor.coords", "-10, 0, 685, 36"),
         # Player labels centred over their own pane instead of the stock 234.
-        ("keymenu.p1.playerno.offset", "330, 96"),
-        ("keymenu.p2.playerno.offset", "950, 96"),
-        ("keymenu.p1.playerno.scale", "1.2, 1.2"),
-        ("keymenu.p2.playerno.scale", "1.2, 1.2"),
+        ("keymenu.p1.playerno.offset", "548, 96"),
+        ("keymenu.p2.playerno.offset", "1372, 96"),
+        ("keymenu.p1.playerno.scale", "1.5, 1.5"),
+        ("keymenu.p2.playerno.scale", "1.5, 1.5"),
     ),
     "Select Info": (
         # Team mode: the cursor was animation 180, a 22px arrow that slides 3px a
@@ -427,7 +427,12 @@ SECTION_LAYOUT = {
         ("menu.boxcursor.coords", "-15, 0, 462, 41"),
     ),
     "Pause Menu": PAUSE_LAYOUT,
-    "Training Pause Menu": PAUSE_LAYOUT,
+    # The training pause list keeps the stock left position: the two screens do
+    # not share a backdrop, and the training one already has its own panel there.
+    "Training Pause Menu": tuple(
+        ("menu.pos", "402, 140") if key == "menu.pos" else (key, value)
+        for key, value in PAUSE_LAYOUT
+    ),
 }
 
 # The wordmark's own layers, from tools/build_title.py.
