@@ -752,7 +752,18 @@ function start.f_animGet(ref, side, member, params, velParams, loop, srcAnim)
 				animSetFriction(a, velParams.friction[1], velParams.friction[2])
 				animSetPos(a, 0, 0)
 				animSetScale(a, params.scale[1] * xscale, params.scale[2] * yscale)
-				animSetTrans(a, params.trans, params.alpha[1], params.alpha[2])
+				-- A motif that never sets "alpha" hands this a nil table, and the
+				-- index below took the select screen down on the first cursor move:
+				-- [Select Info] has no p1.face.alpha, so the big portraits crashed
+				-- here while every other field of the table was filled in. Unset
+				-- alpha means fully opaque, and the call is skipped when both are
+				-- absent so no unverified trans string is invented for it.
+				local alpha = params.alpha or {255, 255}
+				if params.trans ~= nil then
+					animSetTrans(a, params.trans, alpha[1], alpha[2])
+				elseif params.alpha ~= nil then
+					animSetTrans(a, "none", alpha[1], alpha[2])
+				end
 				animSetFacing(a, params.facing)
 				animSetXShear(a, params.xshear)
 				animSetAngle(a, params.angle)
