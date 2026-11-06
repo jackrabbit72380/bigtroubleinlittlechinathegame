@@ -746,12 +746,30 @@ function start.f_animGet(ref, side, member, params, velParams, loop, srcAnim)
 				end
 				animSetLocalcoord(a, motif.info.localcoord[1], motif.info.localcoord[2])
 				animSetLayerno(a, params.layerno)
-				animSetVelocity(a, velParams.velocity[1], velParams.velocity[2])
-				animSetMaxDist(a, velParams.maxdist[1], velParams.maxdist[2])
-				animSetAccel(a, velParams.accel[1], velParams.accel[2])
-				animSetFriction(a, velParams.friction[1], velParams.friction[2])
+				-- Every pair below is a field a motif is allowed to leave out, and a
+				-- field left out arrives as nil rather than as a zero pair. This screen's
+				-- [Select Info] sets p1.face.anim, offset, scale and facing while leaving
+				-- velocity, window and alpha unset on it and on its slot/done/loading
+				-- variants, so indexing them blindly is what took the select screen
+				-- down. A missing pair means the thing it describes is off: no motion,
+				-- unit scale, no window.
+				local function pair(t, d1, d2)
+					if type(t) == "table" then
+						return t[1] or d1, t[2] or d2
+					end
+					return d1, d2
+				end
+				local vx, vy = pair(velParams and velParams.velocity, 0, 0)
+				local nx, ny = pair(velParams and velParams.maxdist, 0, 0)
+				local ax, ay = pair(velParams and velParams.accel, 0, 0)
+				local fx, fy = pair(velParams and velParams.friction, 0, 0)
+				local sx, sy = pair(params.scale, 1, 1)
+				animSetVelocity(a, vx, vy)
+				animSetMaxDist(a, nx, ny)
+				animSetAccel(a, ax, ay)
+				animSetFriction(a, fx, fy)
 				animSetPos(a, 0, 0)
-				animSetScale(a, params.scale[1] * xscale, params.scale[2] * yscale)
+				animSetScale(a, sx * xscale, sy * yscale)
 				-- A motif that never sets "alpha" hands this a nil table, and the
 				-- index below took the select screen down on the first cursor move:
 				-- [Select Info] has no p1.face.alpha, so the big portraits crashed
@@ -771,7 +789,10 @@ function start.f_animGet(ref, side, member, params, velParams, loop, srcAnim)
 				animSetYAngle(a, params.yangle)
 				animSetProjection(a, params.projection)
 				animSetFocalLength(a, params.focallength)
-				animSetWindow(a, params.window[1], params.window[2], params.window[3], params.window[4])
+				if type(params.window) == "table" then
+					animSetWindow(a, params.window[1] or 0, params.window[2] or 0,
+						params.window[3] or 0, params.window[4] or 0)
+				end
 				if srcAnim ~= nil then
 					animApplyVel(a, srcAnim)
 				end
@@ -794,7 +815,8 @@ end
 local function f_portraitsXCalc(side, member, paramsSide, params, skipOffset, offsetKey)
 	local x = paramsSide.pos[1]
 	if not skipOffset then
-		x = x + params.offset[1]
+		-- offset is another field a motif can leave out
+		x = x + (type(params.offset) == "table" and params.offset[1] or 0)
 	end
 	if paramsSide.padding then
 		return x + (2 * member - 1) * paramsSide.spacing[1] * paramsSide.num / (2 * math.min(paramsSide.num, math.max(start.p[side].numChars, #start.p[side].t_selected)))
@@ -999,7 +1021,7 @@ function start.f_drawPortraits(t_portraits, side, t, subname, last, iconDone)
 		main.f_animPosDraw(
 			animData,
 			f_portraitsXCalc(side, member, paramsSide, params),
-			paramsSide.pos[2] + params.offset[2] + (member - 1) * paramsSide.spacing[2]
+			paramsSide.pos[2] + (type(params.offset) == "table" and params.offset[2] or 0) + (member - 1) * paramsSide.spacing[2]
 		)
 	end
 end
@@ -4450,7 +4472,9 @@ function start.f_selectVersus(active, t_orderSelect, loadStartArg)
 					local pn = 2 * (member - 1) + side
 					local pCfg = f_getMotifP(motif.vs_screen, pn, side)
 					local faceCfg = pCfg
-					if pCfg.done.anim ~= -1 or pCfg.done.spr[1] ~= -1 then
+					-- pCfg.done is another table the motif can leave out entirely
+					local doneCfg = pCfg.done
+					if doneCfg ~= nil and (doneCfg.anim ~= -1 or (type(doneCfg.spr) == "table" and doneCfg.spr[1] ~= -1)) then
 						faceCfg = pCfg.done
 					end
 					portrait.face_anim = faceCfg.anim
