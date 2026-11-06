@@ -3019,7 +3019,6 @@ round.single.snd = 0, 11
 
 round.final.offset = 640, 480
 round.final.font = 10,0,0, 255, 228, 140
-round.final.text = "F   R"
 round.final.text = " "
 ;round.final.anim = 510
 ;round.final.bg0.anim = 511

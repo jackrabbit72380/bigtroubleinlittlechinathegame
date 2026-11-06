@@ -9,8 +9,7 @@ font1 = ikemen1/fonts/Menu2.def
 
 [Scene 0]
 end.time = 100
-bgm = credits.mp3
-
+bgm = sound/Title.ogg
 [BG0]
 type = video
 path = ik_credits.webm
