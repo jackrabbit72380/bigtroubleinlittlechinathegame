@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v43
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v44
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,8 +63,7 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo   ==============================================================
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v43
-echo    %~dp0
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v44
 echo   ==============================================================
 
 set "EXE="
@@ -450,7 +449,14 @@ set /a BGAP=24-BFILL
 call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set /a BPCT=%~1*100/%~2
 set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%"
-if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARLINE% )
+rem The tracers are ">", and an unescaped ">" in an echo is a redirection: cmd
+rem would try to open a file named ">>>>>>", print "Access is denied" and then
+rem abort the whole script with ">> was unexpected at this time" - the bar never
+rem appearing and the update never starting. On a console without ANSI the bar
+rem is echoed, so every ">" in it is escaped first; the live-redraw branch feeds
+rem the text to set /p, where no redirection is parsed and nothing needs it.
+set "BARSAFE=%BARLINE:>=^>%"
+if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARSAFE% )
 exit /b 0
 :spin
 rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
