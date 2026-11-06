@@ -60,7 +60,6 @@ local NOTE = 'needs Options > Engine > Debug Keys enabled'
 -- the key with no space between ("Ctrl+Shift+F3max power mode").
 local KEYW = 14                          -- key column width, in characters
 local ROWS = math.max(#LEFT, #RIGHT)     -- taller column decides the height
-local BOTTOM = 720                       -- the floor the last row must not cross
 
 local function lineOf(row)
 	return string.format('%-' .. KEYW .. 's%s', row[1], row[2])
@@ -120,15 +119,32 @@ local function cellWidth(ti, text, charw)
 	return string.len(text) * charw
 end
 
-local AVAIL = 1150                 -- room the block may use on the 1280-wide screen
-local COL_GAP = 48                 -- clear space between the columns' inner edges
-local FALLBACK_CX, FALLBACK_Y = 640, 96
+local COL_GAP = 48                          -- clear space between the columns' inner edges
+local FALLBACK_W, FALLBACK_H = 1920, 1080   -- [Info] localcoord of this motif
+local FALLBACK_X, FALLBACK_Y = 640, 96      -- the motif's own list anchor
+local SIDE_MARGIN, FLOOR_MARGIN = 90, 70    -- edge the block may not enter
 
--- Where the screenpack puts a centred thing: the pause title is centred on
--- movelist.pos + title.offset, and the block sits on that same point, so the
--- heading stays over the middle of the columns.
+-- The motif's own coordinate space, as declared by [Info] localcoord. The pause
+-- menu draws in these units, not in the 1280x720 the def's comments talk about,
+-- so where the middle of the screen is and how far the rows can run both depend
+-- on it: at 1920x1080 the title's anchor is a third of the way across, not the
+-- centre, and the list had been squeezed into the top 720 units of 1080.
+local function screenSize()
+	local w, h = FALLBACK_W, FALLBACK_H
+	pcall(function()
+		local lc = motif.info.localcoord
+		if lc ~= nil and lc[1] ~= nil and lc[2] ~= nil and lc[1] > 0 and lc[2] > 0 then
+			w, h = lc[1], lc[2]
+		end
+	end)
+	return w, h
+end
+
+-- Where the motif puts the pause title: movelist.pos + title.offset. The list is
+-- centred on the screen itself, and this is how far the heading has to move to
+-- stay over the middle of it.
 local function anchor(sec)
-	local cx, cy = FALLBACK_CX, FALLBACK_Y
+	local cx, cy = FALLBACK_X, FALLBACK_Y
 	pcall(function()
 		local m = sec.movelist
 		if m == nil then return end
@@ -155,13 +171,19 @@ end
 local function drawPlain(sec)
 	local txt = sec.movelist.text.TextSpriteData
 	local charw, lh = motifText(sec)
-	local cx, cy = anchor(sec)
-	-- keep the screenpack's own pitch unless a future key list would run off the
-	-- bottom: only the last row's top has to stay inside, its glyph may sit on
-	-- the edge exactly as the command list's last line does
-	local room = BOTTOM - cy
-	if room > 0 and ROWS > 1 and lh * (ROWS - 1) > room then
-		lh = math.floor(room / (ROWS - 1))
+	local _, cy = anchor(sec)
+	local sw, sh = screenSize()
+	local cx = sw / 2
+	local avail = sw - SIDE_MARGIN * 2
+	local room = sh - FLOOR_MARGIN - cy
+	-- the rows share out the height the screen actually has: the motif's own
+	-- pitch is the floor (that is what the command list uses) and the band over
+	-- the rows is the ceiling, capped so a tall screen cannot space it out
+	if room > 0 and ROWS > 1 then
+		local pitch = math.floor(room / (ROWS - 1))
+		local cap = math.ceil(lh * 1.7)
+		if pitch > cap then pitch = cap end
+		if pitch > lh then lh = pitch end
 	end
 	if lh < 4 then lh = 4 end
 	local lw, rw = 0, 0
@@ -178,7 +200,7 @@ local function drawPlain(sec)
 	end
 	local total = lw + COL_GAP + rw
 	local scale = 1
-	if total > AVAIL then scale = AVAIL / total end
+	if total > avail then scale = avail / total end
 	local xl = cx - total * scale / 2
 	local xr = xl + (lw + COL_GAP) * scale
 	for i = 1, ROWS do
@@ -215,10 +237,12 @@ end
 local function devhelpDraw(sec)
 	rectDraw(sec.movelist.overlay.RectData)
 
-	-- The title moves up: the space it gives back is what the bigger list needs.
+	-- The heading moves up, and across to the screen's centre so it sits over the
+	-- list: the motif anchors it a third of the way across, not in the middle.
+	local sw = screenSize()
 	textImgReset(sec.movelist.title.TextSpriteData)
 	textImgSetText(sec.movelist.title.TextSpriteData, 'DEVELOPER KEYS')
-	textImgAddPos(sec.movelist.title.TextSpriteData, 0, -34)
+	textImgAddPos(sec.movelist.title.TextSpriteData, sw / 2 - anchor(sec), -34)
 	textImgDraw(sec.movelist.title.TextSpriteData)
 
 	drawPlain(sec)
