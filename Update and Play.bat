@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v39
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v40
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,17 +63,10 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo.
-echo        /\                                      /\
-echo       /  \                                    /  \
-echo      /    \__________________________________/    \
-echo     /  o   \                                /   o  \
-echo    /        \______________________________/        \
-echo   /________________________________________________\
-echo.
 echo   ==============================================================
 echo    B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo                     THE GAME
-echo              Updater v39   -   dragon edition
+echo              Updater v40
 echo   ==============================================================
 echo    Folder:  %~dp0
 echo   ==============================================================
@@ -427,6 +420,9 @@ echo    ....../ '---___________----_____^|]=
 echo    ...../_==o;;;;;;;;_______.:/
 echo    .....), ---.(_(__) /
 echo    ....// (..) ), ----"
+echo    ...//___//
+echo    ..//___//
+echo    .//___//
 echo.
 set "GUNSHOWN=1"
 exit /b 0
