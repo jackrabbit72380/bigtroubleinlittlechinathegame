@@ -868,6 +868,11 @@ p2.face2.done.offset = 1900, 510
 p2.face2.done.scale = 0.5,0.5
 p2.face2.done.facing = -1
 p2.face2.done.window = 1518,508,1902,1012
+stage.randomselect = 1
+stage.previous.key = U
+stage.next.key = D
+stage.skip.previous.key = L
+stage.skip.next.key = R
 [Begin Action 110]
 110,0, 0, 0, 8
 110,1, 0, 0, 8
