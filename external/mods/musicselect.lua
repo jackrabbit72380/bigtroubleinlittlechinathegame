@@ -40,7 +40,21 @@ ms.params = nil
 ms.chosen = nil
 
 local function albumsFromJson()
-	local ok, music = pcall(jsonDecode, 'data/music.json')
+	-- jsonDecode decodes a STRING; it was handed the path 'data/music.json'.
+	-- The pcall swallowed the failure, this function returned no albums, and
+	-- ms.open() bailed out on its first early exit - which is exactly what
+	-- "selecting MUSIC in the main menu does nothing" looked like: the item is
+	-- there (this file appends it before EXIT) and the screen never opens.
+	-- The file is read first, with the engine's own reader, then decoded.
+	local raw = main.f_fileRead('data/music.json')
+	if raw == nil or raw == '' then
+		local f = io.open('data/music.json', 'r')
+		if f ~= nil then
+			raw = f:read('*a')
+			f:close()
+		end
+	end
+	local ok, music = pcall(jsonDecode, raw or '')
 	if not ok or type(music) ~= 'table' then
 		return {}
 	end
