@@ -1643,9 +1643,9 @@ p1.frontMax.offset = -4,0
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
 p1.counterMax.text = 
-p1.counterMax.offset = -241,21
-p1.counterMax.font = 4, 0, 0, 255, 228, 140
-p1.counterMax.palfx.mul = 255, 214, 120
+
+
+
 
 p1.counter10000.offset = -241,21
 p1.counter10000.font = 4, 0, 0, 255, 228, 140
@@ -1770,9 +1770,9 @@ p2.frontMax.facing = 1
 ; Multiple Counter elements can be added depending on the level of the bar, including maximum power
 
 p2.counterMax.text = 
-p2.counterMax.offset = 241,21
-p2.counterMax.font = 4, 0, 0, 255, 228, 140
-p2.counterMax.palfx.mul = 255, 214, 120
+
+
+
 
 p2.counter10000.offset = 243,21
 p2.counter10000.font = 4, 0, 0, 255, 228, 140
