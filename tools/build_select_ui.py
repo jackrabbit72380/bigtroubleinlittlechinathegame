@@ -176,7 +176,6 @@ def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
             ("stage.portrait.spr", "-1"),
             ("stage.portrait.window", "0, 0, 0, 0"),
             ("stage.portrait.bg.offset", "-4000, -4000"),
-            ("stage.portrait.random.offset", "-4000, -4000"),
             ("stage.portrait.loading.anim", "-1"),
             ("stage.portrait.loading.offset", "-4000, -4000"),
             ("stage.pos", "%d, %d" % (CARD_CX, text_y)),
@@ -200,9 +199,6 @@ def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
         ("stage.portrait.bg.scale", "%.4f, %.4f" % (plate_scale, plate_scale)),
         # the "random" and "loading" placeholders are drawn over the same
         # picture area, so they take the plate's corner and its clip
-        ("stage.portrait.random.offset", corner),
-        ("stage.portrait.random.scale", "1, 1"),
-        ("stage.portrait.random.window", window),
         # the loading anim draws a scrolling grid over the picture while the
         # preview loads; over a card this size it read as a stray tile in the
         # corner, so the plate is what shows instead
