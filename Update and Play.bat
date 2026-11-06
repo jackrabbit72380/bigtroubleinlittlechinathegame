@@ -76,7 +76,7 @@ rem file that was created a moment ago, and a copied folder carries a read-only
 rem flag, so this is tried three times and the flag cleared before believing it.
 rem Whatever Windows says is kept, so the message can name the real reason.
 set "WT=%~dp0.btilc-write-test"
-set "WERR=%CACHE%\wtest.err"
+set "WERR=%TEMP%\btilc-wtest.err"
 if exist "%WERR%" del /q "%WERR%" >nul 2>&1
 attrib -r "%~dp0." >nul 2>&1
 set /a WTRY=0
@@ -338,6 +338,15 @@ call :barflush
 call :confirm
 goto gitdrop_list
 :gitnone
+rem the manifest compares main with main; the stamp compares main with this
+rem folder, so a folder that never received the last update is caught here
+call :stamp
+if not defined STALE goto gitnone_ok
+if exist "%CACHE%\manifest.txt" del /q "%CACHE%\manifest.txt" >nul 2>&1
+call :barflush
+echo This folder does not match main - comparing the files themselves.
+goto gitfetch
+:gitnone_ok
 call :pct 100 "Already up to date"
 call :barflush
 echo Already up to date - nothing to download
@@ -824,6 +833,32 @@ exit /b 0
 if not exist "%~dp0%REL%" exit /b 0
 del /q "%~dp0%REL%" >nul 2>&1
 exit /b 0
+rem ---- is this folder actually main? -------------------------------------
+rem applied.txt records the commit the last run believed it applied, and the
+rem manifest records main's file list - neither is the folder. One run cut short,
+rem one file the game or a scanner held open, and both keep saying current while
+rem the files stay old: every later launch then reports up to date, starts the stale
+rem build, and the engine prints warnings that were fixed releases ago.
+rem data/build_stamp.py writes a SHA-256 line per launch-critical file, so main's
+rem copy of that file decides - it is a few KB and needs no git.
+:stamp
+set "STALE="
+if not defined CURL exit /b 0
+set "MSTAMP=%CACHE%\main.stamp"
+if exist "%MSTAMP%" del /q "%MSTAMP%" >nul 2>&1
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 10 --max-time 30 -H "User-Agent: btilc-updater" -o "%MSTAMP%" "https://raw.githubusercontent.com/%REPO%/main/data/build_stamp.txt" >nul 2>&1
+if errorlevel 1 exit /b 0
+if not exist "%MSTAMP%" exit /b 0
+if not exist "%~dp0data\build_stamp.txt" goto stamp_stale
+"%SYS%\fc.exe" /b "%MSTAMP%" "%~dp0data\build_stamp.txt" >nul 2>&1
+if errorlevel 1 goto stamp_stale
+call :log stamp matches main
+exit /b 0
+:stamp_stale
+set "STALE=1"
+call :log stamp differs from main
+exit /b 0
+
 rem ---- has main moved? ---------------------------------------------------
 rem The zip path used to fetch the whole ~190 MB archive on every launch: it
 rem recorded nothing about what it had applied, and nothing compared the
@@ -839,6 +874,8 @@ if not defined APPLIED goto probe_first
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
+call :stamp
+if defined STALE goto download
 call :pct 100 "Already up to date"
 call :barflush
 echo Already up to date - main @ %APPLIED%
@@ -859,6 +896,8 @@ rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto probe_offer
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
+call :stamp
+if defined STALE goto download
 call :pct 100 "Already up to date"
 call :barflush
 echo Already up to date - main @ %APPLIED%
