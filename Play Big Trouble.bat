@@ -81,12 +81,10 @@ if "%FS%"=="" set "FS=false"
 >> "%CFG%" echo WindowHeight = %WH%
 >> "%CFG%" echo KeepAspect = true
 >> "%CFG%" echo Fullscreen = %FS%
->> "%CFG%" echo RenderMode = OpenGL 3.3
 >> "%CFG%" echo.
 >> "%CFG%" echo [Config]
 >> "%CFG%" echo WindowTitle = Big Trouble in Little China: The Game
 >> "%CFG%" echo RenderMode = OpenGL 3.3
->> "%CFG%" echo EnableModel = 1
 
 rem The resolution menu is built from data\system.base.def, not from the motif,
 rem so a stale data\ folder shows the stock list - 320x240 up to 1080p and no
@@ -131,5 +129,12 @@ set "RUN=%TEMP%\btilc-play.bat"
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
 >>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
-start "" /min "%RUN%"
+rem /min left the console in the taskbar and the engine brought it back to the
+rem front - that is the black box that opened over the game. Start-Process is
+rem the one way from a batch file to create a process whose console is hidden
+rem from the start. Without PowerShell, fall back to the minimised helper.
+set "PSEXE=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+if not exist "%PSEXE%" set "PSEXE="
+if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','%RUN%' -WindowStyle Hidden" >nul 2>&1
+if not defined PSEXE start "" /min "%RUN%"
 exit /b 0
