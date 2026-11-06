@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v35
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v36
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -68,7 +68,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v35
+echo                        Updater v36
 echo.
 echo   ==============================================================
 echo.
@@ -291,6 +291,7 @@ for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
 call :gitflush
 if defined WRITEFAIL goto gitfail
 call :bar %NDONE% %NCH%
+call :confirm
 goto gitdrop_list
 :gitnone
 echo         already current - nothing to download
@@ -364,6 +365,61 @@ set /a BGAP=20-BFILL
 call set "BEMPTY=%%CHARS:~0,%BGAP%%%"
 echo         [%BFILLED%%BEMPTY%] %~1/%~2
 exit /b 0
+:confirm
+rem A file that was just written is checked against main by CONTENT: it is
+rem hashed and compared with the hash main holds for that exact path. A name, a
+rem size or a timestamp that looks right is not evidence, and a write that
+rem landed wrong is fetched again rather than being called done.
+if not "%WHICH%"=="git" exit /b 0
+if not defined POWERSHELL exit /b 0
+if not exist "%CACHE%\changed.txt" exit /b 0
+if not exist "%CACHE%\tree.txt" exit /b 0
+set /a NCONF=0
+for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCONF+=1
+if "%NCONF%"=="0" exit /b 0
+git hash-object --stdin-paths <"%CACHE%\changed.txt" >"%CACHE%\hashes.txt" 2>>"%CACHE%\git.log"
+if errorlevel 1 exit /b 0
+if not exist "%CACHE%\hashes.txt" exit /b 0
+call :confirm_ps
+if not exist "%CACHE%\bad.txt" exit /b 0
+set /a NBAD=0
+for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
+if "%NBAD%"=="0" exit /b 0
+echo         %NBAD% written file(s) do not match main - fetching them again
+copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
+set "NCH=%NBAD%"
+set /a NDONE=0
+set /a BCOUNT=0
+set /a BSTEP=NBAD/10
+if %BSTEP% LSS 1 set "BSTEP=1"
+set "BATCH="
+set "WRITEFAIL="
+for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
+call :gitflush
+git hash-object --stdin-paths <"%CACHE%\changed.txt" >"%CACHE%\hashes.txt" 2>>"%CACHE%\git.log"
+call :confirm_ps
+set /a NBAD=0
+for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
+if "%NBAD%"=="0" echo         every written file now matches main
+if not "%NBAD%"=="0" echo         %NBAD% file(s) still do not match main - run this again
+exit /b 0
+
+:confirm_ps
+set "CPS=%CACHE%\confirm.ps1"
+set "BADL=%CACHE%\bad.txt"
+if exist "%BADL%" del /q "%BADL%" >nul 2>&1
+>  "%CPS%" echo param([string]$Tree, [string]$Paths, [string]$Hashes, [string]$Bad)
+>> "%CPS%" echo $ErrorActionPreference = 'Stop'
+>> "%CPS%" echo $want = @{}
+>> "%CPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $m = $l.Substring(0, $i).Split(' '); $want[$l.Substring($i + 1)] = $m[$m.Length - 1] }
+>> "%CPS%" echo $ps = @(Get-Content -LiteralPath $Paths)
+>> "%CPS%" echo $hs = @(Get-Content -LiteralPath $Hashes)
+>> "%CPS%" echo $bad = New-Object System.Collections.ArrayList
+>> "%CPS%" echo for ($k = 0; $k -lt $ps.Count; $k++) { $p = $ps[$k]; if (-not $want.ContainsKey($p)) { continue }; if ($k -ge $hs.Count) { continue }; if ($hs[$k] -ne $want[$p]) { [void]$bad.Add($p) } }
+>> "%CPS%" echo Set-Content -LiteralPath $Bad -Value @($bad) -Encoding ASCII
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%CPS%" -Tree "%CACHE%\tree.txt" -Paths "%CACHE%\changed.txt" -Hashes "%CACHE%\hashes.txt" -Bad "%BADL%" >nul 2>&1
+exit /b 0
+
 :gitdrop_list
 rem Paths main no longer has, and which this launcher wrote, are removed. Only
 rem the six game folders are ever touched - see :gitdrop.
