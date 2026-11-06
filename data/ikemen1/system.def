@@ -2180,7 +2180,6 @@ menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
 menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
 menu.itemname.menuvideo.window.back = BACK
 ; <<< video submenu
-keymenu.unbind.key = backspace
 keymenu.done.key = a, b, c, x, y, z
 menu.cancel.key = m
 menu.subtract.key = D, L

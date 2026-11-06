@@ -308,7 +308,6 @@ SECTION_LAYOUT = {
         ("menu.subtract.key", "D, L"),
         ("menu.cancel.key", "m"),
         ("keymenu.done.key", "a, b, c, x, y, z"),
-        ("keymenu.unbind.key", "backspace"),
         # The title was still at 640 - a number carried over from the 1280-wide
         # stock motif - so on a 1920 frame it sat a third of the screen to the
         # left of centre while the list sat to the right of it. Font field 0 is
