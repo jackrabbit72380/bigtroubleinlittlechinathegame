@@ -228,9 +228,18 @@ def patch_character(path):
     # painted from it rather than from a reassembled idle frame whose limb
     # joints can show as notches.
     char_id = os.path.basename(os.path.dirname(path)).replace("_rig", "")
+    # A portrait-specific cut wins: the new concept render arrives on a painted
+    # backdrop and is keyed to its own file (see tools/jack_portrait_cut.py),
+    # while work/front.png stays the rig's reference cutout with the joints
+    # measured on it. Keeping them apart means recutting the portraits cannot
+    # shift a single part.
+    portrait = os.path.join(ROOT, "art_src", "chars", char_id, "work",
+                            "portrait.png")
     front = os.path.join(ROOT, "art_src", "chars", char_id, "work", "front.png")
     source = None
-    if os.path.isfile(front):
+    if os.path.isfile(portrait):
+        source = Image.open(portrait).convert("RGBA")
+    elif os.path.isfile(front):
         source = Image.open(front).convert("RGBA")
     # Every fighter paints its portraits from its own art now. There used to be
     # a branch here that took Kung Fu Man's 9000,1 and decoded it with this
