@@ -1027,7 +1027,8 @@ if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
 >>"%RUN%" echo echo %%errorlevel%% ^>"%GCODE%"
 call :log starting %EXE%
-start "" /min "%RUN%"
+if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','%RUN%' -WindowStyle Hidden" >nul 2>&1
+if not defined POWERSHELL start "" /min "%RUN%"
 rem Without tasklist there is no way to tell whether the game came up, so
 rem the window closes as it did before rather than reporting a false failure.
 if not exist "%TASKLIST%" exit 0

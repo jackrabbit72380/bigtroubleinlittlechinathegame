@@ -760,6 +760,27 @@ def check_launchers():
         err("launchers: " + problem)
     notes.append("launchers: no stray operators, labels and variables resolve")
 
+def check_motif_ints():
+    """Coordinates the engine reads as ints have to be whole numbers.
+
+    A window written "0, 45, 808.5, 883.5" fails ParseInt, so the engine drops
+    the whole key with a warning and the window falls back to its default - the
+    art lands in the wrong place with nothing else to show for it.
+    """
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return
+    whole = {"window", "offset", "spr", "anim", "layerno", "spacing", "pos", "icon", "tile", "col"}
+    with open(path, encoding="utf-8") as fh:
+        for number, line in enumerate(fh.read().splitlines(), 1):
+            m = re.match(r"\s*([A-Za-z0-9_.]+)\s*=\s*(.*)$", line)
+            if not m or m.group(1).lower().split(".")[-1] not in whole:
+                continue
+            if re.search(r"\d\.\d", m.group(2)):
+                err("motif: %s:%d %s is not a whole number, so the engine drops it"
+                    % (os.path.basename(path), number, m.group(1)))
+    notes.append("motif: every coordinate the engine reads is a whole number")
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -769,6 +790,7 @@ def main():
     check_intro_states()
     check_stage_aspect()
     check_launchers()
+    check_motif_ints()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
