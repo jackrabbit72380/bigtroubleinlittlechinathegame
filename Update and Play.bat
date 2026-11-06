@@ -468,6 +468,8 @@ rem echo prints straight over it.
 if defined BARDRAWN echo.
 set "BARDRAWN="
 exit /b 0
+
+:spin
 rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
 set /a SMOD=%~1 %% 4
 set "SPIN=|/-\"
