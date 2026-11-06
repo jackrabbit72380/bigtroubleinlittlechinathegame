@@ -60,6 +60,8 @@ def _problems_for(name, raw):
                 #                   a program named by its full path
             if m.group(1) in "<>" and (before.isdigit() or after.lower().startswith(("nul", "&"))):
                 continue          # a stream redirect: 2>nul, 2>&1, >nul
+            if m.group(1) == "&" and before in "<>":
+                continue          # the stream copy inside 2>&1
             out.append("%s:%d: echo text holds an unescaped %r, which cmd reads "
                        "as an operator: %s" % (name, i, m.group(1), line.strip()[:70]))
             break
