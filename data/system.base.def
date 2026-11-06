@@ -1006,10 +1006,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p1.face2.loading.window = 
 	p1.face2.loading.localcoord = 320, 240
 
-	p1.face2.velocity = 0, 0
-	p1.face2.maxdist = 0, 0
-	p1.face2.accel = 0, 0
-	p1.face2.friction = 1, 1
 	p1.face2.pos = 0, 0
 	p1.face2.num = 1
 	p1.face2.spacing = 0, 0
@@ -1602,10 +1598,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p2.face2.loading.window = 
 	p2.face2.loading.localcoord = 320, 240
 
-	p2.face2.velocity = 0, 0
-	p2.face2.maxdist = 0, 0
-	p2.face2.accel = 0, 0
-	p2.face2.friction = 1, 1
 	p2.face2.pos = 0, 0
 	p2.face2.num = 1
 	p2.face2.spacing = 0, 0
@@ -2018,20 +2010,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	stage.portrait.bg.window = 
 	stage.portrait.bg.localcoord = 320, 240
 
-	stage.portrait.random.anim = -1
-	stage.portrait.random.spr = -1, 0
-	stage.portrait.random.offset = 0, 0
-	stage.portrait.random.facing = 1
-	stage.portrait.random.scale = 1.0, 1.0
-	stage.portrait.random.xshear = 0
-	stage.portrait.random.angle = 0
-	stage.portrait.random.xangle = 0
-	stage.portrait.random.yangle = 0
-	stage.portrait.random.projection = orthographic
-	stage.portrait.random.focallength = 2048
-	stage.portrait.random.layerno = 0
-	stage.portrait.random.window = 
-	stage.portrait.random.localcoord = 320, 240
 
 	; If defined draws a sprite or anim from the screenpack on stages using the slot parameter in select.def.
 	stage.portrait.slot.anim = -1
@@ -2363,10 +2341,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p1.face2.loading.window = 
 	p1.face2.loading.localcoord = 320, 240
 
-	p1.face2.velocity = 0, 0
-	p1.face2.maxdist = 0, 0
-	p1.face2.accel = 0, 0
-	p1.face2.friction = 1, 1
 	p1.face2.pos = 0, 0
 	p1.face2.num = 1
 	p1.face2.spacing = 0, 0
@@ -2587,10 +2561,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p2.face2.loading.window = 
 	p2.face2.loading.localcoord = 320, 240
 
-	p2.face2.velocity = 0, 0
-	p2.face2.maxdist = 0, 0
-	p2.face2.accel = 0, 0
-	p2.face2.friction = 1, 1
 	p2.face2.pos = 0, 0
 	p2.face2.num = 1
 	p2.face2.spacing = 0, 0
@@ -3194,10 +3164,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p1.face2.lose.anim = -1
 	p1.face2.lose.brightness = 256
 
-	p1.face2.velocity = 0, 0
-	p1.face2.maxdist = 0, 0
-	p1.face2.accel = 0, 0
-	p1.face2.friction = 1, 1
 	p1.face2.pos = 0, 0
 	p1.face2.num = 1
 	p1.face2.spacing = 0, 0
@@ -3280,10 +3246,6 @@ Welcome to I.K.E.M.E.N GO engine! (%s - %s)
 	p2.face2.lose.anim = -1
 	p2.face2.lose.brightness = 256
 
-	p2.face2.velocity = 0, 0
-	p2.face2.maxdist = 0, 0
-	p2.face2.accel = 0, 0
-	p2.face2.friction = 1, 1
 	p2.face2.pos = 0, 0
 	p2.face2.num = 1
 	p2.face2.spacing = 0, 0
