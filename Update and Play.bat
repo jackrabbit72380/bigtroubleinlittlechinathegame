@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v34
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v35
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -68,7 +68,7 @@ echo.
 echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo.
 echo                        T H E   G A M E
-echo                        Updater v34
+echo                        Updater v35
 echo.
 echo   ==============================================================
 echo.
@@ -368,7 +368,17 @@ exit /b 0
 rem Paths main no longer has, and which this launcher wrote, are removed. Only
 rem the six game folders are ever touched - see :gitdrop.
 if not exist "%CACHE%\dropped.txt" goto gitref
+set /a NDR=0
+for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do set /a NDR+=1
+if %NDR% GTR 200 goto gitdrop_many
 for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
+goto gitref
+:gitdrop_many
+rem Two hundred files do not disappear from main in one update. A list this
+rem long means the comparison itself went wrong, and deleting on it would take
+rem the game apart - which is exactly how external\script\main.lua once went
+rem missing and the engine panicked on the next start.
+echo         %NDR% file(s) would be removed - that looks wrong, so nothing is deleted
 :gitref
 rem Record what this folder now holds: main's file list with the hash of each.
 rem The next launch compares against it as text, so it never re-reads the art.
@@ -519,6 +529,62 @@ echo            Retrying with the Windows certificate store.
 git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
 exit /b 1
+
+:verify
+rem A file the engine needs that is missing here is silent until the game
+rem panics on it, so after updating the folder is checked against main's own
+rem list and anything absent is fetched by name before the game is started.
+if not defined POWERSHELL exit /b 0
+if not exist "%CACHE%\manifest.txt" if not exist "%CACHE%\applied.files" exit /b 0
+set "VPS=%CACHE%\verify.ps1"
+set "MISS=%CACHE%\missing.txt"
+>  "%VPS%" echo param([string]$Tree, [string]$Root, [string]$Missing)
+>> "%VPS%" echo $ErrorActionPreference = 'Stop'
+>> "%VPS%" echo $out = New-Object System.Collections.ArrayList
+>> "%VPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { $p = $l } else { $p = $l.Substring($i + 1) }; if (-not $p) { continue }; $f = $Root + ($p -replace '/', [char]92); if ($f.Length -gt 250) { continue }; if (-not (Test-Path -LiteralPath $f)) { [void]$out.Add($p) } }
+>> "%VPS%" echo Set-Content -LiteralPath $Missing -Value @($out) -Encoding ASCII
+set "LIST=%CACHE%\manifest.txt"
+if not exist "%LIST%" set "LIST=%CACHE%\applied.files"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%VPS%" -Tree "%LIST%" -Root "%~dp0" -Missing "%MISS%" >nul 2>&1
+if errorlevel 1 exit /b 0
+if not exist "%MISS%" exit /b 0
+set /a NMISS=0
+for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
+if "%NMISS%"=="0" exit /b 0
+echo         %NMISS% file(s) main has are missing here - fetching them
+set "NCH=%NMISS%"
+set /a NDONE=0
+set /a BCOUNT=0
+set /a BSTEP=NMISS/10
+if %BSTEP% LSS 1 set "BSTEP=1"
+set "BATCH="
+set "WRITEFAIL="
+if "%WHICH%"=="git" goto verify_git
+for /f "usebackq delims=" %%p in ("%MISS%") do call :fetchraw "%%p"
+goto verify_again
+:verify_git
+rem checkout writes the file whether or not the comparison thought it had
+rem changed, and a partial clone fetches that one blob on demand
+for /f "usebackq delims=" %%p in ("%MISS%") do call :gitone "%%p"
+call :gitflush
+:verify_again
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%VPS%" -Tree "%LIST%" -Root "%~dp0" -Missing "%MISS%" >nul 2>&1
+set /a NMISS=0
+for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
+if "%NMISS%"=="0" echo         every file main lists is here
+if not "%NMISS%"=="0" echo         still missing %NMISS% file(s) - run this again before playing
+exit /b 0
+
+:fetchraw
+rem %1 = a repo path. One small file straight from main, by name. Used only by
+rem the archive path, which has no git objects to check a file out of.
+set "REL=%~1"
+if not defined REL exit /b 0
+if not defined CURL exit /b 0
+set "URLP=%REL:\=/%"
+for %%d in ("%~dp0%REL%") do if not exist "%%~dpd" mkdir "%%~dpd" >nul 2>&1
+"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 120 -H "User-Agent: btilc-updater" -o "%~dp0%REL%" "https://raw.githubusercontent.com/%REPO%/main/%URLP%" >nul 2>&1
+exit /b 0
 
 :gitdrop
 rem %1 = a path this launcher installed before, which main no longer has
@@ -720,6 +786,7 @@ if not defined VER if not defined RSHA7 call :atoms
 if not defined VER if not defined RSHA7 call :headsha
 if not defined VER if defined RSHA7 set "VER=%RSHA7%"
 if defined VER (>"%CACHE%\applied.txt" echo %VER%)
+call :verify
 
 :sync
 if not "%WHICH%"=="git" goto skipver2
@@ -857,7 +924,7 @@ if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
 echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
 if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('            ' + $n + ' file(s) written, ' + $gone + ' removed')"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
