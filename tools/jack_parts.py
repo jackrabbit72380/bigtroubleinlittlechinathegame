@@ -118,15 +118,13 @@ def _emblem_ref(width):
         art = art.crop(box)
     height = max(6, int(round(width * art.height / max(1, art.width))))
     small = art.convert("RGBa").resize((width, height), Image.LANCZOS).convert("RGBA")
-    # The only source is a JPEG of the print on fabric, so the reduction comes
-    # out grey and soft: the shirt's own shading is baked into the colours and
-    # the ink lines blur into the fills. Put the saturation and the line back
-    # where the flat art has them - at 48px the mark is a smudge otherwise.
-    rgb = ImageEnhance.Color(small.convert("RGB")).enhance(1.35)
-    rgb = ImageEnhance.Contrast(rgb).enhance(1.08)
-    rgb = rgb.filter(ImageFilter.UnsharpMask(radius=1.0, percent=80, threshold=0))
-    out = rgb.quantize(colors=12, method=Image.MEDIANCUT,
-                       dither=Image.NONE).convert("RGB").convert("RGBA")
+    # The flat art already has the ink and the colour; the only thing the drop to
+    # 48px costs is edge definition, so it is sharpened and nothing else. (The
+    # saturation and quantise that used to be here were for keying the print off
+    # a tank-top mock-up, where the fabric shading greyed it out.)
+    rgb = small.convert("RGB").filter(
+        ImageFilter.UnsharpMask(radius=0.9, percent=70, threshold=0))
+    out = rgb.convert("RGBA")
     out.putalpha(small.getchannel("A"))
     return out
 
