@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v36
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v37
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,16 +63,20 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo.
+echo        /\                                      /\
+echo       /  \                                    /  \
+echo      /    \__________________________________/    \
+echo     /  o   \                                /   o  \
+echo    /        \______________________________/        \
+echo   /________________________________________________\
+echo.
 echo   ==============================================================
-echo.
-echo        B I G   T R O U B L E   I N   L I T T L E   C H I N A
-echo.
-echo                        T H E   G A M E
-echo                        Updater v36
-echo.
+echo    B I G   T R O U B L E   I N   L I T T L E   C H I N A
+echo                     THE GAME
+echo              Updater v37   -   dragon edition
 echo   ==============================================================
-echo.
-echo   Folder:  %~dp0
+echo    Folder:  %~dp0
+echo   ==============================================================
 echo.
 
 set "EXE="
@@ -122,7 +126,10 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo   [ 1/3 ]  Checking main
+echo.
+echo   --------------------------------------------------------------
+echo    [ 1/3 ]   Checking main
+echo   --------------------------------------------------------------
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -263,8 +270,27 @@ rem Only main's commit and its file list are fetched, a few hundred KB. The art
 rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo         reading main's file list (about 300 KB)
+echo         asking main for the file list (about 300 KB)
+rem The fetch runs in a helper so this window can show that it is waiting and
+rem for how long, instead of sitting on one line while the network answers.
+rem The helper inherits GIT_DIR and GIT_WORK_TREE from this shell, so it works
+rem on the same repository and the same folder.
+set "FOK=%CACHE%\fetch.ok"
+set "FBAD=%CACHE%\fetch.bad"
+if exist "%FOK%" del /q "%FOK%" >nul 2>&1
+if exist "%FBAD%" del /q "%FBAD%" >nul 2>&1
+set "FBAT=%CACHE%\fetch.bat"
+>  "%FBAT%" echo @echo off
+>> "%FBAT%" echo cd /d "%~dp0."
+>> "%FBAT%" echo git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags origin main ^>"%CACHE%\fetch.out" 2^>^>"%CACHE%\git.log"
+>> "%FBAT%" echo if errorlevel 1 (echo x^>"%FBAD%") else (echo x^>"%FOK%")
+if not exist "%FBAT%" goto gitfetch_plain
+start "" /b cmd /c ""%FBAT%""
+call :spinwait "%FOK%" "%FBAD%" "asking main for the file list (about 300 KB)" 900
+goto gitfetch_checked
+:gitfetch_plain
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags origin main >>"%CACHE%\git.log" 2>&1
+:gitfetch_checked
 if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
@@ -291,6 +317,7 @@ for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
 call :gitflush
 if defined WRITEFAIL goto gitfail
 call :bar %NDONE% %NCH%
+if "%VT%"=="1" echo.
 call :confirm
 goto gitdrop_list
 :gitnone
@@ -309,12 +336,31 @@ exit /b 0
 :plan_first
 rem Nothing recorded yet - the first run on this folder. Prime git's index in
 rem ONE pass: that hashes the files already here instead of downloading them,
-rem and then git can say exactly which of them differ from main.
+rem and then git can say exactly which of them differ from main. It runs in a
+rem helper for the same reason the fetch does: so the window shows it working.
+echo         first run here - one read of this folder, nothing downloaded
+set "QOK=%CACHE%\plan.ok"
+set "QBAD=%CACHE%\plan.bad"
+if exist "%QOK%" del /q "%QOK%" >nul 2>&1
+if exist "%QBAD%" del /q "%QBAD%" >nul 2>&1
+set "QBAT=%CACHE%\plan.bat"
+>  "%QBAT%" echo @echo off
+>> "%QBAT%" echo cd /d "%~dp0."
+>> "%QBAT%" echo git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound ^>"%CACHE%\paths.txt" 2^>^>"%CACHE%\git.log"
+>> "%QBAT%" echo if errorlevel 1 (echo x^>"%QBAD%") ^& exit /b 1
+>> "%QBAT%" echo git update-index --add --replace --stdin ^<"%CACHE%\paths.txt" ^>^>"%CACHE%\git.log" 2^>^&1
+>> "%QBAT%" echo git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound ^>"%CACHE%\changed.txt" 2^>^>"%CACHE%\git.log"
+>> "%QBAT%" echo if errorlevel 1 (echo x^>"%QBAD%") ^& exit /b 1
+>> "%QBAT%" echo echo.^>"%CACHE%\dropped.txt"
+>> "%QBAT%" echo echo x^>"%QOK%"
+if not exist "%QBAT%" goto plan_first_direct
+start "" /b cmd /c ""%QBAT%""
+call :spinwait "%QOK%" "%QBAD%" "reading the files already here (one pass, no download)" 1800
+if not errorlevel 1 exit /b 0
+exit /b 1
+:plan_first_direct
 git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\paths.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
-echo         first run here - one read of this folder, nothing downloaded
-rem This is the only pass that reads the art. Every launch after it compares
-rem main's file list with the manifest saved from this one, and reads nothing.
 git update-index --add --replace --stdin <"%CACHE%\paths.txt" >>"%CACHE%\git.log" 2>&1
 git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
@@ -346,7 +392,7 @@ set "BATCH=%BATCH% "%~1""
 set /a BCOUNT+=1
 if %BCOUNT% GEQ 12 call :gitflush
 set /a BMOD=NDONE %% BSTEP
-if %BMOD%==0 echo         %NDONE%/%NCH%
+if %BMOD%==0 call :bar %NDONE% %NCH%
 exit /b 0
 :gitflush
 if not defined BATCH exit /b 0
@@ -356,15 +402,56 @@ set "BATCH="
 set /a BCOUNT=0
 exit /b 0
 :bar
-rem %1 = written, %2 = total. One bar, drawn when the writing finishes.
-set "CHARS=####################"
-set /a BFILL=%~1*20/%~2
-if %BFILL% GTR 20 set /a BFILL=20
+rem %1 = done, %2 = total. Twenty-four cells; redrawn on the same line where
+rem the console reads ANSI so a long update never scrolls, printed as ordinary
+rem lines where it does not.
+if "%~2"=="0" exit /b 0
+set /a BFILL=%~1*24/%~2
+if %BFILL% GTR 24 set /a BFILL=24
+if %BFILL% LSS 0 set "BFILL=0"
+set "CHARS=########################"
+set "GAPS=........................"
 call set "BFILLED=%%CHARS:~0,%BFILL%%%"
-set /a BGAP=20-BFILL
-call set "BEMPTY=%%CHARS:~0,%BGAP%%%"
-echo         [%BFILLED%%BEMPTY%] %~1/%~2
+set /a BGAP=24-BFILL
+call set "BEMPTY=%%GAPS:~0,%BGAP%%%"
+set /a BPCT=%~1*100/%~2
+set "BARLINE=      |%BFILLED%%BEMPTY%|  %BPCT%%  %~1/%~2"
+if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARLINE% )
 exit /b 0
+
+:spin
+rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
+set /a SMOD=%~1 %% 4
+set "SPIN=|/-\"
+call set "SCH=%%SPIN:~%SMOD%,1%%"
+if "%VT%"=="1" <nul set /p "=%ESC%[2K      %SCH%   %~2   %~1s"
+if not "%VT%"=="1" set /a SDOT=%~1 %% 5
+if not "%VT%"=="1" if %SDOT%==0 echo       %SCH%   %~2   %~1s
+exit /b 0
+
+:spinwait
+rem %1 ok marker, %2 bad marker, %3 label, %4 seconds before giving up.
+rem The helper writes a marker instead of its exit code being read back: a
+rem window that never starts, or a marker that cannot be written, must not look
+rem like a step that succeeded.
+set /a SW=0
+:spinwait_loop
+call :sleep 1
+set /a SW+=1
+call :spin %SW% "%~3"
+if exist "%~1" goto spinwait_ok
+if exist "%~2" goto spinwait_bad
+if %SW% GEQ %~4 goto spinwait_late
+goto spinwait_loop
+:spinwait_ok
+if "%VT%"=="1" echo.
+exit /b 0
+:spinwait_bad
+if "%VT%"=="1" echo.
+exit /b 1
+:spinwait_late
+if "%VT%"=="1" echo.
+exit /b 2
 :confirm
 rem A file that was just written is checked against main by CONTENT: it is
 rem hashed and compared with the hash main holds for that exact path. A name, a
@@ -857,7 +944,10 @@ if not defined VER echo   Version: zip build
 echo.
 
 :launch
-echo   [ 3/3 ]  Starting the game
+echo.
+echo   --------------------------------------------------------------
+echo    [ 3/3 ]   Starting the game
+echo   --------------------------------------------------------------
 echo.
 rem Start the game in a console of its own, minimised, with its output thrown
 rem away. The engine attaches to whichever console launched it, so a child of
