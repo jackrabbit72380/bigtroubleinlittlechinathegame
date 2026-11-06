@@ -284,8 +284,12 @@ if exist "%CACHE%\applied.txt" set /p HAVE=<"%CACHE%\applied.txt"
 if not defined GITQUIET call :gitchoose "%NEWSHORT%" "%HAVE%"
 if not defined GITQUIET if errorlevel 1 goto quit
 call :gamelock
-git read-tree FETCH_HEAD >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 goto gitfail
+rem No "read-tree" here any more. It reset the index the comparison needs:
+rem with the index emptied, git has no size or timestamp to trust and re-reads
+rem every file - the 190 MB - on every launch. The comparison below now runs
+rem against the index this launcher wrote when it last updated the folder, and
+rem leaves that index in place afterwards, so an unchanged folder costs a stat
+rem per file and a launch that has nothing to do finishes in a second.
 echo            Checking which files in this folder differ.
 echo            Comparing the game folders already on disk with main - this
 echo            reads the art here, it does not download anything.
@@ -330,7 +334,7 @@ if defined FIND for /f %%n in ('git ls-tree -r --name-only FETCH_HEAD -- data ch
 if not "%CNT%"=="0" echo            main holds %CNT% file(s) in those six folders.
 >"%CMPRUN%" echo @echo off
 >>"%CMPRUN%" echo cd /d "%~dp0."
->>"%CMPRUN%" echo git -c core.quotepath=false -c core.preloadIndex=true diff --name-only -- data chars stages font external sound ^>"%OUT%" 2^>^>"%CACHE%\git.log"
+>>"%CMPRUN%" echo git -c core.quotepath=false -c core.preloadIndex=true diff-index --name-only FETCH_HEAD -- data chars stages font external sound ^>"%OUT%" 2^>^>"%CACHE%\git.log"
 >>"%CMPRUN%" echo if errorlevel 1 (echo x^>"%CMPBAD%") else (echo x^>"%CMPOK%")
 if not exist "%CMPRUN%" exit /b 1
 start "" /b cmd /c ""%CMPRUN%""
@@ -384,7 +388,7 @@ exit /b 0
 rem Files main dropped would otherwise sit here for ever. Only paths this
 rem launcher installed are deleted - the list in applied.files - so a
 rem character the player added themselves is never touched.
-git ls-files -- data chars stages font external sound >"%CACHE%\applied.new" 2>>"%CACHE%\git.log"
+git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\applied.new" 2>>"%CACHE%\git.log"
 if errorlevel 1 goto gitref
 if not exist "%CACHE%\applied.files" goto gitref
 "%FINDSTR%" /v /x /l /g:"%CACHE%\applied.new" "%CACHE%\applied.files" >"%CACHE%\dropped.txt" 2>nul
@@ -395,6 +399,16 @@ for /f "usebackq delims=" %%p in ("%CACHE%\dropped.txt") do call :gitdrop "%%p"
 if exist "%CACHE%\applied.new" move /Y "%CACHE%\applied.new" "%CACHE%\applied.files" >nul 2>&1
 git update-ref refs/heads/main FETCH_HEAD >>"%CACHE%\git.log" 2>&1
 git symbolic-ref HEAD refs/heads/main >>"%CACHE%\git.log" 2>&1
+rem Park main's files in the index as they now are. That is what makes the next
+rem launch cheap: git answers "unchanged" from a size and a timestamp instead of
+rem reading the file, and a file whose content really differs still shows up,
+rem because the hash recorded here is the one on disk, not main's.
+rem
+rem The list comes from main's tree, NOT from "git add -A": a character or stage
+rem the player dropped in these folders would otherwise be indexed too, the next
+rem comparison would call it a difference, and checking out a path main has
+rem never heard of fails - which used to fall through to the 190 MB archive.
+git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound | git update-index --add --replace --stdin >>"%CACHE%\git.log" 2>&1
 set "WHICH=git"
 rem an older version of this launcher kept a second copy of the whole art
 rem here; the folder itself is the working tree now, so it is dead weight
