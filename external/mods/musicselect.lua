@@ -151,7 +151,12 @@ local function doneKeys()
 	if ui and ui.menu and ui.menu.done and ui.menu.done.key then
 		return ui.menu.done.key
 	end
-	return motif.title_info.menu.done.key
+	-- the same read one section over: title_info may have no menu group either
+	local ti = motif.title_info
+	if ti and ti.menu and ti.menu.done and ti.menu.done.key then
+		return ti.menu.done.key
+	end
+	return { 'a', 'b', 'c', 'x', 'y', 'z' }
 end
 
 -- data/albums.sff holds every boxFront.png; sffNew is the engine call that opens

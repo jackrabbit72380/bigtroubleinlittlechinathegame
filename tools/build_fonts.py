@@ -252,6 +252,11 @@ SECTION_LAYOUT = {
         # It used to be right-aligned at 1240, which pushed the longest labels
         # off the right-hand side of the frame.
         ("menu.pos", "800, 470"),
+        # The keys this screen's script reads. options.lua and start.lua call
+        # getInput with motif.title_info.menu.done.key and the section defined
+        # no menu keys at all, so nothing confirmed anything here; the bindings
+        # are the ones the select screen already uses (palmenu.done).
+        ("menu.done.key", "a, b, c, x, y, z"),
         ("menu.item.font", f"{D},0,1, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
         ("menu.item.spacing", "0, 56"),
@@ -292,6 +297,18 @@ SECTION_LAYOUT = {
         # column's edge and the value column's start either side of 960 instead
         # of both on the right-hand half of a 1920 frame.
         ("menu.pos", "940, 99"),
+        # options.lua reads these six paths on every frame it runs and the
+        # section defined none of them: the list drew, and then no key did
+        # anything on it, because each read was nil. Bindings follow the select
+        # screen's palette menu - A/B/C/X/Y/Z confirms, M backs out, the same
+        # U/R and D/L pairs step values - so the menu answers the keys a player
+        # has already been using two screens earlier.
+        ("menu.done.key", "a, b, c, x, y, z"),
+        ("menu.add.key", "U, R"),
+        ("menu.subtract.key", "D, L"),
+        ("menu.cancel.key", "m"),
+        ("keymenu.done.key", "a, b, c, x, y, z"),
+        ("keymenu.unbind.key", "backspace"),
         # The title was still at 640 - a number carried over from the 1280-wide
         # stock motif - so on a 1920 frame it sat a third of the screen to the
         # left of centre while the list sat to the right of it. Font field 0 is
