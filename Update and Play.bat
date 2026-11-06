@@ -51,17 +51,6 @@ set "GIT_CONFIG_NOSYSTEM=1"
 set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
-rem One bar, rewritten in place, needs a terminal that understands ANSI: Windows
-rem Terminal always does, conhost does once VirtualTerminalLevel is on. Without
-rem it the same information is printed as ordinary lines and the bar is never
-rem rewritten, because a rewrite an older console cannot read prints escapes
-rem across the screen instead.
-set "VT=0"
-if defined WT_SESSION set "VT=1"
-if defined TERM_PROGRAM set "VT=1"
-if not "%VT%"=="1" call :vtdetect
-if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
-
 rem The gauge is rewritten where it stands without needing ANSI: every
 rem console understands a backspace, so the cursor walks back over the old
 rem line and the new one lands on top of it. prompt $H writes exactly that
@@ -437,6 +426,7 @@ echo    .//___//
 set "GUNSHOWN=1"
 exit /b 0
 
+:bar
 rem %1 = done, %2 = total. One line under the pistol, rewritten where it
 rem stands. The line is a fixed 54 characters, so a shorter reading can
 rem never leave the tail of a longer one behind: 80 backspaces always put
@@ -1378,11 +1368,3 @@ if errorlevel 1 exit /b 0
 set "ZIPOK=1"
 exit /b 0
 
-:vtdetect
-rem conhost understands ANSI once this is switched on; the value is a REG_DWORD
-rem of 0x1, and anything else - or no key at all - leaves the plain display.
-if not exist "%SYS%\reg.exe" exit /b 0
-"%SYS%\reg.exe" query "HKCU\Console" /v VirtualTerminalLevel 2>nul | "%FINDSTR%" /c:"0x1" >nul
-if errorlevel 1 exit /b 0
-set "VT=1"
-exit /b 0
