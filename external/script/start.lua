@@ -1311,16 +1311,25 @@ local function randomStopText()
 	return t
 end
 
+-- Is this player's cursor on the RANDOM stop? Asked per side, because the
+-- word under the wall is that player's own name label and only that player's
+-- cursor should light it.
+local function sideOnRandomStop(side)
+	local c = start.c[side]
+	local cell = c and c.cell
+	if cell == nil then
+		return false
+	end
+	local g = start.f_selGrid(cell + 1)
+	return g ~= nil and (g.char == 'randomselect' or g.hidden == 3)
+end
+
 -- Any player's cursor, not just the first: in versus both cursors can be on
 -- the stop, and the label should read as selected for either of them.
 local function randomStopLit()
-	for _, c in pairs(start.c) do
-		local cell = c and c.cell
-		if cell ~= nil then
-			local g = start.f_selGrid(cell + 1)
-			if g ~= nil and (g.char == 'randomselect' or g.hidden == 3) then
-				return true
-			end
+	for side = 1, 8 do
+		if sideOnRandomStop(side) then
+			return true
 		end
 	end
 	return false
@@ -3141,14 +3150,27 @@ function start.f_selectScreen()
 						else
 							name = start.f_getName(start.p[side].t_selTemp[i].ref, side)
 						end
-						textImgReset(motif.select_info['p' .. side].name.TextSpriteData)
+						local nameData = motif.select_info['p' .. side].name
+						textImgReset(nameData.TextSpriteData)
 						textImgAddPos(
-							motif.select_info['p' .. side].name.TextSpriteData,
-							(i - 1) * motif.select_info['p' .. side].name.spacing[1],
-							(i - 1) * motif.select_info['p' .. side].name.spacing[2]
+							nameData.TextSpriteData,
+							(i - 1) * nameData.spacing[1],
+							(i - 1) * nameData.spacing[2]
 						)
-						textImgSetText(motif.select_info['p' .. side].name.TextSpriteData, name)
-						textImgDraw(motif.select_info['p' .. side].name.TextSpriteData)
+						textImgSetText(nameData.TextSpriteData, name)
+						-- RANDOM has no portrait art any more: the word under the wall
+						-- is the stop, so it is what lights up when the cursor is on
+						-- it. The motif colour is set back every frame rather than
+						-- left to the reset, so the word cannot stay green after the
+						-- cursor moves off.
+						local nameFont = nameData.font
+						if nameFont ~= nil and nameFont[4] ~= nil then
+							pcall(textImgSetColor, nameData.TextSpriteData, nameFont[4], nameFont[5], nameFont[6])
+						end
+						if nameData.num == 1 and sideOnRandomStop(side) then
+							pcall(textImgSetColor, nameData.TextSpriteData, 72, 232, 96)
+						end
+						textImgDraw(nameData.TextSpriteData)
 					end
 				end
 			end
