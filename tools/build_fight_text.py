@@ -37,10 +37,14 @@ THREE = re.compile(r"^(\s*[A-Za-z0-9_.]+\.font\s*=\s*)(\d+\s*,\s*-?\d+\s*,\s*-?\
 # screen instead of as part of that fighter's box. It is centred on each box's
 # bottom edge and drawn on layerno 2, so the frame art can never cover it.
 WINS_FACE = (
-    ("p1.pos", "70, 112"),
-    ("p2.pos", "1210, 112"),
-    ("p1.text.font", "8, 0, 0, 255, 228, 140"),
-    ("p2.text.font", "8, 0, 0, 255, 228, 140"),
+    # The counter sat at y=112, which is inside the portrait picture at each
+    # corner, so WINS %s printed across the fighter's legs in the 18px Pixel
+    # face. It is on the top edge of the screen now, in the Display face the
+    # round banner and the VS names use, on layerno 2 over the frame art.
+    ("p1.pos", "70, 6"),
+    ("p2.pos", "1210, 6"),
+    ("p1.text.font", "10, 0, 0, 255, 228, 140"),
+    ("p2.text.font", "10, 0, 0, 255, 228, 140"),
     ("p1.layerno", "2"),
     ("p2.layerno", "2"),
 )
@@ -82,6 +86,36 @@ ROUND_KEYS = (
     ("round.final.font", "10,0,0, 255, 228, 140"),
     ("round.final.scale", "2, 2"),
 )
+
+
+# The fighter names under the portrait boxes were the one caption left at 1:1
+# while everything around them grew, so they read as a caption for the picture
+# instead of the fighter. 1.6 of the Menu2Small cell puts them just under the
+# height of the VERSUS row without running into y=200.
+NAME_SIZE = (
+    ("p1.name.scale", "1.6, 1.6"),
+    ("p2.name.scale", "1.6, 1.6"),
+)
+
+
+def place_name_size(text):
+    """Set the [Name] scale keys, inside that section only."""
+    start = text.find("[Name]")
+    if start < 0:
+        return text, False
+    nxt = re.compile(r"^\[", re.M).search(text, start + len("[Name]"))
+    end = nxt.start() if nxt else len(text)
+    head, body, tail = text[:start], text[start:end], text[end:]
+    made = False
+    for key, value in NAME_SIZE:
+        pattern = re.compile(r"^;?[ \t]*" + re.escape(key) + r"[ \t]*=[^\r\n]*$", re.M)
+        line = "%s = %s" % (key, value)
+        new = pattern.sub(line, body) if pattern.search(body) \
+            else body.rstrip("\r\n") + "\n" + line + "\n"
+        if new != body:
+            made = True
+        body = new
+    return head + body + tail, made
 
 
 def place_round_banner(text):
@@ -225,6 +259,16 @@ def build():
             f.write(text)
         os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
 
+    with open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape",
+              newline="") as f:
+        text = f.read()
+    text, names = place_name_size(text)
+    if names:
+        with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
+                  errors="surrogateescape", newline="") as f:
+            f.write(text)
+        os.replace(FIGHT_DEF + ".tmp", FIGHT_DEF)
+
     # The demo caption is set at the menus' size, every build, for the same
     # reason: the engine copy resets it to the Pixel face.
     with open(FIGHT_DEF, encoding="utf-8", errors="replace", newline="") as f:
@@ -239,7 +283,7 @@ def build():
     with open(FIGHT_DEF, encoding="utf-8", errors="replace") as f:
         check = f.read()
     wins = check.split("[WinCount]", 1)[-1].split("\n[", 1)[0]
-    if "p1.pos = 70, 112" not in wins or "p1.layerno = 2" not in wins:
+    if "p1.pos = 70, 6" not in wins or "p1.layerno = 2" not in wins:
         raise SystemExit("[WinCount] did not take the character-box layout")
     if "round.default.font" in check:
         line = next(l for l in check.splitlines() if l.strip().startswith("round.default.font"))

@@ -246,11 +246,12 @@ SELECT_PLATE = STAGE_PORTRAIT + (
     ("stage.portrait.bg.anim", "-1"),
     ("stage.portrait.bg.spr", "110,0"),
 ) + SELECT_TEXT
-# The VS screen is the one screen the stage preview is actually for, and 520px
-# on a 1920 frame read as a thumbnail - "the preview images are too small". 900
-# gives a 900x295 picture whose top edge (703) clears the VS mark and whose
-# bottom (998) leaves the caption row at 1035 to the names.
-VS_CARD_W = 900
+# The VS screen is the one screen the stage preview is actually for. 520px on a
+# 1920 frame read as a thumbnail, and 900 was still short of "twice as big";
+# 1040 is exactly 2x the card the character wall used to carry, and gives a
+# 1040x341 picture centred on 960 whose top edge (657) clears the VS mark and
+# whose bottom (998) leaves the caption row at 1035 to the names.
+VS_CARD_W = 1040
 VS_PLATE = _card(998, card_w=VS_CARD_W) + (
     ("stage.portrait.bg.spr", "112,0"),
 )

@@ -53,10 +53,10 @@ LIFE_Y = 2                  # top of the health bar = top of the dragon's back
 BAR_Y = 30                  # top of the audacity bar = the underside
 BAND = 20                   # height of the audacity band
 TIME_Y = 34                 # yin-yang centre
-# The countdown is the Timer bitmap face (49-unit cells) at 0.55 in the def,
-# so the digits stand 27px tall. Their offset has to carry half of that to
+# The countdown is the Timer bitmap face (49-unit cells) at TIME_NUM_SCALE,
+# so the digits stand 34px tall: Their offset has to carry half of that to
 # land on the disc's centre line; at -4 they hung 9px low in the yin-yang.
-TIME_NUM_SCALE = 0.55
+TIME_NUM_SCALE = 0.7
 TIME_NUM_CELL = 49
 TIME_NUM_Y = -int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
 METER_W = 202               # fillable length of the audacity bar
@@ -366,7 +366,10 @@ def _disc(r, s):
 def paint_timer():
     """Both approved heads, scaled to the body, facing the yin-yang."""
     w, h = 400, 160
-    JOINT = (105, 80)               # local anchor of the left head
+    # 88, not 105: at 105 the snout reached x=179 and the disc starts at 172,
+    # so the jaws were painted over the yin-yang's rim. 88 leaves the head's
+    # edge 10px clear of the disc.
+    JOINT = (88, 80)                # local anchor of the left head
     HALF_SCALE = 0.62               # the heads are drawn at twice this size
     big_w, big_h = 240, 140
     joint_big = (120, 70)
@@ -596,8 +599,24 @@ def patch_def():
     # run off the end of the art into empty space.
     body = _set(body, "p1.range.x", "-4,-%d" % METER_W)
     body = _set(body, "p2.range.x", "4,%d" % METER_W)
+    # AUDACITY is already painted into the full-power art (build_meter_label
+    # repaints sprite 44,0), so the counterMax WORD was the same caption twice
+    # in two sizes. The text is emptied; the tint and offsets stay.
+    body = re.sub(r"(?m)^(\s*p[12]\.counterMax\.text\s*=\s*).*$",
+                  r"\g<1>", body)
     body = re.sub(r"(?m)^(\s*p[12]\.counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
+    lines[s:e] = body.split("\n")
+
+    # The character pictures are the characters' own 9000,0 art, drawn at its
+    # own size - several times the 100x100 box at 20,20 / 1260,20 - so every
+    # fighter's portrait spilled out of its frame. A window clips the picture
+    # to the inside of the frame whatever size that art happens to be.
+    s, e = _section(lines, "Face")
+    body = "\n".join(lines[s:e])
+    for side, x in (("p1", 24), ("p2", 1264)):
+        body = _set(body, "%s.face.window" % side,
+                    "%d, 24, %d, 116" % (x, x + 92))
     lines[s:e] = body.split("\n")
 
     s, e = _section(lines, "Time")
@@ -609,7 +628,8 @@ def patch_def():
     body = re.sub(r"(?m)^(\s*counter\w*\.offset\s*=\s*)(-?\d+),\s*-?\d+\s*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), TIME_NUM_Y), body)
     body = re.sub(r"(?m)^(\s*counter\w*\.scale\s*=\s*)\d+(\.\d+)?\s*,\s*\d+(\.\d+)?\s*$",
-                  lambda m: "%s0.55, 0.55" % m.group(1), body)
+                  lambda m: "%s%.2f, %.2f" % (m.group(1), TIME_NUM_SCALE,
+                                               TIME_NUM_SCALE), body)
     lines[s:e] = body.split("\n")
 
     s, e = _section(lines, "Score")
