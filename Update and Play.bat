@@ -318,7 +318,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-echo Updating %NCH% file(s)
+set "BARLABEL=Updating %NCH% file(s)"
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -425,7 +425,8 @@ set "EMPTY=--------------------"
 call set "BFILLED=%%FILLED:~0,%BFILL%%%"
 set /a BGAP=20-BFILL
 call set "BEMPTY=%%EMPTY:~0,%BGAP%%%"
-set "BARLINE=[%BFILLED%%BEMPTY%] %BPCT%%"
+set "BARLINE=  [%BFILLED%%BEMPTY%] %BPCT%%"
+if defined BARLABEL set "BARLINE=  %BARLABEL%  [%BFILLED%%BEMPTY%] %BPCT%%"
 set "BARDRAWN=1"
 if not "%VT%"=="1" goto bar_lines
 <nul set /p "=%ESC%[2K%ESC%[0G  %BARLINE%"
@@ -437,6 +438,7 @@ exit /b 0
 rem the redrawn bar leaves the cursor on its line: end it before the next one
 if "%VT%"=="1" if defined BARDRAWN echo.
 set "BARDRAWN="
+set "BARLABEL="
 exit /b 0
 
 :spin
@@ -493,6 +495,7 @@ set /a NBAD=0
 for /f "usebackq delims=" %%b in ("%CACHE%\bad.txt") do set /a NBAD+=1
 if "%NBAD%"=="0" exit /b 0
 echo Retrying %NBAD% file(s) that did not write correctly.
+set "BARLABEL=Rechecking %NBAD% file(s)"
 copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
 set "NCH=%NBAD%"
 set /a NDONE=0
@@ -699,7 +702,8 @@ if not exist "%MISS%" exit /b 0
 set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 if "%NMISS%"=="0" exit /b 0
-echo Fetching %NMISS% missing file(s).
+if "%WHICH%"=="git" set "BARLABEL=Fetching %NMISS% file(s)"
+if not "%WHICH%"=="git" echo Fetching %NMISS% file(s)
 set "NCH=%NMISS%"
 set /a NDONE=0
 set /a BCOUNT=0
@@ -1237,7 +1241,7 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = ([int](100 * $got / $total)).ToString().PadLeft(3) + '%' }
 >> "%DLSCRIPT%" echo   $speed = 0.0
 >> "%DLSCRIPT%" echo   if ($elapsed -gt 0) { $speed = $got / $elapsed }
->> "%DLSCRIPT%" echo   $line = [char]13 + '   [' + $bar + '] ' + $pct + '   ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB   ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
+>> "%DLSCRIPT%" echo   $line = [char]13 + '   Downloading   [' + $bar + '] ' + $pct + '   ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB   ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
 >> "%DLSCRIPT%" echo $file.Close()
