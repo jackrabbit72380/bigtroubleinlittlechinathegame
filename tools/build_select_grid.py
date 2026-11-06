@@ -492,9 +492,10 @@ KEYS = (
     # 5x scale and a 476px-wide window they spilled past the panel and showed
     # around the preview art. Offsets below compensate for each sprite's axis:
     # 151,0 sits at (-22,-18), 151,1 (mirrored) at (31,0), 1000,1 at (0,0).
-    # The random card is painted at panel size, so it draws at 1:1 from the
-    # panel's corner instead of a 62px glyph blown up 4.8x.
-    ("p1.face2.random.spr", "151,10"),
+    # RANDOM is a word, not a portrait: the stand-in question-mark card in the
+    # side panel is switched off, and the label under the wall (that player's
+    # name, drawn by start.lua) is what lights up when the cursor is on the stop.
+    ("p1.face2.random.spr", "-1, 0"),
     # 151,10 is still the old 300x520 card, so it is scaled to the 214px panel
     # instead of drawing into the grid.
     ("p1.face2.random.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
@@ -503,7 +504,7 @@ KEYS = (
     ("p1.face2.loading.offset", "%d, %d" % (SIDE_INSET, FACE2_TOP)),
     ("p1.face2.loading.scale", "0.3333, 0.3333"),
     ("p1.face2.loading.window", FACE2_WIN_P1),
-    ("p2.face2.random.spr", "151,10"),
+    ("p2.face2.random.spr", "-1, 0"),
     # p2 draws its panel art mirrored (facing = -1), so the offset is the
     # panel's right edge and the card lands on 1066-1276.
     ("p2.face2.random.offset", "%d, %d" % (1920 - SIDE_INSET, FACE2_TOP)),
