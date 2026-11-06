@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v44
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v45
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,7 +63,7 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo   ==============================================================
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v44
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v45
 echo   ==============================================================
 
 set "EXE="
@@ -107,6 +107,11 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
+rem The progress bar is one line that advances, not a new bar per percent. A
+rem carriage return puts the cursor back at the start of the line it is on;
+rem copy /Z prints a progress line that for /f can be split on its CR. If this
+rem produces nothing, the bar falls back to printing separate lines.
+for /f %%a in ('copy /Z "%~f0" nul 2^>nul') do set "CR=%%a"
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
@@ -142,7 +147,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo   Checking main
+echo Checking main
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -156,21 +161,21 @@ set "GITOK=1"
 goto trygit
 
 :manualzip
-echo            Using main.zip from this folder - no download needed.
+echo Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo            That main.zip is incomplete - downloading instead.
+echo That main.zip is incomplete - downloading instead.
 goto download
 
 :manualzip2
-echo            Using main.zip from this folder - no download needed.
+echo Using main.zip from this folder - no download needed.
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0bigtroubleinlittlechinathegame-main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo            That zip is incomplete - downloading instead.
+echo That zip is incomplete - downloading instead.
 goto download
 
 rem ---- transport 1: git, working on this folder's own files --------------
@@ -214,14 +219,14 @@ for /f "delims=" %%c in ('git config --get http.sslCAInfo 2^>nul') do set "GITCA
 if not defined GITCAFILE goto gitca_checked
 if defined GITBUNDLE goto gitca_checked
 if exist "%GITCAFILE%" goto gitca_checked
-echo            Git cannot read its certificate bundle: %GITCAFILE%
-echo            Using the verified download instead.
+echo Git cannot read its certificate bundle: %GITCAFILE%
+echo Using the verified download instead.
 goto probe
 :gitca_checked
 if exist ".git" goto githere
-echo            First run: reading what is already here, so only changes are downloaded.
-echo            This reads the art already in this folder; it does not download it.
-echo            This can take a minute before the bar moves.
+echo First run: reading what is already here, so only changes are downloaded.
+echo This reads the art already in this folder; it does not download it.
+echo This can take a minute before the bar moves.
 
 :gitinit
 rem Also reached when the updater's own repository has to be rebuilt. It holds
@@ -261,7 +266,7 @@ rem because it is being used by another process" and then into the 190 MB
 rem archive. The repository lives outside the game folder now, so the one here
 rem is removed; nothing in it is player-visible, and if it cannot be removed it
 rem is simply ignored, because every git command below names the new one.
-echo            Moving the updater's git data out of the game folder.
+echo Moving the updater's git data out of the game folder.
 rd /s /q "%~dp0.git" >nul 2>&1
 goto gitinit
 
@@ -274,7 +279,7 @@ for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%
 if "%MINE%"=="1" goto gitmigrate
 git rev-parse --verify -q HEAD >nul 2>&1
 if errorlevel 1 goto gitfetch
-echo         your own git checkout - run: git pull
+echo your own git checkout - run: git pull
 goto launch
 
 rem ---- transport 1: git ----------------------------------------------------
@@ -282,7 +287,7 @@ rem Only main's commit and its file list are fetched, a few hundred KB. The art
 rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo         reading main's file list
+echo reading main's file list
 rem The fetch runs in a helper so this window can show that it is waiting and
 rem for how long, instead of sitting on one line while the network answers.
 rem The helper inherits GIT_DIR and GIT_WORK_TREE from this shell, so it works
@@ -307,7 +312,7 @@ if errorlevel 1 call :gitfetch_retry
 if errorlevel 1 goto gitfail
 set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
-echo         main @ %NEWSHORT%
+echo main @ %NEWSHORT%
 call :log main is %NEWSHORT%
 call :gamelock
 git -c core.quotepath=false ls-tree -r FETCH_HEAD -- data chars stages font external sound >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
@@ -320,7 +325,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-echo   Updating %NCH% file(s)
+echo Updating %NCH% file(s)
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -331,11 +336,11 @@ for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
 call :gitflush
 if defined WRITEFAIL goto gitfail
 call :bar %NDONE% %NCH%
-if "%VT%"=="1" echo.
+call :barflush
 call :confirm
 goto gitdrop_list
 :gitnone
-echo         already current - nothing to download
+echo already current - nothing to download
 goto gitdrop_list
 :plan
 rem A file is fetched only when main's hash for it differs from the hash this
@@ -352,7 +357,7 @@ rem Nothing recorded yet - the first run on this folder. Prime git's index in
 rem ONE pass: that hashes the files already here instead of downloading them,
 rem and then git can say exactly which of them differ from main. It runs in a
 rem helper for the same reason the fetch does: so the window shows it working.
-echo         first run: reading this folder once
+echo first run: reading this folder once
 set "QOK=%CACHE%\plan.ok"
 set "QBAD=%CACHE%\plan.bad"
 if exist "%QOK%" del /q "%QOK%" >nul 2>&1
@@ -428,15 +433,15 @@ echo    ....// (..) ), ----"
 echo    ...//___//
 echo    ..//___//
 echo    .//___//
-echo.
 set "GUNSHOWN=1"
 exit /b 0
 
 :bar
-rem %1 = done, %2 = total. The shot leaving the barrel above: tracers for what
-rem is done, dots for what is left, then the count and the percentage. Redrawn
-rem on its own line where the console reads ANSI, printed as lines where it
-rem does not.
+rem %1 = done, %2 = total. One bar, rewritten where it stands: CR back to the
+rem start of the line, then the text padded, so a growing bar never leaves the
+rem tail of the previous one behind it. The tracers are ">", which an echo would
+rem read as a redirection and abort the script over, so the fallback path
+rem escapes them - and is only used when the console cannot do the redraw.
 if "%~2"=="0" exit /b 0
 if not defined GUNSHOWN call :gun
 set /a BFILL=%~1*24/%~2
@@ -449,16 +454,20 @@ set /a BGAP=24-BFILL
 call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set /a BPCT=%~1*100/%~2
 set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%"
-rem The tracers are ">", and an unescaped ">" in an echo is a redirection: cmd
-rem would try to open a file named ">>>>>>", print "Access is denied" and then
-rem abort the whole script with ">> was unexpected at this time" - the bar never
-rem appearing and the update never starting. On a console without ANSI the bar
-rem is echoed, so every ">" in it is escaped first; the live-redraw branch feeds
-rem the text to set /p, where no redirection is parsed and nothing needs it.
 set "BARSAFE=%BARLINE:>=^>%"
-if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARSAFE% )
+set "BARDRAWN=1"
+if not defined CR goto bar_lines
+<nul set /p "=%CR%%BARLINE%      "
 exit /b 0
-:spin
+:bar_lines
+echo %BARSAFE%
+exit /b 0
+:barflush
+rem The in-place bar leaves the cursor on its own line; without this the next
+rem echo prints straight over it.
+if defined BARDRAWN echo.
+set "BARDRAWN="
+exit /b 0
 rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
 set /a SMOD=%~1 %% 4
 set "SPIN=|/-\"
@@ -610,8 +619,8 @@ if not defined TASKLIST exit /b 0
 "%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
 if errorlevel 1 exit /b 0
 echo.
-echo            The game is still running. Its files are open, so they cannot
-echo            be replaced. Close the game - this window carries on by itself.
+echo The game is still running. Its files are open, so they cannot
+echo be replaced. Close the game - this window carries on by itself.
 set /a GWAIT=0
 :gamelock_wait
 call :sleep 3
@@ -622,7 +631,7 @@ if errorlevel 1 (
   exit /b 0
 )
 if %GWAIT% LSS 60 goto gamelock_wait
-echo            Still open after %GWAIT% seconds - carrying on anyway.
+echo Still open after %GWAIT% seconds - carrying on anyway.
 exit /b 0
 
 :gitfail
@@ -644,9 +653,9 @@ goto gitfail_final
 set "GITFIXED=1"
 set "GITQUIET=1"
 echo.
-echo            A file git needs was in use. Clearing the lock files it leaves
-echo            behind and trying that step again - this costs a few hundred
-echo            KB, not the archive.
+echo A file git needs was in use. Clearing the lock files it leaves
+echo behind and trying that step again - this costs a few hundred
+echo KB, not the archive.
 call :gitunlock
 call :sleep 3
 goto gitfetch
@@ -657,42 +666,42 @@ set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
 if not "%MINE%"=="1" goto gitfail_final
 echo.
-echo            The updater's git data is not usable, so it is rebuilt and the
-echo            update tried once more. That folder holds no player data, so
-echo            this costs a re-read of the folders, never a download.
+echo The updater's git data is not usable, so it is rebuilt and the
+echo update tried once more. That folder holds no player data, so
+echo this costs a re-read of the folders, never a download.
 call :gitunlock
 if exist "%GITSTORE%" rd /s /q "%GITSTORE%" >nul 2>&1
 goto gitinit
 
 :gitlocked
 echo.
-echo            Git could not write a file because another program has it open.
+echo Git could not write a file because another program has it open.
 echo.
-echo            Nothing has been downloaded for this: the archive takes the
-echo            same locks and would fail the same way, which is why the whole
+echo Nothing has been downloaded for this: the archive takes the
+echo same locks and would fail the same way, which is why the whole
 echo            190 MB used to be spent here and change nothing.
 echo.
-echo            Close these and run this launcher again:
+echo Close these and run this launcher again:
 echo              - the game, if it is still open
 echo              - any other copy of this updater
 echo              - an editor, git window or backup tool in this folder
-echo            An antivirus can hold a file for a few seconds after writing
-echo            it, so running this a second time often just works.
+echo An antivirus can hold a file for a few seconds after writing
+echo it, so running this a second time often just works.
 echo.
 pause
 exit 1
 
 :gitfail_final
 echo.
-echo            Git could not finish this update.
-echo            Its reason is in git's own lines just above this - no
-echo            connection, a proxy, or a blocked github.com are the usual ones.
+echo Git could not finish this update.
+echo Its reason is in git's own lines just above this - no
+echo connection, a proxy, or a blocked github.com are the usual ones.
 if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
 if exist "%CACHE%\git.log" if not defined POWERSHELL "%FINDSTR%" /i /c:"fatal" /c:"error:" "%CACHE%\git.log" >nul 2>&1
 if exist "%CACHE%\git.log" if not defined POWERSHELL if not errorlevel 1 type "%CACHE%\git.log"
 set "GITFAILED=1"
 echo.
-echo            Falling back to step 2, which downloads the whole 190 MB again.
+echo Falling back to step 2, which downloads the whole 190 MB again.
 goto probe
 
 :gitfetch_retry
@@ -702,12 +711,12 @@ rem git install - or to one that reads the Windows store instead - every
 rem fetch dies on it, and that failure used to mean the 190 MB archive.
 rem Two cheaper answers are tried first: no bundle at all, then the
 rem Windows certificate store, which is where a normal install looks.
-echo            Fetch failed. Retrying without the bundle this script found.
+echo Fetch failed. Retrying without the bundle this script found.
 set "GIT_SSL_CAINFO="
 set "GITBUNDLE="
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
-echo            Retrying with the Windows certificate store.
+echo Retrying with the Windows certificate store.
 git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
 exit /b 1
@@ -798,11 +807,11 @@ if not exist "%~dp0data\fight.def" goto download
 set "APPLIED="
 set /p APPLIED=<"%CACHE%\applied.txt"
 if not defined APPLIED goto probe_first
-echo            Asking GitHub for main's latest build number.
+echo Asking GitHub for main's latest build number.
 call :atoms
 if not defined RSHA7 goto probe_api
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo   Version: main @ %APPLIED%
+echo Version: main @ %APPLIED%
 goto launch
 
 :probe_offer
@@ -820,8 +829,8 @@ rem hourly quota, so it is asked when the feed could not answer, not always.
 call :headsha
 if not defined RSHA7 goto probe_offer
 if not "%RSHA7%"=="%APPLIED%" goto probe_offer
-echo   Version: main @ %APPLIED%
-echo            Main has not moved - nothing to download.
+echo Version: main @ %APPLIED%
+echo Main has not moved - nothing to download.
 goto launch
 
 :atoms
@@ -862,13 +871,13 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   Downloading the game archive (about 190 MB)
+echo Downloading the game archive (about 190 MB)
 if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
 if not defined GITOK echo            Git is not installed here, so this is the only way in.
 echo.
-echo            The bar below is the download: percentage, size and speed.
-echo            File names appear in step 3 as each one is written.
-echo            Leave this window open until it finishes.
+echo The bar below is the download: percentage, size and speed.
+echo File names appear in step 3 as each one is written.
+echo Leave this window open until it finishes.
 echo.
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
@@ -884,19 +893,19 @@ if not defined DLOK call :dl_curl
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-echo            The archive did not arrive in one piece.
+echo The archive did not arrive in one piece.
 echo.
 :dl_browser
 echo.
-echo            This window is not allowed out to GitHub, but your browser is.
-echo            Opening the download now.
+echo This window is not allowed out to GitHub, but your browser is.
+echo Opening the download now.
 echo.
-echo            Save it anywhere in Downloads. This window watches for it
-echo            and starts the game as soon as it is complete - you do not
-echo            have to come back here or run anything else.
+echo Save it anywhere in Downloads. This window watches for it
+echo and starts the game as soon as it is complete - you do not
+echo have to come back here or run anything else.
 echo.
 start "" "%ZIPURL%"
-echo            Waiting for the zip ...
+echo Waiting for the zip ...
 set /a WAIT=0
 set /a TICK=0
 :bwait
@@ -904,17 +913,17 @@ call :sleep 5
 set /a WAIT+=5
 set /a TICK+=1
 if %TICK% LSS 6 goto bwait_check
-echo            still waiting ... %WAIT% seconds, watching Downloads
+echo still waiting ... %WAIT% seconds, watching Downloads
 set /a TICK=0
 :bwait_check
 call :findzip
 if defined FOUNDZIP goto bapply
 if %WAIT% LSS 1200 goto bwait
-echo            Nothing arrived after 20 minutes.
+echo Nothing arrived after 20 minutes.
 goto downloadfailed
 
 :bapply
-echo            Got it: %FOUNDZIP%
+echo Got it: %FOUNDZIP%
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%FOUNDZIP%" "%ZIP%" >nul
 call :zipcheck
@@ -928,7 +937,7 @@ call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
-echo   Copying the game files over this folder
+echo Copying the game files over this folder
 
 echo.
 call :ziptree
@@ -984,7 +993,7 @@ if not defined VER echo   Version: zip build
 echo.
 
 :launch
-echo   Starting the game
+echo Starting the game
 rem The engine runs in a helper of its own, so this window can close as soon as
 rem the game is up - but its output is kept instead of being thrown away. A
 rem game that dies on a missing file or a renderer setting used to write its
@@ -1011,7 +1020,13 @@ call :sleep 1
 set /a LW+=1
 "%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
 if not errorlevel 1 goto launch_ok
-if %LW% GEQ 12 goto launch_died
+rem A game still loading has already written to its log, because the helper
+rem redirects the engine's output there before the engine runs. Twelve seconds
+rem was shorter than a first load of 190 MB of art, so a game that came up was
+rem called a game that did not, and this window waited over it. The window now
+rem gives the engine 45 seconds and treats any output as "it is running".
+if exist "%GLOG%" for %%A in ("%GLOG%") do if %%~zA GTR 0 goto launch_ok
+if %LW% GEQ 45 goto launch_died
 goto launch_wait
 :launch_ok
 call :log game is running after %LW%s
@@ -1019,7 +1034,7 @@ exit 0
 :launch_died
 call :log game did not stay open
 echo.
-echo   The game did not stay open. Its own output:
+echo The game did not stay open. Its own output:
 echo.
 if exist "%GLOG%" type "%GLOG%"
 if not exist "%GLOG%" echo   (the engine wrote nothing at all)
@@ -1027,10 +1042,10 @@ if exist "%GCODE%" echo.
 if exist "%GCODE%" echo   Exit code:
 if exist "%GCODE%" type "%GCODE%"
 echo.
-echo   This is also saved as:  %GLOG%
-echo   and the run log:        %LOG%
+echo This is also saved as:  %GLOG%
+echo and the run log:        %LOG%
 echo.
-echo   If a game window is behind this one, close this window and play.
+echo If a game window is behind this one, close this window and play.
 echo.
 pause
 exit 1
@@ -1053,7 +1068,7 @@ rem could never be refreshed - a folder running v19 stayed on v19 no matter what
 rem main fixed. It is fetched on its own here, a few KB.
 "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher-new.bat" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
 if not errorlevel 1 goto selfupdate_got
-echo   Could not fetch a newer launcher - using this copy.
+echo Could not fetch a newer launcher - using this copy.
 exit /b 0
 :selfupdate_got
 if not exist "%CACHE%\launcher-new.bat" exit /b 0
@@ -1065,7 +1080,7 @@ if errorlevel 1 exit /b 0
 "%SYS%\fc.exe" /b "%CACHE%\launcher-new.bat" "%~f0" >nul 2>&1
 if not errorlevel 1 goto selfupdate_current
 echo.
-echo   This launcher is not the current one - updating it before anything else.
+echo This launcher is not the current one - updating it before anything else.
 rem cmd reads a batch file while it runs it, so this file cannot be written over
 rem by the window that is executing it. A detached helper waits for the window to
 rem close, copies the new launcher into place and starts it again with --updated.
@@ -1100,7 +1115,7 @@ if not exist "%SWAP%" exit /b 0
 rem A window of its own, minimised: a /b child shares this console and would
 rem go with it when this script exits on the next line.
 start "btilc launcher update" /min "%SWAP%"
-echo   It restarts in a moment with the current one.
+echo It restarts in a moment with the current one.
 echo.
 exit 0
 
@@ -1110,46 +1125,46 @@ if exist "%CACHE%\swap.attempts" del /q "%CACHE%\swap.attempts" >nul 2>&1
 exit /b 0
 
 :selfupdate_stuck
-echo   Launcher file is read-only - running this copy, game files still update.
+echo Launcher file is read-only - running this copy, game files still update.
 call :log self-update refused, running this copy
 exit /b 0
 
 :launchfail
-echo   The game did not stay open. Start it by hand to see the engine's
-echo   message, and check docs/INSTALL.md - the renderer setting is the
-echo   usual reason, and deleting save\config.ini resets it.
+echo The game did not stay open. Start it by hand to see the engine's
+echo message, and check docs/INSTALL.md - the renderer setting is the
+echo usual reason, and deleting save\config.ini resets it.
 echo.
 pause
 exit 1
 
 :folder_denied
 echo.
-echo   This folder will not let anything be written into it:
+echo This folder will not let anything be written into it:
 echo     %~dp0
 if exist "%WERR%" type "%WERR%"
-echo   Tried three times. The files here are left exactly as they are - so they
-echo   may be older than main. Starting the game with what is installed.
+echo Tried three times. The files here are left exactly as they are - so they
+echo may be older than main. Starting the game with what is installed.
 call :log folder refused writes after %WTRY% tries: %~dp0
 if not exist "%~dp0%EXE%" goto folder_denied_noexe
 goto launch
 :folder_denied_noexe
-echo   There is no %EXE% here either, so there is nothing to start.
+echo There is no %EXE% here either, so there is nothing to start.
 echo.
 pause
 exit 1
 
 :wrongfolder
-echo   This file belongs in your game folder - the one that has
-echo   BigTroubleInLittleChinaTheGame.exe in it.
+echo This file belongs in your game folder - the one that has
+echo BigTroubleInLittleChinaTheGame.exe in it.
 echo.
 pause
 exit 1
 
 :downloadfailed
 echo.
-echo   Could not get the files automatically.
+echo Could not get the files automatically.
 echo.
-echo   The last resort, which always works:
+echo The last resort, which always works:
 echo     1. Download this in your browser.
 echo        %ZIPURL%
 echo     2. Save the zip in this folder.
@@ -1364,7 +1379,7 @@ exit /b 0
 
 :quit
 rem Reached when Escape is pressed: nothing has been fetched, copied or deleted.
-echo   Nothing was changed. Closing.
+echo Nothing was changed. Closing.
 call :sleep 3
 exit 0
 
