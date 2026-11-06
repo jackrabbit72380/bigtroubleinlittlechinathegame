@@ -62,15 +62,10 @@ if defined TERM_PROGRAM set "VT=1"
 if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
-echo.
 echo   ==============================================================
-echo    B I G   T R O U B L E   I N   L I T T L E   C H I N A
-echo                     THE GAME
-echo              Updater v40
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v41
+echo    %~dp0
 echo   ==============================================================
-echo    Folder:  %~dp0
-echo   ==============================================================
-echo.
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -132,9 +127,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo.
-echo   --------------------------------------------------------------
-echo     1/3   Checking main
+echo   1/3  Checking main
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -173,7 +166,7 @@ rem and they are fetched straight into place. No second copy of the art is
 rem kept, and the folders the game never uses - artifacts, art_src, tools -
 rem are outside the paths below and are left alone.
 :trygit
-echo            Git found. Comparing this folder with main.
+
 rem Git can be handed a certificate bundle path that only exists inside a Git
 rem Bash install - /usr/ssl/certs/ca-bundle.crt - and then every fetch dies with
 rem "error setting certificate file". The bundle that belongs to the git that is
@@ -266,8 +259,7 @@ for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%
 if "%MINE%"=="1" goto gitmigrate
 git rev-parse --verify -q HEAD >nul 2>&1
 if errorlevel 1 goto gitfetch
-echo            This folder is your own git checkout - left untouched.
-echo            Bring it up to date yourself with:  git pull
+echo         your own git checkout - run: git pull
 goto launch
 
 rem ---- transport 1: git ----------------------------------------------------
@@ -275,7 +267,7 @@ rem Only main's commit and its file list are fetched, a few hundred KB. The art
 rem is fetched later, one blob at a time, and only for the files that differ.
 :gitfetch
 if exist "%CACHE%\git.log" del /q "%CACHE%\git.log" >nul 2>&1
-echo         asking main for the file list (about 300 KB)
+echo         reading main's file list
 rem The fetch runs in a helper so this window can show that it is waiting and
 rem for how long, instead of sitting on one line while the network answers.
 rem The helper inherits GIT_DIR and GIT_WORK_TREE from this shell, so it works
@@ -313,9 +305,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-echo.
-echo   --------------------------------------------------------------
-echo     2/3   Updating %NCH% file(s)
+echo   2/3  Updating %NCH% file(s)
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -347,7 +337,7 @@ rem Nothing recorded yet - the first run on this folder. Prime git's index in
 rem ONE pass: that hashes the files already here instead of downloading them,
 rem and then git can say exactly which of them differ from main. It runs in a
 rem helper for the same reason the fetch does: so the window shows it working.
-echo         first run here - one read of this folder, nothing downloaded
+echo         first run: reading this folder once
 set "QOK=%CACHE%\plan.ok"
 set "QBAD=%CACHE%\plan.bad"
 if exist "%QOK%" del /q "%QOK%" >nul 2>&1
@@ -850,9 +840,7 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo.
-echo   --------------------------------------------------------------
-echo     2/3   Downloading the game archive (about 190 MB)
+echo   2/3  Downloading the game archive (about 190 MB)
 if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
 if not defined GITOK echo            Git is not installed here, so this is the only way in.
 echo.
@@ -918,10 +906,8 @@ call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
-echo.
-echo   --------------------------------------------------------------
-echo     2/3   Copying the game files over this folder
-echo            Every file that really differs is named as it is written.
+echo   2/3  Copying the game files over this folder
+
 echo.
 call :ziptree
 if "%PSOK%"=="1" goto copied
@@ -976,10 +962,7 @@ if not defined VER echo   Version: zip build
 echo.
 
 :launch
-echo.
-echo   --------------------------------------------------------------
-echo     3/3   Starting the game
-echo.
+echo   3/3  Starting the game
 rem The engine runs in a helper of its own, so this window can close as soon as
 rem the game is up - but its output is kept instead of being thrown away. A
 rem game that dies on a missing file or a renderer setting used to write its
@@ -1201,8 +1184,7 @@ rem No list means no git history to diff - a first run, or a folder updated
 rem from the archive. robocopy still skips every file whose size and time
 rem already match, so only the files that changed are actually written; the
 rem scan is the cost, not the bytes.
-echo            Robocopy compares the six game folders itself, so this
-echo            fallback prints folder names and the count, not file names.
+
 for %%F in (data chars stages font external sound) do (
   if exist "%SRC%\%%F" echo            %%F
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
