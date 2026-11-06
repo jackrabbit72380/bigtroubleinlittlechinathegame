@@ -3868,7 +3868,7 @@ demo.pos = 1138,35
 ;demo.bg.spr = 
 demo.text.font = 11, 0, -1, 255, 228, 140
 demo.text.text = Demo Mode
-demo.text.scale = 0.667, 0.667
+demo.text.scale = 1.5, 1.5
 
 ;-----------------------------------------------------------
 ; How to customize
