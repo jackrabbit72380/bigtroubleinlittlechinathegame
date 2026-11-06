@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v38
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v39
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -73,7 +73,7 @@ echo.
 echo   ==============================================================
 echo    B I G   T R O U B L E   I N   L I T T L E   C H I N A
 echo                     THE GAME
-echo              Updater v38   -   dragon edition
+echo              Updater v39   -   dragon edition
 echo   ==============================================================
 echo    Folder:  %~dp0
 echo   ==============================================================
@@ -84,6 +84,14 @@ if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTh
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto wrongfolder
 call :log folder %~dp0  exe %EXE%
+rem Windows refusing one write means it will refuse every write, one file at a
+rem time, each with the same "Access is denied" line. It is tested once here,
+rem while there is still room to explain what to do about it.
+set "WT=%~dp0.btilc-write-test"
+>"%WT%" echo x 2>nul
+if not exist "%WT%" goto folder_denied
+del /q "%WT%" >nul 2>&1
+set "WT="
 
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
@@ -99,7 +107,7 @@ if not exist "%CACHE%" set "CACHE=%TEMP%"
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
->"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1
+>"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1 2>nul
 set "ZIP="
 set "SRC="
 set "WHICH="
@@ -1054,7 +1062,7 @@ for %%A in ("%CACHE%\launcher-new.bat") do if %%~zA LSS 5000 exit /b 0
 "%FINDSTR%" /c:"BIG TROUBLE IN LITTLE CHINA" "%CACHE%\launcher-new.bat" >nul 2>&1
 if errorlevel 1 exit /b 0
 "%SYS%\fc.exe" /b "%CACHE%\launcher-new.bat" "%~f0" >nul 2>&1
-if not errorlevel 1 exit /b 0
+if not errorlevel 1 goto selfupdate_current
 echo.
 echo   This launcher is not the current one - updating it before anything else.
 rem cmd reads a batch file while it runs it, so this file cannot be written over
@@ -1062,6 +1070,15 @@ rem by the window that is executing it. A detached helper waits for the window t
 rem close, copies the new launcher into place and starts it again with --updated.
 rem If the copy loses the race the restarted window carries on as it is: the next
 rem launch tries again, and nothing here can loop.
+rem Replacing this file can be refused outright - a read-only file, a folder
+rem under Windows' control, a scanner holding it. Three attempts is enough:
+rem past that this copy runs the update as it is instead of closing, fetching
+rem and closing again on every double-click.
+set "SWN=0"
+if exist "%CACHE%\swap.attempts" for /f "usebackq delims=" %%n in ("%CACHE%\swap.attempts") do set "SWN=%%n"
+set /a SWN+=1
+>"%CACHE%\swap.attempts" echo %SWN% 2>nul
+if %SWN% GTR 3 goto selfupdate_stuck
 set "SWAP=%CACHE%\swap.bat"
 >"%SWAP%" echo @echo off
 rem Three tries, a few seconds apart: the window that started this has to
@@ -1086,11 +1103,42 @@ echo   It restarts in a moment with the current one.
 echo.
 exit 0
 
+:selfupdate_current
+rem this copy is the current one: forget any failed attempts at replacing it
+if exist "%CACHE%\swap.attempts" del /q "%CACHE%\swap.attempts" >nul 2>&1
+exit /b 0
+
+:selfupdate_stuck
+echo   This launcher could not replace itself (access denied on its own file).
+echo   Carrying on with this copy - the game files still update normally.
+echo   To refresh the launcher itself, close any window using it and run it
+echo   again from a folder you can write to.
+call :log self-update refused, running this copy
+exit /b 0
+
 :launchfail
 echo   The game did not stay open. Start it by hand to see the engine's
 echo   message, and check docs/INSTALL.md - the renderer setting is the
 echo   usual reason, and deleting save\config.ini resets it.
 echo.
+pause
+exit 1
+
+:folder_denied
+echo.
+echo   This folder does not let the updater write to it:
+echo     %~dp0
+echo.
+echo   Windows answered "Access is denied", so no file can be put here and the
+echo   update has nowhere to go. Common reasons:
+echo.
+echo     - the folder is under Program Files or another protected place:
+echo       move it somewhere you own, such as H:\Games
+echo     - the files came from a zip and are marked read-only: select the
+echo       folder, right-click, Properties, clear Read-only, Apply
+echo     - a security tool is blocking writes to this drive
+echo.
+call :log folder refused writes: %~dp0
 pause
 exit 1
 
@@ -1269,7 +1317,7 @@ exit /b 0
 :log
 rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
->>"%LOG%" echo [%TIME%] %*
+>>"%LOG%" echo [%TIME%] %* 2>nul
 exit /b 0
 
 :sleep
