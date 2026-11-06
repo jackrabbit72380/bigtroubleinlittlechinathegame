@@ -402,24 +402,39 @@ if errorlevel 1 set "WRITEFAIL=1"
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
+:gun
+rem Jack's pistol, in the characters the concept art was drawn with: it sits
+rem above the progress bar and the shot is the progress, so the bar reads as
+rem rounds going downrange instead of an abstract gauge.
+echo.
+echo    ..._...^|..____________________, ,
+echo    ....../ '---___________----_____^|]=
+echo    ...../_==o;;;;;;;;_______.:/
+echo    .....), ---.(_(__) /
+echo    ....// (..) ), ----"
+echo.
+set "GUNSHOWN=1"
+exit /b 0
+
 :bar
-rem %1 = done, %2 = total. Twenty-four cells; redrawn on the same line where
-rem the console reads ANSI so a long update never scrolls, printed as ordinary
-rem lines where it does not.
+rem %1 = done, %2 = total. The shot leaving the barrel above: tracers for what
+rem is done, dots for what is left, then the count and the percentage. Redrawn
+rem on its own line where the console reads ANSI, printed as lines where it
+rem does not.
 if "%~2"=="0" exit /b 0
+if not defined GUNSHOWN call :gun
 set /a BFILL=%~1*24/%~2
 if %BFILL% GTR 24 set /a BFILL=24
 if %BFILL% LSS 0 set "BFILL=0"
-set "CHARS=########################"
-set "GAPS=........................"
-call set "BFILLED=%%CHARS:~0,%BFILL%%%"
+set "SHOT=>>>>>>>>>>>>>>>>>>>>>>>>"
+set "REST=........................"
+call set "BFILLED=%%SHOT:~0,%BFILL%%%"
 set /a BGAP=24-BFILL
-call set "BEMPTY=%%GAPS:~0,%BGAP%%%"
+call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set /a BPCT=%~1*100/%~2
-set "BARLINE=      |%BFILLED%%BEMPTY%|  %BPCT%%  %~1/%~2"
+set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%   %~1/%~2"
 if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARLINE% )
 exit /b 0
-
 :spin
 rem %1 = seconds waited, %2 = what is being waited for. One line, rewritten.
 set /a SMOD=%~1 %% 4
