@@ -1,5 +1,5 @@
 {
-  "scale": 0.86,
+  "scale": 0.377,
   "canvas": [
     640,
     780
@@ -9,45 +9,53 @@
     700
   ],
   "metrics": {
-    "hip_y": -315,
-    "knee_y": -171,
-    "ankle_y": -35,
-    "torso_len": 172.0,
-    "neck_len": -10.0,
-    "uarm": 86.7,
-    "farm": 55.2,
+    "torso_len": 179.5,
+    "neck_len": 0.0,
+    "uarm": 80.1,
+    "farm": 41.0,
     "hand": 34.0,
-    "thigh": 140.5,
-    "shin": 136.1,
-    "shoulder_half": 0.0,
-    "hip_half": 0.0,
-    "shoulder_y": -487.0,
-    "neck_y": -497.0
+    "thigh": 104.2,
+    "shin": 142.8,
+    "ankle_y": -39.6,
+    "hip_half": 33.6,
+    "shoulder_half": 66.7,
+    "knee_y": -182.4,
+    "hip_y": -286.6,
+    "shoulder_y": -466.1,
+    "neck_y": -466.1
   },
   "pivots": {
     "head": [
-      40.7,
-      109.0
+      162,
+      281
     ],
     "torso": [
-      73.1,
-      200.0
-    ],
-    "pelvis": [
-      36.5,
-      0.0
+      301,
+      475
     ],
     "arm_n": [
-      9.0,
-      38.4
+      60,
+      52
+    ],
+    "pelvis": [
+      187,
+      0
     ],
     "thigh_n": [
-      42.4,
-      0.0
+      108,
+      40
     ],
     "shin_n": [
-      45.5,
-      0.0
+      112,
+      0
+    ],
+    "thigh_f": [
+      180,
+      40
+    ],
+    "shin_f": [
+      195,
+      38
     ],
     "prop_knife": [
       39.6,
@@ -60,14 +68,6 @@
     "prop": [
       1,
       1
-    ],
-    "thigh_f": [
-      42.4,
-      0.0
-    ],
-    "shin_f": [
-      45.5,
-      0.0
     ]
   },
   "angles": {
@@ -76,13 +76,13 @@
     "pelvis": 0.0,
     "arm_f": 0.0,
     "arm_n": 0.0,
-    "thigh_f": 0.0,
-    "shin_f": 0.0,
-    "thigh_n": 0.0,
-    "shin_n": 0.0,
+    "thigh_n": 31.39,
+    "shin_n": 3.63,
+    "thigh_f": -20.11,
+    "shin_f": -24.19,
     "prop": 0.0,
     "holster_gun": -28.0,
     "holster_knife": 172.0
   },
-  "_note": "Side set cut from the profile panel of the turnaround so the fighters face each other. The drawn arm overlaps the torso on purpose; only the pistol is masked out of the chest. Far limbs sit exactly behind the near ones and are darkened."
+  "_note": "Side set cut from jack faceing right_cut.png, the hand-cut profile render. Both hips and shoulders are drawn, so the joints carry a half-width. The art's hands are empty: no pistol or knife is painted in, and the knife sprite kept from the old set is only the thrown prop."
 }
