@@ -344,6 +344,31 @@ end
 -- Returns nothing on purpose: the title menu assigns the return value to
 -- main.menu.f and, when that is non-nil, fades the screen out and calls it as a
 -- function. The browser is a screen of its own, so the title menu just stays.
+-- Pause menu entry. Same two halves as the Developer Keys screen
+-- (external/mods/devhelp.lua): tools/build_devhelp.py declares the row in the
+-- motif, this registers what the row does. menu is a global - main.lua does
+-- menu = require('external.script.menu') - so a mod can add to its list.
+local pauseEntry = pcall(function()
+	menu.t_itemname['music'] = function(t, item, cursorPosY, moveTxt, sec)
+		if getInput(-1, sec.menu.done.key) then
+			sndPlay(motif.Snd, sec.cursor.done.snd[1], sec.cursor.done.snd[2])
+			-- The browser runs its own loop and draws over the paused fight, the
+			-- way the developer key list does. It closes itself and the pause
+			-- menu is still standing when it returns; a failure inside it must
+			-- not take the pause menu down, so it is caught and logged.
+			local ok, err = pcall(ms.open)
+			if not ok then
+				print('musicselect: the browser could not open from the pause menu: '
+					.. tostring(err))
+			end
+		end
+		return true
+	end
+end)
+if not pauseEntry then
+	print('musicselect: the pause menu entry was not registered')
+end
+
 main.t_itemname.music = function(t, item)
 	-- A screen of its own, so a failure inside it must not take the engine down
 	-- with an error dialog: it is logged and the title menu is left standing.
