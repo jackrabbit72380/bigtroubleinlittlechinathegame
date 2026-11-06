@@ -128,7 +128,7 @@ call :selfupdate %1
 
 echo.
 echo   --------------------------------------------------------------
-echo    [ 1/3 ]   Checking main
+echo     1/3   Checking main
 echo   --------------------------------------------------------------
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
@@ -306,7 +306,9 @@ if not exist "%CACHE%\changed.txt" goto gitfail
 set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 if "%NCH%"=="0" goto gitnone
-echo   [ 2/3 ]  Updating %NCH% file(s)
+echo.
+echo   --------------------------------------------------------------
+echo     2/3   Updating %NCH% file(s)
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -822,7 +824,9 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   [ 2/3 ]  Downloading the game archive (about 190 MB)
+echo.
+echo   --------------------------------------------------------------
+echo     2/3   Downloading the game archive (about 190 MB)
 if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
 if not defined GITOK echo            Git is not installed here, so this is the only way in.
 echo.
@@ -888,7 +892,9 @@ call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
-echo   [ 2/3 ]  Copying the game files over this folder
+echo.
+echo   --------------------------------------------------------------
+echo     2/3   Copying the game files over this folder
 echo            Every file that really differs is named as it is written.
 echo.
 call :ziptree
@@ -946,7 +952,7 @@ echo.
 :launch
 echo.
 echo   --------------------------------------------------------------
-echo    [ 3/3 ]   Starting the game
+echo     3/3   Starting the game
 echo   --------------------------------------------------------------
 echo.
 rem Start the game in a console of its own, minimised, with its output thrown
