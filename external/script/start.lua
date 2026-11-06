@@ -4103,6 +4103,30 @@ end
 --;===========================================================
 -- Stage slots work like character slots: a select.def 'select' command picks a random
 -- member, [Select Info] cell.slot.next/previous cycle through them.
+-- The stage menu reads <group>.key straight off the motif, and this theme defines
+-- no stage key groups at all, so the engine hands them over as nil: opening the
+-- stage menu - which is what confirming player 2 does - indexed nil for 'key' and
+-- ended the select screen. These are the theme's own next/previous bindings, the
+-- pair its palette menu already uses, and each is applied only where the motif
+-- defines nothing. Filled here rather than at load time because the motif table is
+-- not necessarily complete when this file is first read.
+function start.f_selStageKeys()
+	local si = motif and motif.select_info
+	local stage = si and si.stage
+	if stage == nil then
+		return
+	end
+	stage.next = stage.next or {}
+	stage.next.key = stage.next.key or { 'U', 'R' }
+	stage.previous = stage.previous or {}
+	stage.previous.key = stage.previous.key or { 'D', 'L' }
+	stage.skip = stage.skip or {}
+	stage.skip.next = stage.skip.next or {}
+	stage.skip.next.key = stage.skip.next.key or { 'U', 'R' }
+	stage.skip.previous = stage.skip.previous or {}
+	stage.skip.previous.key = stage.skip.previous.key or { 'D', 'L' }
+end
+
 function start.f_stageSlotSelected(group)
 	if group == nil or #group.available == 0 then return false, false end
 	for command, refs in pairs(group.select or {}) do
@@ -4122,7 +4146,7 @@ function start.f_stageSlotSelected(group)
 	end
 	if #group.available > 1 then
 		for _, entry in ipairs({{motif.select_info.cell.slot.next, 1}, {motif.select_info.cell.slot.previous, -1}}) do
-			if #entry[1].key > 0 and getInput(-1, entry[1].key) then
+			if entry[1] ~= nil and entry[1].key ~= nil and #entry[1].key > 0 and getInput(-1, entry[1].key) then
 				group.slot = (group.slot - 1 + entry[2]) % #group.available + 1
 				sndPlay(motif.Snd, motif.select_info.stage.swap.snd[1], motif.select_info.stage.swap.snd[2])
 				return false, true
@@ -4133,6 +4157,7 @@ function start.f_stageSlotSelected(group)
 end
 
 function start.f_stageMenu()
+	start.f_selStageKeys()
 	local n = stageListNo
 	local previousRef = start.f_stageMenuRef()
 	local randomMode = {
