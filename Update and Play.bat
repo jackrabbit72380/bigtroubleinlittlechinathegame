@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v42
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v43
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -63,7 +63,7 @@ if not "%VT%"=="1" call :vtdetect
 if "%VT%"=="1" for /f %%e in ('echo prompt $E ^| cmd') do set "ESC=%%e"
 
 echo   ==============================================================
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v42
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v43
 echo    %~dp0
 echo   ==============================================================
 
@@ -143,7 +143,7 @@ rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
 
-echo   1/3  Checking main
+echo   Checking main
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
@@ -321,7 +321,7 @@ set "NCH=0"
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do set /a NCH+=1
 call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
-echo   2/3  Updating %NCH% file(s)
+echo   Updating %NCH% file(s)
 set /a NDONE=0
 set /a BCOUNT=0
 set /a BSTEP=NCH/10
@@ -449,7 +449,7 @@ call set "BFILLED=%%SHOT:~0,%BFILL%%%"
 set /a BGAP=24-BFILL
 call set "BEMPTY=%%REST:~0,%BGAP%%%"
 set /a BPCT=%~1*100/%~2
-set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%   %~1/%~2"
+set "BARLINE=                                    %BFILLED%%BEMPTY%   %BPCT%%"
 if "%VT%"=="1" ( <nul set /p "=%ESC%[2K%BARLINE%" ) else ( echo %BARLINE% )
 exit /b 0
 :spin
@@ -856,7 +856,7 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 echo.
-echo   2/3  Downloading the game archive (about 190 MB)
+echo   Downloading the game archive (about 190 MB)
 if defined GITFAILED echo            Git could not apply the update, so this is the fallback.
 if not defined GITOK echo            Git is not installed here, so this is the only way in.
 echo.
@@ -922,7 +922,7 @@ call :gamelock
 if defined ZS echo            Downloaded %ZS% bytes - opening the archive now.
 echo   ==============================================================
 echo.
-echo   2/3  Copying the game files over this folder
+echo   Copying the game files over this folder
 
 echo.
 call :ziptree
@@ -978,7 +978,7 @@ if not defined VER echo   Version: zip build
 echo.
 
 :launch
-echo   3/3  Starting the game
+echo   Starting the game
 rem The engine runs in a helper of its own, so this window can close as soon as
 rem the game is up - but its output is kept instead of being thrown away. A
 rem game that dies on a missing file or a renderer setting used to write its
