@@ -64,9 +64,14 @@ DENIM = (76, 102, 132)
 DENIM_LIT = (108, 138, 170)
 DENIM_DK = (46, 66, 90)
 
-BOOT = (72, 48, 30)
-BOOT_LIT = (108, 76, 48)
-BOOT_DK = (38, 24, 14)
+# Leather, sampled from the boot in jack_faceing_farward.png rather than
+# picked by eye: the shaft there sits at rgb(66,39,27), the highlights at
+# rgb(110,73,56) and the shadows round rgb(49,28,19). The boot reference art
+# arrives as untextured clay, so it cannot supply these - tools/boot_paint.py
+# colours that art with this same ramp.
+BOOT = (66, 39, 27)
+BOOT_LIT = (110, 73, 56)
+BOOT_DK = (45, 26, 17)
 
 HAIR = (96, 60, 32)
 HAIR_LIT = (138, 94, 54)
