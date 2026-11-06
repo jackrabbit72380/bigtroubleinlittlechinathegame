@@ -1974,8 +1974,11 @@ function start.f_selectMode()
 				end
 				--exit to main menu
 				if main.exitSelect then
-					if motif.files.intro.storyboard ~= '' and not motif.attract_mode.enabled then
-						main.f_storyboard(motif.files.intro.storyboard)
+					-- [Files] here has no intro group (only logo.storyboard), so this
+					-- was an index into nil on the way out of the select screen
+					local leaveIntro = (motif.files.intro and motif.files.intro.storyboard) or ''
+					if leaveIntro ~= '' and not motif.attract_mode.enabled then
+						main.f_storyboard(leaveIntro)
 					end
 				end
 				start.exit = start.exit or main.exitSelect or not main.selectMenu[1]
@@ -2727,7 +2730,8 @@ local function tickScreenDelay(side)
 				table.insert(owners, cmd)
 			end
 		end
-		if #owners > 0 and getInput(owners, motif.select_info.done.key) then
+		if #owners > 0 and getInput(owners, ((motif.select_info.done and motif.select_info.done.key)
+					or { "a", "b", "c", "x", "y", "z" })) then
 			start.p[side].screenDelay = 0
 			return true
 		end
@@ -2956,10 +2960,10 @@ function start.f_selectScreen()
 					local drawUpdateFlag
 					if activeMember then
 						v.selectState, drawUpdateFlag = start.f_selectMenu(side, v.cmd, v.player, member, v.selectState)
-						if not start.p[side].inPalMenu and getInput(v.cmd, motif.select_info.cancel.key) then
+						if not start.p[side].inPalMenu and getInput(v.cmd, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) then
 							local selected = main.f_tableLength(start.p[side].t_selected)
 							if cancelSelectMember(side, k) then
-								timerSelect = motif.select_info.timer.displaytime
+								timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 								sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 								activeMember = false
 							elseif selected == 0 then
@@ -2967,10 +2971,10 @@ function start.f_selectScreen()
 									start.p[side].teamEnd = false
 									start.p[side].t_selCmd, start.p[side].t_selTemp, start.p[side].t_cursor = {}, {}, {}
 									start.p[side].screenDelay = 0
-									timerSelect = motif.select_info.timer.displaytime
+									timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 									sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 								elseif cancelPreviousSide(side) then
-									timerSelect = motif.select_info.timer.displaytime
+									timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 									sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 								else
 									exitSelectScreen()
@@ -3084,8 +3088,8 @@ function start.f_selectScreen()
 			for side = 2, 1, -1 do
 				if start.p[side].selEnd and start.p[side].teamEnd then
 					for k, v in ipairs(start.p[side].t_selCmd) do
-						if getInput(v.cmd, motif.select_info.cancel.key) and cancelSelectMember(side, k) then
-							timerSelect = motif.select_info.timer.displaytime
+						if getInput(v.cmd, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) and cancelSelectMember(side, k) then
+							timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 							sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 							break
 						end
@@ -3094,18 +3098,18 @@ function start.f_selectScreen()
 			end
 		elseif not start.escFlag and start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
 			local cancelHandled = false
-			if main.stageMenu and stageEnd and getInput(-1, motif.select_info.cancel.key) then
+			if main.stageMenu and stageEnd and getInput(-1, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) then
 				stageEnd = false
 				stageTextData = motif.select_info.stage.active.TextSpriteData
-				timerSelect = motif.select_info.timer.displaytime
+				timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 				sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 				cancelHandled = true
 			else
 				for side = 2, 1, -1 do
 					for k, v in ipairs(start.p[side].t_selCmd) do
-						if getInput(v.cmd, motif.select_info.cancel.key) then
+						if getInput(v.cmd, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) then
 							if cancelSelectMember(side, k) or cancelPreviousSide(side) then
-								timerSelect = motif.select_info.timer.displaytime
+								timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 								if main.stageMenu then
 									timerReset = false
 									stageTextData = motif.select_info.stage.active.TextSpriteData
@@ -3157,7 +3161,7 @@ function start.f_selectScreen()
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
 				slotSelected, slotHandled = start.f_stageMenu()
 				if not timerReset then
-					timerSelect = motif.select_info.timer.displaytime
+					timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 					timerReset = true
 				end
 			elseif start.p[1].screenDelay <= 0 and start.p[2].screenDelay <= 0 and not fadeOutStarted then
@@ -3191,7 +3195,8 @@ function start.f_selectScreen()
 					main.f_animPosDraw(anim, x, y)
 				end
 				if not stageEnd then
-					local confirmPressed = slotSelected or (not slotHandled and getInput(-1, motif.select_info.done.key))
+					local confirmPressed = slotSelected or (not slotHandled and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)
+					or { "a", "b", "c", "x", "y", "z" })))
 					local canConfirmStage = ((confirmPressed and not screenDelayInterrupted) or timerSelect == -1) and #main.t_selectableStages > 0
 					if canConfirmStage then
 						local preloadReady = true
@@ -3244,11 +3249,17 @@ function start.f_selectScreen()
 			end
 		else
 			--draw record text
+			if motif.select_info.record ~= nil and motif.select_info.record.TextSpriteData ~= nil then
 			textImgDraw(motif.select_info.record.TextSpriteData)
 		end
+		end
 		--draw timer
-		if motif.select_info.timer.count ~= -1 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd or (main.stageMenu and not stageEnd)) and counter >= 0 then
-			timerSelect = main.f_drawTimer(timerSelect, motif.select_info.timer)
+-- This motif leaves the whole [Select Info] timer group out, so the engine
+		-- hands the script nil for it: reading timer.count here took the select
+		-- screen down on the first frame it drew. No group means no countdown.
+		local selTimer = motif.select_info.timer
+		if selTimer ~= nil and selTimer.count ~= nil and selTimer.count > 0 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd or (main.stageMenu and not stageEnd)) and counter >= 0 then
+			timerSelect = main.f_drawTimer(timerSelect, selTimer)
 		end
 		-- hook
 		hook.run("start.f_selectScreen")
@@ -3373,7 +3384,7 @@ function start.f_teamMenu(side, t)
 			local backed = cancelPreviousSide(side)
 			sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
 			if backed then
-				timerSelect = motif.select_info.timer.displaytime
+				timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 			else
 				fadeOutInit(motif.select_info.fadeout.FadeData)
 				start.escFlag = true
@@ -3481,7 +3492,7 @@ function start.f_teamMenu(side, t)
 		end
 		--Confirmed team selection
 		if getInput(t_cmd, motif.select_info['p' .. side].teammenu.done.key) or timerSelect == -1 then
-			timerSelect = motif.select_info.timer.displaytime
+			timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 			start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
 			sndPlay(motif.Snd, motif.select_info['p' .. side].teammenu.done.snd[1], motif.select_info['p' .. side].teammenu.done.snd[2])
 			local confirmData = hook.runFirst("start.f_teamMenu.confirm", side, t, t_cmd)
@@ -3735,9 +3746,13 @@ function start.f_palMenu(side, cmd, player, member, selectState)
 	-- random preview update
 	if st.currentIdx == maxIdx then
 		if not start.c[player].randPalCnt or start.c[player].randPalCnt <= 0 then
-			start.c[player].randPalCnt = motif.select_info.palmenu.random.switchtime
+			-- the random palette timing this motif does define is cell.random's;
+			-- select_info.palmenu is not a group here at all
+			local palRandom = motif.select_info.palmenu and motif.select_info.palmenu.random
+			start.c[player].randPalCnt = (palRandom and palRandom.switchtime)
+				or motif.select_info.cell.random.switchtime or 48
 			start.c[player].randPalPreview = start.f_randomPal(charRef, validPals)
-			if motif.select_info.palmenu.random.applypal then
+			if palRandom and palRandom.applypal then
 				applyPalette(st, start.c[player].randPalPreview)
 			else
 				applyPalette(st, 1)
@@ -3818,7 +3833,7 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 			else
 				local updateAnim = false
 				local slotSelected,slotChanged = start.f_slotSelected(start.c[player].cell + 1, side, cmd, player, start.c[player].selX, start.c[player].selY)
-				local timerExpired = motif.select_info.timer.count ~= -1 and timerSelect == -1
+				local timerExpired = (motif.select_info.timer ~= nil and motif.select_info.timer.count ~= nil and motif.select_info.timer.count > 0) and timerSelect == -1
 				needUpdateDrawList = slotChanged
 				local velCopy = false
 				if slotChanged then
@@ -3909,7 +3924,7 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 				end
 				if canConfirm then
 					if motif.select_info.paletteselect ~= 0 then
-						timerSelect = motif.select_info.timer.displaytime
+						timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 					end
 					sndPlay(motif.Snd, start.f_getCursorData(player).cursor.done.default.snd[1], start.f_getCursorData(player).cursor.done.default.snd[2])
 					if motif.select_info.paletteselect == 0 then
@@ -4071,7 +4086,7 @@ function start.f_selectMenu(side, cmd, player, member, selectState)
 				end
 			end
 			if not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd then
-				timerSelect = motif.select_info.timer.displaytime
+				timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 			end
 			if main.coop and (side == 1 or gameMode('versuscoop')) then --remaining members are controlled by different players
 				selectState = 4
@@ -4626,7 +4641,8 @@ function start.f_selectVersus(active, t_orderSelect, loadStartArg)
 			end
 		end
 		--frame transition
-		if not escFlag and (esc() or getInput(-1, motif.vs_screen.cancel.key)) then
+		if not escFlag and (esc() or ((motif.vs_screen.cancel and motif.vs_screen.cancel.key)
+				and getInput(-1, motif.vs_screen.cancel.key))) then
 			esc(false)
 			if bgLoading and loadStarted then
 				loadCancel()
