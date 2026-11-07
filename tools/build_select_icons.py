@@ -156,17 +156,21 @@ def verify():
                             % (key[0], key[1], sp["w"], sp["h"], want[0], want[1]))
             continue
         img = sff.decode_sprite(d, sp, palettes).convert("RGBA")
-        px = [p for p in img.convert("RGBA").getdata() if p[3] > 128]
-        if not px:
+        pixels = [p for p in img.convert("RGBA").getdata() if p[3] > 128]
+        if not pixels:
             problems.append("%d,%d is blank" % key)
             continue
-        r = sum(p[0] for p in px) / len(px)
-        b = sum(p[2] for p in px) / len(px)
+        r = sum(p[0] for p in pixels) / len(pixels)
+        b = sum(p[2] for p in pixels) / len(pixels)
         if b > r:
             problems.append("%d,%d still reads blue (r=%.0f b=%.0f)" % (key[0], key[1], r, b))
-        elif key[0] in (180, 181, 191) and r < 150:
-            problems.append("%d,%d is too dark to read over a portrait (r=%.0f)"
-                            % (key[0], key[1], r))
+        elif key[0] in (180, 181, 191):
+            # Averaging the whole sprite counts the dark edge and reads a gold
+            # arrow as dull. What matters is how much of it is actually gold.
+            gold = sum(1 for px in pixels if px[0] > 150 and px[0] >= px[2])
+            if gold < len(pixels) * 0.25:
+                problems.append("%d,%d has too little gold to read over a portrait "
+                                "(%.0f%% of it)" % (key[0], key[1], 100.0 * gold / len(pixels)))
         if sp["axis"] != {180: (21, 35)}.get(key[0], (14, 45)):
             problems.append("%d,%d moved its axis" % key)
     return problems
