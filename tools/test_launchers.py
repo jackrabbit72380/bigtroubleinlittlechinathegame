@@ -161,6 +161,17 @@ FIRSTLOG = [
 ]
 
 # the count has to reach the muzzle, and the bar cannot be made of pipes
+# nothing started here may leave a window behind
+WINDOW = [
+    ("the refresh helper never closes its console",
+     b'>>"%SWAP%" echo exit\r\n', b'',
+     "left sitting at a prompt"),
+    ("the game is left inside a batch window",
+     b'start "" /d "%~dp0" "%EXE%" -config "save\\config.ini"',
+     b'start "" /min "%RUN%"',
+     "closing that window ends the game"),
+]
+
 PAINT = [
     ("the no-cursor path stops redrawing the barrel",
      b'call :gunredraw %~1 %RPOS%\r\n', b'',
@@ -242,6 +253,17 @@ def main():
             failures += 1
             continue
         found = checker._silent_end_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in WINDOW:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._window_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

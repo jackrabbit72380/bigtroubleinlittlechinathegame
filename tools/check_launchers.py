@@ -466,6 +466,28 @@ def _selfupdate_problems(name, raw):
     return out
 
 
+def _window_problems(name, raw):
+    """Nothing this launcher starts may leave a window behind.
+
+    start runs a batch file as cmd /K, so the window outlives the script and
+    sits at a prompt. Worse, a game started inside one of those windows is
+    attached to its console: closing the leftover window takes the game down
+    with it. The refresh helper ends itself, and the game is never left running
+    inside a batch window.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    if '>>"%SWAP%" echo exit' not in text:
+        out.append("%s: the launcher-update helper never closes its own console, "
+                   "so it is left sitting at a prompt" % name)
+    if 'start "" /min "%RUN%"' in text:
+        out.append("%s: the game is left running inside a batch window, and "
+                   "closing that window ends the game" % name)
+    return out
+
+
 def _paint_problems(name, raw):
     """The count belongs at the muzzle, and the bar must not be made of pipes.
 
@@ -835,6 +857,7 @@ def problems(root):
             found.extend(_silent_end_problems(name, raw))
             found.extend(_firstlog_problems(name, raw))
             found.extend(_paint_problems(name, raw))
+            found.extend(_window_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 

@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=63"
+set "UPDVER=64"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -1325,7 +1325,12 @@ if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >>"%RUN%" echo echo %%errorlevel%% ^>"%GCODE%"
 call :log starting %EXE%
 if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
-if not defined POWERSHELL start "" /min "%RUN%"
+rem Without PowerShell there is no hidden helper to run the game in, and a
+rem batch started here would keep a window open for the whole session with
+rem the game attached to it: closing that window ends the game. The engine
+rem is started on its own instead - it owns its window, so nothing left
+rem over can take it down.
+if not defined POWERSHELL start "" /d "%~dp0" "%EXE%" -config "save\config.ini"
 rem Without tasklist there is no way to tell whether the game came up, so
 rem the window closes as it did before rather than reporting a false failure.
 if not exist "%TASKLIST%" exit 0
@@ -1446,18 +1451,22 @@ set "SWAP=%CACHE%\swap.bat"
 rem The staged copy sits in the same folder as the launcher, so the rename swaps
 rem one directory entry for another: no byte is rewritten, and the window still
 rem reading the old file keeps reading it to its last line. Eight tries, a few
-rem seconds apart, is far more than that window needs to close.
+rem seconds apart, is far more than that window needs to close, and it ends
+rem itself when it is done so no prompt is left behind.
 >>"%SWAP%" echo set "N=0"
 >>"%SWAP%" echo :try
 >>"%SWAP%" echo move /Y "%STAGE%" "%~f0" ^>nul 2^>^&1
 >>"%SWAP%" echo if not exist "%STAGE%" goto run
 >>"%SWAP%" echo set /a N+=1
->>"%SWAP%" echo if %%N%% GEQ 200 goto give
+>>"%SWAP%" echo if %%N%% GEQ 40 goto give
 >>"%SWAP%" echo "%PING%" -n 3 127.0.0.1 ^>nul
 >>"%SWAP%" echo goto try
 >>"%SWAP%" echo :give
 >>"%SWAP%" echo del /q "%STAGE%" ^>nul 2^>^&1
 >>"%SWAP%" echo :run
+rem The console this runs in is cmd /K, which keeps the window open after
+rem the script ends - a blank prompt sitting in the task bar for no reason.
+>>"%SWAP%" echo exit
 if not exist "%SWAP%" goto selfupdate_nostage
 rem A window of its own, minimised: a /b child shares this console and would go
 rem with it when this script exits. This one outlives the window, renames the
