@@ -208,8 +208,12 @@ def _progress_problems(name, raw):
     if "-Vt %VTFLAG% -Col %MUZZLE%" not in text or "'[7A'" not in text:
         out.append("%s: the download writes its percentage somewhere other than "
                    "the muzzle" % name)
+    if "-EncodedCommand" not in text or "esc.txt" not in text:
+        out.append("%s: the console helper is gone, so no escape character is "
+                   "ever read and the number can only fall back to plain "
+                   "lines" % name)
     if "-bor 4" not in text or "[char]27" not in text:
-        out.append("%s: the console is never put into the mode the muzzle write "
+        out.append("%s: the console is never asked for the mode the muzzle write "
                    "needs, so the number can only go out as text" % name)
     return out
 

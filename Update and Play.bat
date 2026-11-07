@@ -447,34 +447,37 @@ exit /b 0
 :vt
 rem The percentage is written on the barrel line itself, which means coming back
 rem to a line that was printed earlier. cmd can only append, so the console is
-rem asked for one escape sequence: up to the barrel, along it to the muzzle,
-rem write, and back to the line under the drawing. Where a console refuses that
-rem - an older Windows, or this window's output going to a file - VT stays
-rem unset and the gauge prints the same numbers as plain lines instead.
+rem asked for the mode that makes escape sequences work: up to the barrel, along
+rem it to the muzzle, write, and back to the line under the drawing. Where a
+rem console refuses - an older Windows, or this window's output going to a file -
+rem VT stays unset and the gauge prints plain lines instead.
 if defined VTDONE exit /b 0
 set "VTDONE=1"
 if not defined POWERSHELL exit /b 0
-if not defined CACHE set "CACHE=%TEMP%\btilc-updater"
-if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
-if not exist "%CACHE%" exit /b 0
-rem The helper is a file, like the downloader: a call this long cannot go on a
-rem command line without a quoting argument of its own.
-set "VTPS=%CACHE%\console.ps1"
->  "%VTPS%" echo param()
->> "%VTPS%" echo $ErrorActionPreference = 'Stop'
->> "%VTPS%" echo $sig = '[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n); [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m); [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);'
->> "%VTPS%" echo $k = Add-Type -MemberDefinition $sig -Name ConsoleMode -Namespace Btilc -PassThru
->> "%VTPS%" echo $h = $k::GetStdHandle(-11)
->> "%VTPS%" echo $m = 0
->> "%VTPS%" echo if (-not $k::GetConsoleMode($h, [ref]$m)) { exit 2 }
->> "%VTPS%" echo if (($m -band 4) -eq 0) { if (-not $k::SetConsoleMode($h, ($m -bor 4))) { exit 3 } }
->> "%VTPS%" echo Write-Host ([string][char]27)
->> "%VTPS%" echo exit 0
-if not exist "%VTPS%" exit /b 0
+set "ESCF=%TEMP%\btilc-updater\esc.txt"
+if exist "%ESCF%" del /q "%ESCF%" >nul 2>&1
+rem The helper is one encoded call. Written out it is the text below, kept here
+rem so it can be read; encoded because the same lines echoed into a file go
+rem through cmd's parser, where a bracket or a parenthesis can turn a line into a
+rem redirection and put "filename syntax is incorrect" on the art instead.
+rem   $ErrorActionPreference = 'Stop'
+rem   $p = [IO.Path]::Combine($env:TEMP, 'btilc-updater\esc.txt')
+rem   $d = [IO.Path]::GetDirectoryName($p)
+rem   if (-not [IO.Directory]::Exists($d)) { [void][IO.Directory]::CreateDirectory($d) }
+rem   $sig = '[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n); [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m); [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);'
+rem   $k = Add-Type -MemberDefinition $sig -Name CM -Namespace Btilc -PassThru
+rem   $h = $k::GetStdHandle(-11)
+rem   $m = [uint32]0
+rem   $ok = $false
+rem   if ($k::GetConsoleMode($h, [ref]$m)) { $on = [uint32]($m -bor 4); if ($k::SetConsoleMode($h, $on)) { $m = [uint32]0; if ($k::GetConsoleMode($h, [ref]$m)) { if (($m -band 4) -ne 0) { $ok = $true } } } }
+rem   if ($ok) { [IO.File]::WriteAllText($p, ([string][char]27) + [char]13 + [char]10); exit 0 }
+rem   exit 3
 rem It answers with the escape character only once the console has taken the
-rem mode, so an answer at all is proof that the sequences below will work.
+rem mode, so finding that character is what proves the sequences below will work.
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABwACAAPQAgAFsASQBPAC4AUABhAHQAaABdADoAOgBDAG8AbQBiAGkAbgBlACgAJABlAG4AdgA6AFQARQBNAFAALAAgACcAYgB0AGkAbABjAC0AdQBwAGQAYQB0AGUAcgBcAGUAcwBjAC4AdAB4AHQAJwApAA0ACgAkAGQAIAA9ACAAWwBJAE8ALgBQAGEAdABoAF0AOgA6AEcAZQB0AEQAaQByAGUAYwB0AG8AcgB5AE4AYQBtAGUAKAAkAHAAKQANAAoAaQBmACAAKAAtAG4AbwB0ACAAWwBJAE8ALgBEAGkAcgBlAGMAdABvAHIAeQBdADoAOgBFAHgAaQBzAHQAcwAoACQAZAApACkAIAB7ACAAWwB2AG8AaQBkAF0AWwBJAE8ALgBEAGkAcgBlAGMAdABvAHIAeQBdADoAOgBDAHIAZQBhAHQAZQBEAGkAcgBlAGMAdABvAHIAeQAoACQAZAApACAAfQANAAoAJABzAGkAZwAgAD0AIAAnAFsARABsAGwASQBtAHAAbwByAHQAKAAiAGsAZQByAG4AZQBsADMAMgAuAGQAbABsACIAKQBdACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAGUAeAB0AGUAcgBuACAASQBuAHQAUAB0AHIAIABHAGUAdABTAHQAZABIAGEAbgBkAGwAZQAoAGkAbgB0ACAAbgApADsAIABbAEQAbABsAEkAbQBwAG8AcgB0ACgAIgBrAGUAcgBuAGUAbAAzADIALgBkAGwAbAAiACkAXQAgAHAAdQBiAGwAaQBjACAAcwB0AGEAdABpAGMAIABlAHgAdABlAHIAbgAgAGIAbwBvAGwAIABHAGUAdABDAG8AbgBzAG8AbABlAE0AbwBkAGUAKABJAG4AdABQAHQAcgAgAGgALAAgAG8AdQB0ACAAdQBpAG4AdAAgAG0AKQA7ACAAWwBEAGwAbABJAG0AcABvAHIAdAAoACIAawBlAHIAbgBlAGwAMwAyAC4AZABsAGwAIgApAF0AIABwAHUAYgBsAGkAYwAgAHMAdABhAHQAaQBjACAAZQB4AHQAZQByAG4AIABiAG8AbwBsACAAUwBlAHQAQwBvAG4AcwBvAGwAZQBNAG8AZABlACgASQBuAHQAUAB0AHIAIABoACwAIAB1AGkAbgB0ACAAbQApADsAJwANAAoAJABrACAAPQAgAEEAZABkAC0AVAB5AHAAZQAgAC0ATQBlAG0AYgBlAHIARABlAGYAaQBuAGkAdABpAG8AbgAgACQAcwBpAGcAIAAtAE4AYQBtAGUAIABDAE0AIAAtAE4AYQBtAGUAcwBwAGEAYwBlACAAQgB0AGkAbABjACAALQBQAGEAcwBzAFQAaAByAHUADQAKACQAaAAgAD0AIAAkAGsAOgA6AEcAZQB0AFMAdABkAEgAYQBuAGQAbABlACgALQAxADEAKQANAAoAJABtACAAPQAgAFsAdQBpAG4AdAAzADIAXQAwAA0ACgAkAG8AawAgAD0AIAAkAGYAYQBsAHMAZQANAAoAaQBmACAAKAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAJABvAG4AIAA9ACAAWwB1AGkAbgB0ADMAMgBdACgAJABtACAALQBiAG8AcgAgADQAKQA7ACAAaQBmACAAKAAkAGsAOgA6AFMAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAJABvAG4AKQApACAAewAgACQAbQAgAD0AIABbAHUAaQBuAHQAMwAyAF0AMAA7ACAAaQBmACAAKAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAaQBmACAAKAAoACQAbQAgAC0AYgBhAG4AZAAgADQAKQAgAC0AbgBlACAAMAApACAAewAgACQAbwBrACAAPQAgACQAdAByAHUAZQAgAH0AIAB9ACAAfQAgAH0ADQAKAGkAZgAgACgAJABvAGsAKQAgAHsAIABbAEkATwAuAEYAaQBsAGUAXQA6ADoAVwByAGkAdABlAEEAbABsAFQAZQB4AHQAKAAkAHAALAAgACgAWwBzAHQAcgBpAG4AZwBdAFsAYwBoAGEAcgBdADIANwApACAAKwAgAFsAYwBoAGEAcgBdADEAMwAgACsAIABbAGMAaABhAHIAXQAxADAAKQA7ACAAZQB4AGkAdAAgADAAIAB9AA0ACgBlAHgAaQB0ACAAMwA= >nul 2>&1
+if errorlevel 1 exit /b 0
 set "ESC="
-for /f "delims=" %%a in ('"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%VTPS%" 2^>nul') do if not defined ESC set "ESC=%%a"
+set /p "ESC="<"%ESCF%" 2>nul
 if not defined ESC exit /b 0
 set "VTOK=1"
 exit /b 0
@@ -1469,13 +1472,17 @@ exit /b 0
 
 :snap
 rem %1 = a path from this folder, %2 = the variable that keeps its hash.
-rem certutil prints a header line, the hash, then a footer; both of those
-rem carry a colon and the hash does not, so the colon lines are dropped. A
-rem missing file clears the variable instead of leaving an old value.
+rem certutil prints a header line, the hash, then a footer. Its output goes to a
+rem file and the hash is read from there: the pipeline this used to run sent a
+rem "filename syntax is incorrect" line to the window for every file when the
+rem tool it piped into was missing, and those lines landed on the art.
 set "%~2="
 if not defined CERT exit /b 0
 if not exist "%~dp0%~1" exit /b 0
-for /f "tokens=1" %%h in ('"%CERT%" -hashfile "%~dp0%~1" SHA256 2^>nul ^| "%FINDSTR%" /v /c:":"') do if not defined %~2 set "%~2=%%h"
+set "SNAPT=%TEMP%\btilc-hash.txt"
+>"%SNAPT%" 2>nul "%CERT%" -hashfile "%~dp0%~1" SHA256
+for /f "usebackq skip=1 tokens=1" %%h in ("%SNAPT%") do if not defined %~2 set "%~2=%%h"
+del /q "%SNAPT%" >nul 2>&1
 exit /b 0
 
 :note
