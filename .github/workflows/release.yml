@@ -286,6 +286,8 @@ jobs:
             the Ikemen GO engine is already inside, so there is nothing else to install.
             `VERSION.txt` in the game folder names the build you are running.
 
+            Questions, bug reports or a fight to pick? Join the Discord: https://discord.gg/Bn2kABJsK5
+
             | Platform | Launch |
             |---|---|
             | Windows | double-click `BigTroubleInLittleChinaTheGame.exe` |
