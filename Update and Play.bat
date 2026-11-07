@@ -474,7 +474,7 @@ set /a BARLEFTN=GPCT*33/100
 set /a BARRIGHTN=33-BARLEFTN
 call set "BARLEFT=%%BARFILL:~0,%BARLEFTN%%%"
 call set "BARRIGHT=%%BAREMPTY:~0,%BARRIGHTN%%%"
-echo   [%BARLEFT%o%BARRIGHT%] %PCT3%%  %~2
+echo   [%BARLEFT%o%BARRIGHT%] %PCT3%%%  %~2
 title Big Trouble in Little China: The Game - Updater - %GPCT% percent
 exit /b 0
 
