@@ -182,9 +182,25 @@ def check_movelist(label, values, frame_w):
     if abs(ty - (pos[1] + title[1])) > 0.01:
         problems.append(f"{label}: heading y={ty:.0f}, not {pos[1] + title[1]:.0f}")
 
+    # the two columns have to read apart, not just sit either side of a gap
+    lua.execute("sec.movelist.text.font = {10, 0, 1, 240, 196, 88}")
+    name_r, name_g, name_b, _ = lua.eval("main.f_movelistColor(sec, 1, nil)")
+    in_r, in_g, in_b, _ = lua.eval("main.f_movelistColor(sec, 2, nil)")
+    if (name_r, name_g, name_b) == (in_r, in_g, in_b):
+        problems.append(f"{label}: the input column is drawn in the command colour")
+    elif max(abs(in_r - name_r), abs(in_g - name_g), abs(in_b - name_b)) < 40:
+        problems.append(f"{label}: the input colour {in_r:.0f},{in_g:.0f},{in_b:.0f} is "
+                        "too close to the command colour "
+                        f"{name_r:.0f},{name_g:.0f},{name_b:.0f}")
+    ov_r, ov_g, ov_b, _ = lua.eval("main.f_movelistColor(sec, 2, {r = 1, g = 2, b = 3})")
+    if (ov_r, ov_g, ov_b) != (1, 2, 3):
+        problems.append(f"{label}: a row's own colour no longer wins")
+
     menu_text = read(MENU)
     if "textImgAddPos" in menu_text:
         problems.append(f"{label}: the command list still adds to a baked sprite base")
+    if "main.f_movelistColor(sec, k, v.col)" not in menu_text:
+        problems.append(f"{label}: menu.lua draws the cells in one colour")
     return problems
 
 

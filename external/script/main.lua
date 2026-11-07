@@ -3987,6 +3987,26 @@ end
 function main.f_movelistTitleY(sec)
 	return sec.movelist.pos[2] + (sec.movelist.title.offset[2] or 0)
 end
+
+-- The command list's two columns are told apart by colour as well as position:
+-- the name keeps the motif's own gold (movelist.text.font) and the input it needs
+-- is drawn in jade, the palette's one cool accent (the same one the developer keys
+-- screen gives its third column), so a row reads "what" and then "keys" without
+-- the eye having to follow the gap across the frame. A row that sets its own
+-- colour still wins, and only cells after the name take the accent.
+main.movelist = {input = {150, 186, 124}}
+function main.f_movelistColor(sec, k, col)
+	col = col or {}
+	local f = sec.movelist.text.font or {}
+	local r = col.r or f[4] or 240
+	local g = col.g or f[5] or 196
+	local b = col.b or f[6] or 88
+	local a = col.a or f[7]
+	if col.r == nil and col.g == nil and col.b == nil and k ~= nil and k > 1 then
+		r, g, b = main.movelist.input[1], main.movelist.input[2], main.movelist.input[3]
+	end
+	return r, g, b, a
+end
 -- <<< command list geometry
 
 --common menu draw
