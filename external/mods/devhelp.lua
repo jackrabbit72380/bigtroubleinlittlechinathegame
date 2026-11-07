@@ -54,6 +54,18 @@ local RIGHT = {
 
 local NOTE = 'needs Options > Engine > Debug Keys enabled'
 
+
+-- A failure the player can see. The console keeps the whole story; the screen
+-- gets the one sentence. modnotice.lua is autoloaded beside this file; if a
+-- build somehow lacks it, the print still happens.
+local function report(consoleText, screenText)
+	if type(modNotice) == 'function' then
+		pcall(modNotice, consoleText, screenText)
+	else
+		print(consoleText)
+	end
+end
+
 -- Layout constants, in the screenpack's 1280x720 space.
 -- 14, not 12: 'Ctrl+Shift+F3' and 'Ctrl+Alt+1..9' are 13 characters, so a
 -- 12-wide field did not pad them at all and the description ran straight on from
@@ -210,7 +222,9 @@ local function drawPlain(sec)
 			pcall(function()
 				textImgReset(txt)
 				textImgSetAlign(txt, 1)          -- 1 = left, the engine's font convention
-				textImgSetScale(txt, scale, scale)
+				-- probed on its own: a build without textImgSetScale used to
+				-- lose every row with it, leaving only the heading on screen
+				pcall(textImgSetScale, txt, scale, scale)
 				textImgSetColor(txt, l[3][1], l[3][2], l[3][3], 255)
 				textImgSetText(txt, lineOf(l))
 				textImgSetPos(txt, xl, y)
@@ -221,7 +235,7 @@ local function drawPlain(sec)
 			pcall(function()
 				textImgReset(txt)
 				textImgSetAlign(txt, 1)
-				textImgSetScale(txt, scale, scale)
+				pcall(textImgSetScale, txt, scale, scale)
 				textImgSetColor(txt, r[3][1], r[3][2], r[3][3], 255)
 				textImgSetText(txt, lineOf(r))
 				textImgSetPos(txt, xr, y)
@@ -280,7 +294,8 @@ local ok, err = pcall(function()
 		if menu.itemname == 'devkeys' then
 			local drawn, drawErr = pcall(devhelpDraw, motif.pause_menu.pause_menu)
 			if not drawn then
-				print('devhelp: could not draw the key list: ' .. tostring(drawErr))
+				report('devhelp: could not draw the key list: ' .. tostring(drawErr),
+					'Developer keys unavailable - see console.')
 				menu.itemname = ''
 			end
 			-- the same bookkeeping the pause menu's own f_run does before it
