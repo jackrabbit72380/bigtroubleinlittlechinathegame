@@ -60,7 +60,6 @@ echo   ==============================================================
 rem The pistol stands over the progress and stays there: the bullet in every
 rem bar below is its shot.
 call :gun
-call :pct 0 "Starting the updater"
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -120,8 +119,9 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem Progress is one gauge redrawn on a single line where the console supports
-rem it, and coarse milestones where it does not - never a line per percent.
+rem Progress counts every percent of the run, 1 to 100, one printed line each,
+rem and nothing here moves the cursor: the bar, its muzzle and the number are
+rem printed once per point, so the window reads like a counter, not a redraw.
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
@@ -472,8 +472,9 @@ rem The line is printed, never redrawn. The version that walked the cursor back
 rem with backspaces left a wall of overlapping text wherever a backspace did not
 rem erase - Windows Terminal, a log redirect - so nothing here moves the cursor.
 rem
-rem It prints when the step changes or the percentage moves five points, so a
-rem whole update is about two dozen lines rather than one per percent.
+rem It prints 1, 2, 3 ... 100: every point of the run gets its own line, and the
+rem game starts the moment the bar reaches 100. A step that jumps from 12 to 25
+rem fills in 13 to 24 as well, so no number is ever skipped.
 if "%~1"=="" exit /b 0
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
@@ -486,21 +487,31 @@ if not defined GLASTPCT goto gauge_print
 if not "%GLASTLBL%"=="%~2" goto gauge_print
 if %GPCT% GEQ 100 goto gauge_print
 set /a GADV=GPCT-GLASTPCT
-if %GADV% GEQ 5 goto gauge_print
+if %GADV% GEQ 1 goto gauge_print
 exit /b 0
 :gauge_print
-set "GLASTPCT=%GPCT%"
+if not defined GLASTPCT set "GLASTPCT=0"
 set "GLASTLBL=%~2"
-set "PCT3=  %GPCT%"
+set /a GFROM=GLASTPCT+1
+set /a GTO=GPCT
+if %GTO% LSS %GFROM% set /a GFROM=GTO
+for /l %%P in (%GFROM%,1,%GTO%) do call :gaugeone %%P "%~2"
+set "GLASTPCT=%GTO%"
+exit /b 0
+
+:gaugeone
+rem %1 = the percent to draw, %2 = what is happening. One printed line: the bar,
+rem its right end the pistol's muzzle, and the percentage of the whole run at it.
+set "PCT3=  %~1"
 call set "PCT3=%%PCT3:~-3%%"
 set "BARFILL=#################################"
 set "BAREMPTY=---------------------------------"
-set /a BARLEFTN=GPCT*33/100
+set /a BARLEFTN=%~1*33/100
 set /a BARRIGHTN=33-BARLEFTN
 call set "BARLEFT=%%BARFILL:~0,%BARLEFTN%%%"
 call set "BARRIGHT=%%BAREMPTY:~0,%BARRIGHTN%%%"
 echo   [%BARLEFT%o%BARRIGHT%^|]=  %PCT3%%  %~2
-title Big Trouble in Little China: The Game - Updater - %GPCT% percent
+title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 
 :bar
