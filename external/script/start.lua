@@ -2930,6 +2930,9 @@ function start.f_selectScreen()
 	-- its own, reached by fading the grid out and the stage screen in.
 	local stagePhase = false
 	local stagePhaseFade = false
+	-- set while the stage screen is fading back out to the wall, and while
+	-- that fade is actually running
+	local stageBack, stageBackFade = false, false
 	local stageActiveState = false
 	timerSelect = 0
 	start.escFlag = false
@@ -3191,6 +3194,15 @@ function start.f_selectScreen()
 			end
 		elseif not start.escFlag and start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
 			local cancelHandled = false
+			-- The stage screen is a screen of its own, so cancel leaves it: fade
+			-- it to black, give the pick back under the cover, fade the wall in.
+			if main.stageMenu and stagePhase and not stageEnd and not stageBack
+				and getInput(-1, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) then
+				stageBack = true
+				sndPlay(motif.Snd, motif.select_info.cancel.snd[1], motif.select_info.cancel.snd[2])
+				cancelHandled = true
+			end
+			if not stageBack then
 			if main.stageMenu and stageEnd and getInput(-1, ((motif.select_info.cancel and motif.select_info.cancel.key) or { "m" })) then
 				stageEnd = false
 				stageTextData = motif.select_info.stage.active.TextSpriteData
@@ -3218,11 +3230,37 @@ function start.f_selectScreen()
 					end
 				end
 			end
+			end
 			if cancelHandled and fadeOutStarted then
 				fadeSkip()
 				fadeOutStarted = false
 			end
 		end
+			if stageBack then
+				if not stageBackFade then
+					if not fadeActive() then
+						fadeOutInit(motif.select_info.fadeout.FadeData)
+						stageBackFade = true
+					end
+				elseif not fadeActive() then
+					fadeSkip()
+					stageBack, stageBackFade = false, false
+					stagePhase, stagePhaseFade = false, false
+					-- the frame is black now: give the last pick back, so the wall
+					-- returns with one player still choosing
+					for side = 2, 1, -1 do
+						if start.p[side].selEnd then
+							for k, v in ipairs(start.p[side].t_selCmd) do
+								if cancelSelectMember(side, k) then break end
+							end
+						end
+					end
+					timerReset = false
+					timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
+					stageTextData = motif.select_info.stage.active.TextSpriteData
+					fadeInInit(motif.select_info.fadein.FadeData)
+				end
+			end
 		--draw names
 		for side = 1, 2 do
 			if #start.p[side].t_selTemp > 0 then
@@ -3277,7 +3315,7 @@ function start.f_selectScreen()
 						stagePhase, stagePhaseFade = true, false
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
-				else
+				elseif not stageBack then
 					slotSelected, slotHandled = start.f_stageMenu()
 				end
 				if not timerReset then

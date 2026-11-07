@@ -901,7 +901,9 @@ function menu.f_commandlistRender(sec, t)
 
 	local function glyphScale(v)
 		local g = v.glyph and motif.glyphs[v.text]
-		if g == nil or g.Size == nil or g.AnimData == nil then return nil end
+		-- this build answers an unknown glyph key with false, not nil, so a
+		-- plain nil test indexes a boolean and aborts the whole menu frame
+		if type(g) ~= 'table' or g.Size == nil or g.AnimData == nil then return nil end
 		return g, fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[1],
 			fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[2]
 	end
