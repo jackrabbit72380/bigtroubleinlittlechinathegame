@@ -619,6 +619,11 @@ def _launcherrepair_problems(name, raw):
 
 
 CONSOLE_LABELS = {
+    # says is the one printer allowed to put a routine line in the window: it
+    # keeps the last few lines so a redraw of the pistol can put them back, and
+    # a run that names the step it is on is how a stall stops looking like a
+    # freeze. Everything else stays log-only.
+    "says",
     "githere", "confirm", "gitdrop_many", "gamelock", "gamelock_wait",
     "gitlocked", "gitfail_final", "dl_browser", "bwait_check", "launch_died",
     "selfupdate_got", "selfupdate_stuck", "launchfail", "folder_denied",

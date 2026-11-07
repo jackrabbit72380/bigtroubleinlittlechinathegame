@@ -517,7 +517,7 @@ if errorlevel 1 exit /b 1
 echo.>"%CACHE%\dropped.txt"
 exit /b 0
 :plan_ps
-call :pct 20 "Listing the files"
+call :pct 20 "Comparing the file lists"
 set "PLANPS=%CACHE%\plan.ps1"
 >  "%PLANPS%" echo param([string]$Tree, [string]$Old, [string]$Changed, [string]$Dropped)
 >> "%PLANPS%" echo $ErrorActionPreference = 'Stop'
@@ -531,6 +531,26 @@ set "PLANPS=%CACHE%\plan.ps1"
 >> "%PLANPS%" echo Set-Content -LiteralPath $Changed -Value @($chg) -Encoding ASCII
 >> "%PLANPS%" echo Set-Content -LiteralPath $Dropped -Value @($drop) -Encoding ASCII
 if not exist "%PLANPS%" exit /b 1
+rem Run in a helper that writes a marker, the way the fetch and the index pass
+rem already do: the window then says it is working every five seconds, and a
+rem helper that never returns cannot leave the run sitting on 20% for ever. A
+rem late marker counts as a failure and :plan compares the files themselves
+rem instead - slower, but always right.
+set "POK=%CACHE%\planps.ok"
+set "PBAD=%CACHE%\planps.bad"
+if exist "%POK%" del /q "%POK%" >nul 2>&1
+if exist "%PBAD%" del /q "%PBAD%" >nul 2>&1
+set "PBAT=%CACHE%\planps.bat"
+>  "%PBAT%" echo @echo off
+>> "%PBAT%" echo cd /d "%~dp0."
+>> "%PBAT%" echo "%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PLANPS%" -Tree "%CACHE%\tree.txt" -Old "%CACHE%\manifest.txt" -Changed "%CACHE%\changed.txt" -Dropped "%CACHE%\dropped.txt" ^>^>"%CACHE%\git.log" 2^>^&1
+>> "%PBAT%" echo if errorlevel 1 (echo x^>"%PBAD%") else (echo x^>"%POK%")
+if not exist "%PBAT%" goto plan_ps_direct
+start "" /b cmd /c ""%PBAT%""
+call :spinwait "%POK%" "%PBAD%" "comparing with main" 120
+if errorlevel 1 exit /b 1
+exit /b 0
+:plan_ps_direct
 "%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%PLANPS%" -Tree "%CACHE%\tree.txt" -Old "%CACHE%\manifest.txt" -Changed "%CACHE%\changed.txt" -Dropped "%CACHE%\dropped.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
 exit /b 0
@@ -637,7 +657,7 @@ exit /b 0
 
 :gauge
 rem %1 = percent for the whole run. %2 is the name of the step: the callers still
-rem pass it, nothing prints it - the window shows the number and nothing else.
+rem pass it, and :pct says it in the window once per step.
 rem
 rem One pipe on the barrel for every percent, counting 1, 2, 3 ... 100, with the
 rem number following the last pipe, and the game starts on a full barrel. A
@@ -747,6 +767,14 @@ echo    ....// (..) ), ----"
 echo    ...//___//
 echo    ..//___//
 echo    .//___//
+rem The messages go back on screen: this redraw starts with cls, which is what
+rem erased them a moment after they appeared.
+if defined SAY1 echo   %SAY1%
+if defined SAY2 echo   %SAY2%
+if defined SAY3 echo   %SAY3%
+if defined SAY4 echo   %SAY4%
+if defined SAY5 echo   %SAY5%
+if defined SAY6 echo   %SAY6%
 call :log art %~1 drawn
 exit /b 0
 
@@ -759,7 +787,11 @@ call :gauge %GOPCT% "Writing files"
 exit /b 0
 
 :pct
-rem %1 = percent, %2 = the label for it.
+rem %1 = percent, %2 = the label for it. The label is said in the window once per
+rem step, so the run names what it is doing instead of only counting: a number
+rem on its own said nothing about a step that was taking minutes.
+if not "%~2"=="" if /i not "%~2"=="%LASTPCT%" call :says "  %~1%%  %~2"
+if not "%~2"=="" set "LASTPCT=%~2"
 call :gauge %~1 "%~2"
 exit /b 0
 
@@ -773,11 +805,11 @@ rem movement that broke the old progress bar on this console.
 :spin
 set /a SMOD=%~1 %% 5
 if %SMOD% NEQ 0 exit /b 0
-call :say "%~2 %~1s"
+call :says "%~2 %~1s"
 exit /b 0
 :spin_plain
 set /a SDOT=%~1 %% 5
-if %SDOT%==0 call :say "%~2 %~1s"
+if %SDOT%==0 call :says "%~2 %~1s"
 exit /b 0
 
 :spinwait
@@ -1762,6 +1794,27 @@ exit /b 0
 >>"%LOG%" echo. 2>nul
 exit /b 0
 
+:says
+rem %1 = a line for the window as well as the run log. The window used to be the
+rem pistol and the number at its muzzle and nothing else, so a step that took
+rem minutes - the 20% comparison did - sat there in silence, with no way to tell
+rem working from hung. These lines are kept in six slots so a redraw can put them
+rem back: the redraw starts with cls on a console without cursor control, and
+rem that is what made a message appear and vanish a moment later.
+if "%~1"=="" exit /b 0
+rem The redirect starts its own line: written after an if, cmd reads it as an
+rem operator on the condition, and the launcher checker reads it the same way.
+if not defined LOG goto says_window
+>>"%LOG%" echo %~1 2>nul
+:says_window
+set "SAY1=%SAY2%"
+set "SAY2=%SAY3%"
+set "SAY3=%SAY4%"
+set "SAY4=%SAY5%"
+set "SAY5=%SAY6%"
+set "SAY6=%~1"
+echo %~1
+exit /b 0
 :log
 rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
