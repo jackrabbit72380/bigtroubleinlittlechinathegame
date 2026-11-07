@@ -232,7 +232,11 @@ def check_row_alignment():
     if end > 0:
         block = block[:end]
     reset = block.find("textImgReset(labelSprite)")
-    align = block.find("textImgSetAlign(labelSprite")
+    # the call may be direct or through pcall, so match the name and the sprite
+    # on the same line rather than one exact spelling
+    hit = re.search(r"textImgSetAlign[^\n]*labelSprite|labelSprite[^\n]*textImgSetAlign",
+                    block)
+    align = hit.start() if hit else -1
     place = block.find("main.f_menuItemPlace(labelSprite")
     if reset < 0 or align < 0:
         problems.append("pause rows: the label sprite is never told how to align")
