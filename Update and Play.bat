@@ -121,6 +121,10 @@ rem be read only, on a drive with no room, or behind a path cmd will not take, a
 rem a cache that cannot be written breaks every redirect after it - which is what
 rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
+rem The helpers below take their paths inside PowerShell single quotes, where
+rem an apostrophe ends the string. Doubling it is how PowerShell writes the
+rem character itself, so this is the copy they are given.
+set "CQ=%CACHE:'=''%"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
 rem Progress counts every percent of the run, 1 to 100, at the muzzle of the
@@ -418,7 +422,7 @@ set "PLANPS=%CACHE%\plan.ps1"
 >  "%PLANPS%" echo param([string]$Tree, [string]$Old, [string]$Changed, [string]$Dropped)
 >> "%PLANPS%" echo $ErrorActionPreference = 'Stop'
 >> "%PLANPS%" echo $prev = @{}
->> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Old)) { $i = $l.IndexOf([char]9); if ($i -gt 0) { $old[$l.Substring($i + 1)] = $l.Substring(0, $i) } }
+>> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Old)) { $i = $l.IndexOf([char]9); if ($i -gt 0) { $prev[$l.Substring($i + 1)] = $l.Substring(0, $i) } }
 >> "%PLANPS%" echo $new = @{}
 >> "%PLANPS%" echo $chg = New-Object System.Collections.ArrayList
 >> "%PLANPS%" echo foreach ($l in (Get-Content -LiteralPath $Tree)) { $i = $l.IndexOf([char]9); if ($i -lt 1) { continue }; $meta = $l.Substring(0, $i).Split(' '); $sha = $meta[$meta.Length - 1]; $p = $l.Substring($i + 1); $new[$p] = $sha; if ($prev.ContainsKey($p) -and $prev[$p] -eq $sha) { continue }; [void]$chg.Add($p) }
@@ -879,7 +883,7 @@ exit 1
 call :barflush
 echo.
 echo Git could not finish this update. Its reason is in the lines above.
-if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CACHE%\git.log' -Tail 8" 2>nul
+if exist "%CACHE%\git.log" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Get-Content -LiteralPath '%CQ%\git.log' -Tail 8" 2>nul
 if exist "%CACHE%\git.log" if not defined POWERSHELL "%FINDSTR%" /i /c:"fatal" /c:"error:" "%CACHE%\git.log" >nul 2>&1
 if exist "%CACHE%\git.log" if not defined POWERSHELL if not errorlevel 1 type "%CACHE%\git.log"
 set "GITFAILED=1"
@@ -1157,7 +1161,9 @@ goto unpacked
 if not defined POWERSHELL goto unpacked
 if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
 mkdir "%CACHE%\unpack" 2>nul
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%CACHE%\unpack'"
+set "ZQ=%ZIP:'=''%"
+set "UQ=%CACHE:'=''%"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZQ%' -DestinationPath '%UQ%\unpack'"
 
 :unpacked
 for /d %%D in ("%CACHE%\unpack\*") do set "SRC=%%~fD"
@@ -1206,6 +1212,7 @@ rem reason to nul and leave the window closing over it, which read as "it did
 rem nothing". Now the game has a few seconds to appear, and if it does not its
 rem own words are printed here and the window waits so they can be read.
 set "RUN=%CACHE%\play.bat"
+set "RUNQ=%RUN:'=''%"
 set "GLOG=%CACHE%\game.log"
 set "GCODE=%CACHE%\game.code"
 if exist "%GLOG%" del /q "%GLOG%" >nul 2>&1
@@ -1215,7 +1222,7 @@ if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
 >>"%RUN%" echo echo %%errorlevel%% ^>"%GCODE%"
 call :log starting %EXE%
-if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','%RUN%' -WindowStyle Hidden" >nul 2>&1
+if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
 if not defined POWERSHELL start "" /min "%RUN%"
 rem Without tasklist there is no way to tell whether the game came up, so
 rem the window closes as it did before rather than reporting a false failure.
@@ -1395,14 +1402,16 @@ rem The archive is ~190 MB of art, but a fix changes a handful of files. Rather
 rem than expand all of it and then compare, let PowerShell open the zip and write
 rem only the entries that differ from the folder: no unpack tree, and no walking
 rem the whole game afterwards. Anything unexpected - no PowerShell, an error
-rem inside it, an apostrophe in the folder path - drops to unpack-and-copy.
+rem inside it - drops to unpack-and-copy. The paths below are the doubled
+rem copies, so a folder with an apostrophe takes this path as well.
 set "PSOK=0"
 if not defined POWERSHELL goto ziptree_done
 if not defined ZIP goto ziptree_done
 if not exist "%ZIP%" goto ziptree_done
-echo %~dp0|"%FINDSTR%" /c:"'" >nul 2>&1
-if not errorlevel 1 goto ziptree_done
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $root='%~dp0'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CACHE%\\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('Installed ' + $n + ' file(s), removed ' + $gone)"
+set "ZQ=%ZIP:'=''%"
+set "RQ=%~dp0"
+set "RQ=%RQ:'=''%"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip=[IO.Compression.ZipFile]::OpenRead('%ZQ%'); $root='%RQ%'; $tops=@('data','chars','stages','font','external','sound'); $mf='%CQ%\applied.files'; $old=@(); if (Test-Path -LiteralPath $mf) { $old=@(Get-Content -LiteralPath $mf) }; $keep=New-Object 'System.Collections.Generic.HashSet[string]'; $n=0; $gone=0; Write-Host ('            ' + $zip.Entries.Count + ' entries in the archive'); try { foreach ($e in $zip.Entries) { if ($e.FullName.EndsWith('/')) { continue }; $rel=$e.FullName.Substring($e.FullName.IndexOf('/')+1); if ($rel -eq 'config.ini') { $c=$root+'config.ini'; if (-not (Test-Path -LiteralPath $c)) { [IO.Compression.ZipFileExtensions]::ExtractToFile($e,$c,$true) }; continue }; if ($tops -notcontains ($rel -split '/')[0]) { continue }; [void]$keep.Add($rel); $dst=$root+($rel -replace '/','\'); $fi=New-Object System.IO.FileInfo($dst); if ($fi.Exists -and $fi.Length -eq $e.Length -and $fi.LastWriteTimeUtc.Ticks -eq $e.LastWriteTime.UtcDateTime.Ticks) { continue }; $dir=Split-Path -Parent $dst; if (-not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Force -Path $dir | Out-Null }; [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e,$dst,$true); $n++; Write-Host ('             ' + $n + ') ' + $rel) } } finally { $zip.Dispose() }; foreach ($p in $old) { if ($keep.Count -lt 500) { break }; if ($keep.Contains($p)) { continue }; $x=$root+($p -replace '/','\'); if (Test-Path -LiteralPath $x) { Remove-Item -LiteralPath $x -Force; $gone++; Write-Host ('             - ' + $p) } }; Set-Content -LiteralPath $mf -Value @($keep) -Encoding ASCII; Write-Host ('Installed ' + $n + ' file(s), removed ' + $gone)"
 if errorlevel 1 goto ziptree_done
 set "PSOK=1"
 if exist "%~dp0config.ini" if not exist "%~dp0save" mkdir "%~dp0save" 2>nul
@@ -1696,7 +1705,8 @@ exit 0
 
 :zipcheck_ps
 if not defined POWERSHELL exit /b 0
-"%POWERSHELL%" -NoProfile -Command "try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('%ZIP%'); $n=($z.Entries | Where-Object { $_.FullName -like '*data/fight.def' }).Count; $z.Dispose(); if ($n -ge 1) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+set "ZQ=%ZIP:'=''%"
+"%POWERSHELL%" -NoProfile -Command "try { Add-Type -AssemblyName System.IO.Compression.FileSystem; $z=[IO.Compression.ZipFile]::OpenRead('%ZQ%'); $n=($z.Entries | Where-Object { $_.FullName -like '*data/fight.def' }).Count; $z.Dispose(); if ($n -ge 1) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 exit /b 0
 set "ZIPOK=1"
 exit /b 0

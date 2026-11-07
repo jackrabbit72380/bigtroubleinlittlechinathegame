@@ -907,7 +907,9 @@ def check_launcher_checks():
     result = subprocess.run([sys.executable, path], capture_output=True, text=True)
     if result.returncode != 0:
         lines = [l.strip() for l in (result.stdout + result.stderr).splitlines()
-                 if l.strip()]
+                 if l.strip().startswith("FAIL")]
+        if not lines:
+            lines = (result.stdout + result.stderr).strip().splitlines()[-4:]
         for line in lines[-6:]:
             err("launchers: " + line)
         err("launchers: tools/test_launchers.py failed (exit %d)" % result.returncode)

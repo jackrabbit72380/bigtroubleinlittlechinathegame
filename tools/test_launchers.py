@@ -12,6 +12,7 @@ Run:  python3 tools/test_launchers.py
 
 from __future__ import annotations
 
+import base64
 import importlib.util
 import os
 
@@ -67,6 +68,39 @@ CLEAN = [
     ("a padded count", ('if %GNUM% LSS 10 set "GNUM=  %GNUM%"',)),
 ]
 
+
+def encoded(text):
+    """A -EncodedCommand line holding exactly this PowerShell."""
+    return ("-NoProfile -ExecutionPolicy Bypass -EncodedCommand "
+            + base64.b64encode(text.encode("utf-16-le")).decode())
+
+
+# PowerShell the launcher hands over: decoded and read, never run
+PS_TRAPS = [
+    ("an encoded helper that is not base64", ("-EncodedCommand A",)),
+    ("an encoded helper that is not UTF-16LE", ("-EncodedCommand AA==",)),
+    ("an encoded helper with a bracket left open",
+     (encoded("if ($x) { Write-Host 'hi'"),)),
+    ("a double quote inside a -Command body",
+     ('-Command "Write-Host ""hi"""',)),
+    ("a bracket left open in a -Command body", ('-Command "$x = @(1, 2"',)),
+    ("a quote left open in a -Command body", ("-Command \"Write-Host 'hi\"",)),
+    ("a path in single quotes in a -Command body",
+     ('-Command "Get-Content -LiteralPath \'%CACHE%\\git.log\'"',)),
+    ("a generated helper with a block left open",
+     ('>> "%VPS%" echo if ($a -gt 0) {',)),
+]
+
+PS_CLEAN = [
+    ("a balanced encoded helper", (encoded("if ($x) { Write-Host 'hi' }"),)),
+    ("a balanced -Command body",
+     ('-Command "Get-Content -LiteralPath \'%CQ%\\git.log\' -Tail 8"',)),
+    ("a script path built from a character",
+     ('-Command "Start-Process -FilePath \'cmd.exe\' -ArgumentList \'/c\',([char]34 + \'%RUNQ%\' + [char]34)"',)),
+    ("a generated helper with balanced blocks",
+     ('>> "%VPS%" echo foreach ($x in @(1, 2)) { Write-Host $x }',)),
+]
+
 # edits that would bring the muzzle-count bug back: each has to be reported
 MUTATIONS = [
     ("the sign is not made on its own",
@@ -94,6 +128,19 @@ def main():
         failures += 0 if ok else 1
     for label, body in CLEAN:
         found = checker._syntax_problems("probe.bat", script(*body))
+        ok = not found
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else found[0][:60]))
+        failures += 0 if ok else 1
+
+    for label, body in PS_TRAPS:
+        found = checker._powershell_problems("probe.bat", script(*body))
+        ok = bool(found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "not caught"))
+        failures += 0 if ok else 1
+    for label, body in PS_CLEAN:
+        found = checker._powershell_problems("probe.bat", script(*body))
         ok = not found
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else found[0][:60]))

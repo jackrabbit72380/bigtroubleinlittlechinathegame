@@ -126,6 +126,7 @@ rem for the game to keep running. The helper owns that console now, so this
 rem window closes as soon as the game starts; the engine still writes
 rem save\logs\<date>.log, which is where to look if it does not come up.
 set "RUN=%TEMP%\btilc-play.bat"
+set "RUNQ=%RUN:'=''%"
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
 >>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
@@ -135,6 +136,6 @@ rem the one way from a batch file to create a process whose console is hidden
 rem from the start. Without PowerShell, fall back to the minimised helper.
 set "PSEXE=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 if not exist "%PSEXE%" set "PSEXE="
-if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c','%RUN%' -WindowStyle Hidden" >nul 2>&1
+if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
 if not defined PSEXE start "" /min "%RUN%"
 exit /b 0

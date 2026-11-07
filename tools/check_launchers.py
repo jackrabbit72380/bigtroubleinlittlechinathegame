@@ -15,6 +15,7 @@ Run:  python3 tools/check_launchers.py
 
 from __future__ import annotations
 
+import base64
 import os
 import re
 
@@ -499,6 +500,132 @@ def _variable_refs(line):
     return found
 
 
+_ENCODED = re.compile(r"-EncodedCommand\s+([A-Za-z0-9+/=]+)")
+_COMMAND = re.compile(r'-Command\s+"(.*)"')
+_MADE_SCRIPT = re.compile(r'^\s*>>?\s*"%(\w+)%" echo ?')
+_MADE_BODY = re.compile(r'^\s*>>?\s*"%\w+%" echo ?')
+
+
+def _ps_structure(fragment):
+    """Brackets and strings, read the way PowerShell reads them.
+
+    A single-quoted string ends at the next quote and carries an apostrophe as
+    two of them; a double-quoted one escapes with a backtick. What is inside
+    either is text, so a bracket there closes nothing.
+    """
+    stack, i, n = [], 0, len(fragment)
+    while i < n:
+        ch = fragment[i]
+        if ch == "'":
+            i += 1
+            while i < n:
+                if fragment[i] == "'":
+                    if i + 1 < n and fragment[i + 1] == "'":
+                        i += 2
+                        continue
+                    break
+                i += 1
+            if i >= n:
+                return ["a single-quoted string is never closed"]
+        elif ch == '"':
+            i += 1
+            while i < n:
+                if fragment[i] == "`":
+                    i += 2
+                    continue
+                if fragment[i] == '"':
+                    break
+                i += 1
+            if i >= n:
+                return ["a double-quoted string is never closed"]
+        elif ch in "([{":
+            stack.append(ch)
+        elif ch in ")]}":
+            if not stack:
+                return ["%r closes nothing" % ch]
+            if "([{".index(stack[-1]) != ")]}".index(ch):
+                return ["%r closes %r" % (ch, stack[-1])]
+            stack.pop()
+        i += 1
+    return ["a bracket is left open: %s" % "".join(stack)] if stack else []
+
+
+def _cmd_visible(body):
+    """What cmd hands the program: %% is one sign, ^x is x, %VAR% is a value."""
+    body = body.replace("%%", "\x00")
+    body = re.sub(r"%[A-Za-z_][A-Za-z0-9_]*%", "VALUE", body)
+    body = re.sub(r"%~[A-Za-z]*[0-9]|%\*|%[0-9]", "VALUE", body)
+    body = body.replace("\x00", "%")
+    return re.sub(r"\^(.)", r"\1", body)
+
+
+def _powershell_problems(name, raw):
+    """The PowerShell the launcher hands over has to arrive as valid code.
+
+    cmd parses a -Command body before PowerShell sees it, and the four .ps1
+    helpers are written a line at a time with echo, so one stray quote or
+    unbalanced bracket is code that dies at run time - and a path with an
+    apostrophe in it dies only on the machine that has one. This reads what cmd
+    would hand over and checks it, without running PowerShell.
+    """
+    text = raw.decode("utf-8", "replace")
+    out, scripts = [], {}
+    for number, line in enumerate(text.splitlines(), 1):
+        encoded = _ENCODED.search(line)
+        if encoded:
+            try:
+                data = base64.b64decode(encoded.group(1), validate=True)
+            except Exception:
+                out.append("%s:%d: the encoded helper is not base64, so "
+                           "PowerShell rejects the whole line" % (name, number))
+                data = None
+            if data is not None:
+                try:
+                    helper = data.decode("utf-16-le")
+                except UnicodeDecodeError:
+                    out.append("%s:%d: the encoded helper is not UTF-16LE, so "
+                               "PowerShell runs something else" % (name, number))
+                else:
+                    for problem in _ps_structure(helper):
+                        out.append("%s:%d: the encoded helper has %s"
+                                   % (name, number, problem))
+                    if re.search(r"%[A-Za-z_][A-Za-z0-9_]*%", helper):
+                        out.append("%s:%d: a batch variable survived into the "
+                                   "encoded helper" % (name, number))
+        command = _COMMAND.search(line)
+        if command:
+            body = command.group(1)
+            if '"' in body:
+                out.append("%s:%d: a -Command body holds a double quote, and cmd "
+                           "ends the argument there" % (name, number))
+            for problem in _ps_structure(_cmd_visible(body)):
+                out.append("%s:%d: a -Command body has %s" % (name, number, problem))
+            for quoted in re.finditer(r"'[^'\r\n]*'", line):
+                seen = quoted.group(0)
+                if "%~" in seen:
+                    out.append("%s:%d: a %%~ argument inside PowerShell single "
+                               "quotes is not apostrophe-safe - pass the doubled "
+                               "copy" % (name, number))
+                for var in re.findall(r"%([A-Za-z_][A-Za-z0-9_]*)%", seen):
+                    if not var.upper().endswith("Q"):
+                        out.append("%s:%d: %%%s%% inside PowerShell single quotes "
+                                   "is not apostrophe-safe - pass the doubled copy"
+                                   % (name, number, var))
+        made = _MADE_SCRIPT.match(line)
+        if made and (made.group(1).endswith("PS")
+                     or made.group(1) == "DLSCRIPT"):
+            scripts.setdefault(made.group(1), []).append(
+                (number, _cmd_visible(_MADE_BODY.sub("", line))))
+    # a helper is written one line at a time, so its brackets only balance
+    # across the whole file
+    for var, entries in scripts.items():
+        whole = "\n".join(body for _, body in entries)
+        for problem in _ps_structure(whole):
+            out.append("%s:%d: the script written to %%%s%% has %s"
+                       % (name, entries[0][0], var, problem))
+    return out
+
+
 def problems(root):
     """Every problem found in the launchers, as ready-to-print strings."""
     found = []
@@ -513,6 +640,7 @@ def problems(root):
             found.extend(_progress_problems(name, raw))
             found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))
+            found.extend(_powershell_problems(name, raw))
     return found
 
 
