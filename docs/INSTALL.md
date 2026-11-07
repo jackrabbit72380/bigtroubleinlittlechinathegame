@@ -1,6 +1,6 @@
 # Playing and running the game
 
-Questions about any of this? The [Discord](https://discord.gg/bY6NJ35c6P) is the
+Questions about any of this? The [Discord](https://discord.gg/Bn2kABJsK5) is the
 fastest place to get an answer.
 
 ## Playing a release
