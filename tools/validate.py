@@ -1002,6 +1002,73 @@ def check_hud_fonts():
     notes.append("hud: life, guard, stun and time text levels all have fonts "
                  "(%d levels)" % levels)
 
+def check_team_screen():
+    """The team-mode screen: a flat heading, and markers in the game's palette.
+
+    "TEAM MODE" was drawn through a perspective projection (yangle 52.5), so the
+    heading came out as a skewed parallelogram that read as a broken face beside
+    the upright mode list, and the slot markers were stock blue art that did not
+    separate a filled slot from an empty one. Both are generator-owned: the
+    heading by tools/build_fonts.py, the markers by tools/build_select_icons.py.
+    """
+    import sff as sffmod
+
+    text = read(os.path.join(ROOT, "data", "ikemen1", "system.def"))
+    parts = text.split("[Select Info]", 1)
+    if len(parts) != 2:
+        err("system.def: no [Select Info] block")
+        return
+    body = parts[1].split("\n[", 1)[0]
+    keys = {}
+    for line in body.splitlines():
+        line = line.split(";", 1)[0].strip()
+        if "=" in line:
+            name, value = line.split("=", 1)
+            keys[name.strip()] = value.strip()
+
+    for side, align in (("p1", "1"), ("p2", "-1")):
+        for part in ("selftitle", "enemytitle"):
+            key = "%s.teammenu.%s" % (side, part)
+            yangle = keys.get(key + ".yangle", "0")
+            try:
+                flat = abs(float(yangle)) < 0.01
+            except ValueError:
+                flat = False
+            if not flat:
+                err("select screen: %s.yangle is %s, so the TEAM MODE heading is "
+                    "drawn as a skewed parallelogram" % (key, yangle))
+            fields = [f.strip() for f in keys.get(key + ".font", "").split(",")]
+            if len(fields) < 3 or fields[2] != align:
+                err("select screen: %s.font is %r, so the heading does not share "
+                    "the mode list's edge" % (key, keys.get(key + ".font")))
+            if keys.get(key + ".offset", "").replace(" ", "") != "0,23":
+                err("select screen: %s.offset is %r, so the heading is not on the "
+                    "list's own edge" % (key, keys.get(key + ".offset")))
+
+    want = {(180, 0): (22, 38), (181, 0): (30, 48), (182, 0): (30, 48),
+            (191, 0): (30, 48), (192, 0): (30, 48)}
+    data, sprites, palettes = sffmod.read_sff(
+        os.path.join(ROOT, "data", "ikemen1", "system.sff"))
+    for key, size in want.items():
+        sprite = next((s for s in sprites
+                       if (s["group"], s["number"]) == key), None)
+        if sprite is None:
+            err("select screen: team marker sprite %d,%d is missing" % key)
+            continue
+        if (sprite["w"], sprite["h"]) != size:
+            err("select screen: team marker %d,%d is %dx%d, expected %dx%d"
+                % (key[0], key[1], sprite["w"], sprite["h"], size[0], size[1]))
+            continue
+        img = sffmod.decode_sprite(data, sprite, palettes).convert("RGBA")
+        px = [p for p in img.getdata() if p[3] > 128]
+        if px:
+            red = sum(p[0] for p in px) / len(px)
+            blue = sum(p[2] for p in px) / len(px)
+            if blue > red:
+                err("select screen: team marker %d,%d is blue art again" % key)
+    notes.append("select screen: team heading flat, markers in the palette")
+
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -1015,6 +1082,7 @@ def main():
     check_powerbar_fonts()
     check_hud_fonts()
     check_select_screen(chars)
+    check_team_screen()
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):
