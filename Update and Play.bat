@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v53
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v54
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -56,7 +56,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=53"
+set "UPDVER=54"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
@@ -514,6 +514,11 @@ echo    ...//___//
 echo    ..//___//
 echo    .//___//
 set "GUNSHOWN=1"
+rem The per cent sign is made once, here. The digits are given it later, so
+rem no variable that holds a sign is ever read a second time by call, and no
+rem sign sits against another in this file - the two things that once turned
+rem the count into the letters of an escape sequence.
+set "PCT=%%"
 rem The full barrel is built once here and sliced per percent below, so a console
 rem without cursor control redraws the picture without a loop per redraw.
 if not defined BARFULL for /l %%P in (1,1,%BARMAX%) do call set "BARFULL=%%BARFULL%%|"
@@ -564,8 +569,14 @@ rem writes the count in the space right after the last pipe, so the bar and the
 rem number grow together and 100% is a barrel filled end to end. Where the window
 rem cannot hold a hundred pipes, two percentages share one and the bar still ends
 rem full. Only one character and three digits change: the pistol is not redrawn.
-set "PCTX=  %~1%%"
-call set "PCTX=%%PCTX:~-4%%"
+set "GNUM=%~1"
+rem Padded while it is digits and nothing else. Nothing about the count is
+rem handed to call: call reads its line a second time, and a per cent sign
+rem read a second time has no partner left - that is the line cmd cannot
+rem parse, and it answers by running the tail of it as an unknown command.
+if %GNUM% LSS 10 set "GNUM=  %GNUM%"
+if %GNUM% GEQ 10 if %GNUM% LSS 100 set "GNUM= %GNUM%"
+set "PCTX=%GNUM%%PCT%"
 if not defined VTOK goto gaugeone_plain
 set /a GPOS=%~1*%BARMAX%/100
 if %GPOS% LSS 1 set "GPOS=1"
@@ -611,8 +622,11 @@ rem still shows the run the way the window is meant to look. The pipes start two
 rem columns past the drawn barrel's end, where the muzzle write puts them.
 set "RBAR="
 if defined BARFULL call set "RBAR=%%BARFULL:~0,%~2%%"
-set "RPCT=  %~1%%"
-call set "RPCT=%%RPCT:~-4%%"
+if not defined PCT set "PCT=%%"
+set "RNUM=%~1"
+if %RNUM% LSS 10 set "RNUM=  %RNUM%"
+if %RNUM% GEQ 10 if %RNUM% LSS 100 set "RNUM= %RNUM%"
+set "RPCT=%RNUM%%PCT%"
 cls
 echo.
 echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
@@ -1508,7 +1522,7 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   $whole = $From
 >> "%DLSCRIPT%" echo   if ($From -lt 80) { if ($total -gt 0) { $whole = $From + [int]((80 - $From) * $got / $total) } }
 >> "%DLSCRIPT%" echo   $pct = '   ?'
->> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%' }
+>> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%%' }
 >> "%DLSCRIPT%" echo   $pos = [int]($whole * $Bar / 100)
 >> "%DLSCRIPT%" echo   if ($pos -lt 1) { $pos = 1 }
 >> "%DLSCRIPT%" echo   $barcol = $Col + $pos - 1
