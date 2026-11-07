@@ -182,11 +182,13 @@ def _progress_problems(name, raw):
                        "the bar would not start one breath past its end"
                        % (name, measured.group(1), column))
         up = f"%ESC%[u%ESC%[{below + 1}A"
-        bar = "%GCOL%G| %PCT3%%%ESC%[K%ESC%[u"
-        if up not in text or bar not in text:
+        if (up not in text or 'set /p "=%GWRITE%" <nul' not in text
+                or 'set "GWRITE=%GWRITE%%PCTX%"' not in text
+                or 'set "GWRITE=%GWRITE%%ESC%[K%ESC%[u"' not in text):
             out.append("%s: the barrel is not filled with a pipe per percent "
-                       "with the count after the bar and the cursor "
-                       "brought back under the pistol" % name)
+                       "with the count after the bar, or the write is not built "
+                       "in one piece, so the cursor comes back mid-sequence and "
+                       "the rest prints as letters" % name)
     if "if not defined VTOK goto gaugeone_plain" not in text:
         out.append("%s: the muzzle write is not guarded, so a console without "
                    "cursor control would print the escape sequence as text" % name)
@@ -202,9 +204,10 @@ def _progress_problems(name, raw):
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if text.count("%PCT3%%%") != 1:
-        out.append("%s: the percentage is printed more or less than once per step"
-                   % name)
+    if text.count('set "PCTX=  %~1%%"') != 1:
+        out.append("%s: the count is not built once with its own per cent sign, "
+                   "so a percent ends up against the next variable and cmd reads "
+                   "the pair as text" % name)
     if "BARLEFT" in text:
         out.append("%s: a loading bar is back; the progress is the number alone"
                    % name)
