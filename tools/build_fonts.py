@@ -100,13 +100,13 @@ REWRITES = (
     ("stage.active2.font", f"{B}, 0, 0, {DEEP}"),
     ("stage.done.font", f"{B}, 0, 0, {DEEP}"),
     ("record.font", f"{B}, 0, 0, {DEEP}"),
-    ("p1.teammenu.selftitle.font", f"{B}, 0, 0, {BRIGHT}"),
-    ("p1.teammenu.enemytitle.font", f"{B}, 0, 0, {BRIGHT}"),
+    ("p1.teammenu.selftitle.font", f"{B}, 0, 1, {BRIGHT}"),
+    ("p1.teammenu.enemytitle.font", f"{B}, 0, 1, {BRIGHT}"),
     ("p1.teammenu.item.font", f"{D}, 0, 1, {GOLD}"),
     ("p1.teammenu.item.active.font", f"{D}, 0, 1, {BRIGHT}"),
     ("p1.teammenu.item.active2.font", f"{D}, 0, 1, {BRIGHT}"),
-    ("p2.teammenu.selftitle.font", f"{B}, 0, 0, {GOLD}"),
-    ("p2.teammenu.enemytitle.font", f"{B}, 0, 0, {GOLD}"),
+    ("p2.teammenu.selftitle.font", f"{B}, 0, -1, {GOLD}"),
+    ("p2.teammenu.enemytitle.font", f"{B}, 0, -1, {GOLD}"),
     ("p2.teammenu.item.font", f"{D}, 0, -1, {GOLD}"),
     ("p2.teammenu.item.active.font", f"{D}, 0, -1, {AMBER}"),
     ("p2.teammenu.item.active2.font", f"{D}, 0, -1, {AMBER}"),
@@ -432,6 +432,19 @@ SECTION_LAYOUT = {
         ("p1.teammenu.item.cursor.spr", "180,0"),
         ("p2.teammenu.item.cursor.anim", "-1"),
         ("p2.teammenu.item.cursor.spr", "180,0"),
+        # "TEAM MODE" was drawn through a perspective projection: yangle 52.5 on
+        # both sides, so the heading came out as a skewed parallelogram that read
+        # as a broken face next to the upright Single/Simul/Tag/Turns list. It is
+        # flat now (yangle 0) and starts where the list starts: left on P1's
+        # side, right on P2's, at the same 120/1796 edges the item font uses.
+        ("p1.teammenu.selftitle.yangle", "0"),
+        ("p1.teammenu.enemytitle.yangle", "0"),
+        ("p2.teammenu.selftitle.yangle", "0"),
+        ("p2.teammenu.enemytitle.yangle", "0"),
+        ("p1.teammenu.selftitle.offset", "0, 23"),
+        ("p1.teammenu.enemytitle.offset", "0, 23"),
+        ("p2.teammenu.selftitle.offset", "0, 23"),
+        ("p2.teammenu.enemytitle.offset", "0, 23"),
     ),
     # [VS Screen] belongs to build_select_ui.py (VS_TEXT / VS_PLATE), which
     # runs after this tool. This block was a leftover copy of an earlier fix
