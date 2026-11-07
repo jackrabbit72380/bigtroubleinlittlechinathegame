@@ -54,9 +54,9 @@ set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
 
-echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v53
-echo   ==============================================================
+call :say "=============================================================="
+call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v53"
+call :say "=============================================================="
 rem The number that counts the run is written at the end of the pistol's
 rem barrel, so the console is asked for cursor control before the drawing.
 call :vt
@@ -172,22 +172,22 @@ goto trygit
 
 :manualzip
 call :barflush
-echo Using main.zip from this folder - no download needed.
+call :say "Using main.zip from this folder - no download needed."
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo That main.zip is incomplete - downloading instead.
+call :say "That main.zip is incomplete - downloading instead."
 goto download
 
 :manualzip2
 call :barflush
-echo Using main.zip from this folder - no download needed.
+call :say "Using main.zip from this folder - no download needed."
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%~dp0bigtroubleinlittlechinathegame-main.zip" "%ZIP%" >nul
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
-echo That zip is incomplete - downloading instead.
+call :say "That zip is incomplete - downloading instead."
 goto download
 
 rem ---- transport 1: git, working on this folder's own files --------------
@@ -233,8 +233,8 @@ for /f "delims=" %%c in ('git config --get http.sslCAInfo 2^>nul') do set "GITCA
 if not defined GITCAFILE goto gitca_checked
 if defined GITBUNDLE goto gitca_checked
 if exist "%GITCAFILE%" goto gitca_checked
-echo Git cannot read its certificate bundle: %GITCAFILE%
-echo Using the verified download instead.
+call :say "Git cannot read its certificate bundle: %GITCAFILE%"
+call :say "Using the verified download instead."
 goto probe
 :gitca_checked
 if exist ".git" goto githere
@@ -358,12 +358,12 @@ call :stamp
 if not defined STALE goto gitnone_ok
 if exist "%CACHE%\manifest.txt" del /q "%CACHE%\manifest.txt" >nul 2>&1
 call :barflush
-echo This folder does not match main - comparing the files themselves.
+call :say "This folder does not match main - comparing the files themselves."
 goto gitfetch
 :gitnone_ok
 call :pct 100 "Already up to date"
 call :barflush
-echo Already up to date - nothing to download
+call :say "Already up to date - nothing to download"
 goto gitdrop_list
 :plan
 call :pct 16 "Comparing with main"
@@ -450,35 +450,28 @@ rem to a line that was printed earlier. cmd can only append, so the console is
 rem asked for the mode that makes escape sequences work: up to the barrel, along
 rem it to the muzzle, write, and back to the line under the drawing. Where a
 rem console refuses - an older Windows, or this window's output going to a file -
-rem VT stays unset and the gauge prints plain lines instead.
+rem VT stays unset and the number stays in the title bar.
 if defined VTDONE exit /b 0
 set "VTDONE=1"
 if not defined POWERSHELL exit /b 0
-set "ESCF=%TEMP%\btilc-updater\esc.txt"
-if exist "%ESCF%" del /q "%ESCF%" >nul 2>&1
 rem The helper is one encoded call. Written out it is the text below, kept here
 rem so it can be read; encoded because the same lines echoed into a file go
 rem through cmd's parser, where a bracket or a parenthesis can turn a line into a
 rem redirection and put "filename syntax is incorrect" on the art instead.
 rem   $ErrorActionPreference = 'Stop'
-rem   $p = [IO.Path]::Combine($env:TEMP, 'btilc-updater\esc.txt')
-rem   $d = [IO.Path]::GetDirectoryName($p)
-rem   if (-not [IO.Directory]::Exists($d)) { [void][IO.Directory]::CreateDirectory($d) }
 rem   $sig = '[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n); [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m); [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);'
 rem   $k = Add-Type -MemberDefinition $sig -Name CM -Namespace Btilc -PassThru
 rem   $h = $k::GetStdHandle(-11)
 rem   $m = [uint32]0
-rem   $ok = $false
-rem   if ($k::GetConsoleMode($h, [ref]$m)) { $on = [uint32]($m -bor 4); if ($k::SetConsoleMode($h, $on)) { $m = [uint32]0; if ($k::GetConsoleMode($h, [ref]$m)) { if (($m -band 4) -ne 0) { $ok = $true } } } }
-rem   if ($ok) { [IO.File]::WriteAllText($p, ([string][char]27) + [char]13 + [char]10); exit 0 }
-rem   exit 3
-rem It answers with the escape character only once the console has taken the
-rem mode, so finding that character is what proves the sequences below will work.
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABwACAAPQAgAFsASQBPAC4AUABhAHQAaABdADoAOgBDAG8AbQBiAGkAbgBlACgAJABlAG4AdgA6AFQARQBNAFAALAAgACcAYgB0AGkAbABjAC0AdQBwAGQAYQB0AGUAcgBcAGUAcwBjAC4AdAB4AHQAJwApAA0ACgAkAGQAIAA9ACAAWwBJAE8ALgBQAGEAdABoAF0AOgA6AEcAZQB0AEQAaQByAGUAYwB0AG8AcgB5AE4AYQBtAGUAKAAkAHAAKQANAAoAaQBmACAAKAAtAG4AbwB0ACAAWwBJAE8ALgBEAGkAcgBlAGMAdABvAHIAeQBdADoAOgBFAHgAaQBzAHQAcwAoACQAZAApACkAIAB7ACAAWwB2AG8AaQBkAF0AWwBJAE8ALgBEAGkAcgBlAGMAdABvAHIAeQBdADoAOgBDAHIAZQBhAHQAZQBEAGkAcgBlAGMAdABvAHIAeQAoACQAZAApACAAfQANAAoAJABzAGkAZwAgAD0AIAAnAFsARABsAGwASQBtAHAAbwByAHQAKAAiAGsAZQByAG4AZQBsADMAMgAuAGQAbABsACIAKQBdACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAGUAeAB0AGUAcgBuACAASQBuAHQAUAB0AHIAIABHAGUAdABTAHQAZABIAGEAbgBkAGwAZQAoAGkAbgB0ACAAbgApADsAIABbAEQAbABsAEkAbQBwAG8AcgB0ACgAIgBrAGUAcgBuAGUAbAAzADIALgBkAGwAbAAiACkAXQAgAHAAdQBiAGwAaQBjACAAcwB0AGEAdABpAGMAIABlAHgAdABlAHIAbgAgAGIAbwBvAGwAIABHAGUAdABDAG8AbgBzAG8AbABlAE0AbwBkAGUAKABJAG4AdABQAHQAcgAgAGgALAAgAG8AdQB0ACAAdQBpAG4AdAAgAG0AKQA7ACAAWwBEAGwAbABJAG0AcABvAHIAdAAoACIAawBlAHIAbgBlAGwAMwAyAC4AZABsAGwAIgApAF0AIABwAHUAYgBsAGkAYwAgAHMAdABhAHQAaQBjACAAZQB4AHQAZQByAG4AIABiAG8AbwBsACAAUwBlAHQAQwBvAG4AcwBvAGwAZQBNAG8AZABlACgASQBuAHQAUAB0AHIAIABoACwAIAB1AGkAbgB0ACAAbQApADsAJwANAAoAJABrACAAPQAgAEEAZABkAC0AVAB5AHAAZQAgAC0ATQBlAG0AYgBlAHIARABlAGYAaQBuAGkAdABpAG8AbgAgACQAcwBpAGcAIAAtAE4AYQBtAGUAIABDAE0AIAAtAE4AYQBtAGUAcwBwAGEAYwBlACAAQgB0AGkAbABjACAALQBQAGEAcwBzAFQAaAByAHUADQAKACQAaAAgAD0AIAAkAGsAOgA6AEcAZQB0AFMAdABkAEgAYQBuAGQAbABlACgALQAxADEAKQANAAoAJABtACAAPQAgAFsAdQBpAG4AdAAzADIAXQAwAA0ACgAkAG8AawAgAD0AIAAkAGYAYQBsAHMAZQANAAoAaQBmACAAKAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAJABvAG4AIAA9ACAAWwB1AGkAbgB0ADMAMgBdACgAJABtACAALQBiAG8AcgAgADQAKQA7ACAAaQBmACAAKAAkAGsAOgA6AFMAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAJABvAG4AKQApACAAewAgACQAbQAgAD0AIABbAHUAaQBuAHQAMwAyAF0AMAA7ACAAaQBmACAAKAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAaQBmACAAKAAoACQAbQAgAC0AYgBhAG4AZAAgADQAKQAgAC0AbgBlACAAMAApACAAewAgACQAbwBrACAAPQAgACQAdAByAHUAZQAgAH0AIAB9ACAAfQAgAH0ADQAKAGkAZgAgACgAJABvAGsAKQAgAHsAIABbAEkATwAuAEYAaQBsAGUAXQA6ADoAVwByAGkAdABlAEEAbABsAFQAZQB4AHQAKAAkAHAALAAgACgAWwBzAHQAcgBpAG4AZwBdAFsAYwBoAGEAcgBdADIANwApACAAKwAgAFsAYwBoAGEAcgBdADEAMwAgACsAIABbAGMAaABhAHIAXQAxADAAKQA7ACAAZQB4AGkAdAAgADAAIAB9AA0ACgBlAHgAaQB0ACAAMwA= >nul 2>&1
+rem   if (-not $k::GetConsoleMode($h, [ref]$m)) { exit 2 }
+rem   $on = [uint32]($m -bor 4)
+rem   if (-not $k::SetConsoleMode($h, $on)) { exit 3 }
+rem   exit 0
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABzAGkAZwAgAD0AIAAnAFsARABsAGwASQBtAHAAbwByAHQAKAAiAGsAZQByAG4AZQBsADMAMgAuAGQAbABsACIAKQBdACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAGUAeAB0AGUAcgBuACAASQBuAHQAUAB0AHIAIABHAGUAdABTAHQAZABIAGEAbgBkAGwAZQAoAGkAbgB0ACAAbgApADsAIABbAEQAbABsAEkAbQBwAG8AcgB0ACgAIgBrAGUAcgBuAGUAbAAzADIALgBkAGwAbAAiACkAXQAgAHAAdQBiAGwAaQBjACAAcwB0AGEAdABpAGMAIABlAHgAdABlAHIAbgAgAGIAbwBvAGwAIABHAGUAdABDAG8AbgBzAG8AbABlAE0AbwBkAGUAKABJAG4AdABQAHQAcgAgAGgALAAgAG8AdQB0ACAAdQBpAG4AdAAgAG0AKQA7ACAAWwBEAGwAbABJAG0AcABvAHIAdAAoACIAawBlAHIAbgBlAGwAMwAyAC4AZABsAGwAIgApAF0AIABwAHUAYgBsAGkAYwAgAHMAdABhAHQAaQBjACAAZQB4AHQAZQByAG4AIABiAG8AbwBsACAAUwBlAHQAQwBvAG4AcwBvAGwAZQBNAG8AZABlACgASQBuAHQAUAB0AHIAIABoACwAIAB1AGkAbgB0ACAAbQApADsAJwANAAoAJABrACAAPQAgAEEAZABkAC0AVAB5AHAAZQAgAC0ATQBlAG0AYgBlAHIARABlAGYAaQBuAGkAdABpAG8AbgAgACQAcwBpAGcAIAAtAE4AYQBtAGUAIABDAE0AIAAtAE4AYQBtAGUAcwBwAGEAYwBlACAAQgB0AGkAbABjACAALQBQAGEAcwBzAFQAaAByAHUADQAKACQAaAAgAD0AIAAkAGsAOgA6AEcAZQB0AFMAdABkAEgAYQBuAGQAbABlACgALQAxADEAKQANAAoAJABtACAAPQAgAFsAdQBpAG4AdAAzADIAXQAwAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAZQB4AGkAdAAgADIAIAB9AA0ACgAkAG8AbgAgAD0AIABbAHUAaQBuAHQAMwAyAF0AKAAkAG0AIAAtAGIAbwByACAANAApAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AFMAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAJABvAG4AKQApACAAewAgAGUAeABpAHQAIAAzACAAfQANAAoAZQB4AGkAdAAgADAA >nul 2>&1
 if errorlevel 1 exit /b 0
-set "ESC="
-set /p "ESC="<"%ESCF%" 2>nul
-if not defined ESC exit /b 0
+rem The console took the mode. The escape character is the one byte below, in the
+rem file itself, so nothing is read back, guessed, or lost on the way.
+set "ESC=
 set "VTOK=1"
 exit /b 0
 
@@ -552,8 +545,8 @@ set /p "=%ESC%[u%ESC%[7A%ESC%[%MUZZLE%G%PCT3%%%ESC%[u" <nul
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
-rem No cursor control here: the same number, one line per percent, under the gun.
-echo   %PCT3%%%
+rem No cursor control here, so nothing is printed under the pistol: the window
+rem stays the drawing, and the title bar is where the number goes.
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 
@@ -580,11 +573,11 @@ rem movement that broke the old progress bar on this console.
 :spin
 set /a SMOD=%~1 %% 5
 if %SMOD% NEQ 0 exit /b 0
-echo   %~2 (%~1s)
+call :say "%~2 %~1s"
 exit /b 0
 :spin_plain
 set /a SDOT=%~1 %% 5
-if %SDOT%==0 echo       %~2 %~1s
+if %SDOT%==0 call :say "%~2 %~1s"
 exit /b 0
 
 :spinwait
@@ -762,8 +755,8 @@ goto gitfail_final
 call :barflush
 set "GITFIXED=1"
 set "GITQUIET=1"
-echo.
-echo A file was in use - clearing git's lock files and retrying.
+call :say
+call :say "A file was in use - clearing git's lock files and retrying."
 call :gitunlock
 call :sleep 3
 goto gitfetch
@@ -774,8 +767,8 @@ set "GITTRIED=1"
 set "MINE="
 for /f %%m in ('git config --local --get ikemen.updater 2^>nul') do set "MINE=%%m"
 if not "%MINE%"=="1" goto gitfail_final
-echo.
-echo Rebuilding the updater's index and retrying once.
+call :say
+call :say "Rebuilding the updater's index and retrying once."
 call :gitunlock
 if exist "%GITSTORE%" rd /s /q "%GITSTORE%" >nul 2>&1
 goto gitinit
@@ -812,12 +805,12 @@ rem git install - or to one that reads the Windows store instead - every
 rem fetch dies on it, and that failure used to mean the 190 MB archive.
 rem Two cheaper answers are tried first: no bundle at all, then the
 rem Windows certificate store, which is where a normal install looks.
-echo Fetch failed. Retrying without the bundle this script found.
+call :say "Fetch failed. Retrying without the bundle this script found."
 set "GIT_SSL_CAINFO="
 set "GITBUNDLE="
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
-echo Retrying with the Windows certificate store.
+call :say "Retrying with the Windows certificate store."
 git -c core.longpaths=true -c http.sslBackend=schannel -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 --filter=blob:none --no-tags --progress origin main
 if not errorlevel 1 exit /b 0
 exit /b 1
@@ -845,7 +838,7 @@ set /a NMISS=0
 for /f "usebackq delims=" %%p in ("%MISS%") do set /a NMISS+=1
 if "%NMISS%"=="0" exit /b 0
 if "%WHICH%"=="git" call :pct 86 "Fetching missing files"
-if not "%WHICH%"=="git" echo Fetching %NMISS% file(s)
+if not "%WHICH%"=="git" call :say "Fetching %NMISS% files"
 set "NCH=%NMISS%"
 set /a NDONE=0
 set /a BCOUNT=0
@@ -942,7 +935,7 @@ call :stamp
 if defined STALE goto download
 call :pct 100 "Already up to date"
 call :barflush
-echo Already up to date - main @ %APPLIED%
+call :say "Already up to date - main @ %APPLIED%"
 goto launch
 
 :probe_offer
@@ -964,7 +957,7 @@ call :stamp
 if defined STALE goto download
 call :pct 100 "Already up to date"
 call :barflush
-echo Already up to date - main @ %APPLIED%
+call :say "Already up to date - main @ %APPLIED%"
 goto launch
 
 :atoms
@@ -1005,8 +998,8 @@ exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
 call :pct 50 "Downloading 190 MB"
-echo.
-echo.
+call :say
+call :say
 if not defined CURL goto dl_browser
 set "ZIP=%CACHE%\main.zip"
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
@@ -1015,14 +1008,14 @@ rem request knows it: the total is read from the response and the bar is drawn
 rem from bytes received against it. PowerShell does that; curl is the fallback
 rem when there is no PowerShell to draw it.
 if defined POWERSHELL call :dl_ps "%ZIPURL%"
-if not defined DLOK if defined POWERSHELL echo            Trying GitHub's other archive address.
+if not defined DLOK if defined POWERSHELL call :say "Trying GitHub's other archive address."
 if not defined DLOK if defined POWERSHELL call :dl_ps "%ZIPURL2%"
 if not defined DLOK call :dl_curl
 call :zipcheck
 if "%ZIPOK%"=="1" goto havezip
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
 echo The archive did not arrive in one piece.
-echo.
+call :say
 :dl_browser
 echo.
 echo Opening the download in your browser.
@@ -1048,7 +1041,7 @@ goto downloadfailed
 
 :bapply
 call :barflush
-echo Got it: %FOUNDZIP%
+call :say "Got it: %FOUNDZIP%"
 set "ZIP=%CACHE%\main-1.zip"
 copy /Y "%FOUNDZIP%" "%ZIP%" >nul
 call :zipcheck
@@ -1058,9 +1051,9 @@ goto downloadfailed
 rem ---- unpack and copy ---------------------------------------------------
 :havezip
 call :pct 85 "Installing the archive"
-echo.
+call :say
 call :gamelock
-echo.
+call :say
 call :ziptree
 if "%PSOK%"=="1" goto copied
 if exist "%CACHE%\unpack" rd /s /q "%CACHE%\unpack" >nul 2>&1
@@ -1108,8 +1101,8 @@ if not "%WHICH%"=="git" goto skipver2
 :skipver
 "%FINDSTR%" /c:"bg1.spr = 20,0" "%~dp0data\fight.def" >nul 2>nul
 if errorlevel 1 echo Warning: data\fight.def does not match the new build.
-if defined VER echo main @ %VER%
-if not defined VER echo main @ local archive
+if defined VER call :say "main @ %VER%"
+if not defined VER call :say "main @ local archive"
 
 call :datareport
 
@@ -1192,7 +1185,7 @@ rem could never be refreshed - a folder running v19 stayed on v19 no matter what
 rem main fixed. It is fetched on its own here, a few KB.
 "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher-new.bat" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
 if not errorlevel 1 goto selfupdate_got
-echo Could not fetch a newer launcher - using this copy.
+call :say "Could not fetch a newer launcher - using this copy."
 exit /b 0
 :selfupdate_got
 if not exist "%CACHE%\launcher-new.bat" exit /b 0
@@ -1337,7 +1330,7 @@ if not defined CHANGED goto synctree_full
 if not exist "%CHANGED%" goto synctree_full
 for /f "usebackq delims=" %%p in ("%CHANGED%") do call :syncfile "%%p"
 call :barflush
-echo Updated %NCOP% file(s), removed %NDEL%.
+call :say "Updated %NCOP% files, removed %NDEL%."
 exit /b 0
 
 :synctree_full
@@ -1347,7 +1340,7 @@ rem already match, so only the files that changed are actually written; the
 rem scan is the cost, not the bytes.
 
 for %%F in (data chars stages font external sound) do (
-  if exist "%SRC%\%%F" echo   %%F
+  if exist "%SRC%\%%F" call :say "%%F"
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
 )
 exit /b 0
@@ -1373,7 +1366,7 @@ if not exist "%SRC%\%REL%" goto syncfile_gone
 rem a new build can add folders, so the parent has to exist first
 for %%d in ("%~dp0%REL%") do if not exist "%%~dpd" mkdir "%%~dpd" 2>nul
 copy /Y "%SRC%\%REL%" "%~dp0%REL%" >nul 2>&1
-if not errorlevel 1 echo   %REL%
+if not errorlevel 1 call :say "%REL%"
 if not errorlevel 1 set /a NCOP+=1
 exit /b 0
 
@@ -1464,6 +1457,18 @@ call :zipcheck
 if "%ZIPOK%"=="1" set "DLOK=1"
 exit /b 0
 
+:say
+rem %1 = a routine line. It goes to the run log, not the window: the window is
+rem the pistol and the number at its muzzle, and nothing else. Failures still
+rem print, because a reason nobody can read is not a reason.
+if not defined LOG exit /b 0
+if "%~1"=="" goto say_blank
+>>"%LOG%" echo %~1 2>nul
+exit /b 0
+:say_blank
+>>"%LOG%" echo. 2>nul
+exit /b 0
+
 :log
 rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
@@ -1495,18 +1500,18 @@ if not defined CERT goto note_unchecked
 if not defined NOWH goto note_absent
 if "%~2"=="" goto note_added
 if "%NOWH%"=="%~2" goto note_same
-echo   %~1   refreshed
+call :say "%~1   refreshed"
 set "NREF=1"
 exit /b 0
 :note_added
-echo   %~1   added
+call :say "%~1   added"
 set "NREF=1"
 exit /b 0
 :note_same
-echo   %~1   already current
+call :say "%~1   already current"
 exit /b 0
 :note_absent
-echo   %~1   is missing after the update
+call :say "%~1   is missing after the update"
 set "NFAIL=1"
 exit /b 0
 :note_unchecked
@@ -1519,8 +1524,8 @@ rem album list the music browser reads; neither shows up in a file count.
 set "NREF="
 set "NFAIL="
 if not defined CERT exit /b 0
-echo.
-echo Data files:
+call :say
+call :say "Data files:"
 call :note "data\fight.def" "%H1%"
 call :note "data\music.json" "%H2%"
 call :note "data\select.def" "%H3%"
@@ -1528,10 +1533,10 @@ call :note "data\ikemen1\system.def" "%H4%"
 call :note "external\mods\musicselect.lua" "%H5%"
 call :note "external\mods\modnotice.lua" "%H6%"
 if defined NREF goto datareport_done
-echo   all of these already matched main
+call :say "all of these already matched main"
 :datareport_done
-if defined NFAIL echo   a file above is missing - run this launcher again
-echo.
+if defined NFAIL call :say "a file above is missing - run this launcher again"
+call :say
 exit /b 0
 
 :close_soon
