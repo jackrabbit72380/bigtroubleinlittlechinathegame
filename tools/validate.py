@@ -239,6 +239,11 @@ def check_stage(def_path):
         return
     have = {(sp["group"], sp["number"]) for sp in sprites}
 
+    # A 3D stage has no sprite layers at all: the whole background is a
+    # model file, so counting [BG*] spriteno sections says nothing about it.
+    # Recognise the model and check that instead, or every 3D stage reads as
+    # a stage with no background.
+    model = files.get("model")
     layers = 0
     for section, entries in secs.items():
         if not section.startswith("bg"):
@@ -252,9 +257,15 @@ def check_stage(def_path):
             err(f"{label}: [{section}] spriteno {g},{n} missing from {spr}")
     if (9000, 1) not in have:
         err(f"{label}: select-screen preview sprite 9000,1 missing")
-    if layers == 0:
-        err(f"{label}: no background layers defined")
-    notes.append(f"{label}: {layers} layers, {len(sprites)} sprites")
+    if model:
+        model_path = os.path.join(os.path.dirname(def_path), model.strip())
+        if not os.path.isfile(model_path):
+            err(f"{label}: 3D model missing: {model.strip()}")
+        notes.append(f"{label}: 3D stage ({model.strip()}), {len(sprites)} sprites")
+    else:
+        if layers == 0:
+            err(f"{label}: no background layers defined")
+        notes.append(f"{label}: {layers} layers, {len(sprites)} sprites")
 
 
 def check_select_screen(chars):
