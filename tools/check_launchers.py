@@ -349,10 +349,21 @@ def _progress_problems(name, raw):
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if 'set "PCT=%%"' not in text:
+    pct_lines = [(number, line.strip())
+                 for number, line in enumerate(text.splitlines(), 1)
+                 if re.search(r"(?<![A-Za-z])PCT=", line)]
+    if not pct_lines:
         out.append("%s: the per cent sign is not made once on its own, so the "
                    "count pairs signs in the source and cmd reads the pair as "
                    "text" % name)
+    # The sign has to be made on every line that sets it, not merely somewhere:
+    # :gun sets it, and :gunredraw sets it again only when it is undefined, so
+    # breaking one line still left the other holding the correct form.
+    for number, line in pct_lines:
+        if not re.search(r'(?i)set "PCT=%%"$', line):
+            out.append("%s:%d: the per cent sign is not made once on its own - "
+                       "the count has to end with set \"PCT=%%%%\", and this line "
+                       "does not: %s" % (name, number, line[:70]))
     if ('set "PCTX=%GNUM%%PCT%"' not in text
             or 'set "RPCT=%RNUM%%PCT%"' not in text):
         out.append("%s: the count is not padded as digits and then given its "

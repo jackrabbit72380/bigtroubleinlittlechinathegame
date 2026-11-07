@@ -29,7 +29,12 @@ def main():
     # the order matters.
     # The menu face is installed first, so every later step that draws text
     # through art.font() uses the same vendored typeface.
-    scripts = ["build_fonts.py"]
+    # The launchers are read before a single pixel is painted: a batch file
+    # cmd cannot parse dies on the player's first double-click, and the two
+    # checks below take a fraction of a second, so they should stop the build
+    # here rather than after ten minutes of painting. validate.py runs both
+    # again at the end, because it is also run on its own.
+    scripts = ["check_launchers.py", "test_launchers.py", "build_fonts.py"]
     scripts += ["build_stages.py", "build_training.py", "stages_hd.py", "stage_throne.py",
                "stage_ceremony.py", "stage_hallway.py",
                "stage_upside_down.py", "stage_airport.py", "stage_sinners.py",

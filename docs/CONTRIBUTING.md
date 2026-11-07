@@ -46,7 +46,7 @@ files they produce are outputs, not places to hand-edit.
 | `tools/build_banner.py`, `tools/build_timer.py` | the dragon HUD in `data/fight.sff` |
 | `tools/build_music.py` | `[Music]` paths in `data/ikemen1/system.def` |
 | `tools/dump_stage_art.py` | unpacks stage sprites to PNG for inspection |
-| `tools/validate.py` | 44 offline checks: roster, `.air` frames, stage layers, previews, palettes |
+| `tools/validate.py` | the offline checks: roster, `.air` frames, stage layers, previews, palettes, launchers |
 
 If you change a stat, a colour, a stage layer or a HUD sprite, change the generator
 and rerun it — that way the change survives the next rebuild. Pull requests that
@@ -61,7 +61,7 @@ source change.
 
 ```sh
 python3 tools/build_all.py     # regenerate, then validate
-python3 tools/validate.py      # must report: All checks passed (44 checks)
+python3 tools/validate.py      # must report: All checks passed
 ```
 
 Keep pull requests small and focused; a change to one stage or one fighter is much
@@ -137,6 +137,13 @@ gives it the motif shapes we might ship, including an `[OptionBGdef]` with no
 `bgclearcolor` line and one whose backdrop refuses to draw, and asserts the browser
 opens, draws its albums and hands the menu back in each. That missing key once made
 the pause item do nothing at all, so this is the shape the test exists for.
+
+`tools/test_launchers.py` is the net for the five Windows launchers, and it needs
+no engine at all: it feeds every construct `tools/check_launchers.py` exists to
+catch to the checker, plus the correct form of each, and rewrites the updater to
+bring the muzzle-count bug back - so a rule that stops matching fails instead of
+passing quietly. `tools/build_all.py` and `tools/validate.py` both run it, which
+is what stops a rebuild or CI from skipping the launcher rules.
 
 Two things are easy to get wrong when driving the engine headless: `[Demo Mode]
 enabled = 1` in the motif starts the attract demo, which swallows menu keystrokes,
