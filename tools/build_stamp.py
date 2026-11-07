@@ -30,18 +30,25 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "build_stamp.txt")
 
 # Everything the launch console depends on: the motif, the HUD, the roster, the
-# settings template and the music browser's album list. music.json is read by
-# external/mods/musicselect.lua, so an update that changed only the album list
-# has to count as an update too - while it was left out, a folder holding an
-# older album list compared equal to main everywhere that list is used.
+# settings template, the music browser's album list and cover art, and the
+# controller database external/script/options.lua hands the engine.
+#
+# music.json and albums.sff are read by external/mods/musicselect.lua, so an
+# update that changed only one of them has to count as an update too - while
+# music.json was left out, a folder holding an older album list compared equal
+# to main everywhere that list is used. The mapping database is the same story
+# from options.lua: Config.GamepadMappings points at it, so a controller that
+# mapped before a change and not after is an update that never arrived.
 DATA_FILES = (
     "data/ikemen1/system.def",
     "data/system.base.def",
     "data/fight.def",
     "data/select.def",
     "data/music.json",
+    "data/albums.sff",
     "data/ikemen1/logo.def",
     "data/ikemen1/credits.def",
+    "external/gamecontrollerdb.txt",
 )
 
 
@@ -57,7 +64,25 @@ def lua_scripts():
     return sorted(found)
 
 
-FILES = DATA_FILES + tuple(lua_scripts())
+def shader_files():
+    """Every external shader, in a stable order.
+
+    options.lua builds the shader menu by enumerating external/shaders and puts
+    the chosen names into Video.ExternalShaders, so whatever ships there is
+    something the game can be told to load. The list is discovered for the same
+    reason the Lua is: a shader nobody remembered to add would otherwise be
+    invisible to the update.
+    """
+    found = []
+    for base, dirs, names in os.walk(os.path.join(ROOT, "external", "shaders")):
+        dirs.sort()
+        for name in sorted(names):
+            rel = os.path.relpath(os.path.join(base, name), ROOT)
+            found.append(rel.replace(os.sep, "/"))
+    return sorted(found)
+
+
+FILES = DATA_FILES + tuple(lua_scripts()) + tuple(shader_files())
 
 
 def content(rel):
