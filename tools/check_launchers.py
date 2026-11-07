@@ -120,6 +120,25 @@ def _problems_for(name, raw):
     return out
 
 
+def _progress_problems(name, raw):
+    """The updater's pistol and its bar are product, not decoration.
+
+    A rewrite that only looked at the console plumbing dropped them twice: the
+    gun was left behind as an unreachable label, and the bar became a bare
+    percentage at ten-point steps. They are checked here so a later edit cannot
+    take them away silently again.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace")
+    out = []
+    if not re.search(r"(?m)^call :gun\s*$", text):
+        out.append("%s: :gun is never called, so the updater shows no pistol" % name)
+    if "[%BARLEFT%o%BARRIGHT%]" not in text or "%PCT3%%" not in text:
+        out.append("%s: the gauge no longer prints a bar with its percentage" % name)
+    return out
+
+
 def _variable_refs(line):
     """The %NAME% references on one line, read the way cmd reads them.
 
@@ -154,7 +173,9 @@ def problems(root):
         if not os.path.isfile(path):
             continue
         with open(path, "rb") as fh:
-            found.extend(_problems_for(name, fh.read()))
+            raw = fh.read()
+            found.extend(_problems_for(name, raw))
+            found.extend(_progress_problems(name, raw))
     return found
 
 

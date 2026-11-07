@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v51
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v52
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -53,8 +53,11 @@ set "GIT_CONFIG_PARAMETERS="
 
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v51
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v52
 echo   ==============================================================
+rem The pistol stands over the progress and stays there: the bullet in every
+rem bar below is its shot.
+call :gun
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -437,24 +440,42 @@ echo    .//___//
 set "GUNSHOWN=1"
 exit /b 0
 
-rem Progress is one plain line per milestone. It never moves the cursor: the
-rem first version redrew a single line by walking backwards with the backspace
-rem `prompt $H` produces, and where a backspace does not erase - Windows Terminal,
-rem conhost with VT off, any log redirect - the longer previous line stayed on
-rem screen and the update became a wall of overlapping text with the bar broken
-rem across itself.
 :gauge
+rem %1 = percent for the whole run, %2 = what is happening.
+rem
+rem One complete line per update: the whole bar, the percentage, the step. The
+rem bullet is the shot leaving the pistol above it, so the bar reads as rounds
+rem going downrange instead of an abstract gauge.
+rem
+rem The line is printed, never redrawn. The version that walked the cursor back
+rem with backspaces left a wall of overlapping text wherever a backspace did not
+rem erase - Windows Terminal, a log redirect - so nothing here moves the cursor.
+rem
+rem It prints when the step changes or the percentage moves five points, so a
+rem whole update is about two dozen lines rather than one per percent.
 if "%~1"=="" exit /b 0
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
 if %GPCT% GTR 100 set "GPCT=100"
-set /a GBUCKET=GPCT/10
-set "GKEY=%GBUCKET%|%~2"
-if defined GLAST if "%GLAST%"=="%GKEY%" exit /b 0
-set "GLAST=%GKEY%"
+if not defined GLASTPCT goto gauge_print
+if not "%GLASTLBL%"=="%~2" goto gauge_print
+if %GPCT% GEQ 100 goto gauge_print
+set /a GADV=GPCT-GLASTPCT
+if %GADV% GEQ 5 goto gauge_print
+exit /b 0
+:gauge_print
+set "GLASTPCT=%GPCT%"
+set "GLASTLBL=%~2"
 set "PCT3=  %GPCT%"
 call set "PCT3=%%PCT3:~-3%%"
-echo   %PCT3%%%  %~2
+set "BARFILL=#################################"
+set "BAREMPTY=---------------------------------"
+set /a BARLEFTN=GPCT*33/100
+set /a BARRIGHTN=33-BARLEFTN
+call set "BARLEFT=%%BARFILL:~0,%BARLEFTN%%%"
+call set "BARRIGHT=%%BAREMPTY:~0,%BARRIGHTN%%%"
+echo   [%BARLEFT%o%BARRIGHT%] %PCT3%%  %~2
+title Big Trouble in Little China: The Game - Updater - %GPCT% percent
 exit /b 0
 
 :bar
