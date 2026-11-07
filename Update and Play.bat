@@ -558,6 +558,9 @@ exit /b 0
 rem %1 = one path. Paths are collected into one checkout of a dozen files: one
 rem git process per file is what made a first run crawl.
 set /a NDONE+=1
+rem The last name in the batch is kept so a batch that will not land can say
+rem which file it was working on, instead of a percentage and nothing else.
+set "BLAST=%~nx1"
 set "BATCH=%BATCH% "%~1""
 set /a BCOUNT+=1
 if %BCOUNT% GEQ 12 call :gitflush
@@ -565,9 +568,38 @@ set /a BMOD=NDONE %% BSTEP
 if %BMOD%==0 call :bar %NDONE% %NCH%
 exit /b 0
 :gitflush
+rem %BATCH% = the files waiting to be written, at most twelve. One git call for
+rem twelve files is quicker than twelve calls, but the batch runs in a helper that
+rem writes a marker, so the window says it is working every five seconds and a
+rem file that will not land cannot leave the run on 79% looking exactly like a
+rem slow one. Five minutes is well past a slow download of the biggest art here;
+rem past that the batch is named, written to stuck.txt, and the run carries on -
+rem :confirm hashes what landed and writes the rest again.
 if not defined BATCH exit /b 0
-git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
-if errorlevel 1 set "WRITEFAIL=1"
+call :log flush %BCOUNT% file(s), last %BLAST%
+set "GOK=%CACHE%\flush.ok"
+set "GBAD=%CACHE%\flush.bad"
+if exist "%GOK%" del /q "%GOK%" >nul 2>&1
+if exist "%GBAD%" del /q "%GBAD%" >nul 2>&1
+set "GBAT=%CACHE%\flush.bat"
+>  "%GBAT%" echo @echo off
+>> "%GBAT%" echo cd /d "%~dp0."
+>> "%GBAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% ^>^>"%CACHE%\git.log" 2^>^&1
+>> "%GBAT%" echo if errorlevel 1 (echo x^>"%GBAD%") else (echo x^>"%GOK%")
+if exist "%GBAT%" start "" /b cmd /c ""%GBAT%""
+if not exist "%GBAT%" git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
+if not exist "%GBAT%" if errorlevel 1 (echo x>"%GBAD%") else (echo x>"%GOK%")
+call :spinwait "%GOK%" "%GBAD%" "writing %BCOUNT% file(s)" 300
+if errorlevel 1 goto gitflush_late
+set "BATCH="
+set /a BCOUNT=0
+exit /b 0
+:gitflush_late
+rem It is still writing, or git refused. Either way the batch is named in the
+rem window and in stuck.txt, and the run goes on rather than waiting for ever.
+set "WRITEFAIL=1"
+>>"%CACHE%\stuck.txt" echo %BATCH%
+call :says "  gave up waiting on %BLAST% and the files with it"
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
