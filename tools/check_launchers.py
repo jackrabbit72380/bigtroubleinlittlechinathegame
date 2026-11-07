@@ -23,6 +23,7 @@ LAUNCHERS = (
     "Apply main.zip.bat",
     "Play Big Trouble.bat",
     "Test Big Trouble.bat",
+    "Dump Stage Art.bat",
 )
 
 # cmd's own variables: never set by the script, always present
@@ -117,6 +118,150 @@ def _problems_for(name, raw):
                        "same name, so the parameter arrives empty"
                        % (name, helper, clash))
 
+    return out
+
+
+def _percent_tokens(line):
+    """The percent tokens on one line, read left to right as cmd reads them.
+
+    "%%" is an escaped sign, "%~dp0" / "%1" / "%*" is an argument, and
+    "%VAR%" or "%VAR:old=new%" is a variable or a substitution. A sign with no
+    partner is not a token at all: cmd cannot pair it, so everything after it on
+    the line stops being read as text, and the window answers with
+    "... is not recognized as an internal or external command".
+    """
+    i, n, out = 0, len(line), []
+    while i < n:
+        if line[i] != "%":
+            i += 1
+            continue
+        nxt = line[i + 1:i + 2]
+        if nxt == "%":
+            out.append(("escaped", "%%"))
+            i += 2
+            continue
+        if nxt == "~":
+            j = i + 2
+            while j < n and line[j].lower() in "dpnxfztas":
+                j += 1
+            if j < n and line[j] in "0123456789*":
+                out.append(("argument", line[i:j + 1]))
+                i = j + 1
+                continue
+        if nxt == "*":
+            out.append(("argument", "%*"))
+            i += 2
+            continue
+        if nxt.isdigit():
+            out.append(("argument", line[i:i + 2]))
+            i += 2
+            continue
+        j = line.find("%", i + 1)
+        body = line[i + 1:j] if j > i else ""
+        if j > i and re.fullmatch(r"[A-Za-z0-9_()]+(?::.*)?", body, re.S):
+            out.append(("variable", line[i:j + 1]))
+            i = j + 1
+            continue
+        out.append(("stray", "%"))
+        i += 1
+    return out
+
+
+ESCAPED_BY_CARET = "|&<>()!^\"%"
+
+
+def _syntax_problems(name, raw):
+    """The characters cmd acts on before a single command runs.
+
+    Everything here is a way for a line to mean something other than what it
+    says, which is invisible to python and to the eye:
+      * an unpaired percent swallows the rest of the line;
+      * a caret on the end of a line continues it onto the next one;
+      * a caret inside quotes does not escape, it is printed;
+      * an operator inside a for /f command string splits that command;
+      * a quote left open in "set "NAME=value" runs the value past the quote;
+      * a value appended to itself inside a for body is expanded once, before
+        the loop, so the append silently does nothing;
+      * a label defined twice sends a goto to the first one;
+      * a path passed to call unquoted is read a second time, so a folder named
+        with & or | turns into a command;
+      * a trailing space is swallowed by a caret continuation;
+      * a literal ! is eaten when delayed expansion is on.
+    """
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    lines = text.split("\n")
+    out = []
+    labels = {}
+    delayed = "EnableDelayedExpansion" in text
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("::"):
+            continue
+        if re.match(r"(?i)^rem\b", stripped):
+            continue          # nothing follows the text, so a lone sign is safe
+        if line != line.rstrip():
+            out.append("%s:%d: the line ends in a space, which a caret "
+                       "continuation swallows: %s" % (name, i, stripped[:60]))
+        for kind, token in _percent_tokens(line):
+            if kind == "stray":
+                out.append("%s:%d: a per cent sign has no partner, so cmd reads "
+                           "the rest of the line as text: %s"
+                           % (name, i, stripped[:70]))
+                break
+        if stripped.endswith("^"):
+            out.append("%s:%d: the line ends in a caret, so it continues onto "
+                       "the next one: %s" % (name, i, stripped[:60]))
+        quoted = False
+        for ch in line:
+            if ch == '"':
+                quoted = not quoted
+            elif ch == "^" and quoted:
+                out.append("%s:%d: a caret inside quotes does not escape "
+                           "anything, cmd prints it: %s" % (name, i, stripped[:60]))
+                break
+        for m in re.finditer(r"\^(.)", line):
+            if m.group(1) not in ESCAPED_BY_CARET:
+                out.append("%s:%d: a caret before %r escapes nothing, so it is "
+                           "printed: %s" % (name, i, m.group(1), stripped[:60]))
+                break
+        for m in re.finditer(r"(?i)\bfor\s+/[a-z]*\s.*?\bin\s+\((['`])(.*?)\1\)",
+                             line):
+            inner = m.group(2)
+            bad = re.search(r"(?<!\^)[|&<>]", inner)
+            if bad:
+                out.append("%s:%d: a for /f command string holds an unescaped %r, "
+                           "which splits the command: %s"
+                           % (name, i, bad.group(0), stripped[:60]))
+        if (re.match(r'(?i)^\s*(?:if\s+.*?\s)?set\s+"', stripped)
+                and line.count('"') % 2):
+            out.append("%s:%d: the quote after set is never closed, so the value "
+                       "runs to the end of the line: %s" % (name, i, stripped[:60]))
+        if (delayed and "!" in line):
+            out.append("%s:%d: a literal ! is eaten while delayed expansion is "
+                       "on: %s" % (name, i, stripped[:60]))
+        grown = re.search(r'(?i)\bfor\b.*\bdo\b.*\bset\s+(?:/a\s+)?"?([A-Za-z0-9_]+)=',
+                          stripped)
+        if grown and "call set" not in stripped.lower():
+            seen = grown.group(1)
+            if re.search(r"%%%s%%" % re.escape(seen), stripped, re.I):
+                out.append("%s:%d: appends %%%s%% inside a for body without "
+                           "call set, so the value is expanded once, before the "
+                           "loop: %s" % (name, i, seen, stripped[:60]))
+        if re.match(r"(?i)^\s*call\s+:", stripped):
+            for m in re.finditer(r"%~[df][a-z]?[0-9]", line):
+                if line[m.start() - 1:m.start()] != '"':
+                    out.append("%s:%d: %s is passed to call unquoted, and call "
+                               "reads its line twice, so a path holding & or | "
+                               "runs as a command: %s"
+                               % (name, i, m.group(0), stripped[:60]))
+        m = re.fullmatch(r":([A-Za-z0-9_]+)", stripped)
+        if m:
+            labels.setdefault(m.group(1).lower(), []).append(i)
+    for lab, at in sorted(labels.items()):
+        if len(at) > 1:
+            out.append("%s: label :%s is defined %d times (%s), so a goto lands "
+                       "on the first" % (name, lab, len(at),
+                                         ", ".join(str(a) for a in at)))
     return out
 
 
@@ -353,6 +498,7 @@ def problems(root):
         with open(path, "rb") as fh:
             raw = fh.read()
             found.extend(_problems_for(name, raw))
+            found.extend(_syntax_problems(name, raw))
             found.extend(_progress_problems(name, raw))
             found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))

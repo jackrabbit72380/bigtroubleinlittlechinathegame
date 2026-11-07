@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v54
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v55
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -56,7 +56,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=54"
+set "UPDVER=55"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
@@ -69,7 +69,7 @@ set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto wrongfolder
-call :log folder %~dp0  exe %EXE%
+call :log folder "%~dp0"  exe %EXE%
 rem A refused write here means every write below will be refused too, one file
 rem at a time with the same "Access is denied" line. But a scanner can hold a
 rem file that was created a moment ago, and a copied folder carries a read-only
@@ -477,7 +477,7 @@ if exist "%TEMP%\btilc-width.txt" del /q "%TEMP%\btilc-width.txt" >nul 2>&1
 if errorlevel 1 exit /b 0
 rem The console took the mode. The escape character is the one byte below, in the
 rem file itself, so nothing is read back, guessed, or lost on the way.
-set "ESC=
+set "ESC="
 set "VTOK=1"
 exit /b 0
 
@@ -1353,7 +1353,7 @@ echo     %~dp0
 if exist "%WERR%" type "%WERR%"
 echo Tried three times. The files here are left exactly as they are - so they
 echo may be older than main. Starting the game with what is installed.
-call :log folder refused writes after %WTRY% tries: %~dp0
+call :log folder refused writes after %WTRY% tries: "%~dp0"
 if not exist "%~dp0%EXE%" goto folder_denied_noexe
 goto launch
 :folder_denied_noexe
