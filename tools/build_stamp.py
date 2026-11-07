@@ -29,13 +29,17 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "build_stamp.txt")
 
-# Everything the launch console depends on: the motif, the HUD, the roster and
-# the settings template.
+# Everything the launch console depends on: the motif, the HUD, the roster, the
+# settings template and the music browser's album list. music.json is read by
+# external/mods/musicselect.lua, so an update that changed only the album list
+# has to count as an update too - while it was left out, a folder holding an
+# older album list compared equal to main everywhere that list is used.
 DATA_FILES = (
     "data/ikemen1/system.def",
     "data/system.base.def",
     "data/fight.def",
     "data/select.def",
+    "data/music.json",
     "data/ikemen1/logo.def",
     "data/ikemen1/credits.def",
 )
