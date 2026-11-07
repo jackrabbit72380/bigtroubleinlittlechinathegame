@@ -936,12 +936,15 @@ function menu.f_commandlistRender(sec, t)
 						align = 1
 					end
 					textImgSetAlign(sec.movelist.text.TextSpriteData, align)
+					-- the name column keeps the motif gold, the input column takes the
+					-- accent, so the two read apart at a glance
+					local colR, colG, colB, colA = main.f_movelistColor(sec, k, v.col)
 					textImgSetColor(
 						sec.movelist.text.TextSpriteData,
-						v.col.r or sec.movelist.text.font[4],
-						v.col.g or sec.movelist.text.font[5],
-						v.col.b or sec.movelist.text.font[6],
-						v.col.a or sec.movelist.text.font[7]
+						colR,
+						colG,
+						colB,
+						colA
 					)
 					main.f_menuItemPlace(
 						sec.movelist.text.TextSpriteData,
