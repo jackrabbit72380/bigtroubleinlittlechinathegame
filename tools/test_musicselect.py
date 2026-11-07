@@ -120,9 +120,18 @@ getInput = function(player, keys)
             return true
         end
         if first == 'U' or first == 'D' or first == 'L' or first == 'R' then return false end
+        if Z_ONLY then
+            -- only Z confirms, so the browser has to be the one offering it
+            for _, k in ipairs(keys) do
+                if k == 'z' then return true end
+            end
+            return false
+        end
     end
     return INPUT_DOWN
 end
+-- the music the game was playing when the browser opened
+bgmStop = function() BG_STOPPED = (BG_STOPPED or 0) + 1 end
 
 -- The engine hands the browser motif.optionbgdef; the shipped one has no
 -- bgclearcolor, which is the shape that used to kill the screen.
@@ -315,8 +324,9 @@ def check(mode: str) -> list[str]:
     if head_y and min(head_y) > 120:
         problems.append(f"the album title is drawn at y {min(head_y):.0f}, below its frame")
     for text, scale in heads.items():
-        if scale > 1.5 + 1e-6:
-            problems.append(f"the album title is drawn at {scale:.2f}x, above its own maximum")
+        # the album title is the size of the track list now, not larger
+        if scale > 1.0 + 1e-6:
+            problems.append(f"the album title is drawn at {scale:.2f}x, larger than the list")
         width = len(text) * 30 * scale
         if width > 1800 + 0.5:
             problems.append(f"the album title is {width:.0f}px wide on a 1920px screen")
@@ -337,6 +347,24 @@ def check(mode: str) -> list[str]:
         if width > 980 + 0.5:
             problems.append(
                 f"the row {text.strip()[:28]!r} is {width:.0f}px wide past the list edge")
+    # Z picks a track exactly like Enter, and an album switch silences the music
+    lua.execute("main.t_musicSelect.params = nil")
+    g.Z_ONLY = True
+    g.INPUT_DOWN = False
+    g.RIGHT_FRAMES = 1
+    # opened directly: the pause menu's own entry needs the pad's done key, and
+    # this run is about what the browser itself accepts
+    lua.execute("main.t_musicSelect.open()")
+    params = g.main.t_musicSelect.params
+    if not (isinstance(params, str) and params.startswith("bgmusic = ")):
+        problems.append("Z does not pick a track: no bgmusic param was left behind")
+    if not (g.BG_STOPPED or 0):
+        problems.append("switching album does not stop the music that was playing")
+    drawn = [str(v) for v in g.texts.values()] if g.texts else []
+    if not any("ENTER / Z" in d for d in drawn):
+        problems.append("the hint line does not mention Z")
+    g.Z_ONLY = False
+
     g.INPUT_DOWN = False
 
     # and from the title menu, which opens the same browser in place
