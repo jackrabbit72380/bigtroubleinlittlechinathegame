@@ -53,12 +53,15 @@ LIFE_Y = 2                  # top of the health bar = top of the dragon's back
 BAR_Y = 30                  # top of the audacity bar = the underside
 BAND = 20                   # height of the audacity band
 TIME_Y = 34                 # yin-yang centre
-# The countdown is the Timer bitmap face (49-unit cells) at TIME_NUM_SCALE,
-# so the digits stand 34px tall: Their offset has to carry half of that to
-# land on the disc's centre line; at -4 they hung 9px low in the yin-yang.
+# The countdown is the Timer bitmap face (49-unit cells) at TIME_NUM_SCALE, so
+# the digits stand 34px tall. The engine anchors that text at the bottom of the
+# glyph cell, so a negative offset lifts the whole block off the disc: at -17 the
+# digits sat above the yin-yang, over the dragon's heads, which read as part of
+# the banner instead of as the clock. +half a cell puts their centre line on the
+# disc's centre, between the two dots.
 TIME_NUM_SCALE = 0.7
 TIME_NUM_CELL = 49
-TIME_NUM_Y = -int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
+TIME_NUM_Y = int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
 METER_W = 202               # fillable length of the audacity bar
 BAR_X1 = 568                # p1.pos.x: inner end of the audacity bar
 
@@ -616,16 +619,11 @@ def patch_def():
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
     lines[s:e] = body.split("\n")
 
-    # The character pictures are the characters' own 9000,0 art, drawn at its
-    # own size - several times the 100x100 box at 20,20 / 1260,20 - so every
-    # fighter's portrait spilled out of its frame. A window clips the picture
-    # to the inside of the frame whatever size that art happens to be.
-    s, e = _section(lines, "Face")
-    body = "\n".join(lines[s:e])
-    for side, x in (("p1", 24), ("p2", 1264)):
-        body = _set(body, "%s.face.window" % side,
-                    "%d, 24, %d, 116" % (x, x + 92))
-    lines[s:e] = body.split("\n")
+    # The corner pictures are no longer windowed here. The window was a crutch
+    # for the old 100x100 box: the portraits spilled out of it, so the picture
+    # was clipped to the frame. tools/build_face_boxes.py redraws both corners as
+    # the select screen's own 128x160 cell, where the art is already exactly the
+    # size of its frame, so a window would only crop the fighter again.
 
     s, e = _section(lines, "Time")
     body = "\n".join(lines[s:e])
