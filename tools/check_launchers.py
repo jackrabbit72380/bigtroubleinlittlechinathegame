@@ -204,10 +204,24 @@ def _progress_problems(name, raw):
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if text.count('set "PCTX=  %~1%%"') != 1:
-        out.append("%s: the count is not built once with its own per cent sign, "
-                   "so a percent ends up against the next variable and cmd reads "
-                   "the pair as text" % name)
+    if 'set "PCT=%%"' not in text:
+        out.append("%s: the per cent sign is not made once on its own, so the "
+                   "count pairs signs in the source and cmd reads the pair as "
+                   "text" % name)
+    if ('set "PCTX=%GNUM%%PCT%"' not in text
+            or 'set "RPCT=%RNUM%%PCT%"' not in text):
+        out.append("%s: the count is not padded as digits and then given its "
+                   "sign, so a per cent sign sits inside a value call re-reads "
+                   "and is dropped - the window shows 25 instead of 25%%" % name)
+    if ('if %GNUM% LSS 10 set "GNUM=  %GNUM%"' not in text
+            or 'if %RNUM% LSS 10 set "RNUM=  %RNUM%"' not in text):
+        out.append("%s: the count is not padded by comparison, so it is padded "
+                   "through call and the per cent sign goes with it" % name)
+    for held in ("PCTX", "RPCT", "GNUM", "RNUM"):
+        if re.search(r"(?m)^\s*call\s.*%s" % held, text):
+            out.append("%s: %s is expanded on a call line, and call reads its "
+                       "line twice, so the count or the sign inside it is lost"
+                       % (name, held))
     if "BARLEFT" in text:
         out.append("%s: a loading bar is back; the progress is the number alone"
                    % name)
