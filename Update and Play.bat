@@ -60,6 +60,7 @@ echo   ==============================================================
 rem The pistol stands over the progress and stays there: the bullet in every
 rem bar below is its shot.
 call :gun
+call :pct 0 "Starting the updater"
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
@@ -462,9 +463,10 @@ exit /b 0
 :gauge
 rem %1 = percent for the whole run, %2 = what is happening.
 rem
-rem One complete line per update: the whole bar, the percentage, the step. The
-rem bullet is the shot leaving the pistol above it, so the bar reads as rounds
-rem going downrange instead of an abstract gauge.
+rem One complete line per update, and one bar for the whole run: the bar is the
+rem barrel, the bullet is the shot travelling down it, its right end is the
+rem pistol's muzzle, and the percentage of the entire process - 0 at the start,
+rem 100 when the game is up - sits at that muzzle.
 rem
 rem The line is printed, never redrawn. The version that walked the cursor back
 rem with backspaces left a wall of overlapping text wherever a backspace did not
@@ -476,6 +478,10 @@ if "%~1"=="" exit /b 0
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
 if %GPCT% GTR 100 set "GPCT=100"
+rem One run, one number. A step that reports less than the one before it is a
+rem label arriving late, not a rewind: the whole-process percentage only climbs.
+if defined GMAXPCT if %GPCT% LSS %GMAXPCT% set "GPCT=%GMAXPCT%"
+set "GMAXPCT=%GPCT%"
 if not defined GLASTPCT goto gauge_print
 if not "%GLASTLBL%"=="%~2" goto gauge_print
 if %GPCT% GEQ 100 goto gauge_print
@@ -493,7 +499,7 @@ set /a BARLEFTN=GPCT*33/100
 set /a BARRIGHTN=33-BARLEFTN
 call set "BARLEFT=%%BARFILL:~0,%BARLEFTN%%%"
 call set "BARRIGHT=%%BAREMPTY:~0,%BARRIGHTN%%%"
-echo   [%BARLEFT%o%BARRIGHT%] %PCT3%%%  %~2
+echo   [%BARLEFT%o%BARRIGHT%^|]=  %PCT3%%  %~2
 title Big Trouble in Little China: The Game - Updater - %GPCT% percent
 exit /b 0
 
@@ -1327,10 +1333,15 @@ exit /b 0
 :dl_ps
 rem %1 = the archive address. Sets DLOK when the file arrived whole.
 set "DLOK="
+set "DFROM=50"
+rem The bar the download draws carries on from where the run already is: a
+rem git attempt that failed after 80% must not make the number drop to 50.
+if defined GMAXPCT set "DFROM=%GMAXPCT%"
+if %DFROM% LSS 50 set "DFROM=50"
 if not exist "%DLSCRIPT%" call :dl_make
 if not exist "%DLSCRIPT%" exit /b 0
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%" -From %DFROM%
 if errorlevel 1 exit /b 0
 set "DLOK=1"
 exit /b 0
@@ -1339,8 +1350,13 @@ exit /b 0
 rem The renderer lives in a file of its own: a twenty-line PowerShell script
 rem cannot be passed on a command line without a quoting argument, and every
 rem line below is plain text with no character cmd would eat.
+rem
+rem It draws the run's one bar, not a bar of its own: the same 33 cells, the
+rem same bullet at the fill, the same pistol muzzle and the same whole-process
+rem percentage at it. Downloading is 50-80% of the run, so the bar it leaves
+rem behind is where the next step picks up instead of starting a second gauge.
 set "DLSCRIPT=%CACHE%\download.ps1"
->  "%DLSCRIPT%" echo param([string]$Url, [string]$Out)
+>  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50)
 >> "%DLSCRIPT%" echo $ErrorActionPreference = 'Stop'
 >> "%DLSCRIPT%" echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 >> "%DLSCRIPT%" echo $req = [Net.HttpWebRequest]::Create($Url)
@@ -1360,15 +1376,18 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   $elapsed = ((Get-Date) - $start).TotalSeconds
 >> "%DLSCRIPT%" echo   if (($elapsed - $drawn) -lt 0.25 -and ($total -le 0 -or $got -lt $total)) { continue }
 >> "%DLSCRIPT%" echo   $drawn = $elapsed
->> "%DLSCRIPT%" echo   $width = 34
->> "%DLSCRIPT%" echo   $fill = 0
->> "%DLSCRIPT%" echo   if ($total -gt 0) { $fill = [int]($width * $got / $total) }
->> "%DLSCRIPT%" echo   $bar = ('#' * $fill).PadRight($width, '-')
->> "%DLSCRIPT%" echo   $pct = '   ?'
->> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = ([int](100 * $got / $total)).ToString().PadLeft(3) + '%' }
+>> "%DLSCRIPT%" echo   $width = 33
+>> "%DLSCRIPT%" echo   $whole = $From
+>> "%DLSCRIPT%" echo   if ($From -lt 80) { if ($total -gt 0) { $whole = $From + [int]((80 - $From) * $got / $total) } }
+>> "%DLSCRIPT%" echo   $fill = [int]($width * $whole / 100)
+>> "%DLSCRIPT%" echo   if ($fill -gt $width) { $fill = $width }
+>> "%DLSCRIPT%" echo   if ($fill -lt 0) { $fill = 0 }
+>> "%DLSCRIPT%" echo   $bar = ('#' * $fill) + 'o' + ('-' * ($width - $fill))
+>> "%DLSCRIPT%" echo   $pct = '  ?'
+>> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%' }
 >> "%DLSCRIPT%" echo   $speed = 0.0
 >> "%DLSCRIPT%" echo   if ($elapsed -gt 0) { $speed = $got / $elapsed }
->> "%DLSCRIPT%" echo   $line = [char]13 + '   Downloading   [' + $bar + '] ' + $pct + '   ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB   ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
+>> "%DLSCRIPT%" echo   $line = [char]13 + '  [' + $bar + '^|]=  ' + $pct + '  Downloading ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB  ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
 >> "%DLSCRIPT%" echo $file.Close()
