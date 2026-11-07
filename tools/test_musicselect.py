@@ -75,7 +75,8 @@ bgDraw = function() end
 sffNew = function() return {} end
 animNew = function() return {} end
 animUpdate = function() end
-jsonDecode = function() return JSON end
+-- deliberately broken: the browser must not need the engine's decoder
+jsonDecode = function() error('this build has no jsonDecode') end
 getKey = function() return '' end
 refresh = function() frames = frames + 1; ESC_READY = true end
 esc = function(clear) if clear == false then ESC_READY = false; return false end return ESC_READY end
@@ -133,6 +134,11 @@ main = {
     f_appendItemname = function() end,
 }
 menu = { t_itemname = {}, itemname = '', f_run = function() return true end }
+if MODE == 'nofile' then
+    -- no engine reader and no io.open: the file really is missing
+    main.f_fileRead = function() return nil end
+    io = { open = function() return nil end }
+end
 if MODE == 'faildraw' then
     -- the browser raises mid-frame, the way a missing engine binding would
     main.f_itemnameUpper = function() error('this build cannot measure text') end
@@ -189,7 +195,8 @@ def check(mode: str) -> list[str]:
     except OSError as exc:
         return [f"cannot read data/music.json: {exc}"]
     g.FILE_TEXT = raw
-    lua.execute("JSON = " + lua_literal(json.loads(raw)))
+    if raw:
+        lua.execute("JSON = " + lua_literal(json.loads(raw)))
 
     with open(NOTICE, encoding="utf-8") as handle:
         lua.execute(handle.read())
@@ -234,7 +241,8 @@ def engine_for(mode: str, raw: str):
     g = lua.globals()
     lua.execute(PRELUDE, mode)
     g.FILE_TEXT = raw
-    lua.execute("JSON = " + lua_literal(json.loads(raw)))
+    if raw:
+        lua.execute("JSON = " + lua_literal(json.loads(raw)))
     with open(NOTICE, encoding="utf-8") as handle:
         lua.execute(handle.read())
     with open(MOD, encoding="utf-8") as handle:
@@ -249,7 +257,7 @@ def failure_cases():
     g.INPUT_DOWN = True          # the done key: the handler only opens on a press
     lua.execute("pcall(menu.t_itemname['music'], nil, 1, 1, 0, motif.pause_menu.pause_menu)")
     cases.append(("an empty album list reports on screen",
-                  notice_problems(g, "No music albums found", "has no albums")))
+                  notice_problems(g, "No music albums found", "no album with songs")))
     # the browser raises mid-frame: the handler must not leave it silent
     with open(MUSIC, encoding="utf-8") as handle:
         raw = handle.read()
@@ -258,6 +266,13 @@ def failure_cases():
     lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
     cases.append(("a raise inside the browser reports on screen",
                   notice_problems(g, "Music list unavailable", "could not open from the pause menu")))
+    # the data file itself is missing: the console must say so, not "no albums"
+    lua, g = engine_for("nofile", "")
+    g.FILE_TEXT = ""
+    g.INPUT_DOWN = True
+    lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
+    cases.append(("a missing music.json says so on screen",
+                  notice_problems(g, "No music albums found", "is missing or empty")))
     return cases
 
 

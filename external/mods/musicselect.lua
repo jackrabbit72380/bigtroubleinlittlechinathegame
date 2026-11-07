@@ -39,24 +39,139 @@ local SMALLSCALE = 1.0
 ms.params = nil
 ms.chosen = nil
 
-local function albumsFromJson()
-	-- jsonDecode decodes a STRING; it was handed the path 'data/music.json'.
-	-- The pcall swallowed the failure, this function returned no albums, and
-	-- ms.open() bailed out on its first early exit - which is exactly what
-	-- "selecting MUSIC in the main menu does nothing" looked like: the item is
-	-- there (this file appends it before EXIT) and the screen never opens.
-	-- The file is read first, with the engine's own reader, then decoded.
-	local raw = main.f_fileRead('data/music.json')
-	if raw == nil or raw == '' then
-		local f = io.open('data/music.json', 'r')
-		if f ~= nil then
-			raw = f:read('*a')
-			f:close()
+-- A JSON reader small enough to keep here. data/music.json is written by
+-- tools/build_music.py and is plain JSON - objects, arrays, strings, numbers,
+-- true/false/null, no comments - so the only reason the browser asked the
+-- engine for its decoder was convenience. That also made the screen depend on
+-- a call some builds do not expose: the pcall around it turned a missing
+-- decoder into "no albums found", which is what the console said.
+local function decodeJson(text)
+	text = text:gsub('^\239\187\191', '')     -- a byte order mark nothing asked for
+	local pos = 1
+	local function fail(what) error({ json = what .. ' at byte ' .. pos }, 0) end
+	local function skip()
+		while true do
+			local c = text:sub(pos, pos)
+			if c == ' ' or c == '\t' or c == '\n' or c == '\r' then
+				pos = pos + 1
+			else
+				return
+			end
 		end
 	end
-	local ok, music = pcall(jsonDecode, raw or '')
-	if not ok or type(music) ~= 'table' then
-		return {}
+	local function readString()
+		pos = pos + 1
+		local out = {}
+		while true do
+			local c = text:sub(pos, pos)
+			if c == '' then fail('unterminated string') end
+			if c == '"' then
+				pos = pos + 1
+				return table.concat(out)
+			elseif c == '\\' then
+				local esc = text:sub(pos + 1, pos + 1)
+				pos = pos + 2
+				if esc == 'n' then out[#out + 1] = '\n'
+				elseif esc == 't' then out[#out + 1] = '\t'
+				elseif esc == 'r' then out[#out + 1] = '\r'
+				elseif esc == 'u' then
+					-- album and track names here are ASCII; a code point outside
+					-- it is kept as a placeholder rather than dropped
+					local hex = text:sub(pos, pos + 3)
+					pos = pos + 4
+					local n = tonumber(hex, 16)
+					if n ~= nil and n < 128 then out[#out + 1] = string.char(n)
+					else out[#out + 1] = '?' end
+				else out[#out + 1] = esc end
+			else
+				out[#out + 1] = c
+				pos = pos + 1
+			end
+		end
+	end
+	local function readNumber()
+		local rest = text:sub(pos)
+		local m = rest:match('^-?%d+%.?%d*[eE][-+]?%d+') or rest:match('^-?%d+%.?%d*')
+		if m == nil then fail('bad number') end
+		pos = pos + #m
+		return tonumber(m)
+	end
+	local readValue
+	local function readObject()
+		pos = pos + 1
+		local t = {}
+		skip()
+		if text:sub(pos, pos) == '}' then pos = pos + 1 return t end
+		while true do
+			skip()
+			if text:sub(pos, pos) ~= '"' then fail('expected a key') end
+			local k = readString()
+			skip()
+			if text:sub(pos, pos) ~= ':' then fail('expected a colon') end
+			pos = pos + 1
+			t[k] = readValue()
+			skip()
+			local c = text:sub(pos, pos)
+			if c == ',' then pos = pos + 1
+			elseif c == '}' then pos = pos + 1 return t
+			else fail('expected , or }') end
+		end
+	end
+	local function readArray()
+		pos = pos + 1
+		local t = {}
+		skip()
+		if text:sub(pos, pos) == ']' then pos = pos + 1 return t end
+		while true do
+			t[#t + 1] = readValue()
+			skip()
+			local c = text:sub(pos, pos)
+			if c == ',' then pos = pos + 1
+			elseif c == ']' then pos = pos + 1 return t
+			else fail('expected , or ]') end
+		end
+	end
+	readValue = function()
+		skip()
+		local c = text:sub(pos, pos)
+		if c == '{' then return readObject() end
+		if c == '[' then return readArray() end
+		if c == '"' then return readString() end
+		if text:sub(pos, pos + 3) == 'true' then pos = pos + 4 return true end
+		if text:sub(pos, pos + 4) == 'false' then pos = pos + 5 return false end
+		if text:sub(pos, pos + 3) == 'null' then pos = pos + 4 return nil end
+		return readNumber()
+	end
+	local ok, res = pcall(function()
+		local v = readValue()
+		skip()
+		return v
+	end)
+	if not ok then
+		return nil, type(res) == 'table' and res.json or tostring(res)
+	end
+	return res
+end
+
+local function albumsFromJson()
+	-- noError: without it a folder missing the file calls panicError instead
+	-- of returning nil, and the browser would die before it could say why.
+	local raw = main.f_fileRead('data/music.json', 'r', true)
+	if raw == nil or raw == '' then
+		if type(io) == 'table' and io.open ~= nil then
+			local f = io.open('data/music.json', 'r')
+			if f ~= nil then
+				raw = f:read('*a')
+				f:close()
+			end
+		end
+	end
+	if raw == nil or raw == '' then
+		return {}, 'data/music.json is missing or empty'
+	end
+	local music, decodeErr = decodeJson(raw)
+	if type(music) ~= 'table' then
+		return {}, 'data/music.json could not be read: ' .. tostring(decodeErr)
 	end
 	local albums = {}
 	for name, album in pairs(music) do
@@ -93,7 +208,10 @@ local function albumsFromJson()
 		end
 		return string.lower(a.name) < string.lower(b.name)
 	end)
-	return albums
+	if #albums == 0 then
+		return albums, 'data/music.json lists no album with songs'
+	end
+	return albums, nil
 end
 
 -- Which way this build wants the font: the font table itself, its index into
@@ -203,9 +321,9 @@ end
 -- Opens the browser. Runs its own frame loop, like main.f_warning, and returns
 -- once the player confirms or backs out.
 function ms.open()
-	local albums = albumsFromJson()
+	local albums, why = albumsFromJson()
 	if #albums == 0 then
-		report('musicselect: data/music.json has no albums',
+		report('musicselect: ' .. tostring(why or 'data/music.json has no albums'),
 			'No music albums found - see console.')
 		return false
 	end
