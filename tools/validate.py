@@ -605,6 +605,43 @@ def check_menu_theme():
             err("menu theme: [%s] rows centre on y=%.0f, not the frame's middle"
                 % (name, centre))
 
+    # The options list is the other two-column screen. Labels are right-aligned
+    # (they end at menu.pos.x) and values start menu.pos.x + value.offset further
+    # on, so the boundary between the columns has to sit on the frame's middle -
+    # every row then straddles the centre - and the gutter has to stay wide
+    # enough that a value cannot print over its label at any width.
+    frame_w = int(lc.group(1)) if lc else 1920
+    for name, keys in values.items():
+        if name.lower() != "option info":
+            continue
+        try:
+            pos = [float(v) for v in keys["menu.pos"].split(",")]
+            offset = [float(v) for v in keys["menu.item.value.offset"].split(",")]
+            pitch = float(keys["menu.item.spacing"].split(",")[1])
+            rows = max(1, int(float(keys.get("menu.window.visibleitems", "13"))))
+            label_align = int(keys["menu.item.font"].split(",")[2].strip())
+            value_align = int(keys["menu.item.value.font"].split(",")[2].strip())
+        except (KeyError, ValueError, IndexError):
+            continue
+        boundary = pos[0] + offset[0] / 2.0
+        if abs(boundary - frame_w / 2.0) > 20:
+            err("menu theme: [%s] puts the label/value boundary at x=%.0f, not "
+                "the frame's middle" % (name, boundary))
+        if offset[0] < 12:
+            err("menu theme: [%s] leaves %.0fpx between labels and values, so a "
+                "value can print over its label" % (name, offset[0]))
+        if label_align != -1 or value_align != 1:
+            err("menu theme: [%s] does not keep labels right of their column "
+                "edge and values left of theirs" % name)
+        bottom = pos[1] + (rows - 1) * pitch + 45
+        if bottom > frame_h - 20:
+            err("menu theme: [%s] runs its %dth row to y=%.0f, past the %d-tall "
+                "frame" % (name, rows, bottom, frame_h))
+        centre = (pos[1] + bottom) / 2.0
+        if abs(centre - frame_h / 2.0) > 100:
+            err("menu theme: [%s] rows centre on y=%.0f, not the frame's middle"
+                % (name, centre))
+
     notes.append("menu theme: logo face, gold face on maroon extrusion")
 
 
