@@ -181,10 +181,12 @@ def _progress_problems(name, raw):
             out.append("%s: MUZZLE is %s but the drawn barrel ends at column %d, so "
                        "the number would not sit at its end"
                        % (name, measured.group(1), column))
-        write = f"%ESC%[u%ESC%[{below + 1}A%ESC%[%MUZZLE%G%PCT3%%%ESC%[u"
-        if write not in text:
-            out.append("%s: the percentage is not written at the end of the barrel "
-                       "with the cursor brought back under the pistol" % name)
+        up = f"%ESC%[u%ESC%[{below + 1}A"
+        bar = "%GCOL%G|%PCT3%%%ESC%[K%ESC%[u"
+        if up not in text or bar not in text:
+            out.append("%s: the barrel is not filled with a pipe per percent "
+                       "with the count after the bar and the cursor "
+                       "brought back under the pistol" % name)
     if "if not defined VTOK goto gaugeone_plain" not in text:
         out.append("%s: the muzzle write is not guarded, so a console without "
                    "cursor control would print the escape sequence as text" % name)
@@ -197,15 +199,24 @@ def _progress_problems(name, raw):
     if text.count("%PCT3%%%") != 1:
         out.append("%s: the percentage is printed more or less than once per step"
                    % name)
-    if "BARLEFT" in text or "$bar" in text:
+    if "BARLEFT" in text:
         out.append("%s: a loading bar is back; the progress is the number alone"
                    % name)
+    # one pipe for every percent, on a bar sized to the window it draws in
+    if 'set "BARMAX=' not in text or "set /a BARMAX=%%w-%MUZZLE%-5" not in text:
+        out.append("%s: the pipe bar has no width of its own, so it either "
+                   "wraps over the drawing or cannot fill to 100%%" % name)
+    if "set /a GPOS=%~1*%BARMAX%/100" not in text:
+        out.append("%s: the barrel no longer fills one pipe per percent" % name)
+    if not re.search(r"(?m)^echo\s+BIG TROUBLE IN LITTLE CHINA.*$", text):
+        out.append("%s: the game's title is not drawn above the pistol" % name)
     if "GMAXPCT" not in text:
         out.append("%s: the gauge can report a lower percentage than it just showed, "
                    "so one run reads as a rewind" % name)
     if "$whole" not in text:
         out.append("%s: the download no longer reports the run's percentage" % name)
-    if "-Vt %VTFLAG% -Col %MUZZLE%" not in text or "'[7A'" not in text:
+    if ("-Vt %VTFLAG% -Col %MUZZLE% -Bar %BARMAX%" not in text
+            or "'[7A'" not in text or "[char]124" not in text):
         out.append("%s: the download writes its percentage somewhere other than "
                    "the muzzle" % name)
     if "-EncodedCommand" not in text or "VTDONE" not in text:
