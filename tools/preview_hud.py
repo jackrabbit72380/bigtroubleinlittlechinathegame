@@ -178,8 +178,9 @@ def draw_timer(canvas, d, by_key, pals, pos, glyphs, seconds):
     img, _w, _h = pic(d, by_key, pals, (30, 0))
     blit(canvas, img, px + bg_off[0] * S - img.width * S / 2,
          py + bg_off[1] * S - img.height * S / 2, S)
+    cell = max((h for _img, _w, h in glyphs.values()), default=0) * c_scale
     draw_text(canvas, glyphs, str(seconds), px + c_off[0] * S,
-              py + c_off[1] * S, c_scale * S)
+              py + c_off[1] * S - cell * S, c_scale * S)
 
 
 def load_glyphs(name):
@@ -201,6 +202,66 @@ def def_xy(section):
         m = re.search(r"(?m)^\s*%s\.pos\s*=\s*(-?\d+)\s*,\s*(-?\d+)" % side, body)
         out[side] = (int(m.group(1)), int(m.group(2)))
     return out
+
+
+FACES = {"p1": ("jackburton_rig", False), "p2": ("lopan_rig", True)}
+
+
+def paste_cell(canvas, img, x, y, scale, mirror=False):
+    """Paste at a top-left corner, mirroring about the left edge."""
+    im = img.transpose(Image.FLIP_LEFT_RIGHT) if mirror else img
+    im = im.resize((max(1, round(im.width * scale)),
+                    max(1, round(im.height * scale))), Image.LANCZOS)
+    if mirror:
+        x -= im.width
+    canvas.alpha_composite(im, (round(x), round(y)))
+
+
+def draw_faces(canvas, d, by_key, pals):
+    """[Face]: each corner cell, exactly as fight.def lays it out."""
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[Face]", 1)[1].split("\n[", 1)[0]
+
+    def get(key):
+        m = re.search(r"(?m)^\s*" + re.escape(key) + r"\s*=\s*([^;\r\n]+)", body)
+        return m.group(1).strip() if m else None
+
+    def pair(key, default=(0, 0)):
+        v = get(key)
+        if not v:
+            return default
+        try:
+            a, b = [int(round(float(x))) for x in v.split(",")[:2]]
+            return (a, b)
+        except ValueError:
+            return default
+
+    def scale_of(key):
+        v = get(key)
+        try:
+            return float(v.split(",")[0])
+        except (AttributeError, ValueError):
+            return 1.0
+
+    for side, (folder, mirror) in FACES.items():
+        px, py = pair(side + ".pos")
+        path = glob.glob(os.path.join(ROOT, "chars", folder, "*.sff"))[0]
+        cd, ck, cp = load(path)
+        face = get(side + ".face.spr")
+        if face and face != "-1":
+            fg, fn = [int(v) for v in face.split(",")[:2]]
+            if (fg, fn) in ck:
+                img, _w, _h = pic(cd, ck, cp, (fg, fn))
+                off = pair(side + ".face.offset")
+                paste_cell(canvas, img, (px + off[0]) * S, (py + off[1]) * S,
+                           scale_of(side + ".face.scale") * S, mirror)
+        frame = get(side + ".bg1.spr")
+        if frame and frame != "-1":
+            gg, nn = [int(v) for v in frame.split(",")[:2]]
+            if (gg, nn) in by_key:
+                img, _w, _h = pic(d, by_key, pals, (gg, nn))
+                paste_cell(canvas, img, px * S, py * S,
+                           scale_of(side + ".bg1.scale") * S, mirror)
 
 
 def main():
@@ -236,6 +297,7 @@ def main():
     level_glyphs = load_glyphs("PowerbarNum.sff")
     timer_glyphs = load_glyphs("Timer.sff")
 
+    draw_faces(shot, d, by_key, pals)
     draw_banner(shot, d, by_key, pals)
     draw_powerbar(shot, d, by_key, pals, power["p2"], 0.35, True)
     # AUDACITY is painted into the full-power sprite itself, so nothing is

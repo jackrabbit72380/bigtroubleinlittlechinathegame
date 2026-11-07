@@ -1091,6 +1091,72 @@ def check_team_screen():
     notes.append("select screen: team heading flat, markers in the palette")
 
 
+def check_fight_hud():
+    """The HUD's corner cells and the countdown's place on the yin-yang.
+
+    Both corners used to frame the portrait in their own 100x100 and 108x108
+    boxes and clip it with a 92x92 window, so the HUD matched nothing else in
+    the game. tools/build_face_boxes.py redraws them as the select screen's
+    128x160 gold cell, and the countdown moved off the banner onto the disc.
+    """
+    import re as _re
+
+    import sff as sffmod
+
+    text = read(os.path.join(ROOT, "data", "fight.def"))
+    cell_spr = "222,0"
+    for name in ("Face", "Simul Face", "Tag Face", "Turns Face"):
+        parts = text.split("[%s]" % name, 1)
+        if len(parts) != 2:
+            err("fight.def: no [%s] section" % name)
+            continue
+        body = parts[1].split("\n[", 1)[0]
+        keys = {}
+        for line in body.splitlines():
+            line = line.split(";", 1)[0].strip()
+            if "=" in line:
+                k, v = line.split("=", 1)
+                keys[k.strip()] = v.strip()
+        for side in ("p1", "p2"):
+            if keys.get("%s.bg1.spr" % side) != cell_spr:
+                err("fight HUD: [%s] %s.bg1.spr is %r, not the select screen's gold "
+                    "cell %s" % (name, side, keys.get("%s.bg1.spr" % side), cell_spr))
+            if keys.get("%s.face.spr" % side) != "9000,0":
+                err("fight HUD: [%s] %s.face.spr is %r, not the character cell art"
+                    % (name, side, keys.get("%s.face.spr" % side)))
+            scale = keys.get("%s.face.scale" % side, "")
+            if not scale.replace(" ", "").startswith("0.667"):
+                err("fight HUD: [%s] %s.face.scale is %r, so the portrait is not the "
+                    "size of the cell it sits in" % (name, side, scale))
+        for line in body.splitlines():
+            stripped = line.strip()
+            for side in ("p1", "p2"):
+                if stripped.startswith("%s.face.window" % side):
+                    err("fight HUD: [%s] still windows %s.face, which crops the cell "
+                        "art the corner is meant to show" % (name, side))
+
+    data, sprites, palettes = sffmod.read_sff(
+        os.path.join(ROOT, "data", "fight.sff"))
+    cell = next((s for s in sprites
+                 if (s["group"], s["number"]) == (222, 0)), None)
+    if cell is None:
+        err("fight HUD: fight.sff has no 222,0 gold cell frame")
+    elif (cell["w"], cell["h"]) != (128, 160):
+        err("fight HUD: the cell frame in fight.sff is %dx%d, expected 128x160"
+            % (cell["w"], cell["h"]))
+
+    parts = text.split("[Time]", 1)
+    if len(parts) == 2:
+        body = parts[1].split("\n[", 1)[0]
+        want = int(round(49 * 0.70 / 2.0))
+        m = _re.search(r"(?m)^\s*counter\.offset\s*=\s*(-?\d+)\s*,\s*(-?\d+)", body)
+        if not m or int(m.group(2)) != want:
+            err("fight HUD: [Time] counter.offset is %s, so the countdown is not on "
+                "the yin-yang's centre line between its two dots (expected y %d)"
+                % ("missing" if not m else m.group(2), want))
+    notes.append("fight HUD: gold cells in both corners, clock between the yin-yang dots")
+
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -1105,6 +1171,7 @@ def main():
     check_hud_fonts()
     check_select_screen(chars)
     check_team_screen()
+    check_fight_hud()
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):

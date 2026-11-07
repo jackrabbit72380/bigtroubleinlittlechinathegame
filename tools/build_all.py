@@ -147,6 +147,10 @@ def main():
     # dragon into the belly sprites, which is why the fight screen showed
     # four dragons instead of one per player. It is retired from the build.
     scripts += ["build_banner.py"]
+    # Both HUD corner portraits become the select screen's gold cell; this adds
+    # the frame sprite to fight.sff, so it runs after everything that repaints
+    # that file.
+    scripts.append("build_face_boxes.py")
     # The pause menu's Developer Keys entry is declared in the motif, which the
     # engine copy above resets, so it is re-applied here rather than edited by
     # hand. external/mods/devhelp.lua supplies the screen it opens.
