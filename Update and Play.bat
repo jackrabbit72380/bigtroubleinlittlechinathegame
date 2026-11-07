@@ -1,6 +1,6 @@
 @echo off
 rem ===========================================================================
-rem  BIG TROUBLE IN LITTLE CHINA - Updater v52
+rem  BIG TROUBLE IN LITTLE CHINA - Updater v53
 rem
 rem  Put this file in the game folder you already play from: the one with
 rem  BigTroubleInLittleChinaTheGame.exe (or Ikemen_GO.exe) in it.
@@ -33,11 +33,13 @@ set "TASKLIST=%SYS%\tasklist.exe"
 set "ROBOCOPY=%SYS%\robocopy.exe"
 set "WHERE=%SYS%\where.exe"
 set "POWERSHELL=%SYS%\WindowsPowerShell\v1.0\powershell.exe"
+set "CERT=%SYS%\certutil.exe"
 if not exist "%TAR%" set "TAR="
 if not exist "%CURL%" set "CURL="
 if not exist "%POWERSHELL%" set "POWERSHELL="
 if not exist "%WHERE%" set "WHERE="
 if not exist "%FIND%" set "FIND="
+if not exist "%CERT%" set "CERT="
 
 rem Git Bash can also leave these set, pointing at a path that only exists
 rem inside its own filesystem. They are cleared for this window only.
@@ -53,7 +55,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 
 echo   ==============================================================
-echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v52
+echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v53
 echo   ==============================================================
 rem The pistol stands over the progress and stays there: the bullet in every
 rem bar below is its shot.
@@ -88,6 +90,23 @@ attrib -r "%WT%" >nul 2>&1
 del /q "%WT%" >nul 2>&1
 set "WT="
 call :log folder accepts writes (try %WTRY%)
+
+rem Hash the data files this run reports on at the end. Taken before
+rem anything is written, so the report can say which of them this update
+rem actually changed - a file count cannot tell you that data\fight.def
+rem arrived, and a commit id cannot either.
+set "H1="
+set "H2="
+set "H3="
+set "H4="
+set "H5="
+set "H6="
+call :snap "data\fight.def" H1
+call :snap "data\music.json" H2
+call :snap "data\select.def" H3
+call :snap "data\ikemen1\system.def" H4
+call :snap "external\mods\musicselect.lua" H5
+call :snap "external\mods\modnotice.lua" H6
 
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
@@ -1032,6 +1051,8 @@ if errorlevel 1 echo Warning: data\fight.def does not match the new build.
 if defined VER echo main @ %VER%
 if not defined VER echo main @ local archive
 
+call :datareport
+
 :launch
 call :pct 100 "Starting the game"
 call :barflush
@@ -1376,6 +1397,66 @@ exit /b 0
 rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
 >>"%LOG%" echo [%TIME%] %* 2>nul
+exit /b 0
+
+:snap
+rem %1 = a path from this folder, %2 = the variable that keeps its hash.
+rem certutil prints a header line, the hash, then a footer; both of those
+rem carry a colon and the hash does not, so the colon lines are dropped. A
+rem missing file clears the variable instead of leaving an old value.
+set "%~2="
+if not defined CERT exit /b 0
+if not exist "%~dp0%~1" exit /b 0
+for /f "tokens=1" %%h in ('"%CERT%" -hashfile "%~dp0%~1" SHA256 2^>nul ^| "%FINDSTR%" /v /c:":"') do if not defined %~2 set "%~2=%%h"
+exit /b 0
+
+:note
+rem %1 = a path from this folder, %2 = the hash it had before this update.
+rem The word comes from the content, so a checkout that rewrote the
+rem timestamp of a file it did not change still reads as unchanged.
+set "NOWH="
+call :snap "%~1" NOWH
+if not defined CERT goto note_unchecked
+if not defined NOWH goto note_absent
+if "%~2"=="" goto note_added
+if "%NOWH%"=="%~2" goto note_same
+echo   %~1   refreshed
+set "NREF=1"
+exit /b 0
+:note_added
+echo   %~1   added
+set "NREF=1"
+exit /b 0
+:note_same
+echo   %~1   already current
+exit /b 0
+:note_absent
+echo   %~1   is missing after the update
+set "NFAIL=1"
+exit /b 0
+:note_unchecked
+exit /b 0
+
+:datareport
+rem What this update changed, by name: the answer to "did the fix arrive".
+rem data\fight.def carries the power bar font and data\music.json is the
+rem album list the music browser reads; neither shows up in a file count.
+set "NREF="
+set "NFAIL="
+if not defined CERT exit /b 0
+echo.
+echo Data files:
+call :note "data\fight.def" "%H1%"
+call :note "data\music.json" "%H2%"
+call :note "data\select.def" "%H3%"
+call :note "data\ikemen1\system.def" "%H4%"
+call :note "external\mods\musicselect.lua" "%H5%"
+call :note "external\mods\modnotice.lua" "%H6%"
+if defined NREF goto datareport_done
+echo   all of these already matched main
+:datareport_done
+if defined NFAIL echo   a file above is missing - run this launcher again
+echo.
 exit /b 0
 
 :close_soon
