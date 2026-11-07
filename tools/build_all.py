@@ -165,6 +165,10 @@ def main():
         scripts.append("preview_hud.py")
     # The updater compares this with main before it trusts "already up to date".
     scripts.append("build_stamp.py")
+    # ...and this fails if a file the Lua reads has fallen out of that stamp,
+    # which is how the album art, the controller database and the shaders were
+    # found missing from it.
+    scripts.append("check_stamp_coverage.py")
     scripts.append("validate.py")
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry
