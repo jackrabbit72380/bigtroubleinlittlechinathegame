@@ -196,25 +196,31 @@ def drop_keys(text, prefixes):
 # derived ones up from its own default motif instead of from our [Pause Menu].
 # Anything not written here renders with the stock layout, so they all share it.
 PAUSE_LAYOUT = (
-    # The highlight band is 462 wide from -15, so at 736 it covers 721..1183 -
-    # centred on 952, the middle of this 1920-wide frame. (460 and 402 were the
-    # same band on a 1280 frame, centred on that frame's 640.)
-    ("menu.pos", "736, 140"),
+    # The list is centred on the frame both ways: labels are centre-aligned (0)
+    # on 1920/2 = 960 and the rows start at 300 on a 60px pitch, so the ten rows
+    # the window can show end at 891 on a 1080-tall frame. It used to be a
+    # left-aligned block at 736,140, which read as top-left rather than centred -
+    # and the row text was not even drawn from menu.pos: this engine bakes the
+    # stock 320x240 [Menu Info] anchor into the pause item sprites, which put the
+    # list at the bottom of the screen, off the edge, while the cursor band drew
+    # at menu.pos. main.f_menuItemPos now places every row from menu.pos.
+    ("menu.pos", "960, 300"),
     # No dark plate behind the pause list.
     ("menu.boxbg.visible", "0"),
-    ("menu.item.spacing", "0, 50"),
+    ("menu.item.spacing", "0, 60"),
     ("menu.window.visibleitems", "10"),
-    # The cursor band is drawn from menu.pos + coords[2] while the item text is
-    # drawn from menu.pos, so the stock -30 floated it 30px above every row and
-    # it flashed over the item above. 0..44 covers the 45px glyph cell.
-    ("menu.boxcursor.coords", "-15, 0, 462, 44"),
-    # Left-aligned so the items sit inside the box, which is drawn from
-    # menu.pos.x rightwards. The stock block right-aligned every item except
-    # the selected one, which is why the list read as ragged.
-    ("menu.item.font", f"{D},0,1, {GOLD}"),
-    ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
-    ("menu.item.selected.font", f"{D},0,1, {BRIGHT}"),
-    ("menu.item.selected.active.font", f"{DA},0,1, {BRIGHT}"),
+    # The heading sits over the centred column, not a third of the way across.
+    ("title.offset", "960, 160"),
+    # The band is centred on the same column as the rows and covers the 51px row
+    # the 1.5x face draws: it is drawn from pos.y + coords[2] with height
+    # coords[4]-coords[2]+1, so 0..50 sits on the row it marks.
+    ("menu.boxcursor.coords", "-254, 0, 254, 50"),
+    # Centre-aligned: every row centres on 960, so a long label cannot hang off
+    # one side of the band the way the old left-aligned column did.
+    ("menu.item.font", f"{D},0,0, {GOLD}"),
+    ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
+    ("menu.item.selected.font", f"{D},0,0, {BRIGHT}"),
+    ("menu.item.selected.active.font", f"{DA},0,0, {BRIGHT}"),
     # The command list was the 13px Body face at 1.5x (19px rows) while every
     # other screen sets 34px Display; it is the same face as the menus now, at
     # the face's own size, so a row is as tall as a pause-menu row.
@@ -439,12 +445,11 @@ SECTION_LAYOUT = {
         ("menu.arrow.down.offset", "960, 788"),
     ),
     "Pause Menu": PAUSE_LAYOUT,
-    # The training pause list keeps the stock left position: the two screens do
-    # not share a backdrop, and the training one already has its own panel there.
-    "Training Pause Menu": tuple(
-        ("menu.pos", "402, 140") if key == "menu.pos" else (key, value)
-        for key, value in PAUSE_LAYOUT
-    ),
+    # The training pause list is the same centred column: it is another set of
+    # rows on the same screen, not another screen, and it has to fit the same
+    # frame. Its old left position put it a third of the way across while the
+    # rows ran past the bottom.
+    "Training Pause Menu": PAUSE_LAYOUT,
     # The warning box keeps the stock 284px left margin for its body text; only
     # its heading was still centred on the 1280 frame.
     "Warning Info": (
