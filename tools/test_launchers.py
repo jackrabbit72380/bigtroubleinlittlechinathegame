@@ -148,7 +148,18 @@ SILENT = [
      "does not wait for a key"),
 ]
 
-# the folder's own repair tool: without it a cut-short launcher cannot come back
+# the log has to be open before the run can fail: it is opened ahead of the
+# pistol now, and the step it writes is the proof the window got that far
+FIRSTLOG = [
+    ("nothing is logged before the pistol",
+     b'call :log step 1 folder "%~dp0"\r\n', b'',
+     "cannot say where it stopped"),
+    ("the log is opened again after the pistol",
+     b'call :gun\r\n',
+     b'call :gun\r\n>"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1 2>nul\r\n',
+     "is thrown away"),
+]
+
 REPAIR = [
     ("the launcher repair is gone",
      b"call :fixlauncher\r\n", b"", "never called"),
@@ -217,6 +228,17 @@ def main():
             failures += 1
             continue
         found = checker._silent_end_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in FIRSTLOG:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._firstlog_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

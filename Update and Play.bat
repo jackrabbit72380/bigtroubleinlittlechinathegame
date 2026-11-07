@@ -16,6 +16,10 @@ set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "BOOT=%TEMP%\btilc-updater"
 set "BOOQ=%BOOT:'=''%"
 set "LOG=%BOOT%\last-run.log"
+if not exist "%BOOT%" mkdir "%BOOT%" 2>nul
+>"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%~1 2>nul
+rem The rest of the file opens this log again a few lines in; until it gets
+rem there, this line is the proof that the window started at all.
 call "%~f0" --body %*
 goto stopped
 :stopped
@@ -75,6 +79,31 @@ color 0E
 cd /d "%~dp0"
 title Big Trouble in Little China: The Game - Updater
 
+rem ---------------------------------------------------------------------------
+rem  The run log first: before the pistol, before the console is asked for its
+rem  mode, before a single thing is looked for. It used to be opened sixty lines
+rem  below the pistol, and every step in between - the exe check, the write test,
+rem  six hash snapshots, the cache folder - ran with no log at all. A window that
+rem  closed in there left nothing behind to read, which is what "it drew the gun
+rem  and went away, and there is no log" was.
+rem ---------------------------------------------------------------------------
+rem Everything this launcher writes goes to the temp folder. A game folder can
+rem be read only, on a drive with no room, or behind a path cmd will not take, and
+rem a cache that cannot be written breaks every redirect after it - which is what
+rem left the download sitting at zero with no curl running behind it.
+set "CACHE=%TEMP%\btilc-updater"
+rem The helpers below take their paths inside PowerShell single quotes, where
+rem an apostrophe ends the string. Doubling it is how PowerShell writes the
+rem character itself, so this is the copy they are given.
+set "CQ=%CACHE:'=''%"
+if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
+if not exist "%CACHE%" set "CACHE=%TEMP%"
+rem Every run leaves this behind. When a window closes before the game appears,
+rem this file is the only record of how far it got and why it stopped.
+set "LOG=%CACHE%\last-run.log"
+>"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1 2>nul
+call :log step 1 folder "%~dp0"
+
 set "SYS=%SystemRoot%\System32"
 set "PING=%SYS%\ping.exe"
 set "TAR=%SYS%\tar.exe"
@@ -92,6 +121,9 @@ if not exist "%POWERSHELL%" set "POWERSHELL="
 if not exist "%WHERE%" set "WHERE="
 if not exist "%FIND%" set "FIND="
 if not exist "%CERT%" set "CERT="
+call :log step 2 windows tools looked up
+if not defined CURL call :log   no curl here: PowerShell or the archive is used
+if not defined POWERSHELL call :log   no PowerShell here
 
 rem Git Bash can also leave these set, pointing at a path that only exists
 rem inside its own filesystem. They are cleared for this window only.
@@ -108,18 +140,21 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=58"
+set "UPDVER=59"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
 rem The number that counts the run is written at the end of the pistol's
 rem barrel, so the console is asked for cursor control before the drawing.
 call :vt
+call :log step 3 console mode vt=%VTOK%
 call :gun
+call :log step 4 pistol drawn
 
 set "EXE="
 if exist "BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
 if not defined EXE if exist "Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
+call :log step 5 exe beside the launcher: %EXE%
 if not defined EXE goto wrongfolder
 call :log folder "%~dp0"  exe %EXE%
 rem A refused write here means every write below will be refused too, one file
@@ -168,23 +203,6 @@ set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "ZIPURL=https://codeload.github.com/%REPO%/zip/refs/heads/main"
 set "ZIPURL2=https://github.com/%REPO%/archive/refs/heads/main.zip"
 set "GITURL=https://github.com/%REPO%.git"
-rem Everything this launcher writes goes to the temp folder. A game folder can
-rem be read only, on a drive with no room, or behind a path cmd will not take, and
-rem a cache that cannot be written breaks every redirect after it - which is what
-rem left the download sitting at zero with no curl running behind it.
-set "CACHE=%TEMP%\btilc-updater"
-rem The helpers below take their paths inside PowerShell single quotes, where
-rem an apostrophe ends the string. Doubling it is how PowerShell writes the
-rem character itself, so this is the copy they are given.
-set "CQ=%CACHE:'=''%"
-if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
-if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem Progress counts every percent of the run, 1 to 100, at the muzzle of the
-rem pistol: one number, replaced by the next, with nothing printed beside it.
-rem Every run leaves this behind. When a window closes before the game appears,
-rem this file is the only record of how far it got and why it stopped.
-set "LOG=%CACHE%\last-run.log"
->"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1 2>nul
 set "ZIP="
 set "SRC="
 set "WHICH="
@@ -1475,6 +1493,7 @@ call :close_soon 20
 exit 1
 
 :wrongfolder
+call :log wrong folder: no BigTroubleInLittleChinaTheGame.exe and no Ikemen_GO.exe in "%~dp0"
 call :barflush
 echo This file belongs in your game folder - the one that has
 echo BigTroubleInLittleChinaTheGame.exe in it.

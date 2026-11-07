@@ -466,6 +466,41 @@ def _selfupdate_problems(name, raw):
     return out
 
 
+def _firstlog_problems(name, raw):
+    """The log has to exist before the run can fail.
+
+    The pistol is drawn about sixty lines above everything that can go wrong,
+    and the log file used to be opened at the far end of that stretch, so a run
+    that died in between wrote nothing at all - the window still showed the gun
+    and closed, but there was no record to say where it stopped. Now the first
+    thing the file does is open its log and write a step, and every step after
+    it adds a line.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    log_at = text.find('set "LOG=')
+    gun_at = text.find("call :gun")
+    start = "echo [%DATE% %TIME%] launcher start"
+    if log_at < 0:
+        out.append("%s: the run log is never opened, so a window that closes "
+                   "leaves nothing to read" % name)
+        return out
+    if gun_at > 0 and log_at > gun_at:
+        out.append("%s: the run log is opened after the pistol is drawn, so a run "
+                   "that dies in between leaves nothing to read" % name)
+    first_step = text.find("call :log step 1")
+    if gun_at > 0 and not (log_at < first_step < gun_at):
+        out.append("%s: nothing is logged before the pistol is drawn, so a window "
+                   "that closes there cannot say where it stopped" % name)
+    last_start = text.rfind(start)
+    if gun_at > 0 and last_start > gun_at:
+        out.append("%s: the run log is opened again after the pistol, so every "
+                   "line logged before that is thrown away" % name)
+    return out
+
+
 def _silent_end_problems(name, raw):
     """A batch file cannot report its own death, so it must outlive one.
 
@@ -763,6 +798,7 @@ def problems(root):
             found.extend(_selfupdate_problems(name, raw))
             found.extend(_launcherrepair_problems(name, raw))
             found.extend(_silent_end_problems(name, raw))
+            found.extend(_firstlog_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 
