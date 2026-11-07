@@ -3534,7 +3534,9 @@ function start.f_teamMenu(side, t)
 			end
 		end
 		if wordW < 1 then
-			wordW = 118 --6-character label, used when the build cannot measure text
+			--"Single" at this motif's item font, measured from Display.sff, for a
+			--build that cannot report text width. Everything else measures itself.
+			wordW = 143
 		end
 		local iconX0 = iconDir * (wordW + 18)
 		local iconSpacingX = iconDir * 38
