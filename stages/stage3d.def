@@ -84,7 +84,7 @@ intensity = 0
 
 ;--------------------------------------------------------
 [Music]
-bgmusic =
+bgmusic = sound/Big Trouble in Little China OST Game Version/04 - Here Come The Storms.ogg
 bgmvolume = 100
 
 ;========================================================

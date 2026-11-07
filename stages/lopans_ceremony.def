@@ -61,7 +61,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic = 
+bgmusic = sound/Big Trouble in Little China OST Game Version/12 - Lopan's Wedding Arrival.ogg
 bgmvolume = 100
 
 [BGdef]

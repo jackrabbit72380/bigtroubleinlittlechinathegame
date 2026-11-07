@@ -83,7 +83,7 @@ intensity = 0
 
 ;--------------------------------------------------------
 [Music]
-bgmusic =
+bgmusic = sound/Big Trouble in Little China OST Movie Version/6 - The Storms.ogg
 bgmvolume = 100
 
 ;========================================================

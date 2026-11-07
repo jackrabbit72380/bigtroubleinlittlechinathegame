@@ -1240,7 +1240,36 @@ def check_stage_camera():
     notes.append("stage camera: every stage can zoom out")
 
 
+def check_stage_music():
+    """Every stage that names music must name a file that is there.
+
+    Six synthesised mono 22050 Hz WAV loops used to be written into sound/ as
+    stand-ins and one stage was pointed at one of them, which is how the game came
+    to play a degraded version of a stage's cue. The loops are gone and the stages
+    name real soundtrack tracks; this stops a stage quietly going silent, or a
+    placeholder creeping back, without anyone noticing.
+    """
+    import glob as _glob
+    named = 0
+    missing = 0
+    for path in sorted(_glob.glob(os.path.join(ROOT, "stages", "*.def"))):
+        text = read(path)
+        for m in re.finditer(r"^[ \t]*bgmusic[ \t]*=[ \t]*([^;\r\n]*)", text, re.M):
+            value = m.group(1).strip()
+            if not value:
+                continue
+            named += 1
+            full = os.path.join(ROOT, value.replace("/", os.sep))
+            if not os.path.isfile(full):
+                err("stage music: %s names %s, which is not there"
+                    % (os.path.basename(path), value))
+                missing += 1
+    notes.append("stage music: %d stage(s) name a track on disk" % (named - missing))
+
+
+
 def main():
+    check_stage_music()
     chars = check_select()
     check_menu_theme()
     check_commands()

@@ -424,6 +424,17 @@ local function playTrack(file)
 	if file == nil or file == '' then
 		return false
 	end
+	-- playBGM is the engine's own call (the wiki lists it, and main.lua's
+	-- f_resetBG calls it the same way). Some builds want the path on its own and
+	-- some want the {path, volume, loopstart, loopend} table, so both are tried.
+	if type(playBGM) == 'function' then
+		if pcall(playBGM, file) then
+			return true
+		end
+		if pcall(playBGM, { file, 100, 0, 0 }) then
+			return true
+		end
+	end
 	for _, name in ipairs({ 'bgmPlay', 'playBgm', 'musicPlay' }) do
 		local fn = _G[name]
 		if type(fn) == 'function' then
@@ -482,7 +493,7 @@ end
 
 -- Opens the browser. Runs its own frame loop, like main.f_warning, and returns
 -- once the player confirms or backs out.
-function ms.open(playOnPick)
+function ms.open()
 	local albums, why = albumsFromJson()
 	if #albums == 0 then
 		report('musicselect: ' .. tostring(why or 'data/music.json has no albums'),
@@ -543,6 +554,15 @@ function ms.open(playOnPick)
 	-- engine that reports a held key on every frame would otherwise re-pick
 	-- the same row each time.
 	local acceptHeld = false
+	-- Switching album or track silences whatever is playing and starts the
+	-- track now under the cursor: the browser is the player too, so an album
+	-- can be heard as it is browsed instead of only after a confirm.
+	local function preview(song)
+		stopGameMusic()
+		if song ~= nil and song.file ~= nil then
+			playTrack(song.file)
+		end
+	end
 	-- Z picks a track exactly like Enter. The motif's own done keys are added to
 	-- it rather than used instead: this screenpack lists a, b, c, x, y, z, s in
 	-- some sections and only a, b, c in others, and reaching for Z must work on
@@ -632,6 +652,7 @@ function ms.open(playOnPick)
 				end
 				songNo = #albums[albumNo].songs
 			end
+			preview(albums[albumNo].songs[songNo])
 		elseif hit(DOWN) then
 			moveSnd()
 			songNo = songNo + 1
@@ -642,33 +663,31 @@ function ms.open(playOnPick)
 				end
 				songNo = 1
 			end
+			preview(albums[albumNo].songs[songNo])
 		elseif hit(LEFT) then
 			moveSnd()
-			stopGameMusic()
 			albumNo = albumNo - 1
 			if albumNo < 1 then
 				albumNo = #albums
 			end
 			songNo, scroll = 1, 1
+			preview(albums[albumNo].songs[1])
 		elseif hit(RIGHT) then
 			moveSnd()
-			stopGameMusic()
 			albumNo = albumNo + 1
 			if albumNo > #albums then
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
+			preview(albums[albumNo].songs[1])
 		elseif acceptNow and not acceptHeld then
 			doneSnd()
 			if song ~= nil and song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
-				-- Opened over a paused fight the choice is only recorded: the
-				-- match's own music must not be replaced behind the player's back.
-				-- Opened from the title menu it is played, so a pick is heard.
-				if playOnPick then
-					playTrack(song.file)
-				end
+				-- The pick is already playing from the preview; this keeps it
+				-- playing when Z lands on the row the cursor is on.
+				playTrack(song.file)
 			else
 				-- The option album's rows ("Default") hand the match back to the
 				-- mode's own music.
@@ -706,7 +725,7 @@ local pauseEntry = pcall(function()
 			-- way the developer key list does. It closes itself and the pause
 			-- menu is still standing when it returns; a failure inside it must
 			-- not take the pause menu down, so it is caught and logged.
-			local ok, err = pcall(ms.open, false)
+			local ok, err = pcall(ms.open)
 			if not ok then
 				report('musicselect: the browser could not open from the pause menu: '
 					.. tostring(err), 'Music list: ' .. shortError(err))
@@ -722,8 +741,7 @@ end
 main.t_itemname.music = function(t, item)
 	-- A screen of its own, so a failure inside it must not take the engine down
 	-- with an error dialog: it is logged and the title menu is left standing.
-	-- true: the pick is played here, where there is no fight music to replace.
-	local ok, err = pcall(ms.open, true)
+	local ok, err = pcall(ms.open)
 	if not ok then
 		report('musicselect: the browser could not open: ' .. tostring(err),
 			'Music list: ' .. shortError(err))

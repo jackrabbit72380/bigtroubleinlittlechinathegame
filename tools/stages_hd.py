@@ -1236,7 +1236,7 @@ MUSIC = {
     "wingkong_exchange": "sound/WingKongExchange.ogg",
     "chinatown_alley": "sound/AlleyWar.ogg",
     "porkchop_express": "sound/PorkChopExpress.ogg",
-    "the_upside_down": "sound/UpsideDown.wav",
+    "the_upside_down": "sound/Big Trouble in Little China OST Movie Version/16 - Into the Spirit Path.ogg",
     "hell_sinners": "sound/LoPansDemise.ogg",
     "airport_terminal": "sound/Airport.ogg",
 }

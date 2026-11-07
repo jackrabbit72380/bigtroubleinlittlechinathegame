@@ -61,7 +61,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic = sound/UpsideDown.wav
+bgmusic = sound/Big Trouble in Little China OST Movie Version/16 - Into the Spirit Path.ogg
 bgmvolume = 100
 
 [BGdef]
