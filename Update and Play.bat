@@ -108,6 +108,12 @@ rem be read only, on a drive with no room, or behind a path cmd will not take, a
 rem a cache that cannot be written breaks every redirect after it - which is what
 rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
+rem What an update writes. The launchers and tools are in here because they
+rem ARE the delivery: a fix to Play Big Trouble.bat, Test Big Trouble.bat or
+rem tools\test_local.py could never reach a folder that only refreshed the
+rem game folders, which is how the launcher kept a console open over the game
+rem long after the fix for it was on main.
+set "GAMEPATHS=data chars stages font external sound tools "Update and Play.bat" "Play Big Trouble.bat" "Test Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat""
 rem The helpers below take their paths inside PowerShell single quotes, where
 rem an apostrophe ends the string. Doubling it is how PowerShell writes the
 rem character itself, so this is the copy they are given.
@@ -429,7 +435,7 @@ set "NEWSHORT="
 for /f %%s in ('git rev-parse --short FETCH_HEAD 2^>nul') do set "NEWSHORT=%%s"
 call :log main is %NEWSHORT%
 call :gamelock
-git -c core.quotepath=false ls-tree -r FETCH_HEAD -- data chars stages font external sound >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
+git -c core.quotepath=false ls-tree -r FETCH_HEAD -- %GAMEPATHS% >"%CACHE%\tree.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 goto gitfail
 call :plan
 rem a comparison that could not run must never pass as "already current"
@@ -490,10 +496,10 @@ if exist "%QBAD%" del /q "%QBAD%" >nul 2>&1
 set "QBAT=%CACHE%\plan.bat"
 >  "%QBAT%" echo @echo off
 >> "%QBAT%" echo cd /d "%~dp0."
->> "%QBAT%" echo git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound ^>"%CACHE%\paths.txt" 2^>^>"%CACHE%\git.log"
+>> "%QBAT%" echo git ls-tree -r --name-only FETCH_HEAD -- %GAMEPATHS% ^>"%CACHE%\paths.txt" 2^>^>"%CACHE%\git.log"
 >> "%QBAT%" echo if errorlevel 1 (echo x^>"%QBAD%") ^& exit /b 1
 >> "%QBAT%" echo git update-index --add --replace --stdin ^<"%CACHE%\paths.txt" ^>^>"%CACHE%\git.log" 2^>^&1
->> "%QBAT%" echo git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound ^>"%CACHE%\changed.txt" 2^>^>"%CACHE%\git.log"
+>> "%QBAT%" echo git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- %GAMEPATHS% ^>"%CACHE%\changed.txt" 2^>^>"%CACHE%\git.log"
 >> "%QBAT%" echo if errorlevel 1 (echo x^>"%QBAD%") ^& exit /b 1
 >> "%QBAT%" echo echo.^>"%CACHE%\dropped.txt"
 >> "%QBAT%" echo echo x^>"%QOK%"
@@ -503,10 +509,10 @@ call :spinwait "%QOK%" "%QBAD%" "reading the files already here (one pass, no do
 if not errorlevel 1 exit /b 0
 exit /b 1
 :plan_first_direct
-git ls-tree -r --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\paths.txt" 2>>"%CACHE%\git.log"
+git ls-tree -r --name-only FETCH_HEAD -- %GAMEPATHS% >"%CACHE%\paths.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
 git update-index --add --replace --stdin <"%CACHE%\paths.txt" >>"%CACHE%\git.log" 2>&1
-git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- data chars stages font external sound >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
+git -c core.quotepath=false diff-index --name-only FETCH_HEAD -- %GAMEPATHS% >"%CACHE%\changed.txt" 2>>"%CACHE%\git.log"
 if errorlevel 1 exit /b 1
 echo.>"%CACHE%\dropped.txt"
 exit /b 0
