@@ -140,6 +140,9 @@ def _progress_problems(name, raw):
     if "GMAXPCT" not in text:
         out.append("%s: the gauge can report a lower percentage than it just showed, "
                    "so one run reads as several bars" % name)
+    if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
+        out.append("%s: the percentage no longer counts every point, so the run "
+                   "skips from one milestone to the next instead of 1 to 100" % name)
     if text.count("^|]=") < 2:
         out.append("%s: the download draws a bar of its own instead of the run's "
                    "one, so there are two loading bars again" % name)
