@@ -440,7 +440,7 @@ portrait.loading.spr = 1000,0
 portrait.loading.offset = 0, 0
 portrait.loading.scale = .25,.25
 title.offset = 960, 0
-title.font = 11, 0, 0, 255, 228, 140
+title.font = 10,0,0, 255, 228, 140
 title.layerno = 2
 
 ; Text rendered using title element (hardcoded in Mugen)
@@ -613,20 +613,20 @@ p2.face2.loading.focallength = 400
 
 ;Name
 p1.name.offset = 75, 1035
-p1.name.font = 11, 0, 0, 255, 228, 140
+p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.spacing = 23, 38;Space between each name for players on the same team
 p1.name.layerno = 2
 p2.name.offset = 1845, 1035
-p2.name.font = 11, 0, -1, 255, 170, 96
+p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.spacing = -22, 38
 p2.name.layerno = 2
 
 ;Stage select
 stage.pos = 960, 1035
-stage.font = 11, 0, 0, 236, 200, 120
+stage.font = 11, 0, 0, 176, 126, 44
 stage.active.font = 11, 0, 0, 255, 228, 140
-stage.active2.font = 11, 0, 0, 236, 200, 120
-stage.done.font = 11, 0, 0, 236, 200, 120
+stage.active2.font = 11, 0, 0, 176, 126, 44
+stage.done.font = 11, 0, 0, 176, 126, 44
 stage.layerno = 2
 
 ;Stage portraits
@@ -1109,11 +1109,11 @@ p2.done.anim = 9000
 ;Names
 p1.name.num = 1              ;Not used for co-op
 p1.name.offset = 20, 1035
-p1.name.font = 10, 0, 1, 255, 228, 140
+p1.name.font = 10, 0, 1, 240, 196, 88
 p1.name.spacing = 23, 38;Space between each name for players on the same team
 p2.name.num = 1              ;Not used for co-op
 p2.name.offset = 1900, 1035
-p2.name.font = 10, 0, -1, 255, 170, 96
+p2.name.font = 10, 0, -1, 236, 158, 74
 p2.name.spacing = -22, 38
 
 orderselect.enabled = 1
@@ -1287,7 +1287,7 @@ p8.value.empty.icon.spr = 810, 9
 stage.pos = 960, 1035
 stage.text = %s
 stage.offset = 0, -15
-stage.font = 11, 0, 0, 236, 200, 120
+stage.font = 11, 0, 0, 176, 126, 44
 stage.scale = 1.5, 1.5
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
@@ -2473,7 +2473,7 @@ cancel.snd = 100, 2
 enter.snd = 100, 1
 exit.snd = 100, 2
 movelist.pos = 100, 90
-movelist.title.offset = 540, -18
+movelist.title.offset = 860, -18
 movelist.title.font = 10, 0, 0, 255, 228, 140
 movelist.title.scale = 1, 1
 movelist.title.text = Command List - %s
@@ -2518,7 +2518,7 @@ menu.itemname.music = MUSIC
 movelist.pos = 100, 90
 movelist.glyphs.offset = 0, 0
 movelist.title.text = Command List - %s
-movelist.title.offset = 540, -18
+movelist.title.offset = 860, -18
 menu.boxbg.visible = 0
 movelist.window.width = 1500
 movelist.text.spacing = 5, 4

@@ -196,9 +196,9 @@ def drop_keys(text, prefixes):
 # derived ones up from its own default motif instead of from our [Pause Menu].
 # Anything not written here renders with the stock layout, so they all share it.
 PAUSE_LAYOUT = (
-    # 460 put the list's own highlight band (462 wide from -15) at 445..907 on
-    # a 1280-wide frame: 75px right of centre with the value column hanging off
-    # it. 402 centres the band on 640.
+    # The highlight band is 462 wide from -15, so at 736 it covers 721..1183 -
+    # centred on 952, the middle of this 1920-wide frame. (460 and 402 were the
+    # same band on a 1280 frame, centred on that frame's 640.)
     ("menu.pos", "736, 140"),
     # No dark plate behind the pause list.
     ("menu.boxbg.visible", "0"),
@@ -218,9 +218,10 @@ PAUSE_LAYOUT = (
     # The command list was the 13px Body face at 1.5x (19px rows) while every
     # other screen sets 34px Display; it is the same face as the menus now, at
     # the face's own size, so a row is as tall as a pause-menu row.
-    # The title and the list both start from movelist.pos, which is set with the
-    # widening below; 676.5 relative to the stock 283.5 put the heading at x=960,
-    # so on a 1280 frame it ran off the right edge and the screen read untitled.
+    # The heading is centred on the frame's own width: 860 past movelist.pos.x
+    # of 100 puts it at 960, level with the PAUSE title above it. It shipped as
+    # 540 - the middle of the old 1280 frame - so the heading sat a third of the
+    # way across while the list under it filled the screen.
     # `%s` is substituted with the character's name, so the screen only ever
     # said who the moves belonged to, never that it was the command list.
     ("movelist.title.text", "Command List - %s"),
@@ -237,7 +238,7 @@ PAUSE_LAYOUT = (
     # the right-hand key column mid-glyph at x=1183 on a 1920 frame. Widening the
     # window only reveals text that was being clipped.
     ("movelist.pos", "100, 90"),
-    ("movelist.title.offset", "540, -18"),
+    ("movelist.title.offset", "860, -18"),
     ("movelist.window.width", "1500"),
 )
 
