@@ -11,17 +11,11 @@
 -- next match's params. Nothing else in the game changes: leaving the browser
 -- without picking a track leaves the mode's own music alone.
 --
--- How it draws. A text sprite built here has no font until one is assigned, and
--- with no font it renders nothing at all - which is what turned this screen into
--- a frozen sky with the background drawn and every row invisible. The sequence
--- below is copied from start.lua's RANDOM label, the one text sprite this game
--- is known to put on screen in front of a menu: textImgNew, then the font
--- (object or index, whichever this build takes), then align/scale/colour/pos,
--- then per frame textImgReset + textImgSetText + textImgDraw. The motif's own
--- TextSpriteData is deliberately not reused: those sprites are shared with the
--- options and title menus, and textImgSetPos rewrites a sprite's starting offset
--- permanently, so moving them here would leave those menus misplaced after one
--- visit.
+-- How it draws. With the pause menu's own command-list text sprite, the same
+-- one modnotice.lua and devhelp.lua draw with: it already carries the motif's
+-- face and the engine is known to render it, so nothing here assigns a font at
+-- all. One sprite draws every line, reset and repositioned per row, and it is
+-- reset when the browser closes so the pause menu finds it as it left it.
 
 main.t_musicSelect = main.t_musicSelect or {}
 local ms = main.t_musicSelect
@@ -33,8 +27,11 @@ local HEAD = {x = 960, y = 210}
 local HINT = {x = 960, y = 990}
 local CHOICE = {x = 960, y = 1030}
 
-local ROWSCALE = 1.5
-local SMALLSCALE = 1.0
+-- The shared sprite carries the motif's own face, so the rows sit at 1.0.
+-- The old 1.5 came from the option-menu font this screen no longer needs.
+local ROWSCALE = 1.0
+local SMALLSCALE = 0.8
+local HEADSCALE = 1.5
 
 ms.params = nil
 ms.chosen = nil
@@ -214,57 +211,77 @@ local function albumsFromJson()
 	return albums, nil
 end
 
--- Which way this build wants the font: the font table itself, its index into
--- motif.files.font, or that resolved object. Probed once, then reused.
-local fontMode = nil
+-- The sprite everything is drawn with: the pause menu's own command-list text.
+-- It is the one text sprite this project has watched Ikemen draw, and it
+-- already carries the motif's face, so no font is assigned here. That is the
+-- point: a textImgNew sprite given a font opened an empty screen on a real
+-- build (external/mods/devhelp.lua records the same finding), and the font
+-- lookup this screen used to do is why it could end up with no sprite at all.
+local function listSprite()
+	local ok, spr = pcall(function()
+		return motif.pause_menu.pause_menu.movelist.text.TextSpriteData
+	end)
+	if ok and spr ~= nil then
+		return spr
+	end
+	return nil
+end
 
-local function newText(font, align, scale, x, y)
-	if font == nil then
-		return nil
+-- One line on the shared sprite. Every engine call is probed: a build missing
+-- one of them loses a line, not the whole browser.
+local function drawLine(spr, text, x, y, align, scale)
+	if spr == nil then
+		return false
 	end
-	local idx = type(font) == 'table' and font[1] or font
-	local tries = {}
-	if fontMode == nil or fontMode == 'object' then
-		tries[#tries + 1] = {mode = 'object', value = font}
+	return pcall(function()
+		textImgReset(spr)
+		pcall(textImgSetAlign, spr, align or 0)
+		pcall(textImgSetScale, spr, scale or 1, scale or 1)
+		pcall(textImgSetColor, spr, 255, 255, 255, 255)
+		textImgSetText(spr, text or '')
+		textImgSetPos(spr, x, y)
+		textImgDraw(spr)
+	end)
+end
+
+-- The first part of a raise, short enough for one notice line.
+local function shortError(err)
+	local short = tostring(err):gsub('%s+', ' ')
+	if #short > 44 then
+		short = short:sub(1, 41) .. '...'
 	end
-	if idx ~= nil and (fontMode == nil or fontMode == 'index') then
-		tries[#tries + 1] = {mode = 'index', value = idx}
-	end
-	if idx ~= nil and motif.files ~= nil and motif.files.font ~= nil then
-		local byIndex = motif.files.font['font' .. tostring(idx)]
-		if byIndex ~= nil and fontMode ~= 'index' then
-			tries[#tries + 1] = {mode = 'object', value = byIndex}
-		end
-	end
-	for _, try in ipairs(tries) do
-		local t = textImgNew()
-		if t ~= nil and pcall(textImgSetFont, t, try.value) then
-			fontMode = try.mode
-			pcall(textImgSetAlign, t, align or 1)
-			pcall(textImgSetScale, t, scale or 1, scale or 1)
-			pcall(textImgSetColor, t, 255, 255, 255, 255)
-			pcall(textImgSetPos, t, x or 0, y or 0)
-			pcall(textImgSetText, t, '')
-			return t
+	return short
+end
+
+-- The whole story, written down. The engine only writes a log when it panics;
+-- a raise caught by a pcall wrote nothing at all, which is why a broken music
+-- screen left no evidence behind.
+local function writeReport(detail)
+	local body = detail .. '\r\n' .. tostring(os.date('%Y-%m-%d %H:%M:%S')) .. '\r\n'
+	for _, path in ipairs({ 'save/music_error.txt', 'music_error.txt' }) do
+		local ok = pcall(function()
+			local f = io.open(path, 'w')
+			if f == nil then
+				error('cannot write ' .. path)
+			end
+			f:write(body)
+			f:close()
+		end)
+		if ok then
+			return path
 		end
 	end
 	return nil
 end
 
-local function drawAt(spr, text)
-	if spr == nil then
-		return
-	end
-	pcall(textImgReset, spr)
-	pcall(textImgSetText, spr, text or '')
-	pcall(textImgDraw, spr)
-end
-
-
 -- A failure the player can see. The console keeps the whole story; the screen
 -- gets the one sentence. modnotice.lua is autoloaded beside this file; if a
 -- build somehow lacks it, the print still happens.
 local function report(consoleText, screenText)
+	local path = writeReport(consoleText)
+	if path ~= nil then
+		consoleText = consoleText .. ' (written to ' .. path .. ')'
+	end
 	if type(modNotice) == 'function' then
 		pcall(modNotice, consoleText, screenText)
 	else
@@ -274,20 +291,32 @@ end
 
 -- The browser borrows the option menu's sound and confirm keys, and falls back
 -- to the title menu's when a screenpack has no [Option Info].
+-- Both sounds are optional here: [Option Info] in this screenpack carries no
+-- cursor group, so indexing it raised on the first arrow press and took the
+-- browser down a frame after it opened. The fallback is the title menu's own.
 local function moveSnd()
-	local ui = motif.option_info
-	if ui and ui.cursor and ui.cursor.move and ui.cursor.move.snd then
-		sndPlay(motif.Snd, ui.cursor.move.snd[1], ui.cursor.move.snd[2])
-	end
+	pcall(function()
+		local ui = motif.option_info
+		local snd = ui and ui.cursor and ui.cursor.move and ui.cursor.move.snd
+		if snd ~= nil then
+			sndPlay(motif.Snd, snd[1], snd[2])
+		end
+	end)
 end
 
 local function doneSnd()
-	local ui = motif.option_info
-	if ui and ui.cursor and ui.cursor.done and ui.cursor.done.snd then
-		sndPlay(motif.Snd, ui.cursor.done.snd[1], ui.cursor.done.snd[2])
-	else
-		sndPlay(motif.Snd, motif.title_info.cursor.done.snd.default[1], motif.title_info.cursor.done.snd.default[2])
-	end
+	pcall(function()
+		local ui = motif.option_info
+		local snd = ui and ui.cursor and ui.cursor.done and ui.cursor.done.snd
+		if snd == nil then
+			local ti = motif.title_info
+			local fallback = ti and ti.cursor and ti.cursor.done and ti.cursor.done.snd
+			snd = fallback and fallback.default
+		end
+		if snd ~= nil then
+			sndPlay(motif.Snd, snd[1], snd[2])
+		end
+	end)
 end
 
 local function doneKeys()
@@ -315,7 +344,7 @@ local function drawAlbumArt(albumData, album)
 		return
 	end
 	pcall(animUpdate, anim)
-	main.f_animPosDraw(anim, COVER.x, COVER.y)
+	pcall(main.f_animPosDraw, anim, COVER.x, COVER.y)
 end
 
 -- Opens the browser. Runs its own frame loop, like main.f_warning, and returns
@@ -324,29 +353,16 @@ function ms.open()
 	local albums, why = albumsFromJson()
 	if #albums == 0 then
 		report('musicselect: ' .. tostring(why or 'data/music.json has no albums'),
-			'No music albums found - see console.')
+			'No music albums found - see save/music_error.txt')
 		return false
 	end
 
-	local ui = motif.option_info
-	local titleFont = ui and ui.title and ui.title.font
-	local rowFont = ui and ui.keymenu and ui.keymenu.item and ui.keymenu.item.font or titleFont
-
-	local head = newText(titleFont, 0, 1.5, HEAD.x, HEAD.y)
-	local rows = {}
-	for i = 1, LIST.rows do
-		local y = LIST.y + (i - 1) * LIST.pitch
-		rows[i] = {
-			normal = newText(rowFont, 1, ROWSCALE, LIST.x, y),
-			active = newText(rowFont, 1, ROWSCALE, LIST.x, y),
-		}
-	end
-	local hint = newText(rowFont, 0, SMALLSCALE, HINT.x, HINT.y)
-	local choice = newText(rowFont, 0, SMALLSCALE, CHOICE.x, CHOICE.y)
-
-	if head == nil and rows[1] ~= nil and rows[1].normal == nil then
-		report('musicselect: no text sprite could be created, cannot draw the browser',
-			'Music list unavailable - see console.')
+		local ui = motif.option_info
+	local spr = listSprite()
+	if spr == nil then
+		report('musicselect: no text sprite to draw with: the motif has no ' ..
+			'[Pause Menu] movelist.text.TextSpriteData',
+			'Music list: no text sprite to draw with')
 		return false
 	end
 
@@ -413,7 +429,9 @@ function ms.open()
 		end
 		drawAlbumArt(albumData, album)
 
-		drawAt(head, main.f_itemnameUpper(album.name ~= '' and album.name or 'Default (stage music)', true))
+		drawLine(spr,
+			main.f_itemnameUpper(album.name ~= '' and album.name or 'Default (stage music)', true),
+			HEAD.x, HEAD.y, 0, HEADSCALE)
 
 		if songNo < scroll then
 			scroll = songNo
@@ -421,24 +439,27 @@ function ms.open()
 			scroll = songNo - LIST.rows + 1
 		end
 		for i = 1, LIST.rows do
-			local s = album.songs[scroll + i - 1]
-			local pair = rows[i]
-			if s == nil then
-				drawAt(pair.normal, '')
-			elseif scroll + i - 1 == songNo then
-				drawAt(pair.active, '> ' .. s.title)
-			else
-				drawAt(pair.normal, '  ' .. s.title)
+			local index = scroll + i - 1
+			local s = album.songs[index]
+			-- an empty slot still draws: the list keeps its rhythm, and a screen
+			-- that renders nothing at all is easier to tell from a short one
+			local mark = ''
+			if s ~= nil then
+				mark = (index == songNo and '> ' or '  ') .. s.title
 			end
+			drawLine(spr, mark, LIST.x, LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE)
 		end
 
-		drawAt(choice, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music')
-		drawAt(hint, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back')
+		drawLine(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
+			CHOICE.x, CHOICE.y, 0, SMALLSCALE)
+		drawLine(spr, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back',
+			HINT.x, HINT.y, 0, SMALLSCALE)
 
 		refresh()
 
 		if esc() then
 			resetKey()
+			pcall(textImgReset, spr)
 			return false
 		elseif hit(UP) then
 			moveSnd()
@@ -486,6 +507,7 @@ function ms.open()
 				ms.chosen = nil
 			end
 			resetKey()
+			pcall(textImgReset, spr)
 			return true
 		end
 	end
@@ -515,7 +537,7 @@ local pauseEntry = pcall(function()
 			local ok, err = pcall(ms.open)
 			if not ok then
 				report('musicselect: the browser could not open from the pause menu: '
-					.. tostring(err), 'Music list unavailable - see console.')
+					.. tostring(err), 'Music list: ' .. shortError(err))
 			end
 		end
 		return true
@@ -531,6 +553,6 @@ main.t_itemname.music = function(t, item)
 	local ok, err = pcall(ms.open)
 	if not ok then
 		report('musicselect: the browser could not open: ' .. tostring(err),
-			'Music list unavailable - see console.')
+			'Music list: ' .. shortError(err))
 	end
 end
