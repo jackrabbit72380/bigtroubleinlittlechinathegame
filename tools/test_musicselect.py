@@ -44,7 +44,7 @@ from lupa import LuaRuntime
 
 PRELUDE = r"""
 local MODE = ...
-draws, logs, frames, texts = {}, {}, 0, {}
+draws, logs, frames, texts, WRITES = {}, {}, 0, {}, {}
 INPUT_DOWN, ESC_READY = false, false
 FILE_TEXT, JSON = '', {}
 
@@ -57,6 +57,14 @@ print = function(...)
 end
 
 textImgNew = function() return sprite('new') end
+-- writes are captured, not performed: a test must not leave files in the repo
+io = { open = function(path)
+    local handle = { data = '' }
+    function handle:write(s) self.data = self.data .. s; WRITES[path] = self.data end
+    function handle:read() return '' end
+    function handle:close() end
+    return handle
+end }
 textImgReset = function() end
 textImgAddPos = function() end
 textImgSetAlign = function() end
@@ -139,6 +147,14 @@ if MODE == 'nofile' then
     main.f_fileRead = function() return nil end
     io = { open = function() return nil end }
 end
+if MODE == 'notextimg' then
+    -- a build where a fresh text sprite cannot be made at all
+    textImgNew = function() return nil end
+end
+if MODE == 'badfont' then
+    -- and one where assigning a font raises: the browser no longer assigns one
+    textImgSetFont = function() error('this build cannot set a font') end
+end
 if MODE == 'faildraw' then
     -- the browser raises mid-frame, the way a missing engine binding would
     main.f_itemnameUpper = function() error('this build cannot measure text') end
@@ -151,6 +167,8 @@ MODES = [
     ("[OptionBGdef] with a clear colour", "solid"),
     ("no [OptionBGdef], title backdrop only", "nooptionbg"),
     ("a backdrop that refuses to draw", "baddraw"),
+    ("a build where a new text sprite cannot be made", "notextimg"),
+    ("a build where assigning a font raises", "badfont"),
 ]
 
 
@@ -195,8 +213,14 @@ def check(mode: str) -> list[str]:
     except OSError as exc:
         return [f"cannot read data/music.json: {exc}"]
     g.FILE_TEXT = raw
+    titles = []
     if raw:
         lua.execute("JSON = " + lua_literal(json.loads(raw)))
+        for album in json.loads(raw).values():
+            if isinstance(album, dict):
+                for song in (album.get("Songs") or {}).values():
+                    if isinstance(song, dict) and song.get("Title"):
+                        titles.append(str(song["Title"]))
 
     with open(NOTICE, encoding="utf-8") as handle:
         lua.execute(handle.read())
@@ -214,6 +238,12 @@ def check(mode: str) -> list[str]:
     g.INPUT_DOWN = True
     lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
     problems += after_press(lua, g, "pause menu")
+    # a draw count alone does not prove the albums reached the screen: one empty
+    # row per slot draws too. A real track title has to be among the strings.
+    if titles:
+        drawn = [str(v) for v in g.texts.values()] if g.texts else []
+        if not any(title in d for title in titles for d in drawn):
+            problems.append("no track title from data/music.json reached the screen")
     g.INPUT_DOWN = False
 
     # and from the title menu, which opens the same browser in place
@@ -264,8 +294,16 @@ def failure_cases():
     lua, g = engine_for("faildraw", raw)
     g.INPUT_DOWN = True
     lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
-    cases.append(("a raise inside the browser reports on screen",
-                  notice_problems(g, "Music list unavailable", "could not open from the pause menu")))
+    problems = notice_problems(g, "Music list:", "could not open from the pause menu")
+    written = None
+    if g.WRITES:
+        try:
+            written = g.WRITES["save/music_error.txt"]
+        except Exception:
+            written = None
+    if written is None or "could not open from the pause menu" not in str(written):
+        problems.append("the raise was not written to save/music_error.txt")
+    cases.append(("a raise inside the browser reports on screen and in a file", problems))
     # the data file itself is missing: the console must say so, not "no albums"
     lua, g = engine_for("nofile", "")
     g.FILE_TEXT = ""
