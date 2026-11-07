@@ -1,7 +1,7 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-3333b392de983579ad676bdd27dc6cd9376c6b2ae2f4d54024e08b08fddb5ff6  data/ikemen1/system.def
+48af127865b5a0a43b9404492f8d17d233e100bb8245bab6c7eaac6cba495c9c  data/ikemen1/system.def
 6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
 05ead882a678c36c7d9f02a5699677d0e00aec573a38678b16ef4456058396d2  data/fight.def
 7dfe5b848633cf55cf5bf04eae9d7a30093755bcf40746deab618a453bbb5daa  data/select.def
@@ -10,12 +10,12 @@
 d9d94f7dfc51ca7a3fdedfdbd6622a23cc853654fc9f2f19f5b79aa6e6eaad52  data/ikemen1/logo.def
 e90e5d1dd663287a57d44592f1fa00d5f410ad43fb16c22119c4dc86bd6bd8f0  data/ikemen1/credits.def
 4ef169fcee14ef9563e36ebf731dc6950494e553bf8b56b5fc8aa70181f0d25c  external/gamecontrollerdb.txt
-3ae4d5a8be3b97fdc56be31e7ecb544a49024d1b388b4667cad095e48d96fda8  external/mods/devhelp.lua
+e11764f6caf3165048412c890f834832b42c4ed4b35f662ad31cf47170d0e3e9  external/mods/devhelp.lua
 08b6ef7f5ae4ad8478a5d39d5fef0e694eacb74d6b2120cc3653426ab9cc4f89  external/mods/modnotice.lua
 d28f9ec85d7689139c441336f5011e1f6266e3a8c5a6171c49695449f0c8f266  external/mods/musicselect.lua
 160a54b3c4191e7e7735d322d6b300553e2f0828f1b2ea6d876a06061bb12bf2  external/script/debug.lua
 4ecc7162e41a3d00c6b8c846f22bd4cc322ca861da829b230df57761fb5a4c0e  external/script/default.lua
-3191c8795262a60128ada4865ae186a3bc2ddabd98fdf70af70adc4f317daf6a  external/script/main.lua
+6fda51cd6611837b96a5672c0c47e4ea894c6795e68508f706b402078d871a11  external/script/main.lua
 389ccf571143753d24893d3ca64766a6ffc080be4619d8e5a979497fbd59bd82  external/script/menu.lua
 2eff0324d532d9efd2b5471f6bf500c2e859745ecdd6181096607847456e5de0  external/script/options.lua
 ff555ad42848272a9fef0dc6a689bad80343854e17134e122cdf791b3f3dfb47  external/script/start.lua
