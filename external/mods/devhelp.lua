@@ -251,12 +251,15 @@ end
 local function devhelpDraw(sec)
 	rectDraw(sec.movelist.overlay.RectData)
 
-	-- The heading moves up, and across to the screen's centre so it sits over the
-	-- list: the motif anchors it a third of the way across, not in the middle.
+	-- The heading sits over the list, centred on the frame and above its first
+	-- row. Placed, not added: the sprite's own base is wherever the engine baked
+	-- it, which put this heading in the middle of the screen over the fighters.
 	local sw = screenSize()
+	local _, cy = anchor(sec)
 	textImgReset(sec.movelist.title.TextSpriteData)
+	textImgSetAlign(sec.movelist.title.TextSpriteData, 0)   -- 0 = centred
 	textImgSetText(sec.movelist.title.TextSpriteData, 'DEVELOPER KEYS')
-	textImgAddPos(sec.movelist.title.TextSpriteData, sw / 2 - anchor(sec), -34)
+	textImgSetPos(sec.movelist.title.TextSpriteData, sw / 2, cy - 34)
 	textImgDraw(sec.movelist.title.TextSpriteData)
 
 	drawPlain(sec)

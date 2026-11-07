@@ -565,6 +565,46 @@ def check_menu_theme():
             err("menu theme: [%s] cursor band spans y%+.0f..%+.0f, so it does "
                 "not sit on the row it marks (want 0..44)" % (name, y1, y2))
 
+    # The pause list must be centred on the frame and fit inside it. Its rows are
+    # placed from menu.pos (main.f_menuItemPos sets them; the engine's own base
+    # came from the stock 320x240 [Menu Info] anchor and drew the list off the
+    # bottom edge), so menu.pos and the pitch decide what a player can reach.
+    lc = re.search(r"^\s*localcoord\s*=\s*(\d+)\s*,\s*(\d+)", def_text, re.I | re.M)
+    frame_h = int(lc.group(2)) if lc else 1080
+    values, cur = {}, None
+    for line in def_text.splitlines():
+        head = re.match(r"^\s*\[([^\]]+)\]", line)
+        if head:
+            cur = head.group(1).strip()
+            values[cur] = {}
+        elif cur is not None and not line.strip().startswith(";"):
+            kv = re.match(r"^\s*([A-Za-z0-9_.]+)\s*=\s*([^;]*)", line)
+            if kv:
+                values[cur][kv.group(1).lower()] = kv.group(2).strip()
+    for name, keys in values.items():
+        if not name.lower().endswith("pause menu"):
+            continue
+        try:
+            top = float(keys["menu.pos"].split(",")[1])
+            pitch = float(keys["menu.item.spacing"].split(",")[1])
+            rows = max(1, int(float(keys.get("menu.window.visibleitems", "10"))))
+            align = int(keys["menu.item.font"].split(",")[2].strip())
+            band = [float(v) for v in keys["menu.boxcursor.coords"].split(",")]
+        except (KeyError, ValueError, IndexError):
+            continue
+        row_h = max(45.0, band[3] - band[1] + 1)
+        bottom = top + (rows - 1) * pitch + row_h
+        if bottom > frame_h - 20:
+            err("menu theme: [%s] runs its %dth row to y=%.0f, past the "
+                "%d-tall frame" % (name, rows, bottom, frame_h))
+        if align != 0:
+            err("menu theme: [%s] rows are not centre-aligned, so the list is "
+                "not centred on the frame" % name)
+        centre = (top + bottom) / 2.0
+        if abs(centre - frame_h / 2.0) > 100:
+            err("menu theme: [%s] rows centre on y=%.0f, not the frame's middle"
+                % (name, centre))
+
     notes.append("menu theme: logo face, gold face on maroon extrusion")
 
 
