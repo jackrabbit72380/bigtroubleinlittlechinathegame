@@ -442,6 +442,15 @@ SECTION_LAYOUT = {
         ("p2.teammenu.selftitle.yangle", "0"),
         ("p2.teammenu.enemytitle.yangle", "0"),
         ("p1.teammenu.selftitle.offset", "0, 23"),
+        # The slot markers are placed by start.f_teamMenu from the measured word
+        # width, so their def offsets must stay 0 or a baked-in offset would be
+        # added on top and float them out over the portrait grid again.
+        ("p1.teammenu.value.icon.offset", "0, 0"),
+        ("p1.teammenu.value.empty.icon.offset", "0, 0"),
+        ("p2.teammenu.value.icon.offset", "0, 0"),
+        ("p2.teammenu.value.empty.icon.offset", "0, 0"),
+        ("p1.teammenu.value.spacing", "38, 0"),
+        ("p2.teammenu.value.spacing", "-38, 0"),
         ("p1.teammenu.enemytitle.offset", "0, 23"),
         ("p2.teammenu.selftitle.offset", "0, 23"),
         ("p2.teammenu.enemytitle.offset", "0, 23"),

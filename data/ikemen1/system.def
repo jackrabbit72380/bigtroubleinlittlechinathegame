@@ -700,13 +700,13 @@ p1.teammenu.item.active.layerno = 2
 p1.teammenu.item.cursor.offset = -45, 0
 p1.teammenu.item.cursor.anim = -1
 p1.teammenu.item.cursor.layerno = 2
-p1.teammenu.value.icon.offset = 315, 0
+p1.teammenu.value.icon.offset = 0, 0
 p1.teammenu.value.icon.spr = 181,0
 p1.teammenu.value.icon.layerno = 2
-p1.teammenu.value.empty.icon.offset = 315, 0
+p1.teammenu.value.empty.icon.offset = 0, 0
 p1.teammenu.value.empty.icon.spr = 182,0
 p1.teammenu.value.empty.icon.layerno = 2
-p1.teammenu.value.spacing = 45, 0
+p1.teammenu.value.spacing = 38, 0
 
 ;P2 Team menu
 p2.teammenu.pos = 1796, 240
@@ -740,13 +740,13 @@ p2.teammenu.item.active.layerno = 2
 p2.teammenu.item.cursor.offset = 45, 0
 p2.teammenu.item.cursor.anim = -1
 p2.teammenu.item.cursor.layerno = 2
-p2.teammenu.value.icon.offset = -316, 2
+p2.teammenu.value.icon.offset = 0, 0
 p2.teammenu.value.icon.spr = 191,0
 p2.teammenu.value.icon.layerno = 2
-p2.teammenu.value.empty.icon.offset = -316, 2
+p2.teammenu.value.empty.icon.offset = 0, 0
 p2.teammenu.value.empty.icon.spr = 192,0
 p2.teammenu.value.empty.icon.layerno = 2
-p2.teammenu.value.spacing = -45, 0
+p2.teammenu.value.spacing = -38, 0
 
 
 teammenu.itemname.single = Single

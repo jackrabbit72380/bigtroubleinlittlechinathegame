@@ -3519,6 +3519,26 @@ function start.f_teamMenu(side, t)
 		local spacingX, spacingY = itemCfg.spacing[1], itemCfg.spacing[2]
 		local uppercase = itemCfg.uppercase
 		local gm = gameMode()
+		--Slot markers start just past the longest mode word instead of a fixed
+		--315px, which floated a four-marker row out over the portrait grid (which
+		--starts at x=441 here). Measuring the word keeps the markers beside
+		--"Single"/"Simul"/"Tag"/"Turns" at any motif font, and every row starts on
+		--the same edge so the rows line up down the screen.
+		local iconDir = (valueCfg.spacing[1] < 0) and -1 or 1
+		local wordW = 0
+		for i = 1, #t do
+			local ok, w = pcall(textImgGetTextWidth, itemCfg.TextSpriteData,
+				main.f_itemnameUpper(t[i].displayname, itemCfg.uppercase))
+			if ok and type(w) == "number" and w > wordW then
+				wordW = w
+			end
+		end
+		if wordW < 1 then
+			wordW = 118 --6-character label, used when the build cannot measure text
+		end
+		local iconX0 = iconDir * (wordW + 18)
+		local iconSpacingX = iconDir * 38
+		local iconY0 = 10
 		for i = 1, #t do
 			local x = (i - 1) * spacingX
 			local y = (i - 1) * spacingY
@@ -3565,8 +3585,8 @@ function start.f_teamMenu(side, t)
 			--Draw team icons
 			if itemname == 'simul' then
 				for j = 1, main.numSimul[2] do
-					local vx = x + (j - 1) * valueCfg.spacing[1]
-					local vy = y + (j - 1) * valueCfg.spacing[2]
+					local vx = iconX0 + (j - 1) * iconSpacingX
+					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
 					if j <= start.p[side].numSimul then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
@@ -3575,8 +3595,8 @@ function start.f_teamMenu(side, t)
 				end
 			elseif itemname == 'turns' then
 				for j = 1, main.numTurns[2] do
-					local vx = x + (j - 1) * valueCfg.spacing[1]
-					local vy = y + (j - 1) * valueCfg.spacing[2]
+					local vx = iconX0 + (j - 1) * iconSpacingX
+					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
 					if j <= start.p[side].numTurns then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
@@ -3585,8 +3605,8 @@ function start.f_teamMenu(side, t)
 				end
 			elseif itemname == 'tag' then
 				for j = 1, main.numTag[2] do
-					local vx = x + (j - 1) * valueCfg.spacing[1]
-					local vy = y + (j - 1) * valueCfg.spacing[2]
+					local vx = iconX0 + (j - 1) * iconSpacingX
+					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
 					if j <= start.p[side].numTag then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
