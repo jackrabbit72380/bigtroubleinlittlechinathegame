@@ -642,6 +642,31 @@ def check_menu_theme():
             err("menu theme: [%s] rows centre on y=%.0f, not the frame's middle"
                 % (name, centre))
 
+    # The title list is the third centred column, on the wordmark's axis. It is
+    # not centred vertically on purpose - the logo fills the top half - so only
+    # the horizontal axis is enforced here, plus the rows fitting the frame.
+    for name, keys in values.items():
+        if name.lower() != "title info":
+            continue
+        try:
+            pos = [float(v) for v in keys["menu.pos"].split(",")]
+            pitch = float(keys["menu.item.spacing"].split(",")[1])
+            align = int(keys["menu.item.font"].split(",")[2].strip())
+            active = int(keys["menu.item.active.font"].split(",")[2].strip())
+            rows = max(1, int(float(keys.get("menu.window.visibleitems", "10"))))
+        except (KeyError, ValueError, IndexError):
+            continue
+        if abs(pos[0] - frame_w / 2.0) > 0.5:
+            err("menu theme: [%s] column is at x=%.0f, not the wordmark's axis"
+                % (name, pos[0]))
+        if align != 0 or active != 0:
+            err("menu theme: [%s] rows are not centre-aligned, so the column "
+                "does not centre under the logo" % name)
+        bottom = pos[1] + (rows - 1) * pitch + 45
+        if bottom > frame_h - 20:
+            err("menu theme: [%s] runs its %dth row to y=%.0f, past the "
+                "%d-tall frame" % (name, rows, bottom, frame_h))
+
     notes.append("menu theme: logo face, gold face on maroon extrusion")
 
 
