@@ -5,7 +5,7 @@ Thanks for wanting to help. The short version: the game is generated from code i
 after — and `python3 tools/validate.py` tells you if you broke something, with no
 engine needed.
 
-Say hello first in the [Discord](https://discord.gg/bY6NJ35c6P) and say what you
+Say hello first in the [Discord](https://discord.gg/Bn2kABJsK5) and say what you
 fancy working on; it stops two people building the same thing.
 
 ## What needs doing
