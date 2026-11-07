@@ -298,6 +298,10 @@ SECTION_LAYOUT = {
         # column's edge and the value column's start either side of 960 instead
         # of both on the right-hand half of a 1920 frame.
         ("menu.pos", "940, 99"),
+        # Both arrows still sat on 642, the 1280 frame's centre, while the
+        # heading above them was already at 960. Same place as [Pause Menu]'s.
+        ("menu.arrow.up.offset", "960, -76"),
+        ("menu.arrow.down.offset", "960, 788"),
         # options.lua reads these six paths on every frame it runs and the
         # section defined none of them: the list drew, and then no key did
         # anything on it, because each read was nil. Bindings follow the select
@@ -425,6 +429,14 @@ SECTION_LAYOUT = {
     "Replay Info": (
         # 42px rows, so the band matches the pitch exactly.
         ("menu.boxcursor.coords", "-15, 0, 462, 41"),
+        # The rows were already at the converted 1.5x pitch and scale, but the
+        # heading and both arrows were still on 640/642 - the 1280 frame's
+        # centre - so they sat a third of the screen left of the list's middle.
+        # The column itself (menu.pos 621) is right-aligned and is left alone:
+        # its band geometry for right-aligned text is a separate question.
+        ("title.offset", "960, 48"),
+        ("menu.arrow.up.offset", "960, -76"),
+        ("menu.arrow.down.offset", "960, 788"),
     ),
     "Pause Menu": PAUSE_LAYOUT,
     # The training pause list keeps the stock left position: the two screens do
@@ -432,6 +444,20 @@ SECTION_LAYOUT = {
     "Training Pause Menu": tuple(
         ("menu.pos", "402, 140") if key == "menu.pos" else (key, value)
         for key, value in PAUSE_LAYOUT
+    ),
+    # The warning box keeps the stock 284px left margin for its body text; only
+    # its heading was still centred on the 1280 frame.
+    "Warning Info": (
+        ("title.offset", "960, 48"),
+    ),
+    # MUGEN 1.0's info box - same leftover, one pixel row higher.
+    "Infobox": (
+        ("title.offset", "960, 38"),
+    ),
+    # legacymode is off, so nothing draws this layout, but it was still the old
+    # centre; the extended screen it replaced already uses counter.offset 960,540.
+    "Continue Screen": (
+        ("pos", "960, 240"),
     ),
 }
 
