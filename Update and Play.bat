@@ -57,8 +57,9 @@ set "GIT_CONFIG_PARAMETERS="
 echo   ==============================================================
 echo BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v53
 echo   ==============================================================
-rem The pistol stands over the progress and stays there: the bullet in every
-rem bar below is its shot.
+rem The number that counts the run is written at the end of the pistol's
+rem barrel, so the console is asked for cursor control before the drawing.
+call :vt
 call :gun
 
 set "EXE="
@@ -119,8 +120,8 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem Progress counts every percent of the run, 1 to 100: one plain number per
-rem line under the pistol and nothing else. Nothing here moves the cursor.
+rem Progress counts every percent of the run, 1 to 100, at the muzzle of the
+rem pistol: one number, replaced by the next, with nothing printed beside it.
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
@@ -443,10 +444,49 @@ if errorlevel 1 set "WRITEFAIL=1"
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
+:vt
+rem The percentage is written on the barrel line itself, which means coming back
+rem to a line that was printed earlier. cmd can only append, so the console is
+rem asked for one escape sequence: up to the barrel, along it to the muzzle,
+rem write, and back to the line under the drawing. Where a console refuses that
+rem - an older Windows, or this window's output going to a file - VT stays
+rem unset and the gauge prints the same numbers as plain lines instead.
+if defined VTDONE exit /b 0
+set "VTDONE=1"
+if not defined POWERSHELL exit /b 0
+if not defined CACHE set "CACHE=%TEMP%\btilc-updater"
+if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
+if not exist "%CACHE%" exit /b 0
+rem The helper is a file, like the downloader: a call this long cannot go on a
+rem command line without a quoting argument of its own.
+set "VTPS=%CACHE%\console.ps1"
+>  "%VTPS%" echo param()
+>> "%VTPS%" echo $ErrorActionPreference = 'Stop'
+>> "%VTPS%" echo $sig = '[DllImport("kernel32.dll")] public static extern IntPtr GetStdHandle(int n); [DllImport("kernel32.dll")] public static extern bool GetConsoleMode(IntPtr h, out uint m); [DllImport("kernel32.dll")] public static extern bool SetConsoleMode(IntPtr h, uint m);'
+>> "%VTPS%" echo $k = Add-Type -MemberDefinition $sig -Name ConsoleMode -Namespace Btilc -PassThru
+>> "%VTPS%" echo $h = $k::GetStdHandle(-11)
+>> "%VTPS%" echo $m = 0
+>> "%VTPS%" echo if (-not $k::GetConsoleMode($h, [ref]$m)) { exit 2 }
+>> "%VTPS%" echo if (($m -band 4) -eq 0) { if (-not $k::SetConsoleMode($h, ($m -bor 4))) { exit 3 } }
+>> "%VTPS%" echo Write-Host ([string][char]27)
+>> "%VTPS%" echo exit 0
+if not exist "%VTPS%" exit /b 0
+rem It answers with the escape character only once the console has taken the
+rem mode, so an answer at all is proof that the sequences below will work.
+set "ESC="
+for /f "delims=" %%a in ('"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%VTPS%" 2^>nul') do if not defined ESC set "ESC=%%a"
+if not defined ESC exit /b 0
+set "VTOK=1"
+exit /b 0
+
 :gun
-rem Jack's pistol, in the characters the concept art was drawn with: it sits
-rem above the progress bar and the shot is the progress, so the bar reads as
-rem rounds going downrange instead of an abstract gauge.
+rem Jack's pistol, in the characters the concept art was drawn with, drawn once
+rem and left standing: the number that counts the run is written on the barrel
+rem line, at the end of the muzzle, so the run reads as rounds leaving the gun.
+rem The barrel ends two columns before MUZZLE - one space, then the number - and
+rem tools/check_launchers.py measures that from the drawing itself, so a changed
+rem picture cannot leave the number floating beside it.
+set "MUZZLE=41"
 echo.
 echo    ..._...^|..____________________, ,
 echo    ....../ '---___________----_____^|]=
@@ -457,18 +497,20 @@ echo    ...//___//
 echo    ..//___//
 echo    .//___//
 set "GUNSHOWN=1"
+rem The line under the drawing is remembered, so every percentage can write at
+rem the muzzle and come straight back here. The messages that follow print
+rem below the pistol, never over it.
+if defined VTOK set /p "=%ESC%[s" <nul
 exit /b 0
 
 :gauge
 rem %1 = percent for the whole run. %2 is the name of the step: the callers still
 rem pass it, nothing prints it - the window shows the number and nothing else.
 rem
-rem One printed line per percentage, under the pistol that is already standing
-rem there: 1%, 2%, 3% ... 100%. The game starts at 100.
-rem
-rem The line is printed, never redrawn. The version that walked the cursor back
-rem with backspaces left a wall of overlapping text wherever a backspace did not
-rem erase - Windows Terminal, a log redirect - so nothing here moves the cursor.
+rem One number, counting 1, 2, 3 ... 100 at the muzzle of the pistol that is
+rem already standing, and the game starts at 100. A console that takes cursor
+rem moves gets the number at the barrel; one that does not gets the same numbers
+rem as plain lines, so an old Windows still shows how far the run has got.
 rem
 rem A step that jumps from 12 to 25 fills in 13 to 24 as well, so no number is
 rem skipped, and a step that re-reports the number it just showed prints nothing.
@@ -494,10 +536,20 @@ set "GLASTPCT=%GTO%"
 exit /b 0
 
 :gaugeone
-rem %1 = the percent to print. The pistol above stays where it is; the run
-rem counts up one plain number at a time and prints nothing beside it.
+rem %1 = the percent to print. Three characters wide and never wider, so the
+rem number keeps its place as it climbs and the muzzle never needs erasing; the
+rem pistol above is not redrawn, only these four characters change.
 set "PCT3=  %~1"
 call set "PCT3=%%PCT3:~-3%%"
+if not defined VTOK goto gaugeone_plain
+rem Back to the line under the drawing, seven lines up to the barrel, along it to
+rem the muzzle, write, and back down. The percentage comes off the barrel itself
+rem and nothing is printed beside it.
+set /p "=%ESC%[u%ESC%[7A%ESC%[%MUZZLE%G%PCT3%%%ESC%[u" <nul
+title Big Trouble in Little China: The Game - Updater - %~1 percent
+exit /b 0
+:gaugeone_plain
+rem No cursor control here: the same number, one line per percent, under the gun.
 echo   %PCT3%%%
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
@@ -1340,7 +1392,11 @@ if %DFROM% LSS 50 set "DFROM=50"
 if not exist "%DLSCRIPT%" call :dl_make
 if not exist "%DLSCRIPT%" exit /b 0
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%" -From %DFROM%
+rem The download writes the same number in the same place: at the muzzle where
+rem the console has cursor control, on a line of its own where it has none.
+set "VTFLAG=0"
+if defined VTOK set "VTFLAG=1"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%" -From %DFROM% -Vt %VTFLAG% -Col %MUZZLE%
 if errorlevel 1 exit /b 0
 set "DLOK=1"
 exit /b 0
@@ -1350,12 +1406,12 @@ rem The renderer lives in a file of its own: a twenty-line PowerShell script
 rem cannot be passed on a command line without a quoting argument, and every
 rem line below is plain text with no character cmd would eat.
 rem
-rem It prints the run's own number, not a meter of its own: the same plain
-rem percentage the lines above it show, redrawn in place as the bytes land.
+rem It prints the run's own number, not a meter of its own: the same percentage
+rem the pistol's muzzle shows, written there again as the bytes land.
 rem Downloading is 50-80% of the run, so the number it leaves behind is where
 rem the next step carries on instead of a second count starting over.
 set "DLSCRIPT=%CACHE%\download.ps1"
->  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50)
+>  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50, [int]$Vt = 0, [int]$Col = 41)
 >> "%DLSCRIPT%" echo $ErrorActionPreference = 'Stop'
 >> "%DLSCRIPT%" echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 >> "%DLSCRIPT%" echo $req = [Net.HttpWebRequest]::Create($Url)
@@ -1377,9 +1433,10 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   $drawn = $elapsed
 >> "%DLSCRIPT%" echo   $whole = $From
 >> "%DLSCRIPT%" echo   if ($From -lt 80) { if ($total -gt 0) { $whole = $From + [int]((80 - $From) * $got / $total) } }
->> "%DLSCRIPT%" echo   $pct = '  ?'
+>> "%DLSCRIPT%" echo   $pct = '   ?'
 >> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%' }
->> "%DLSCRIPT%" echo   $line = [char]13 + '  ' + $pct
+>> "%DLSCRIPT%" echo   if ($Vt -eq 1) { $line = [char]27 + '[u' + [char]27 + '[7A' + [char]27 + '[' + $Col + 'G' + $pct + [char]27 + '[u' }
+>> "%DLSCRIPT%" echo   if ($Vt -ne 1) { $line = [char]13 + '  ' + $pct }
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
 >> "%DLSCRIPT%" echo $file.Close()

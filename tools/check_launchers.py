@@ -120,13 +120,44 @@ def _problems_for(name, raw):
     return out
 
 
+def _gun_block(text):
+    """The pistol as the window shows it: (muzzle column, lines below it).
+
+    The percentage is written on the barrel line itself, so the column it goes
+    to and the row it comes back from are measurements of the drawing. They are
+    taken from the art rather than trusted, so a changed picture fails here
+    instead of leaving the number floating beside the barrel.
+    """
+    lines = text.split("\n")
+    start = next((i for i, line in enumerate(lines) if line.strip() == ":gun"), None)
+    if start is None:
+        return None, None
+    art = []
+    for line in lines[start + 1:]:
+        stripped = line.strip()
+        if stripped.startswith(":") or stripped.lower().startswith("exit"):
+            break                         # the label is over, the art is done
+        if not stripped.lower().startswith("echo"):
+            continue                      # rem, set, and the save after it
+        shown = stripped[4:]
+        if not shown.strip():
+            continue                      # the blank line above the drawing
+        art.append(shown.replace("^", ""))
+    for i, shown in enumerate(art):
+        if "|]=" in shown:
+            return len(shown), len(art) - i - 1
+    return None, None
+
+
 def _progress_problems(name, raw):
-    """The updater's pistol and its bar are product, not decoration.
+    """The updater's pistol and the number at its muzzle are product, not
+    decoration.
 
     A rewrite that only looked at the console plumbing dropped them twice: the
-    gun was left behind as an unreachable label, and the bar became a bare
-    percentage at ten-point steps. They are checked here so a later edit cannot
-    take them away silently again.
+    gun was left behind as an unreachable label, and the count became a bare
+    percentage at ten-point steps. The number also has to come off the barrel
+    rather than sit under the drawing, which is a column and a row measured from
+    the art. All of it is checked here so a later edit cannot lose it silently.
     """
     if name != "Update and Play.bat":
         return []
@@ -134,22 +165,52 @@ def _progress_problems(name, raw):
     out = []
     if not re.search(r"(?m)^call :gun\s*$", text):
         out.append("%s: :gun is never called, so the updater shows no pistol" % name)
-    if "echo   %PCT3%%%" not in text:
-        out.append("%s: the progress lines no longer print the percentage" % name)
+    if not re.search(r"(?m)^call :vt\s*$", text):
+        out.append("%s: :vt is never called, so the console never gets the cursor "
+                   "control the number at the muzzle needs" % name)
+    column, below = _gun_block(text)
+    if column is None:
+        out.append("%s: the barrel line cannot be found in :gun, so where the "
+                   "number is written is unknown" % name)
+    else:
+        measured = re.search(r'set "MUZZLE=(\d+)"', text)
+        if not measured:
+            out.append("%s: MUZZLE is never set, so the percentage is written "
+                       "somewhere other than the end of the barrel" % name)
+        elif int(measured.group(1)) != column + 2:
+            out.append("%s: MUZZLE is %s but the drawn barrel ends at column %d, so "
+                       "the number would not sit at its end"
+                       % (name, measured.group(1), column))
+        write = f"%ESC%[u%ESC%[{below + 1}A%ESC%[%MUZZLE%G%PCT3%%%ESC%[u"
+        if write not in text:
+            out.append("%s: the percentage is not written at the end of the barrel "
+                       "with the cursor brought back under the pistol" % name)
+    if "if not defined VTOK goto gaugeone_plain" not in text:
+        out.append("%s: the muzzle write is not guarded, so a console without "
+                   "cursor control would print the escape sequence as text" % name)
+    if not re.search(r"(?m)^:gaugeone_plain\s*$", text):
+        out.append("%s: a console without cursor control is left with no progress "
+                   "line at all" % name)
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if text.count("%PCT3%%%") != 1:
-        out.append("%s: the percentage is printed more than once per step, or not "
-                   "at all" % name)
+    if text.count("%PCT3%%%") != 2:
+        out.append("%s: the percentage is printed more or less than once per step"
+                   % name)
     if "BARLEFT" in text or "$bar" in text:
-        out.append("%s: a loading bar is back; the progress lines are the number "
-                   "alone" % name)
+        out.append("%s: a loading bar is back; the progress is the number alone"
+                   % name)
     if "GMAXPCT" not in text:
         out.append("%s: the gauge can report a lower percentage than it just showed, "
                    "so one run reads as a rewind" % name)
     if "$whole" not in text:
         out.append("%s: the download no longer reports the run's percentage" % name)
+    if "-Vt %VTFLAG% -Col %MUZZLE%" not in text or "'[7A'" not in text:
+        out.append("%s: the download writes its percentage somewhere other than "
+                   "the muzzle" % name)
+    if "-bor 4" not in text or "[char]27" not in text:
+        out.append("%s: the console is never put into the mode the muzzle write "
+                   "needs, so the number can only go out as text" % name)
     return out
 
 
