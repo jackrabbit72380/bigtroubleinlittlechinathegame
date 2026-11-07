@@ -24,7 +24,7 @@ overdrawhigh = 0
 overdrawlow = 0
 cuthigh = 157
 cutlow = 112
-zoomout = 1
+zoomout = 0.75
 zoomin = 1
 
 [PlayerInfo]
@@ -84,10 +84,6 @@ trans = none
 mask = 1
 tile = 0,0
 
-
-; the mouth is a hole into the throat: the fog film sits at the bottom of the
-; stack, so the aperture is the only place it can be seen. It covers the whole
-; view, so the fog keeps running in the mouth as the camera pans.
 [BG sky 1]
 type = normal
 spriteno = 10,1
@@ -101,13 +97,6 @@ tile = 0,0
 ; column 2 of the lip plate: 8192 px wide, past the 4096 px a
 ; single texture may be on some GPUs, so it ships in abutting
 ; columns that line up with the first one
-[BG fog]
-type = video
-path = video/fog.webm
-loop = 1
-layerno = 0
-start = -1920,0
-delta = 0,0
 [BG bg]
 type = normal
 spriteno = 0,0
