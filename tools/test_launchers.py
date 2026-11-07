@@ -132,6 +132,18 @@ SELFUPDATE = [
     ("a download is not checked for its last line",
      b'"%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%" >nul 2>&1\r\n', b'',
      "stopped half way"),
+    ("a refresh closes the window and restarts",
+     b'exit /b 0\r\n:selfupdate_ps', b'start "" "%~f0" --updated\r\nexit /b 0\r\n:selfupdate_ps',
+     "costs the run it interrupted"),
+]
+
+# the folder's own repair tool: without it a cut-short launcher cannot come back
+REPAIR = [
+    ("the launcher repair is gone",
+     b"call :fixlauncher\r\n", b"", "never called"),
+    ("the repair installs an unchecked download",
+     b'"%FINDSTR%" /c:"btilc-launcher-end" "%NEWL%" >nul 2>&1\r\n', b'',
+     "not checked for its last"),
 ]
 
 
@@ -183,6 +195,20 @@ def main():
             failures += 1
             continue
         found = checker._selfupdate_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    with open(os.path.join(ROOT, "Apply main.zip.bat"), "rb") as handle:
+        applier = handle.read()
+    for label, old, new, want in REPAIR:
+        if old not in applier:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._launcherrepair_problems("Apply main.zip.bat",
+                                                 applier.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

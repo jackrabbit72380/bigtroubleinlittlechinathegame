@@ -56,7 +56,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=56"
+set "UPDVER=57"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
@@ -1308,17 +1308,18 @@ if errorlevel 1 goto selfupdate_partial
 "%SYS%\fc.exe" /b "%NEWB%" "%~f0" >nul 2>&1
 if not errorlevel 1 goto selfupdate_current
 echo.
-echo This launcher is not the current one - updating it before anything else.
+echo This launcher is not the current one - it is replaced for the next launch.
 rem cmd reads a batch file while it runs it, so this file cannot be written over
 rem by the window that is executing it. A write in place either loses the race or
 rem cuts the file short under the reader, and the next read runs a fragment of a
 rem line: the window answers with a piece of text it cannot find as a command and
 rem stops there. The new copy is landed beside this one first and put in place
 rem with a rename, which is either the old file or the whole new one and never a
-rem half-written one. A detached helper waits for this window to close, renames,
-rem and starts it again with --updated.
-rem If the rename loses the race the restarted window carries on as it is: the
-rem next launch tries again, and nothing here can loop.
+rem half-written one. A detached helper waits for this window to close and then
+rem renames it into place, so the run itself never waits for it and the current
+rem one is used for the rest of this launch.
+rem If the rename loses the race this launch carries on as it is: the next one
+rem tries again, and nothing here can loop.
 rem A read-only file, a folder under Windows' control or a scanner holding it can
 rem refuse the rename outright. Three launches is enough: past that this copy
 rem runs the update as it is instead of closing, fetching and closing again on
@@ -1342,20 +1343,19 @@ rem seconds apart, is far more than that window needs to close.
 >>"%SWAP%" echo move /Y "%STAGE%" "%~f0" ^>nul 2^>^&1
 >>"%SWAP%" echo if not exist "%STAGE%" goto run
 >>"%SWAP%" echo set /a N+=1
->>"%SWAP%" echo if %%N%% GEQ 8 goto give
+>>"%SWAP%" echo if %%N%% GEQ 200 goto give
 >>"%SWAP%" echo "%PING%" -n 3 127.0.0.1 ^>nul
 >>"%SWAP%" echo goto try
 >>"%SWAP%" echo :give
 >>"%SWAP%" echo del /q "%STAGE%" ^>nul 2^>^&1
 >>"%SWAP%" echo :run
->>"%SWAP%" echo start "" "%~f0" --updated
 if not exist "%SWAP%" goto selfupdate_nostage
 rem A window of its own, minimised: a /b child shares this console and would go
-rem with it when this script exits on the next line.
+rem with it when this script exits. This one outlives the window, renames the
+rem staged copy the moment the file is free, and then goes away.
 start "btilc launcher update" /min "%SWAP%"
-echo It restarts in a moment with the current one.
-echo.
-exit 0
+call :say "launcher refresh staged - renamed into place when this window closes"
+exit /b 0
 :selfupdate_ps
 rem The fetch curl could not make, for a machine that has no curl.exe. A script
 rem of its own rather than a -Command line, because the address has to be passed

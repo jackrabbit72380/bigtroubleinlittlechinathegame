@@ -460,6 +460,35 @@ def _selfupdate_problems(name, raw):
     if '"%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%"' not in text:
         out.append("%s: a download is not checked for its last line, so one that "
                    "stopped half way would be installed as the launcher" % name)
+    if 'start "" "%~f0" --updated' in text:
+        out.append("%s: a refresh closes this window and starts the launcher "
+                   "again, so every refresh costs the run it interrupted" % name)
+    return out
+
+
+def _launcherrepair_problems(name, raw):
+    """The updater is the one file that cannot put itself back.
+
+    A copy cut short stops at the cut: it leaves a prompt, or closes, and it
+    can never fetch a whole one because the fetch sits after the cut. Nothing
+    else in the folder writes that file - the archive applier copies the six
+    game folders only - so a damaged launcher had no way back except the
+    browser. The applier puts a whole one here instead, from the archive or on
+    its own, and this is what keeps that door open.
+    """
+    if name != "Apply main.zip.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    if not re.search(r"(?m)^:fixlauncher$", text):
+        out.append("%s: nothing here can put a whole launcher back, so a folder "
+                   "whose copy was cut short has no way out but the browser" % name)
+    if not re.search(r"(?m)^call :fixlauncher$", text):
+        out.append("%s: the repair is never called, so it does nothing" % name)
+    if '"%FINDSTR%" /c:"btilc-launcher-end" ' not in text:
+        out.append("%s: the launcher it puts back is not checked for its last "
+                   "line, so a transfer that stopped half way would be installed "
+                   "as the launcher" % name)
     return out
 
 
@@ -694,6 +723,7 @@ def problems(root):
             found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))
             found.extend(_selfupdate_problems(name, raw))
+            found.extend(_launcherrepair_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 
