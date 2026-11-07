@@ -77,6 +77,10 @@ MUTATIONS = [
     ("the count pairs signs in the source",
      b'set "PCTX=%GNUM%%PCT%"',
      b'call set "PCTX=%%GNUM%%PCT%"', "padded as digits"),
+    # breaking only the line that sets the sign left gunredraw's fallback
+    # intact, and the guard used to accept the file on that alone
+    ("the sign is broken where it is set",
+     b'\r\nset "PCT=%%"\r\n', b'\r\ncall set "PCT=%%PCT%%"\r\n', "not made once"),
 ]
 
 

@@ -90,8 +90,8 @@ cd bigtroubleinlittlechinathegame
 python3 tools/build_all.py     # regenerate everything, then validate
 ```
 
-`python3 tools/validate.py` runs 44 offline checks — roster, frames, stage layers,
-previews, palettes — with no engine required, so it is the fastest feedback loop
+`python3 tools/validate.py` runs the offline checks — roster, frames, stage layers,
+previews, palettes, launchers — with no engine required, so it is the fastest feedback loop
 while you work.
 
 Talk to us before starting anything large: the [Discord](https://discord.gg/Bn2kABJsK5)

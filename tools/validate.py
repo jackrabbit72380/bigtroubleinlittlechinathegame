@@ -6,6 +6,7 @@ Checks, without launching the engine:
   * every animation frame in each .air resolves to a sprite in the .sff
   * stage DEFs reference sprites that exist in their .sff, plus preview sprite
   * optional: roster palettes differ from the base character
+  * the Windows launchers parse, and the rules that read them still fire
 
 Run:  python3 tools/validate.py
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 import re
 
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -886,6 +888,33 @@ def check_launchers():
         err("launchers: " + problem)
     notes.append("launchers: no stray operators, labels and variables resolve")
 
+def check_launcher_checks():
+    """The launcher rules must still catch what they exist for.
+
+    Reading the launchers is only as good as the rules doing the reading: a
+    pattern that can never match reports nothing, which looks exactly like a
+    clean build. tools/test_launchers.py feeds every cmd trap to
+    tools/check_launchers.py, and the correct form of each, then brings the
+    muzzle-count bug back three ways to prove its guards still fire. It needs no
+    engine and no lupa, so it can run here on every build; the engine-backed
+    tests cannot be asked for in CI.
+    """
+    path = os.path.join(ROOT, "tools", "test_launchers.py")
+    if not os.path.isfile(path):
+        err("launchers: tools/test_launchers.py is missing, so nothing proves "
+            "the syntax rules still fire")
+        return
+    result = subprocess.run([sys.executable, path], capture_output=True, text=True)
+    if result.returncode != 0:
+        lines = [l.strip() for l in (result.stdout + result.stderr).splitlines()
+                 if l.strip()]
+        for line in lines[-6:]:
+            err("launchers: " + line)
+        err("launchers: tools/test_launchers.py failed (exit %d)" % result.returncode)
+        return
+    notes.append("launchers: every syntax rule still catches its cmd trap")
+
+
 def check_motif_ints():
     """Coordinates the engine reads as ints have to be whole numbers.
 
@@ -1202,6 +1231,7 @@ def main():
     check_intro_states()
     check_stage_aspect()
     check_launchers()
+    check_launcher_checks()
     check_motif_ints()
     check_powerbar_fonts()
     check_hud_fonts()
