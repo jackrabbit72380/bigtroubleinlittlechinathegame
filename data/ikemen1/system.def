@@ -349,7 +349,7 @@ sin.y = 15, 264, 32
 
 ;----------------------------
 [Infobox] ;(new in MUGEN 1.0)
-title.offset = 640,38
+title.offset = 960, 38
 title.font = 10,0,0, 255, 228, 140
 title.scale = 1.0, 1.0
 title.text = 

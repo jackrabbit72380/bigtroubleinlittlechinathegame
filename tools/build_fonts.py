@@ -737,9 +737,11 @@ def add_section_key(text, section, key, value):
     engine fills them from its own default motif rather than from our
     [Pause Menu], so their keys have to be written out explicitly.
     """
-    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*$",
+    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*(?:;.*)?$",
                       re.MULTILINE | re.IGNORECASE).search(text)
     if not head:
+        print(f"  warning: section [{section}] not found in "
+              f"{os.path.basename(MOTIF)}")
         return text, 0
     start = head.end()
     nxt = re.compile(r"^[ \t]*\[[^\]]*\]", re.MULTILINE).search(text, start)
@@ -753,9 +755,11 @@ def add_section_key(text, section, key, value):
 
 def set_section_key(text, section, key, value):
     """set_key, but only inside one [section] block."""
-    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*$",
+    head = re.compile(r"^[ \t]*\[" + re.escape(section) + r"\][ \t]*(?:;.*)?$",
                       re.MULTILINE | re.IGNORECASE).search(text)
     if not head:
+        print(f"  warning: section [{section}] not found in "
+              f"{os.path.basename(MOTIF)}")
         return text, 0
     start = head.end()
     nxt = re.compile(r"^[ \t]*\[[^\]]*\]", re.MULTILINE).search(text, start)
