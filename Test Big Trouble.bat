@@ -25,6 +25,11 @@ set "PY=py -3"
 )
 
 %PY% "tools\test_local.py" %*
-
-echo.
-pause
+set "RC=%ERRORLEVEL%"
+rem A finished run closes the window. Only a failure waits for a key, so
+rem the reason it printed can still be read.
+if not "%RC%"=="0" (
+  echo.
+  pause
+)
+exit /b %RC%

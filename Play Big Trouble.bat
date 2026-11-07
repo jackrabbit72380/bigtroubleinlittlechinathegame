@@ -119,23 +119,37 @@ echo Starting the game - the window title should read
 echo "Big Trouble in Little China: The Game".
 echo.
 
-rem Start the game in a console of its own, minimised, with its output thrown
-rem away. The engine attaches to whichever console launched it, so running it
-rem here printed its whole log into this window and the window had to stay open
-rem for the game to keep running. The helper owns that console now, so this
-rem window closes as soon as the game starts; the engine still writes
-rem save\logs\<date>.log, which is where to look if it does not come up.
+rem Start the game in a console of its own, hidden. The engine is a console
+rem program: run from this window it takes the window for its own log, and the
+rem window then has to stay open for as long as the game runs - that is the
+rem black box that sat over the game with "Press any key to continue" in it.
+rem WScript.Shell.Run with a window style of 0 creates the game's console already
+rem hidden, and needs nothing installed. The paths are handed over in the
+rem environment, so no quoting of paths with spaces has to be got right here.
+set "BTILC_DIR=%~dp0."
+set "BTILC_EXE=%~dp0%EXE%"
+set "BTILC_CFG=%CFG%"
+set "RUNV=%TEMP%\btilc-play.vbs"
+> "%RUNV%" echo Set sh = CreateObject("WScript.Shell")
+>> "%RUNV%" echo Set env = sh.Environment("PROCESS")
+>> "%RUNV%" echo q = Chr(34)
+>> "%RUNV%" echo sh.CurrentDirectory = env("BTILC_DIR")
+>> "%RUNV%" echo sh.Run q ^& env("BTILC_EXE") ^& q ^& " -config " ^& q ^& env("BTILC_CFG") ^& q, 0, False
+set "WSCRIPT=%SystemRoot%\System32\wscript.exe"
+if exist "%WSCRIPT%" if exist "%RUNV%" (
+  "%WSCRIPT%" //nologo "%RUNV%" >nul 2>&1
+  if not errorlevel 1 exit /b 0
+)
+
+rem Two fallbacks, for a Windows where the script host is locked down.
 set "RUN=%TEMP%\btilc-play.bat"
 set "RUNQ=%RUN:'=''%"
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
 >>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
-rem /min left the console in the taskbar and the engine brought it back to the
-rem front - that is the black box that opened over the game. Start-Process is
-rem the one way from a batch file to create a process whose console is hidden
-rem from the start. Without PowerShell, fall back to the minimised helper.
 set "PSEXE=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 if not exist "%PSEXE%" set "PSEXE="
 if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
 if not defined PSEXE start "" /min "%RUN%"
+exit /b 0
 exit /b 0

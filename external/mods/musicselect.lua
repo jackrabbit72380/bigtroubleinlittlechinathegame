@@ -417,6 +417,27 @@ local function doneKeys()
 	return { 'a', 'b', 'c', 'x', 'y', 'z' }
 end
 
+-- Plays the picked track, where the engine can. Builds spell this differently
+-- (and some have no call at all), so every name is probed and a build with none
+-- of them still records the choice for the next match.
+local function playTrack(file)
+	if file == nil or file == '' then
+		return false
+	end
+	for _, name in ipairs({ 'bgmPlay', 'playBgm', 'musicPlay' }) do
+		local fn = _G[name]
+		if type(fn) == 'function' then
+			if pcall(fn, file) then
+				return true
+			end
+			if pcall(fn, file, true) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 -- data/albums.sff holds every boxFront.png; sffNew is the engine call that opens
 -- one at runtime, and animNew takes "group, image, x, y, ..." the same way the
 -- motif does.
@@ -461,7 +482,7 @@ end
 
 -- Opens the browser. Runs its own frame loop, like main.f_warning, and returns
 -- once the player confirms or backs out.
-function ms.open()
+function ms.open(playOnPick)
 	local albums, why = albumsFromJson()
 	if #albums == 0 then
 		report('musicselect: ' .. tostring(why or 'data/music.json has no albums'),
@@ -518,6 +539,10 @@ function ms.open()
 	end
 
 	local albumNo, songNo, scroll = 1, 1, 1
+	-- Accept is edge-triggered. The list stays open after a pick now, and an
+	-- engine that reports a held key on every frame would otherwise re-pick
+	-- the same row each time.
+	local acceptHeld = false
 	-- Z picks a track exactly like Enter. The motif's own done keys are added to
 	-- it rather than used instead: this screenpack lists a, b, c, x, y, z, s in
 	-- some sections and only a, b, c in others, and reaching for Z must work on
@@ -538,6 +563,12 @@ function ms.open()
 	while true do
 		local album = albums[albumNo]
 		local song = album.songs[songNo]
+		local acceptNow = hit(acceptKeys) or hit(OK_FALLBACK)
+		-- Released keys re-arm the latch. A frame where an arrow won the
+		-- branch above must not count as an accept that already happened.
+		if not acceptNow then
+			acceptHeld = false
+		end
 
 		if bgSec then
 			clearColor(bgR, bgG, bgB)
@@ -627,22 +658,29 @@ function ms.open()
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-		elseif hit(acceptKeys) or hit(OK_FALLBACK) then
+		elseif acceptNow and not acceptHeld then
 			doneSnd()
 			if song ~= nil and song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
+				-- Opened over a paused fight the choice is only recorded: the
+				-- match's own music must not be replaced behind the player's back.
+				-- Opened from the title menu it is played, so a pick is heard.
+				if playOnPick then
+					playTrack(song.file)
+				end
 			else
 				-- The option album's rows ("Default") hand the match back to the
 				-- mode's own music.
 				ms.params = nil
 				ms.chosen = nil
 			end
+			-- Picking used to close the list, which from the title menu looked
+			-- like being dropped back on the main menu with nothing to show for
+			-- it. The list stays up now, with the choice on the "NOW:" line and
+			-- the track playing; ESC is the way out, and the hint line says so.
 			resetKey()
-			pcall(textImgReset, spr)
-			pcall(textImgReset, rowSpr)
-			if rowActive ~= rowSpr then pcall(textImgReset, rowActive) end
-			return true
+			acceptHeld = true
 		end
 	end
 end
@@ -668,7 +706,7 @@ local pauseEntry = pcall(function()
 			-- way the developer key list does. It closes itself and the pause
 			-- menu is still standing when it returns; a failure inside it must
 			-- not take the pause menu down, so it is caught and logged.
-			local ok, err = pcall(ms.open)
+			local ok, err = pcall(ms.open, false)
 			if not ok then
 				report('musicselect: the browser could not open from the pause menu: '
 					.. tostring(err), 'Music list: ' .. shortError(err))
@@ -684,7 +722,8 @@ end
 main.t_itemname.music = function(t, item)
 	-- A screen of its own, so a failure inside it must not take the engine down
 	-- with an error dialog: it is logged and the title menu is left standing.
-	local ok, err = pcall(ms.open)
+	-- true: the pick is played here, where there is no fight music to replace.
+	local ok, err = pcall(ms.open, true)
 	if not ok then
 		report('musicselect: the browser could not open: ' .. tostring(err),
 			'Music list: ' .. shortError(err))

@@ -260,6 +260,23 @@ def main() -> int:
 
     command = [str(exe), "-config", "save/config.ini", *args.engine_args]
     say("starting: " + " ".join(command))
+    if platform.system() == "Windows":
+        # The engine is a console program. Started normally it takes this
+        # window for its log, and the window then has to stay open for the whole
+        # session - that is the black box that sat over the game. CREATE_NO_WINDOW
+        # gives it a console of its own that is never shown, so this window can
+        # close and the game's own window is the only thing on screen.
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+        try:
+            subprocess.Popen(
+                command, cwd=ROOT, creationflags=flags,
+                stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            die(f"could not start the engine ({exc}).")
+        say("the game is starting hidden - this window closes now")
+        return 0
     try:
         return subprocess.call(command, cwd=ROOT)
     except OSError as exc:
