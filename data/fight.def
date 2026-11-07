@@ -1847,6 +1847,8 @@ p2.front8000.palfx.add = 0, 0, 0
 p2.front9000.palfx.add = 0, 0, 0
 p2.front10000.palfx.add = 0, 0, 0
 p2.frontMax.palfx.add = 0, 0, 0
+p1.counterMax.font = 4, 0, 0, 255, 228, 140
+p2.counterMax.font = 4, 0, 0, 255, 228, 140
 [Guardbar]
 ;Player 1
 p1.pos = 16, 16

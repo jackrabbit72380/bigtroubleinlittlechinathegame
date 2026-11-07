@@ -604,6 +604,14 @@ def patch_def():
     # in two sizes. The text is emptied; the tint and offsets stay.
     body = re.sub(r"(?m)^([ \t]*p[12]\.counterMax\.text[ \t]*=[ \t]*).*$",
                   r"\g<1>", body)
+    # readPBKeys maps "counterMax" to counter key -1, and resolvePBKey picks that
+    # key at maximum power. The counter[0] guard does not cover it, and an entry
+    # with text but no font has a nil font, which Layout.DrawText dereferences
+    # (f.offset) before it ever looks at the empty text - the fight screen
+    # panicked as soon as a bar filled. The text stays empty because the word is
+    # painted into sprite 44,0; the font just has to exist.
+    for side in ("p1", "p2"):
+        body = _set(body, "%s.counterMax.font" % side, "4, 0, 0, 255, 228, 140")
     body = re.sub(r"(?m)^([ \t]*p[12]\.counter\w*\.offset[ \t]*=[ \t]*)(-?\d+),[ \t]*-?\d+[ \t]*$",
                   lambda m: "%s%s,%d" % (m.group(1), m.group(2), BAND + 1), body)
     lines[s:e] = body.split("\n")
