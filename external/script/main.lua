@@ -1,5 +1,41 @@
 main = {}
 --;===========================================================
+--; INITIALIZE DATA
+--;===========================================================
+do
+	local RANDOM_IMAX = 2147483647 -- Go IMax / Park-Miller modulus
+	function math.random(min, max)
+		local r = getRandom()
+		-- math.random() -> float in [0, 1)
+		if min == nil then
+			return r / RANDOM_IMAX
+		end
+		-- math.random(max) -> integer in [1, max]
+		if max == nil then
+			max = min
+			min = 1
+		end
+		min = math.floor(min)
+		max = math.floor(max)
+		if max < min then
+			error("bad argument #2 to 'random' (interval is empty)", 2)
+		end
+		local range = max - min + 1
+		if range <= 0 or range > RANDOM_IMAX then
+			error("bad argument to 'random' (interval is too large)", 2)
+		end
+		-- Match Go Rand(min, max):
+		-- return min + Random() / (IMax / range + 1)
+		return min + math.floor(r / (math.floor(RANDOM_IMAX / range) + 1))
+	end
+	-- Keep deterministic engine RNG authoritative.
+	-- math.randomseed(...) is intentionally ignored because math.random uses getRandom().
+	function math.randomseed(_)
+		-- intentionally ignored
+	end
+end
+
+--;===========================================================
 --; COMMON FUNCTIONS
 --;===========================================================
 
@@ -622,6 +658,79 @@ main.preload = {
 	charHighlight = {},
 }
 
+--How much of the boot queue is really done. Ikemen gives the shell no load
+--percentage, but the shell owns the queue: f_preloadTick flips cell_data_ready
+--and anim_data_ready as each roster cell and stage portrait finishes, so
+--counting those flags is the actual work, not a guess at it.
+function main.f_loadingProgress()
+	local done, total = 0, 0
+	for _, ch in ipairs(main.t_selChars) do
+		if ch.playable and ch.char_ref ~= nil then
+			total = total + 1
+			if ch.cell_data_ready then done = done + 1 end
+		end
+	end
+	for _, st in ipairs(main.t_selStages) do
+		total = total + 1
+		if st.anim_data_ready then done = done + 1 end
+	end
+	return done, total
+end
+
+--The file the queue is on right now, from the same two lists the count uses:
+--the roster cell being built, then the stage portrait being built. The def
+--path is cut down to its own file name, which is what the player recognises.
+function main.f_loadingCurrent()
+	for _, ch in ipairs(main.t_selChars) do
+		if ch.playable and ch.char_ref ~= nil and not ch.cell_data_ready then
+			return (ch.char or ''):match('([^/]+)%.def$') or ch.char
+		end
+	end
+	for _, st in ipairs(main.t_selStages) do
+		if not st.anim_data_ready then
+			return (st.def or ''):match('([^/]+)%.def$') or st.name
+		end
+	end
+	return nil
+end
+
+--The boot screen used to draw anim 600, a ring that only ever looped, so it
+--looked like a progress bar while telling the player nothing. Write the live
+--figure into the loading caption instead. That caption is the one text sprite
+--the motif actually configures (loading.font/offset/scale/text); the wait
+--sprite beside the ring has no font or text of its own, so text put there would
+--not be guaranteed to show. The percentage leads, so even if the caption's end
+--is cut off the figure is still the thing the player sees.
+function main.f_loadingDraw()
+	local text = motif.title_info.loading.TextSpriteData
+	local done, total = main.f_loadingProgress()
+	local pct = 0
+	if total > 0 then
+		pct = math.floor(done * 100 / total)
+	end
+	if pct > 100 then pct = 100 end
+	--name first: if the caption runs out of room it is the figure that goes
+	local label = pct .. '%'
+	local current = main.f_loadingCurrent()
+	if current ~= nil then
+		label = current .. '  ' .. label
+	end
+	local ok = false
+	if text ~= nil then
+		--textImgSetText rewrites the sprite in place, so it keeps the position,
+		--alignment, font and shear the motif already gave it.
+		ok = pcall(function()
+			textImgSetText(text, label)
+			textImgDraw(text)
+		end)
+	end
+	if not ok then
+		--an older build without a writable caption still gets the load art
+		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
+		textImgDraw(motif.title_info.loading.wait.TextSpriteData)
+	end
+end
+
 function main.f_waitForPreloads(force)
 	if not preloading() then
 		return
@@ -641,11 +750,14 @@ function main.f_waitForPreloads(force)
 	end
 	while preloading() do
 		clearColor(0, 0, 0)
-		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
-		textImgDraw(motif.title_info.loading.wait.TextSpriteData)
 		main.f_preloadTick(2)
+		main.f_loadingDraw()
 		refresh()
 	end
+	--the loop leaves the last tick's count up, so paint the settled one too
+	clearColor(0, 0, 0)
+	main.f_loadingDraw()
+	refresh()
 end
 
 function main.f_syncCharPaletteData(ref)
@@ -731,7 +843,6 @@ function main.f_materializeCharCell(row)
 					params.scale[1] * ch.portraitscale * motif.info.localcoord[1] / ch.localcoord,
 					params.scale[2] * ch.portraitscale * motif.info.localcoord[1] / ch.localcoord
 				)
-				animSetTrans(a, params.trans, params.alpha[1], params.alpha[2])
 				animSetFacing(a, params.facing)
 				animSetXShear(a, params.xshear)
 				animSetAngle(a, params.angle)
@@ -768,7 +879,6 @@ function main.f_materializeStagePortrait(stageNo)
 						params.scale[1] * st.portraitscale * motif.info.localcoord[1] / st.localcoord,
 						params.scale[2] * st.portraitscale * motif.info.localcoord[1] / st.localcoord
 					)
-					animSetTrans(a, params.trans, params.alpha[1], params.alpha[2])
 					animSetFacing(a, params.facing)
 					animSetXShear(a, params.xshear)
 					animSetAngle(a, params.angle)
@@ -1407,14 +1517,17 @@ function main.f_addChar(line, playable, loading, slot)
 			main.t_selChars[idx].hasSlot = true
 		end
 	end
-	-- slot 'select' commands
-	local selectCmd = main.t_selChars[row].select
-	if selectCmd ~= nil then
-		local grid = main.t_selGrid[#main.t_selGrid]
-		commandAdd(selectCmd, selectCmd)
-		grid.select = grid.select or {}
-		grid.select[selectCmd] = grid.select[selectCmd] or {}
-		table.insert(grid.select[selectCmd], #grid.chars)
+	for _, v in ipairs({'next', 'previous', 'select'}) do
+		if main.t_selChars[row][v] ~= nil then
+			commandAdd(main.t_selChars[row][v], main.t_selChars[row][v])
+			if main.t_selGrid[#main.t_selGrid][v] == nil then
+				main.t_selGrid[#main.t_selGrid][v] = {}
+			end
+			if main.t_selGrid[#main.t_selGrid][v][main.t_selChars[row][v]] == nil then
+				main.t_selGrid[#main.t_selGrid][v][main.t_selChars[row][v]] = {}
+			end
+			table.insert(main.t_selGrid[#main.t_selGrid][v][main.t_selChars[row][v]], #main.t_selGrid[#main.t_selGrid].chars)
+		end
 	end
 	if loading then
 		main.f_loadingRefresh()
@@ -1516,13 +1629,15 @@ function main.f_addStageEntry(line, stageSlot)
 	st.stageSlot = stageSlot
 	local group = main.t_stageSlots[stageSlot]
 	table.insert(group.stages, row)
-	-- slot 'select' commands
-	if st.select ~= nil then
-		local selectCmd = tostring(st.select)
-		commandAdd(selectCmd, selectCmd)
-		group.select = group.select or {}
-		group.select[selectCmd] = group.select[selectCmd] or {}
-		table.insert(group.select[selectCmd], row)
+	for _, cmdType in ipairs({'next', 'previous', 'select'}) do
+		local command = st[cmdType]
+		if command ~= nil then
+			command = tostring(command)
+			commandAdd(command, command)
+			group[cmdType] = group[cmdType] or {}
+			group[cmdType][command] = group[cmdType][command] or {}
+			table.insert(group[cmdType][command], row)
+		end
 	end
 	return row
 end
@@ -1623,28 +1738,32 @@ for line in content:gmatch('[^\r\n]+') do
 			csRow = math.floor(csCell / motif.select_info.columns) + 1
 			cellKey = (csCol - 1) .. '-' .. (csRow - 1)
 		end
-		local slotStart = lineCase:match('^%s*slot%s*{%s*()')
+		local slotStart = lineCase:match('^%s*slot%s*=%s*{%s*()')
 		if slotStart ~= nil then
 			table.insert(main.t_selGrid, {['chars'] = {}, ['slot'] = 1})
 			slot = true
 			line = line:sub(slotStart)
+			lineCase = line:lower()
 		end
 		local slotEnd = false
 		if slot then
 			local slotLine = line:match('^(.-)%s*}%s*$')
 			if slotLine ~= nil then
 				line = slotLine
+				lineCase = line:lower()
 				slotEnd = true
 			end
-			-- One character per line, the trailing comma is optional.
-			line = line:gsub(',%s*$', '')
-			lineCase = line:lower()
 		end
 		if lineCase:match(',%s*exclude%s*=%s*1') then --character should be added after all slots are filled
 			table.insert(t_addExluded, line)
 		elseif line:match('%S') then
 			if slot then
-				main.f_addChar(line, true, true, true)
+				for _, entry in ipairs(main.f_strsplit('|', line)) do
+					entry = entry:match('^%s*(.-)%s*$')
+					if entry ~= '' then
+						main.f_addChar(entry, true, true, true)
+					end
+				end
 			else
 				main.f_addChar(line, true, true, false)
 				csCell = csCell + 1
@@ -1655,7 +1774,7 @@ for line in content:gmatch('[^\r\n]+') do
 			csCell = csCell + 1
 		end
 	elseif section == 2 then --[ExtraStages]
-		local slotStart = lineCase:match('^%s*slot%s*{%s*()')
+		local slotStart = lineCase:match('^%s*slot%s*=%s*{%s*()')
 		if slotStart ~= nil then
 			table.insert(main.t_stageSlots, {stages = {}, slot = 1})
 			stageSlot = #main.t_stageSlots
@@ -1668,10 +1787,8 @@ for line in content:gmatch('[^\r\n]+') do
 				line = slotLine
 				slotEnd = true
 			end
-			-- One stage per line, the trailing comma is optional.
-			line = line:gsub(',%s*$', '')
-			if line:match('%S') then
-				main.f_addStageEntry(line, stageSlot)
+			for _, entry in ipairs(main.f_strsplit('|', line)) do
+				if entry:match('%S') then main.f_addStageEntry(entry, stageSlot) end
 			end
 		elseif line:match('%S') then
 			main.f_addStageEntry(line)
@@ -2761,8 +2878,8 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 			if motif.files.logo.storyboard ~= '' then
 				main.f_storyboard(motif.files.logo.storyboard)
 			end
-			if motif.files.intro.storyboard ~= '' then
-				main.f_storyboard(motif.files.intro.storyboard)
+			if (motif.files.intro and motif.files.intro.storyboard or '') ~= '' then
+				main.f_storyboard((motif.files.intro and motif.files.intro.storyboard or ''))
 			end
 		end
 		if bool_bgreset then
@@ -2804,23 +2921,19 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 				end
 				local cancelInputTime = getInputTime(-1, motif[main.group].menu.cancel.key)
 				if esc() or cancelInputTime > 0 then
-					-- Only a fresh press (or Esc) backs out or moves to Exit.
-					local fresh = esc() or cancelInputTime == 1
-					if fresh then
-						if not bool_main then
-							sndPlay(motif.Snd, motif[main.group].cancel.snd[1], motif[main.group].cancel.snd[2])
-						elseif not esc() and t[item].itemname ~= 'exit' then
-							-- menu key moves cursor to exit without exiting the game
-							for i = 1, #t do
-								if t[i].itemname == 'exit' then
-									sndPlay(motif.Snd, motif[main.group].cancel.snd[1], motif[main.group].cancel.snd[2])
-									item = i
-									cursorPosY = math.min(item, motif[main.group].menu.window.visibleitems)
-									if cursorPosY >= motif[main.group].menu.window.visibleitems then
-										moveTxt = (item - motif[main.group].menu.window.visibleitems) * motif[main.group].menu.item.spacing[2]
-									end
-									break
+					if not bool_main then
+						sndPlay(motif.Snd, motif[main.group].cancel.snd[1], motif[main.group].cancel.snd[2])
+					elseif not esc() and t[item].itemname ~= 'exit' then
+						--menu key moves cursor to exit without exiting the game
+						for i = 1, #t do
+							if t[i].itemname == 'exit' then
+								sndPlay(motif.Snd, motif[main.group].cancel.snd[1], motif[main.group].cancel.snd[2])
+								item = i
+								cursorPosY = math.min(item, motif[main.group].menu.window.visibleitems)
+								if cursorPosY >= motif[main.group].menu.window.visibleitems then
+									moveTxt = (item - motif[main.group].menu.window.visibleitems) * motif[main.group].menu.item.spacing[2]
 								end
+								break
 							end
 						end
 					end
@@ -2835,10 +2948,10 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 							motif.infobox.text.TextSpriteData
 						)
 					end
-					if fresh and (not bool_main or esc()) then
+					if not bool_main or esc() then
 						break
 					end
-				elseif bool_f1 and (getKey(motif.infobox.keycode) or gameOption('Config.FirstRun')) then
+				elseif bool_f1 and (getKey(motif.infobox.keycode or 0) or gameOption('Config.FirstRun')) then
 					if gameOption('Config.FirstRun') then
 						modifyGameOption('Config.FirstRun', false)
 						options.f_saveCfg(false)
@@ -2851,7 +2964,8 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 						motif.infobox.title.TextSpriteData,
 						motif.infobox.text.TextSpriteData
 					)
-				elseif motif.attract_mode.enabled and getKey(motif.attract_mode.options.keycode) then
+				elseif motif.attract_mode.enabled and (motif.attract_mode.options ~= nil
+							and getKey(motif.attract_mode.options.keycode)) then
 					main.f_default()
 					main.menu.f = main.t_itemname.options()
 					sndPlay(motif.Snd, motif[main.group].cursor.done.snd.default[1], motif[main.group].cursor.done.snd.default[2])
@@ -3428,7 +3542,8 @@ function main.f_attractStart()
 			creditsCnt = getCredits()
 		end
 		--options
-		if motif.attract_mode.enabled and getKey(motif.attract_mode.options.keycode) then
+		if motif.attract_mode.enabled and (motif.attract_mode.options ~= nil
+							and getKey(motif.attract_mode.options.keycode)) then
 			main.f_default()
 			main.menu.f = main.t_itemname.options()
 			local doneSnd = motif[main.group].cursor.done.snd.options or motif[main.group].cursor.done.snd.default
@@ -3593,8 +3708,8 @@ function main.f_demoStart()
 	if not motif.attract_mode.enabled then
 		if introWaitCycles >= motif.demo_mode.intro.waitcycles then
 			main.f_hiscore("arcade", -1)
-			if motif.files.intro.storyboard ~= '' then
-				main.f_storyboard(motif.files.intro.storyboard)
+			if (motif.files.intro and motif.files.intro.storyboard or '') ~= '' then
+				main.f_storyboard((motif.files.intro and motif.files.intro.storyboard or ''))
 			end
 			introWaitCycles = 0
 		else
@@ -3602,7 +3717,7 @@ function main.f_demoStart()
 		end
 		bgReset(motif[main.background].BGDef)
 		--start title BGM only if it has been interrupted
-		if motif.demo_mode.fight.stopbgm or motif.demo_mode.fight.playbgm or (introWaitCycles == 0 and motif.files.intro.storyboard ~= '') then
+		if motif.demo_mode.fight.stopbgm or motif.demo_mode.fight.playbgm or (introWaitCycles == 0 and (motif.files.intro and motif.files.intro.storyboard or '') ~= '') then
 			playBgm({source = "motif.title", interrupt = true})
 		end
 	end
@@ -3735,7 +3850,14 @@ function main.f_menuCommonCalc(t, item, cursorPosY, moveTxt, sec, cursorParams, 
 		end
 	end
 	main.menuWrapped = false
-	if item > #t or (item == 1 and t[item].itemname:match("^spacer%d*$")) then
+	if #t == 0 then
+		-- A screen can come up with no items at all (the video submenus list
+		-- whatever resolutions the motif names, and one missing key leaves the
+		-- list empty). Indexing t[1] below then raised "attempt to index a
+		-- non-table object(nil) with key 'itemname'" on entry.
+		item = 1
+		cursorPosY = 1
+	elseif item > #t or (item == 1 and t[item].itemname:match("^spacer%d*$")) then
 		item = 1
 		while true do
 			if not t[item].itemname:match("^spacer%d*$") or item >= #t then break end
