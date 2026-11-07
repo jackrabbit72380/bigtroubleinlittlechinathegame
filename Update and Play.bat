@@ -1,4 +1,56 @@
 @echo off
+if /i "%~1"=="--body" goto body
+rem ---------------------------------------------------------------------------
+rem  A batch file that runs off its own end leaves nothing behind: no message,
+rem  no prompt - the window simply closes. Every "it showed the pistol and then
+rem  went away" is that, and there is nothing left to read afterwards. So this
+rem  file runs the rest of itself as a child. If the child reaches one of its
+rem  own endings it decides what the window does: a finished run closes it and a
+rem  reported failure waits for its pause. If it does not, this window is still
+rem  here to say where it stopped, and to read its log back.
+rem ---------------------------------------------------------------------------
+setlocal EnableExtensions DisableDelayedExpansion
+cd /d "%~dp0"
+title Big Trouble in Little China: The Game - Updater
+set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
+set "BOOT=%TEMP%\btilc-updater"
+set "BOOQ=%BOOT:'=''%"
+set "LOG=%BOOT%\last-run.log"
+call "%~f0" --body %*
+goto stopped
+:stopped
+set "RC=%ERRORLEVEL%"
+echo.
+echo The updater stopped before it started the game, and nothing it printed says
+echo why: a batch file that runs off its own end leaves no message behind.
+echo.
+"%SystemRoot%\System32\findstr.exe" /c:"btilc-launcher-end" "%~f0" >nul 2>&1
+if errorlevel 1 goto stopped_cut
+echo It ran off the end of a whole file, so its log says where it got to:
+echo.
+if not exist "%LOG%" goto stopped_nolog
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Get-Content -LiteralPath '%BOOQ%\last-run.log' -Tail 16" 2>nul
+goto stopped_tail
+:stopped_nolog
+echo   (no log was written)
+:stopped_tail
+echo.
+echo   saved as  %LOG%
+echo.
+pause
+exit /b 1
+:stopped_cut
+echo This file is cut short: it stops part way through itself, which is why the
+echo window closes here with nothing to show.
+echo.
+echo Save a whole one over this file:
+echo.
+echo   https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat
+echo.
+pause
+exit /b 1
+:body
+shift
 rem ===========================================================================
 rem  BIG TROUBLE IN LITTLE CHINA - Updater v55
 rem
@@ -56,7 +108,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=57"
+set "UPDVER=58"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="

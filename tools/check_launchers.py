@@ -466,6 +466,42 @@ def _selfupdate_problems(name, raw):
     return out
 
 
+def _silent_end_problems(name, raw):
+    """A batch file cannot report its own death, so it must outlive one.
+
+    When cmd runs a batch file it reads it line by line, and a file that ends -
+    because it was cut short, or because a branch fell through to the last line
+    - just stops: no message, no pause, and for a double-clicked window no trace
+    at all. The updater is 1700 lines of branches, so one of them landing on the
+    end of the file reads as "it showed the pistol and closed". The file runs the
+    rest of itself as a child for exactly this: any ending inside the child is
+    its own business, and anything else leaves the window that started it in
+    place, with the log in front of the player.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    if 'call "%~f0" --body' not in text:
+        out.append("%s: the file does not run itself as a child, so a branch that "
+                   "reaches its last line closes the window with nothing said"
+                   % name)
+    if not re.search(r"(?m)^:stopped$", text):
+        out.append("%s: there is nowhere to report a run that ended early, so the "
+                   "window closes over it" % name)
+    else:
+        # the report has its own pause: the one further down belongs to the
+        # cut-file message, and finding that one proves nothing
+        block = text.split("\n:stopped\n", 1)[1].split("\n:stopped_cut\n", 1)[0]
+        if not re.search(r"(?m)^pause$", block):
+            out.append("%s: the early-end report does not wait for a key, so it "
+                       "scrolls away with the window" % name)
+    if not re.search(r"(?m)^:body$\n+shift$", text):
+        out.append("%s: the child does not drop the flag it was started with, so "
+                   "--updated no longer reaches the self-update guard" % name)
+    return out
+
+
 def _launcherrepair_problems(name, raw):
     """The updater is the one file that cannot put itself back.
 
@@ -502,6 +538,8 @@ CONSOLE_LABELS = {
     "download", "skipver", "verify_again",
     # the launcher could not refresh itself: news the player has to see
     "selfupdate_partial", "selfupdate_nofetch",
+    # a run that ran off the end of the file, with no message of its own
+    "stopped", "stopped_nolog", "stopped_tail", "stopped_cut",
 }
 
 ECHO_LINE = re.compile(r"(?i)^(?:if .*?\s)?echo(?:\s|\.|$)")
@@ -724,6 +762,7 @@ def problems(root):
             found.extend(_report_problems(name, raw))
             found.extend(_selfupdate_problems(name, raw))
             found.extend(_launcherrepair_problems(name, raw))
+            found.extend(_silent_end_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 
