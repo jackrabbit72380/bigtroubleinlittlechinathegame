@@ -101,6 +101,8 @@ stages/lopans_hallway.def
 stages/the_upside_down.def
 stages/hell_sinners.def
 stages/stage0.def        ; training room
+stages/stage3d.def        ; Third Heights - a 3D model stage, not sprite layers
+stages/stage3d_outline.def ; Third Heights, drawn as an outline pass
 
 ;-------------------------------------------------------------------------------
 [Options]

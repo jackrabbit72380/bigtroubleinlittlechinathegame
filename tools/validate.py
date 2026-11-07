@@ -873,6 +873,11 @@ def check_stage_aspect():
             err("stages: %s is %dx%d (%.2f:1), so it letterboxes in a 16:9 "
                 "window" % (path, w, h, w / float(h)))
         body = read(full)
+        # A 3D stage gets its depth from the model, so it has no sky and
+        # lip sprite layers to find - the same reason the layer count above
+        # does not apply to it.
+        if re.search(r"^\s*model\s*=", body, re.M | re.I):
+            continue
         for need in ("[BG sky]", "[BG lip]"):
             if need not in body:
                 err("stages: %s has no %s layer, so it has no depth" % (path, need))
