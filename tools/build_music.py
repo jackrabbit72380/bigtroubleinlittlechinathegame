@@ -89,7 +89,20 @@ EXTS = ("ogg", "mp3", "flac", "wav", "mid", "midi")
 UNSUPPORTED = ("opus", "m4a", "aac", "wma", "aiff", "aif", "mp4", "mod", "xm", "it", "s3m")
 
 COVER_NAMES = ("boxfront.png", "boxfront.jpg", "boxfront.jpeg")
-COVER_MAX = 640  # the browser draws covers at 1:1 and caps them at this
+COVER_MAX = 640  # packed covers are capped at this; the browser scales them
+                 # to fit its box, so the size is recorded with the album
+
+
+def cover_size(path):
+    """The pixel size a cover is packed at, after the cap above."""
+    from PIL import Image
+
+    with Image.open(path) as img:
+        w, h = img.size
+    if max(w, h) > COVER_MAX:
+        scale = COVER_MAX / max(w, h)
+        w, h = max(1, round(w * scale)), max(1, round(h * scale))
+    return w, h
 
 SLOTS = (
     ("Title", "title.bgm"),
@@ -382,7 +395,12 @@ def write_music_json(albums):
                 "Order": order,
             }
         if songs:
-            payload[album["name"]] = {"Art": i, "Songs": songs}
+            entry = {"Art": i, "Songs": songs}
+            if album["cover"]:
+                # the browser scales the cover into its own box, so it needs
+                # the size the sprite was packed at
+                entry["ArtW"], entry["ArtH"] = cover_size(album["cover"])
+            payload[album["name"]] = entry
     with open(MUSIC_JSON, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(payload, fh, indent=2, ensure_ascii=False)
         fh.write("\n")

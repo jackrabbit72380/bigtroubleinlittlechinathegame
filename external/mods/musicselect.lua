@@ -21,9 +21,12 @@ main.t_musicSelect = main.t_musicSelect or {}
 local ms = main.t_musicSelect
 
 -- 1080p layout: cover on the left, track list to its right, all inside 1920x1080.
-local COVER = {x = 470, y = 470}
-local LIST = {x = 880, y = 330, pitch = 40, rows = 13}
-local HEAD = {x = 960, y = 210}
+-- The album title sits in the frame across the top of this screen, the cover
+-- fills the box on the left, and the rows start to its right. Every number
+-- is in the same 1920x1080 pixels the rest of the motif uses.
+local COVER = {x = 470, y = 470, w = 660, h = 680}
+local LIST = {x = 880, y = 290, pitch = 40, rows = 13}
+local HEAD = {x = 960, y = 90}
 local HINT = {x = 960, y = 990}
 local CHOICE = {x = 960, y = 1030}
 
@@ -201,7 +204,14 @@ local function albumsFromJson()
 				return string.lower(a.title) < string.lower(b.title)
 			end)
 			if #songs > 0 then
-				albums[#albums + 1] = {name = tostring(name), songs = songs, art = album.Art}
+				albums[#albums + 1] = {
+					name = tostring(name),
+					songs = songs,
+					art = album.Art,
+					-- the size the cover was packed at, so it can be fitted to its box
+					artW = tonumber(album.ArtW),
+					artH = tonumber(album.ArtH),
+				}
 			end
 		end
 	end
@@ -232,6 +242,29 @@ local function listSprite()
 		return spr
 	end
 	return nil
+end
+
+-- The rows are drawn with the menu's own item sprites, never with a marker
+-- character in front of them: the row under the cursor uses the motif's active
+-- face and the rest use its normal one, which is how the title, pause and option
+-- menus show where the cursor is. A screenpack that has no item sprites falls
+-- back to the command-list sprite for both, so the list still draws.
+local function rowSprites()
+	local normal, active = nil, nil
+	local ok, item = pcall(function()
+		return motif.pause_menu.pause_menu.menu.item
+	end)
+	if ok and type(item) == 'table' then
+		pcall(function() normal = item.TextSpriteData end)
+		pcall(function() active = item.active and item.active.TextSpriteData end)
+	end
+	if normal == nil then
+		normal = listSprite()
+	end
+	if active == nil then
+		active = normal
+	end
+	return normal, active
 end
 
 -- One line on the shared sprite. Every engine call is probed: a build missing
@@ -384,10 +417,24 @@ local function drawAlbumArt(albumData, album)
 	-- the motif's own space, the numbers below are the same 1920x1080 pixels every
 	-- text line on this screen uses.
 	pcall(animSetLocalcoord, anim, motif.info.localcoord[1], motif.info.localcoord[2])
+	-- Fitted to the box rather than drawn at whatever size it was packed at: the
+	-- cover and the box are not the same shape, and an unfitted sprite showed one
+	-- corner of the artwork. The packed size travels with the album, so the scale
+	-- is the box divided by the art, never more than 1 - a small cover keeps its
+	-- own pixels instead of being blown up.
+	local scale = 1
+	if album.artW ~= nil and album.artH ~= nil and album.artW > 0 and album.artH > 0 then
+		scale = math.min(COVER.w / album.artW, COVER.h / album.artH)
+		if scale > 1 then
+			scale = 1
+		end
+	end
+	pcall(animSetScale, anim, scale, scale)
 	pcall(animSetPos, anim, COVER.x, COVER.y)
 	-- Clipped to the cover's own column, so artwork of any shape stays clear of
 	-- the track list at x 880.
-	pcall(animSetWindow, anim, COVER.x - 330, COVER.y - 340, COVER.x + 330, COVER.y + 340)
+	pcall(animSetWindow, anim, COVER.x - COVER.w / 2, COVER.y - COVER.h / 2,
+		COVER.x + COVER.w / 2, COVER.y + COVER.h / 2)
 	pcall(animUpdate, anim)
 	pcall(animDraw, anim)
 end
@@ -404,6 +451,7 @@ function ms.open()
 
 		local ui = motif.option_info
 	local spr = listSprite()
+	local rowSpr, rowActive = rowSprites()
 	if spr == nil then
 		report('musicselect: no text sprite to draw with: the motif has no ' ..
 			'[Pause Menu] movelist.text.TextSpriteData',
@@ -488,11 +536,11 @@ function ms.open()
 			local s = album.songs[index]
 			-- an empty slot still draws: the list keeps its rhythm, and a screen
 			-- that renders nothing at all is easier to tell from a short one
-			local mark = ''
-			if s ~= nil then
-				mark = (index == songNo and '> ' or '  ') .. s.title
-			end
-			drawFitted(spr, mark, LIST.x, LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE, MAXROW)
+			-- The cursor is the motif's highlight, not a character: the row under
+			-- it is drawn with the active item sprite and carries no marker.
+			local use = (index == songNo and rowActive ~= nil) and rowActive or rowSpr
+			drawFitted(use, s ~= nil and s.title or '', LIST.x,
+				LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE, MAXROW)
 		end
 
 		drawLine(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
@@ -505,6 +553,8 @@ function ms.open()
 		if esc() then
 			resetKey()
 			pcall(textImgReset, spr)
+			pcall(textImgReset, rowSpr)
+			if rowActive ~= rowSpr then pcall(textImgReset, rowActive) end
 			return false
 		elseif hit(UP) then
 			moveSnd()
@@ -553,6 +603,8 @@ function ms.open()
 			end
 			resetKey()
 			pcall(textImgReset, spr)
+			pcall(textImgReset, rowSpr)
+			if rowActive ~= rowSpr then pcall(textImgReset, rowActive) end
 			return true
 		end
 	end
