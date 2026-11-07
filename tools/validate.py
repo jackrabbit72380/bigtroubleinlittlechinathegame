@@ -784,6 +784,46 @@ def check_motif_ints():
                     % (os.path.basename(path), number, m.group(1)))
     notes.append("motif: every coordinate the engine reads is a whole number")
 
+def check_powerbar_fonts():
+    """Every power bar level the engine can select must carry a font.
+
+    readPBKeys maps "counterMax" to counter key -1 and resolvePBKey returns that
+    key at maximum power. PowerBar.draw only checks counter[0].fnt before it
+    draws the selected one, and an entry with text but no font has a nil font,
+    which Layout.DrawText dereferences before it reads the (empty) text. That
+    shipped once and crashed the fight screen the moment a bar filled, so the
+    levels are checked here instead.
+    """
+    path = os.path.join(ROOT, "data", "fight.def")
+    if not os.path.isfile(path):
+        return
+    lines = read(path).splitlines()
+    start = next((i for i, ln in enumerate(lines)
+                  if ln.strip().lower() == "[powerbar]"), None)
+    if start is None:
+        err("powerbar: data/fight.def has no [Powerbar] section")
+        return
+    end = next((j for j in range(start + 1, len(lines))
+                if lines[j].lstrip().startswith("[")), len(lines))
+    keys = {}
+    for line in lines[start + 1:end]:
+        m = re.match(r"\s*([A-Za-z0-9_.]+)\s*=\s*(.*)$", line)
+        if m:
+            keys[m.group(1).lower()] = m.group(2)
+    for side in ("p1", "p2"):
+        for family in ("counter", "value"):
+            if ("%s.%s.font" % (side, family)) not in keys:
+                continue  # the engine skips the whole family without a base font
+            elements = {k.split(".")[1] for k in keys
+                        if k.startswith("%s.%s" % (side, family))
+                        and len(k.split(".")) > 2}
+            for element in sorted(elements):
+                if ("%s.%s.font" % (side, element)) not in keys:
+                    err("powerbar: %s.%s has no font, so the engine draws a nil "
+                        "font at that level (crash at full power)"
+                        % (side, element))
+    notes.append("powerbar: every counter/value level has a font")
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -794,6 +834,7 @@ def main():
     check_stage_aspect()
     check_launchers()
     check_motif_ints()
+    check_powerbar_fonts()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
