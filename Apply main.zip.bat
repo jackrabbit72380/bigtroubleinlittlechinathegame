@@ -67,7 +67,9 @@ goto unpacked
 if not defined POWERSHELL goto badzip
 if exist "%TMP%\unpack" rd /s /q "%TMP%\unpack" >nul 2>&1
 mkdir "%TMP%\unpack" 2>nul
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZIP%' -DestinationPath '%TMP%\unpack'"
+set "ZQ=%ZIP:'=''%"
+set "TQ=%TMP:'=''%"
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -Force -LiteralPath '%ZQ%' -DestinationPath '%TQ%\unpack'"
 
 :unpacked
 for /d %%D in ("%TMP%\unpack\*") do set "SRC=%%~fD"
