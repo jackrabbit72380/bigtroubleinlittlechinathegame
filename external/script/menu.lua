@@ -284,7 +284,10 @@ function menu.f_createMenu(tbl, sec, bg, bool_main)
 		if tbl.reset then
 			tbl.reset = false
 		else
-			main.f_menuCommonDraw(t, tbl.item, tbl.cursorPosY, tbl.moveTxt, sec, bg, true)
+			-- Rows are centred on the frame: menu.pos anchors this list at its
+			-- middle, so left-aligned rows hung off to the right of where they
+			-- belonged - the motif's align field is MUGEN's, where 0 is left.
+			main.f_menuCommonDraw(t, tbl.item, tbl.cursorPosY, tbl.moveTxt, sec, bg, true, {align = 0})
 		end
 		-- Draw during fades, but don't accept menu input until they finish.
 		if not main.pauseMenuActive or fadeActive() or menu.pauseExitDelay >= 0 then

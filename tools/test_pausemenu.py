@@ -82,7 +82,6 @@ def check_section(label, values, frame_w, frame_h):
         pos = numbers(values["menu.pos"])
         pitch = numbers(values["menu.item.spacing"])[1]
         rows = max(1, int(float(values.get("menu.window.visibleitems", "10"))))
-        align = int(values["menu.item.font"].split(",")[2].strip())
         band = numbers(values["menu.boxcursor.coords"])
     except (KeyError, ValueError, IndexError) as exc:
         return [f"{label}: the section has no layout numbers ({exc})"]
@@ -101,8 +100,6 @@ def check_section(label, values, frame_w, frame_h):
 
     if pos[0] != frame_w / 2:
         problems.append(f"{label}: menu.pos.x is {pos[0]:.0f}, not the frame's middle")
-    if align != 0:
-        problems.append(f"{label}: rows are not centre-aligned")
 
     row_h = max(45.0, band[3] - band[1] + 1)
     for i in range(1, rows + 1):
@@ -216,6 +213,38 @@ def check_movelist(label, values, frame_w):
     return problems
 
 
+def check_row_alignment():
+    """Rows must be centred by the drawing code, not by the motif.
+
+    The align field in a motif's font line is MUGEN's, where 0 means left, and
+    this build bakes it into the sprite. A list anchored at the middle of the
+    frame therefore drew its rows to the right of centre. The pause list asks
+    for centred rows instead, after the reset that drops the baked value.
+    """
+    problems = []
+    main_text = read(MAIN)
+    menu_text = read(MENU)
+    start = main_text.find("local function drawItem")
+    if start < 0:
+        return ["pause rows: the item drawing function is gone"]
+    block = main_text[start:]
+    end = block.find("-- draw active items")
+    if end > 0:
+        block = block[:end]
+    reset = block.find("textImgReset(labelSprite)")
+    align = block.find("textImgSetAlign(labelSprite")
+    place = block.find("main.f_menuItemPlace(labelSprite")
+    if reset < 0 or align < 0:
+        problems.append("pause rows: the label sprite is never told how to align")
+    elif not reset < align < place:
+        problems.append("pause rows: alignment is set outside the reset and place")
+    if "opts.align" not in block:
+        problems.append("pause rows: the draw path ignores the caller's alignment")
+    if "{align = 0}" not in menu_text:
+        problems.append("pause rows: menu.lua does not ask for centred rows")
+    return problems
+
+
 def main():
     problems = []
     try:
@@ -243,6 +272,12 @@ def main():
             print(f"       {line}")
         problems += found
 
+    found = check_row_alignment()
+    print("  %s pause rows are centred by the drawing code" % ("ok " if not found else "FAIL"))
+    for line in found:
+        print(f"       {line}")
+    problems += found
+
     devhelp = read(DEVHELP)
     if "textImgSetPos(sec.movelist.title.TextSpriteData" not in devhelp:
         problems.append("the developer key heading is still added to its base")
@@ -252,7 +287,7 @@ def main():
     if problems:
         print(f"\nthe pause list regressed in {len(problems)} place(s)")
         return 1
-    print("\nthe pause list is centred, fits the frame and ignores the baked sprite base")
+    print("\nthe pause list is centred, fits the frame and ignores the baked sprite base and align")
     return 0
 
 

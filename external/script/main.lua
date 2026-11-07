@@ -4020,6 +4020,9 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 	--   offx, offy               : per-call offsets
 	--   skipBG0, skipBG1         : skip bg layer 0 / 1
 	--   skipTitle                : skip drawing the title
+	--   align                    : label alignment, in this API's convention
+	--                              (1 = left, 0 = centred, -1 = right); nil
+	--                              keeps whatever the motif baked in
 	--   forceInactive            : treat "selected" row as inactive (no highlight, no cursor)
 	opts = opts or {}
 	local offx = opts.offx or 0
@@ -4098,6 +4101,13 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 			labelSprite = isActive and m.item.active.TextSpriteData or m.item.TextSpriteData
 		end
 		textImgReset(labelSprite)
+		-- A motif's align field is MUGEN's, where 0 is left, and this build bakes
+		-- it into the sprite: a list anchored at the middle of the frame drew its
+		-- rows to the right of it. A section that wants centred rows says so, and
+		-- says it after the reset, which drops what the sprite was made with.
+		if opts.align ~= nil then
+			pcall(textImgSetAlign, labelSprite, opts.align)
+		end
 		main.f_menuItemPlace(labelSprite, posX, posY)
 		textImgSetText(labelSprite, displayname)
 		textImgDraw(labelSprite)
