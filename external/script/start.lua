@@ -1267,53 +1267,27 @@ end
 -- The text calls are the ones external/mods/devhelp.lua uses against this same
 -- engine: the font goes in as the table or as its index, whichever this build
 -- accepts, and the call that works is remembered.
-local randomStop = {text = nil, mode = nil}
+local randomAnims = {}
 
-local function randomStopText()
-	if randomStop.text == nil then
-		local ok, made = pcall(textImgNew)
-		if not ok or made == nil then
-			return nil
+-- The RANDOM word, drawn from the sprites tools/build_select_grid.py paints into
+-- system.sff: 151,0 is the word in gold, 151,11 the same word in the player's
+-- green. It used to be built here as a text sprite, and this build refuses the
+-- textImg* calls that need (textImgSetFont among them), so the stop drew
+-- nothing at all - leaving only the cursor box's white tab under the wall.
+local function randomStopAnim(lit)
+	local key = lit and 'lit' or 'base'
+	if randomAnims[key] == nil then
+		local ok, a = pcall(animNew, nil, key == 'lit' and '151,11, 0,0, -1' or '151,0, 0,0, -1')
+		if ok and a ~= nil then
+			randomAnims[key] = a
+		else
+			randomAnims[key] = false
 		end
-		randomStop.text = made
 	end
-	local t = randomStop.text
-	if randomStop.mode == nil then
-		local sec = motif.select_info and motif.select_info.p1
-		local font = (sec and sec.name and sec.name.font)
-			or (motif.title_info and motif.title_info.menu and motif.title_info.menu.item.font)
-		if font == nil then
-			return nil
-		end
-		local idx = type(font) == 'table' and font[1] or font
-		local tries = {{'object', font}}
-		if idx ~= nil then
-			tries[#tries + 1] = {'index', idx}
-			if motif.files and motif.files.font and motif.files.font['font' .. tostring(idx)] then
-				tries[#tries + 1] = {'object', motif.files.font['font' .. tostring(idx)]}
-			end
-		end
-		for _, try in ipairs(tries) do
-			if pcall(textImgSetFont, t, try[2]) then
-				randomStop.mode = try[1]
-				break
-			end
-		end
-		if randomStop.mode == nil then
-			randomStop.mode = 'none'
-		end
-		pcall(textImgSetAlign, t, 1)
-		pcall(textImgSetScale, t, 1.5, 1.5)
-	end
-	if randomStop.mode == 'none' then
-		return nil
-	end
-	return t
+	return randomAnims[key] or nil
 end
 
--- Is this player's cursor on the RANDOM stop? Asked per side, because the
--- word under the wall is that player's own name label and only that player's
--- cursor should light it.
+-- Is this player's cursor on the RANDOM stop?
 local function sideOnRandomStop(side)
 	local c = start.c[side]
 	local cell = c and c.cell
@@ -1324,8 +1298,7 @@ local function sideOnRandomStop(side)
 	return g ~= nil and (g.char == 'randomselect' or g.hidden == 3)
 end
 
--- Any player's cursor, not just the first: in versus both cursors can be on
--- the stop, and the label should read as selected for either of them.
+-- Any player's cursor, not just the first: in versus both can be on the stop.
 local function randomStopLit()
 	for side = 1, 8 do
 		if sideOnRandomStop(side) then
@@ -1335,21 +1308,34 @@ local function randomStopLit()
 	return false
 end
 
+-- Where the word sits: centred under the painted wall, using the section's own
+-- grid metrics rather than a number typed to fit one layout.
 function start.f_drawRandomStop()
-	local t = randomStopText()
-	if t == nil then
+	local si = motif.select_info
+	local pos = si and si.pos
+	if pos == nil or si.cell == nil then
 		return
 	end
-	local pos = motif.select_info.pos
-	-- the wall is 1038 wide from x=441, so its middle is 960
-	local x = pos[1] + 519
-	local y = 1020
-	local col = randomStopLit() and {72, 232, 96} or {206, 168, 86}
-	pcall(textImgReset, t)
-	pcall(textImgSetText, t, 'RANDOM')
-	pcall(textImgSetPos, t, x, y)
-	pcall(textImgSetColor, t, col[1], col[2], col[3])
-	pcall(textImgDraw, t)
+	local cols = si.columns or 8
+	local rows = math.max(1, (si.rows or 7) - 1)   -- the last row is this stop
+	local cellW, cellH = si.cell.size[1], si.cell.size[2]
+	local gap = si.cell.spacing or 2
+	local wallW = cols * cellW + (cols - 1) * gap
+	local wallH = rows * cellH + (rows - 1) * gap
+	local x = pos[1] + math.floor(wallW / 2) - 64
+	-- the frame's own padding (15) plus a little air, so the word sits
+	-- under the wall rather than on its bottom rule
+	local y = pos[2] + wallH + 19
+	local base = randomStopAnim(false)
+	if base ~= nil then
+		main.f_animPosDraw(base, x, y)
+	end
+	if randomStopLit() then
+		local lit = randomStopAnim(true)
+		if lit ~= nil then
+			main.f_animPosDraw(lit, x, y)
+		end
+	end
 end
 
 -- PLAYER 1 and PLAYER 2: the same font object, the same scale and the same row
@@ -2940,6 +2926,10 @@ function start.f_selectScreen()
 	start.f_resetTempData(motif.select_info, 'face')
 	f_snapCursor()
 	local stageActiveCount = 0
+	-- Both picks in, the wall is raised: the stage is chosen on a screen of
+	-- its own, reached by fading the grid out and the stage screen in.
+	local stagePhase = false
+	local stagePhaseFade = false
 	local stageActiveState = false
 	timerSelect = 0
 	start.escFlag = false
@@ -3007,24 +2997,29 @@ function start.f_selectScreen()
 		--draw clearcolor
 		clearColor(motif.selectbgdef.bgclearcolor[1], motif.selectbgdef.bgclearcolor[2], motif.selectbgdef.bgclearcolor[3])
 		--draw layerno = 0 backgrounds
-		bgDraw(motif.selectbgdef.BGDef, 0)
-		--draw title
-		textImgDraw(motif.select_info.title.TextSpriteData)
-		--draw portraits
-		for side = 1, 2 do
-			if #start.p[side].t_selTemp > 0 then
-				start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
+		-- Once both fighters are picked the wall is off the frame: the grid, its
+		-- title and the two side portraits stop being drawn, and the stage card
+		-- is what is left, so the two screens are never on top of each other.
+		if not stagePhase then
+			bgDraw(motif.selectbgdef.BGDef, 0)
+			--draw title
+			textImgDraw(motif.select_info.title.TextSpriteData)
+			--draw portraits
+			for side = 1, 2 do
+				if #start.p[side].t_selTemp > 0 then
+					start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
+				end
 			end
+			--draw cell art
+			if start.needUpdateDrawList then
+				staticDrawList = start.f_updateDrawList()
+				start.needUpdateDrawList = false 
+			end
+			for _, item in ipairs(staticDrawList) do
+				animUpdate(item.anim)
+			end
+			batchDraw(staticDrawList)
 		end
-		--draw cell art
-		if start.needUpdateDrawList then
-			staticDrawList = start.f_updateDrawList()
-			start.needUpdateDrawList = false 
-		end
-		for _, item in ipairs(staticDrawList) do
-			animUpdate(item.anim)
-		end
-		batchDraw(staticDrawList)
 		--team and select menu
 		if blinkCount < motif.select_info.p2.cursor.switchtime then
 			blinkCount = blinkCount + 1
@@ -3104,7 +3099,11 @@ function start.f_selectScreen()
 								cursorState = 'done'
 							end
 						end
-						if v.selectState < 4 and start.f_selGrid(start.c[v.player].cell + 1).hidden ~= 1 and not start.c[v.player].blink then
+						-- no box on the RANDOM stop: its word is the mark, lit green by
+						-- f_drawRandomStop, and a 160px frame there only showed as a
+						-- white tab under the wall
+						if v.selectState < 4 and start.f_selGrid(start.c[v.player].cell + 1).hidden ~= 1
+							and not start.c[v.player].blink and not sideOnRandomStop(v.player) then
 							start.f_drawCursor(v.player, start.c[v.player].selX, start.c[v.player].selY, cursorState, false)
 						end
 					end
@@ -3113,7 +3112,9 @@ function start.f_selectScreen()
 			-- The RANDOM stop's label, drawn once for both players
 			-- because its lit state depends on all of them.
 			if side == 1 then
-				start.f_drawRandomStop()
+				if not stagePhase then
+					start.f_drawRandomStop()
+				end
 				-- PLAYER 1 / PLAYER 2 are painted into the select backdrop
 			end
 			--draw done cursors
@@ -3134,7 +3135,8 @@ function start.f_selectScreen()
 					--	t = start.t_grid[y + 1][x + 1]
 					--end
 					--render only if cell is not hidden
-					if t.hidden ~= 1 and t.hidden ~= 2 then
+					if not stagePhase and t.hidden ~= 1 and t.hidden ~= 2
+						and not (t.char == 'randomselect' or t.hidden == 3) then
 						local shouldDraw = false
 						if main.coop or persist then
 							shouldDraw = true
@@ -3263,7 +3265,21 @@ function start.f_selectScreen()
 			local slotSelected, slotHandled = false, false
 			if main.stageMenu and not stageEnd then --Stage select
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
-				slotSelected, slotHandled = start.f_stageMenu()
+				-- The wall goes first: fade it to black, then swap to the stage
+				-- screen and fade that in. Without the wait both were on the frame
+				-- at once, the card on top of the last grid rows.
+				if not stagePhase then
+					if not stagePhaseFade then
+						fadeOutInit(motif.select_info.fadeout.FadeData)
+						stagePhaseFade = true
+					elseif not fadeActive() then
+						fadeSkip()
+						stagePhase, stagePhaseFade = true, false
+						fadeInInit(motif.select_info.fadein.FadeData)
+					end
+				else
+					slotSelected, slotHandled = start.f_stageMenu()
+				end
 				if not timerReset then
 					timerSelect = (motif.select_info.timer and motif.select_info.timer.displaytime) or 0
 					timerReset = true

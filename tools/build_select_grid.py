@@ -49,7 +49,7 @@ COLS, ROWS = 8, 7
 # The painted wall, its frame and the name row are the fighter rows only: the
 # last logical row is the RANDOM stop, drawn as text outside the frame.
 FIGHTER_ROWS = ROWS - 1
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 40)
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 46)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = FIGHTER_ROWS * CELL_H + (FIGHTER_ROWS - 1) * GAP
 
@@ -102,6 +102,17 @@ PLAYER_COLOURS = ((72, 232, 96), (236, 62, 62), (176, 132, 240), (96, 208, 232))
 # Before a pick is confirmed the outline flashes white for both players; the
 # colour is the done state. Same geometry, only the ink differs.
 CURSOR_WHITE = ((224, 0), (224, 1), (224, 2), (224, 3))
+# The cursor is painted at twice the cell and drawn at half scale: a 128x160
+# sheet drawn 1:1 gave its rounded corners a staircase edge, which is what the
+# selection box looked like up close. At 2x, resampled down, the corners are
+# smooth and the rules stay 4 screen pixels wide.
+CURSOR_RES = 2
+# One action per player: the player's colour flashing white while choosing, so
+# the flash runs on the engine's own animation clock. The done cursors stay
+# solid, which is what tells a locked-in pick from one still being moved.
+CURSOR_ACTIONS = ((160, (223, 0), (224, 0)), (170, (223, 1), (224, 1)),
+                  (172, (223, 2), (224, 2)), (174, (223, 3), (224, 3)))
+CURSOR_FLASH = 6
 
 
 def tracked(draw, xy, text, font, fill, tracking=2, anchor="la"):
@@ -192,9 +203,9 @@ def background():
     # PLAYER 1 and PLAYER 2, painted at the title row's own height. start.lua
     # used to draw them with textImgSetFont, which needs a font object this
     # script cannot hand it, so they came out as nothing at all.
-    face = art.font(26)
+    face = art.font(30)
     for text, cx in (("PLAYER 1", 232), ("PLAYER 2", SCREEN[0] - 232)):
-        tracked(d2, (cx, 3), text, face, GOLD_LIT + (255,), tracking=4, anchor="ma")
+        tracked(d2, (cx, 0), text, face, GOLD_LIT + (255,), tracking=4, anchor="ma")
 
     return art.grain(img, amount=5, seed=5)
 
@@ -238,27 +249,35 @@ def cursor_frame(colour):
     portrait nobody could see. Only the rules are drawn now - a dark keyline
     outside for contrast on pale art, the player's colour over it, a thin inner
     rule, and nothing at all in the middle, so the fighter shows through.
+
+    Painted at CURSOR_RES times the cell and drawn at 1/CURSOR_RES, and at 4x
+    inside that before being resampled, because at 1:1 the rounded corners were
+    a staircase of single pixels - the "pixellated" edge on the selection box.
     """
-    w, h = CELL, CELL_H
-    p = CELL_PAD
-    r = max(4, min(w, h) // 8 - p)
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    w, h = CELL * CURSOR_RES, CELL_H * CURSOR_RES
+    ss = 4
+    big = (w * ss, h * ss)
+    img = Image.new("RGBA", big, (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
+    k = CURSOR_RES * ss                       # screen pixel -> canvas pixel
+    p = CELL_PAD * k
+    W, H = big
+    r = max(4, min(CELL, CELL_H) // 8 - CELL_PAD) * k
     dim = tuple(int(c * 0.60) for c in colour)
-    d.rounded_rectangle([p, p, w - 1 - p, h - 1 - p], radius=r,
-                        outline=INK + (215,), width=1)
-    d.rounded_rectangle([p + 1, p + 1, w - 2 - p, h - 2 - p],
-                        radius=max(2, r - 1), outline=colour + (255,), width=4)
-    d.rounded_rectangle([p + 7, p + 7, w - 8 - p, h - 8 - p],
-                        radius=max(2, r - 4), outline=dim + (235,), width=2)
+    d.rounded_rectangle([p, p, W - 1 - p, H - 1 - p], radius=r,
+                        outline=INK + (215,), width=max(1, k))
+    d.rounded_rectangle([p + k, p + k, W - 2 - p, H - 2 - p],
+                        radius=max(2, r - k), outline=colour + (255,), width=4 * k)
+    d.rounded_rectangle([p + 7 * k, p + 7 * k, W - 8 - p, H - 8 - p],
+                        radius=max(2, r - 4 * k), outline=dim + (235,), width=2 * k)
     # corner ticks: the frame still reads when its rules run over bright art
-    tick, inset = 22, p + 6
-    for x, y, dx, dy in ((inset, inset, 1, 1), (w - 1 - inset, inset, -1, 1),
-                         (inset, h - 1 - inset, 1, -1),
-                         (w - 1 - inset, h - 1 - inset, -1, -1)):
+    tick, inset = 22 * k, p + 6 * k
+    for x, y, dx, dy in ((inset, inset, 1, 1), (W - 1 - inset, inset, -1, 1),
+                         (inset, H - 1 - inset, 1, -1),
+                         (W - 1 - inset, H - 1 - inset, -1, -1)):
         d.line([(x, y + dy * tick), (x, y), (x + dx * tick, y)],
-               fill=colour + (255,), width=3)
-    return img
+               fill=colour + (255,), width=3 * k)
+    return img.resize((w, h), Image.LANCZOS)
 
 
 # The random slot is a word under the wall, not a portrait: 151,0 is RANDOM set
@@ -585,12 +604,16 @@ KEYS = (
     ("p2.face2.done.facing", "-1"),
     ("p2.face2.done.window", FACE2_WIN_P2),
 )
-for i, (active, done) in enumerate(zip(CURSOR_WHITE, CURSOR), start=1):
-    KEYS += ((f"p{i}.cursor.active.spr", "%d,%d" % active),
-             (f"p{i}.cursor.active.scale", "1,1"),
+# The active cursor is the player's colour flashing white (one action each, see
+# CURSOR_ACTIONS), and the done cursor is the solid colour. Both are 2x art.
+CURSOR_SCALE = "%.2f,%.2f" % (1.0 / CURSOR_RES, 1.0 / CURSOR_RES)
+for (action, colour, _white), i in zip(CURSOR_ACTIONS, range(1, len(CURSOR_ACTIONS) + 1)):
+    KEYS += ((f"p{i}.cursor.active.anim", str(action)),
+             (f"p{i}.cursor.active.spr", "%d,%d" % colour),
+             (f"p{i}.cursor.active.scale", CURSOR_SCALE),
              (f"p{i}.cursor.active.offset", "0,0"),
-             (f"p{i}.cursor.done.spr", "%d,%d" % done),
-             (f"p{i}.cursor.done.scale", "1,1"),
+             (f"p{i}.cursor.done.spr", "%d,%d" % colour),
+             (f"p{i}.cursor.done.scale", CURSOR_SCALE),
              (f"p{i}.cursor.done.offset", "0,0"))
 
 # Keys that belong to the wall-of-cells layout and would fight the grid.
@@ -605,6 +628,35 @@ DROP = re.compile(r"^\s*(cell\.\*-\d+\.|cell\.random\.active\.)",
 DISABLE = re.compile(
     r"^\s*(p[1-4]\.cursor\.(active|done)\.anim|"
     r"p[12]\.face2\.(projection|yangle|focallength))\s*=", re.IGNORECASE)
+
+
+def patch_cursor_actions():
+    """Write the cursor flash actions: player's colour, then white.
+
+    The motif's own 160..174 actions play the stock cursor art (group 160), which
+    this screen no longer uses, so the active cursor could only ever be one fixed
+    colour. Two frames on the engine's animation clock give the flash without a
+    Lua timer.
+    """
+    def block(action, colour, white):
+        return ("[Begin Action %d] ;player cursor, colour flashing white\n"
+                "%d,%d, 0,0, %d\n%d,%d, 0,0, %d\n"
+                % (action, colour[0], colour[1], CURSOR_FLASH,
+                   white[0], white[1], CURSOR_FLASH))
+
+    with open(SYSTEM_DEF, encoding="utf-8", errors="replace") as f:
+        text = f.read()
+    for action, colour, white in CURSOR_ACTIONS:
+        # the block, and the blank line after it, replaced whole
+        pattern = re.compile(r"^\[Begin Action %d\][^\n]*\n(?:[^\[\n][^\n]*\n)*\n?"
+                             % action, re.M)
+        if not pattern.search(text):
+            raise SystemExit("system.def has no [Begin Action %d] to replace" % action)
+        text = pattern.sub(block(action, colour, white) + "\n", text, count=1)
+    with open(SYSTEM_DEF + ".tmp", "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(SYSTEM_DEF + ".tmp", SYSTEM_DEF)
+    return len(CURSOR_ACTIONS)
 
 
 def patch_select_info():
@@ -692,6 +744,7 @@ def main():
     rewrite_system_sff(images)
     marks = repaint_random_mark()
     patch_select_info()
+    actions = patch_cursor_actions()
     added = patch_bg_layer()
 
     # Read back: a screen nobody can see is worse than the old one.
@@ -717,7 +770,7 @@ def main():
     sheet.convert("RGB").save(os.path.join(ROOT, "artifacts", "select_cells.png"))
     print(f"select screen: {COLS}x{ROWS} grid at {GRID[0]},{GRID[1]}, "
           f"cells {CELL}px, background layer {'added' if added else 'kept'}, "
-          f"{marks} random card(s) painted")
+          f"{marks} random card(s) painted, {actions} cursor actions")
 
 
 if __name__ == "__main__":

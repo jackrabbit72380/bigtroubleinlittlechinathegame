@@ -245,7 +245,7 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(1020, portrait=False)   # [Select Info]: no preview card
+STAGE_PORTRAIT = _card(1020, portrait=True)   # [Select Info]: the stage screen
 SELECT_PLATE = STAGE_PORTRAIT + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate
