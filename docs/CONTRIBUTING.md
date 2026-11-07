@@ -132,6 +132,12 @@ mod against a stub engine behaving like each build we might meet (font as a tabl
 or an index, no `textImgNew`, no `textImgSetScale`) and asserts the screen opens and
 draws in all four. Install `lupa` first; it exits 77 when lupa is missing.
 
+`tools/test_musicselect.py` is the same net for the MUSIC browser: the stub engine
+gives it the motif shapes we might ship, including an `[OptionBGdef]` with no
+`bgclearcolor` line and one whose backdrop refuses to draw, and asserts the browser
+opens, draws its albums and hands the menu back in each. That missing key once made
+the pause item do nothing at all, so this is the shape the test exists for.
+
 Two things are easy to get wrong when driving the engine headless: `[Demo Mode]
 enabled = 1` in the motif starts the attract demo, which swallows menu keystrokes,
 and Escape at the title quits the game instead of opening the pause menu.
