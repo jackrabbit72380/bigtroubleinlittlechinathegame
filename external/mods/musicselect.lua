@@ -222,6 +222,21 @@ function ms.open()
 	-- only its back layer - the front layer is the title logo, which would sit
 	-- on top of this screen's text.
 	local bgSec = ui and motif.optionbgdef or motif.titlebgdef or nil
+	-- [OptionBGdef] in this screenpack has no bgclearcolor line - only
+	-- [TitleBGdef] and [AttractBGdef] carry one - and indexing it directly raised
+	-- inside open(). The pause menu calls open() through a pcall that only prints,
+	-- so the failure looked like the MUSIC item doing nothing at all. The colour
+	-- is optional; the layers below are what this screen actually needs.
+	local bgR, bgG, bgB = 0, 0, 0
+	if type(bgSec) == 'table' then
+		local clear = bgSec.bgclearcolor
+		if type(clear) == 'table' then
+			bgR, bgG, bgB = clear[1] or 0, clear[2] or 0, clear[3] or 0
+		end
+		if bgSec.BGDef == nil then
+			bgSec = nil
+		end
+	end
 	local okArt, albumData = pcall(sffNew, 'data/albums.sff')
 	if not okArt then
 		albumData = nil
@@ -251,9 +266,17 @@ function ms.open()
 		local song = album.songs[songNo]
 
 		if bgSec then
-			clearColor(bgSec.bgclearcolor[1], bgSec.bgclearcolor[2], bgSec.bgclearcolor[3])
-			bgReset(bgSec.BGDef)
-			bgDraw(bgSec.BGDef, 0)
+			clearColor(bgR, bgG, bgB)
+			-- probed, like every other engine call in this file: a backdrop that
+			-- cannot be drawn must not take the whole browser down with it.
+			local bgDrawn, bgErr = pcall(function()
+				bgReset(bgSec.BGDef)
+				bgDraw(bgSec.BGDef, 0)
+			end)
+			if not bgDrawn then
+				print('musicselect: the backdrop could not be drawn: ' .. tostring(bgErr))
+				bgSec = nil
+			end
 		end
 		drawAlbumArt(albumData, album)
 
