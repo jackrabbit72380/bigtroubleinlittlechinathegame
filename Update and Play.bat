@@ -466,8 +466,11 @@ rem   $m = [uint32]0
 rem   if (-not $k::GetConsoleMode($h, [ref]$m)) { exit 2 }
 rem   $on = [uint32]($m -bor 4)
 rem   if (-not $k::SetConsoleMode($h, $on)) { exit 3 }
+rem   try { [IO.File]::WriteAllText("$env:TEMP\btilc-width.txt", "$([Console]::WindowWidth)") } catch { }
 rem   exit 0
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABzAGkAZwAgAD0AIAAnAFsARABsAGwASQBtAHAAbwByAHQAKAAiAGsAZQByAG4AZQBsADMAMgAuAGQAbABsACIAKQBdACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAGUAeAB0AGUAcgBuACAASQBuAHQAUAB0AHIAIABHAGUAdABTAHQAZABIAGEAbgBkAGwAZQAoAGkAbgB0ACAAbgApADsAIABbAEQAbABsAEkAbQBwAG8AcgB0ACgAIgBrAGUAcgBuAGUAbAAzADIALgBkAGwAbAAiACkAXQAgAHAAdQBiAGwAaQBjACAAcwB0AGEAdABpAGMAIABlAHgAdABlAHIAbgAgAGIAbwBvAGwAIABHAGUAdABDAG8AbgBzAG8AbABlAE0AbwBkAGUAKABJAG4AdABQAHQAcgAgAGgALAAgAG8AdQB0ACAAdQBpAG4AdAAgAG0AKQA7ACAAWwBEAGwAbABJAG0AcABvAHIAdAAoACIAawBlAHIAbgBlAGwAMwAyAC4AZABsAGwAIgApAF0AIABwAHUAYgBsAGkAYwAgAHMAdABhAHQAaQBjACAAZQB4AHQAZQByAG4AIABiAG8AbwBsACAAUwBlAHQAQwBvAG4AcwBvAGwAZQBNAG8AZABlACgASQBuAHQAUAB0AHIAIABoACwAIAB1AGkAbgB0ACAAbQApADsAJwANAAoAJABrACAAPQAgAEEAZABkAC0AVAB5AHAAZQAgAC0ATQBlAG0AYgBlAHIARABlAGYAaQBuAGkAdABpAG8AbgAgACQAcwBpAGcAIAAtAE4AYQBtAGUAIABDAE0AIAAtAE4AYQBtAGUAcwBwAGEAYwBlACAAQgB0AGkAbABjACAALQBQAGEAcwBzAFQAaAByAHUADQAKACQAaAAgAD0AIAAkAGsAOgA6AEcAZQB0AFMAdABkAEgAYQBuAGQAbABlACgALQAxADEAKQANAAoAJABtACAAPQAgAFsAdQBpAG4AdAAzADIAXQAwAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAZQB4AGkAdAAgADIAIAB9AA0ACgAkAG8AbgAgAD0AIABbAHUAaQBuAHQAMwAyAF0AKAAkAG0AIAAtAGIAbwByACAANAApAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AFMAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAJABvAG4AKQApACAAewAgAGUAeABpAHQAIAAzACAAfQANAAoAZQB4AGkAdAAgADAA >nul 2>&1
+rem The width file from an earlier window would be a lie about this one.
+if exist "%TEMP%\btilc-width.txt" del /q "%TEMP%\btilc-width.txt" >nul 2>&1
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -EncodedCommand JABFAHIAcgBvAHIAQQBjAHQAaQBvAG4AUAByAGUAZgBlAHIAZQBuAGMAZQAgAD0AIAAnAFMAdABvAHAAJwANAAoAJABzAGkAZwAgAD0AIAAnAFsARABsAGwASQBtAHAAbwByAHQAKAAiAGsAZQByAG4AZQBsADMAMgAuAGQAbABsACIAKQBdACAAcAB1AGIAbABpAGMAIABzAHQAYQB0AGkAYwAgAGUAeAB0AGUAcgBuACAASQBuAHQAUAB0AHIAIABHAGUAdABTAHQAZABIAGEAbgBkAGwAZQAoAGkAbgB0ACAAbgApADsAIABbAEQAbABsAEkAbQBwAG8AcgB0ACgAIgBrAGUAcgBuAGUAbAAzADIALgBkAGwAbAAiACkAXQAgAHAAdQBiAGwAaQBjACAAcwB0AGEAdABpAGMAIABlAHgAdABlAHIAbgAgAGIAbwBvAGwAIABHAGUAdABDAG8AbgBzAG8AbABlAE0AbwBkAGUAKABJAG4AdABQAHQAcgAgAGgALAAgAG8AdQB0ACAAdQBpAG4AdAAgAG0AKQA7ACAAWwBEAGwAbABJAG0AcABvAHIAdAAoACIAawBlAHIAbgBlAGwAMwAyAC4AZABsAGwAIgApAF0AIABwAHUAYgBsAGkAYwAgAHMAdABhAHQAaQBjACAAZQB4AHQAZQByAG4AIABiAG8AbwBsACAAUwBlAHQAQwBvAG4AcwBvAGwAZQBNAG8AZABlACgASQBuAHQAUAB0AHIAIABoACwAIAB1AGkAbgB0ACAAbQApADsAJwANAAoAJABrACAAPQAgAEEAZABkAC0AVAB5AHAAZQAgAC0ATQBlAG0AYgBlAHIARABlAGYAaQBuAGkAdABpAG8AbgAgACQAcwBpAGcAIAAtAE4AYQBtAGUAIABDAE0AIAAtAE4AYQBtAGUAcwBwAGEAYwBlACAAQgB0AGkAbABjACAALQBQAGEAcwBzAFQAaAByAHUADQAKACQAaAAgAD0AIAAkAGsAOgA6AEcAZQB0AFMAdABkAEgAYQBuAGQAbABlACgALQAxADEAKQANAAoAJABtACAAPQAgAFsAdQBpAG4AdAAzADIAXQAwAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AEcAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAWwByAGUAZgBdACQAbQApACkAIAB7ACAAZQB4AGkAdAAgADIAIAB9AA0ACgAkAG8AbgAgAD0AIABbAHUAaQBuAHQAMwAyAF0AKAAkAG0AIAAtAGIAbwByACAANAApAA0ACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGsAOgA6AFMAZQB0AEMAbwBuAHMAbwBsAGUATQBvAGQAZQAoACQAaAAsACAAJABvAG4AKQApACAAewAgAGUAeABpAHQAIAAzACAAfQANAAoAdAByAHkAIAB7ACAAWwBJAE8ALgBGAGkAbABlAF0AOgA6AFcAcgBpAHQAZQBBAGwAbABUAGUAeAB0ACgAIgAkAGUAbgB2ADoAVABFAE0AUABcAGIAdABpAGwAYwAtAHcAaQBkAHQAaAAuAHQAeAB0ACIALAAgACIAJAAoAFsAQwBvAG4AcwBvAGwAZQBdADoAOgBXAGkAbgBkAG8AdwBXAGkAZAB0AGgAKQAiACkAIAB9ACAAYwBhAHQAYwBoACAAewAgAH0ADQAKAGUAeABpAHQAIAAwAA== >nul 2>&1
 if errorlevel 1 exit /b 0
 rem The console took the mode. The escape character is the one byte below, in the
 rem file itself, so nothing is read back, guessed, or lost on the way.
@@ -477,13 +480,24 @@ exit /b 0
 
 :gun
 rem Jack's pistol, in the characters the concept art was drawn with, drawn once
-rem and left standing: the number that counts the run is written on the barrel
-rem line, at the end of the muzzle, so the run reads as rounds leaving the gun.
-rem The barrel ends two columns before MUZZLE - one space, then the number - and
-rem tools/check_launchers.py measures that from the drawing itself, so a changed
-rem picture cannot leave the number floating beside it.
+rem under the game's title and left standing: the barrel fills with one pipe for
+rem every percent of the run, and the count follows the last pipe, so the job
+rem reads as rounds leaving the gun and ends on a full barrel at 100%.
+rem The barrel ends two columns before MUZZLE - one space, then the first pipe -
+rem and tools/check_launchers.py measures that from the drawing itself, so a
+rem changed picture cannot leave the bar floating beside it.
 set "MUZZLE=41"
+rem How many pipes this window has room for. One per percent needs a hundred and
+rem four columns from the muzzle, which a maximised window has; a narrower one
+rem gets the same bar squeezed into the room it does have, because a line that
+rem wrapped would crawl down over the drawing. :vt leaves the width in a file;
+rem without it the bar falls back to a width every console has.
+set "BARMAX=60"
+if exist "%TEMP%\btilc-width.txt" for /f "usebackq delims=" %%w in ("%TEMP%\btilc-width.txt") do set /a BARMAX=%%w-%MUZZLE%-5
+if %BARMAX% GTR 100 set "BARMAX=100"
+if %BARMAX% LSS 10 set "BARMAX=10"
 echo.
+echo   BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER
 echo    ..._...^|..____________________, ,
 echo    ....../ '---___________----_____^|]=
 echo    ...../_==o;;;;;;;;_______.:/
@@ -503,10 +517,10 @@ exit /b 0
 rem %1 = percent for the whole run. %2 is the name of the step: the callers still
 rem pass it, nothing prints it - the window shows the number and nothing else.
 rem
-rem One number, counting 1, 2, 3 ... 100 at the muzzle of the pistol that is
-rem already standing, and the game starts at 100. A console that takes cursor
-rem moves gets the number at the barrel; one that does not gets the same numbers
-rem as plain lines, so an old Windows still shows how far the run has got.
+rem One pipe on the barrel for every percent, counting 1, 2, 3 ... 100, with the
+rem number following the last pipe, and the game starts on a full barrel. A
+rem console that takes cursor moves gets the bar; one that does not keeps the
+rem number in the title bar, so an old Windows still shows how far the run is.
 rem
 rem A step that jumps from 12 to 25 fills in 13 to 24 as well, so no number is
 rem skipped, and a step that re-reports the number it just showed prints nothing.
@@ -532,16 +546,22 @@ set "GLASTPCT=%GTO%"
 exit /b 0
 
 :gaugeone
-rem %1 = the percent to print. Three characters wide and never wider, so the
-rem number keeps its place as it climbs and the muzzle never needs erasing; the
-rem pistol above is not redrawn, only these four characters change.
+rem %1 = the percent to show. This step adds the pipe for it to the barrel and
+rem writes the count in the space right after the last pipe, so the bar and the
+rem number grow together and 100% is a barrel filled end to end. Where the window
+rem cannot hold a hundred pipes, two percentages share one and the bar still ends
+rem full. Only one character and three digits change: the pistol is not redrawn.
 set "PCT3=  %~1"
 call set "PCT3=%%PCT3:~-3%%"
 if not defined VTOK goto gaugeone_plain
+set /a GPOS=%~1*%BARMAX%/100
+if %GPOS% LSS 1 set "GPOS=1"
+set /a GCOL=%MUZZLE%+GPOS-1
 rem Back to the line under the drawing, seven lines up to the barrel, along it to
-rem the muzzle, write, and back down. The percentage comes off the barrel itself
-rem and nothing is printed beside it.
-set /p "=%ESC%[u%ESC%[7A%ESC%[%MUZZLE%G%PCT3%%%ESC%[u" <nul
+rem this percent's pipe, the pipe itself, then the count after the bar, and the
+rem rest of the line cleared so the number from the step before cannot leave a
+rem digit standing past the new one.
+set /p "=%ESC%[u%ESC%[7A%ESC%[%GCOL%G|%PCT3%%%ESC%[K%ESC%[u" <nul
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
@@ -1388,11 +1408,12 @@ if %DFROM% LSS 50 set "DFROM=50"
 if not exist "%DLSCRIPT%" call :dl_make
 if not exist "%DLSCRIPT%" exit /b 0
 if exist "%ZIP%" del /q "%ZIP%" >nul 2>&1
-rem The download writes the same number in the same place: at the muzzle where
-rem the console has cursor control, on a line of its own where it has none.
+rem The download fills the same barrel with the same pipe per percent, so its
+rem bytes count on the pistol rather than in a meter of its own; where the
+rem console has no cursor control it leaves the number in the title bar.
 set "VTFLAG=0"
 if defined VTOK set "VTFLAG=1"
-"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%" -From %DFROM% -Vt %VTFLAG% -Col %MUZZLE%
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%DLSCRIPT%" -Url "%~1" -Out "%ZIP%" -From %DFROM% -Vt %VTFLAG% -Col %MUZZLE% -Bar %BARMAX%
 if errorlevel 1 exit /b 0
 set "DLOK=1"
 exit /b 0
@@ -1402,12 +1423,12 @@ rem The renderer lives in a file of its own: a twenty-line PowerShell script
 rem cannot be passed on a command line without a quoting argument, and every
 rem line below is plain text with no character cmd would eat.
 rem
-rem It prints the run's own number, not a meter of its own: the same percentage
-rem the pistol's muzzle shows, written there again as the bytes land.
+rem It fills the run's own barrel, not a meter of its own: the same pipe per
+rem percent the rest of the run draws, extended as the bytes land.
 rem Downloading is 50-80% of the run, so the number it leaves behind is where
 rem the next step carries on instead of a second count starting over.
 set "DLSCRIPT=%CACHE%\download.ps1"
->  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50, [int]$Vt = 0, [int]$Col = 41)
+>  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50, [int]$Vt = 0, [int]$Col = 41, [int]$Bar = 60)
 >> "%DLSCRIPT%" echo $ErrorActionPreference = 'Stop'
 >> "%DLSCRIPT%" echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 >> "%DLSCRIPT%" echo $req = [Net.HttpWebRequest]::Create($Url)
@@ -1421,6 +1442,7 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo $got = 0
 >> "%DLSCRIPT%" echo $start = Get-Date
 >> "%DLSCRIPT%" echo $drawn = 0.0
+>> "%DLSCRIPT%" echo $pipe = [char]124
 >> "%DLSCRIPT%" echo while (($read = $stream.Read($buffer, 0, $buffer.Length)) -gt 0) {
 >> "%DLSCRIPT%" echo   $file.Write($buffer, 0, $read)
 >> "%DLSCRIPT%" echo   $got = $got + $read
@@ -1431,7 +1453,10 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   if ($From -lt 80) { if ($total -gt 0) { $whole = $From + [int]((80 - $From) * $got / $total) } }
 >> "%DLSCRIPT%" echo   $pct = '   ?'
 >> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%' }
->> "%DLSCRIPT%" echo   if ($Vt -eq 1) { $line = [char]27 + '[u' + [char]27 + '[7A' + [char]27 + '[' + $Col + 'G' + $pct + [char]27 + '[u' }
+>> "%DLSCRIPT%" echo   $pos = [int]($whole * $Bar / 100)
+>> "%DLSCRIPT%" echo   if ($pos -lt 1) { $pos = 1 }
+>> "%DLSCRIPT%" echo   $barcol = $Col + $pos - 1
+>> "%DLSCRIPT%" echo   if ($Vt -eq 1) { $line = [char]27 + '[u' + [char]27 + '[7A' + [char]27 + '[' + $barcol + 'G' + $pipe + $pct + [char]27 + '[K' + [char]27 + '[u' }
 >> "%DLSCRIPT%" echo   if ($Vt -ne 1) { $line = [char]13 + '  ' + $pct }
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
