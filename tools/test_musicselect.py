@@ -72,9 +72,15 @@ textImgSetColor = function() end
 textImgSetPos = function() end
 textImgSetText = function(t, s) texts[#texts + 1] = s; if t ~= nil then t.text = s end end
 textImgSetFont = function() end
-textImgSetScale = function() end
-textImgGetTextWidth = function() return 120 end
-textImgDraw = function(t) draws[#draws + 1] = t and t.tag or '?' end
+-- the shared sprite's face measures about 30px per character at 1.0, which puts
+-- the longest album name past the screen at 1.5x: the reason the head is fitted
+LAST_SCALE, DRAWN = { 1, 1 }, {}
+textImgSetScale = function(t, sx, sy) LAST_SCALE = { sx or 1, sy or 1 } end
+textImgGetTextWidth = function(t) return #tostring(t ~= nil and t.text or '') * 30 end
+textImgDraw = function(t)
+    draws[#draws + 1] = t and t.tag or '?'
+    if t ~= nil and t.text ~= nil then DRAWN[t.text] = LAST_SCALE[1] end
+end
 sndPlay = function() end
 resetKey = function() end
 clearColor = function() end
@@ -278,6 +284,18 @@ def check(mode: str) -> list[str]:
         problems.append(f"the cover is placed at {pos[1]},{pos[2]}, not 470,470")
     if (g.ANIM.draws or 0) == 0:
         problems.append("the cover animation is never drawn")
+    # The album title has to fit: at the stub's 30px per character the 44-letter
+    # name is 1980px wide at 1.5x, so the head must be measured and scaled down
+    # instead of running off both edges of a 1920 screen.
+    heads = {str(k): float(v) for k, v in (g.DRAWN or {}).items() if "OST" in str(k).upper()}
+    if not heads:
+        problems.append("no album title reached the screen")
+    for text, scale in heads.items():
+        if scale > 1.5 + 1e-6:
+            problems.append(f"the album title is drawn at {scale:.2f}x, above its own maximum")
+        width = len(text) * 30 * scale
+        if width > 1800 + 0.5:
+            problems.append(f"the album title is {width:.0f}px wide on a 1920px screen")
     g.INPUT_DOWN = False
 
     # and from the title menu, which opens the same browser in place
