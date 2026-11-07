@@ -134,8 +134,15 @@ def _progress_problems(name, raw):
     out = []
     if not re.search(r"(?m)^call :gun\s*$", text):
         out.append("%s: :gun is never called, so the updater shows no pistol" % name)
-    if "[%BARLEFT%o%BARRIGHT%]" not in text or "%PCT3%%%" not in text:
-        out.append("%s: the gauge no longer prints a bar with its percentage" % name)
+    if "[%BARLEFT%o%BARRIGHT%^|]=" not in text or "%PCT3%%" not in text:
+        out.append("%s: the gauge no longer prints a bar that ends at the pistol's "
+                   "muzzle with the whole-run percentage at it" % name)
+    if "GMAXPCT" not in text:
+        out.append("%s: the gauge can report a lower percentage than it just showed, "
+                   "so one run reads as several bars" % name)
+    if text.count("^|]=") < 2:
+        out.append("%s: the download draws a bar of its own instead of the run's "
+                   "one, so there are two loading bars again" % name)
     return out
 
 
