@@ -287,23 +287,19 @@ SECTION_LAYOUT = {
     ),
     "Option Info": (
         # Thirteen rows at the stock 42px pitch overlapped by 3px under the 45px
-        # bitmap face; 46 is the smallest pitch that separates them and still
-        # ends the last row at y=696, inside the 21..718 item window.
+        # bitmap face; 46 is the smallest pitch that separates them. All thirteen
+        # fit: rows run from 242 to 839 on a 1080-tall frame, centred on it.
         ("menu.item.spacing", "0, 46"),
-        # Alignment -1 is RIGHT in this engine (the default motif's left-hand
-        # title menu uses 1, and our own [Title Info] sits at x=1240 with -1),
-        # so the stock x=414 made every row end at 414 and grow leftwards. The
-        # shipped Display face sets "RETURN WITHOUT SAVING" 492px wide, which
-        # put its first pixel at -78: off the left edge of a 1280-wide screen.
-        # The face is wider on the shipped screen than the stock one this was
-        # measured against: "RETURN WITHOUT SAVING" is 777px at this size, so at
-        # 784 it began at x=7 and ran off the left edge of a 1920-wide screen.
-        # The list is centred on the frame's own width: labels are right
-        # aligned (they end at menu.pos.x) and values start 40px further on, so
-        # 940 leaves that 777px worst case starting at 163 and puts the label
-        # column's edge and the value column's start either side of 960 instead
-        # of both on the right-hand half of a 1920 frame.
-        ("menu.pos", "940, 99"),
+        # The same centred column as the pause list. Alignment -1 is RIGHT in
+        # this engine, so labels end at menu.pos.x and grow leftwards; values are
+        # left-aligned (1) and start menu.pos.x + value.offset further on. With
+        # the labels ending at 945 and the values starting at 975, the boundary
+        # between the two columns sits on 960 - the middle of the frame - and
+        # every row straddles the centre instead of the whole list sitting on the
+        # right-hand half, which is where 940/99 put it. The gutter is 30px, so
+        # a right-aligned label can never reach the value column whatever its
+        # width; the longest one, "RETURN WITHOUT SAVING" (777px), starts at 168.
+        ("menu.pos", "945, 242"),
         # Both arrows still sat on 642, the 1280 frame's centre, while the
         # heading above them was already at 960. Same place as [Pause Menu]'s.
         ("menu.arrow.up.offset", "960, -76"),
@@ -330,20 +326,17 @@ SECTION_LAYOUT = {
         # right and overlapped the value column. Same alignment as the rest now.
         ("menu.item.selected.font", f"{D},0,-1, {BRIGHT}"),
         ("menu.item.selected.active.font", f"{DA},0,-1, {BRIGHT}"),
-        # Values get a column of their own. They inherited the label's -1
-        # (RIGHT) alignment, so each value ended at menu.pos.x + 30 = 814 while
-        # its label ended at 784: the value was printed across the last third
-        # of the label, which is what made Video Settings unreadable (every
-        # row read "RendererOpenGL 3.3"). Left-aligned (1) at +40 starts the
-        # column at 824, past the end of every label, and the longest value in
-        # the video menu ends before 1080.
+        # Values get a column of their own, left-aligned 30px past the labels'
+        # right edge (975 on this frame). They used to inherit the label's -1
+        # (RIGHT) alignment, so each value ended where its label did and printed
+        # across the last third of it - which is what made Video Settings
+        # unreadable (every row read "RendererOpenGL 3.3").
         #
         # The face was Body (a 13px cell) beside 45px labels, so "OpenGL 3.3"
         # and "1920x1080" were a third of the height of the word they belonged
-        # to and could not be read across a room. Display is the menu's own
-        # face, so a row now reads as one line of text. The column starts at
-        # 824 and runs to the 1280 edge, which at 34px is room for 22 glyphs -
-        # every value in this menu is 16 or fewer.
+        # to. Display is the menu's own face, so a row reads as one line of
+        # text; from 975 to the 1920 edge is room for far more than the 16
+        # glyphs the longest value needs.
         ("menu.item.value.font", f"{D},0,1, {DEEP}"),
         ("menu.item.value.active.font", f"{DA},0,1, {BRIGHT}"),
         ("menu.item.value.conflict.font", f"{D},0,1, {RED}"),
@@ -383,11 +376,11 @@ SECTION_LAYOUT = {
         ("keymenu.item.value.conflict.offset", "675, 0"),
         ("keymenu.item.info.offset", "675, 0"),
         ("keymenu.item.info.active.offset", "675, 0"),
-        ("menu.item.value.offset", "40, 0"),
-        ("menu.item.value.active.offset", "40, 0"),
-        ("menu.item.value.conflict.offset", "40, 0"),
-        ("menu.item.info.offset", "40, 0"),
-        ("menu.item.info.active.offset", "40, 0"),
+        ("menu.item.value.offset", "30, 0"),
+        ("menu.item.value.active.offset", "30, 0"),
+        ("menu.item.value.conflict.offset", "30, 0"),
+        ("menu.item.info.offset", "30, 0"),
+        ("menu.item.info.active.offset", "30, 0"),
         # The band spans both columns: it starts level with the widest label
         # (400) and runs to 1220, instead of sitting under the middle of the
         # list.
