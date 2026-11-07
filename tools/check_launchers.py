@@ -134,18 +134,22 @@ def _progress_problems(name, raw):
     out = []
     if not re.search(r"(?m)^call :gun\s*$", text):
         out.append("%s: :gun is never called, so the updater shows no pistol" % name)
-    if "[%BARLEFT%o%BARRIGHT%^|]=" not in text or "%PCT3%%" not in text:
-        out.append("%s: the gauge no longer prints a bar that ends at the pistol's "
-                   "muzzle with the whole-run percentage at it" % name)
-    if "GMAXPCT" not in text:
-        out.append("%s: the gauge can report a lower percentage than it just showed, "
-                   "so one run reads as several bars" % name)
+    if "echo   %PCT3%%%" not in text:
+        out.append("%s: the progress lines no longer print the percentage" % name)
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if text.count("^|]=") < 2:
-        out.append("%s: the download draws a bar of its own instead of the run's "
-                   "one, so there are two loading bars again" % name)
+    if text.count("%PCT3%%%") != 1:
+        out.append("%s: the percentage is printed more than once per step, or not "
+                   "at all" % name)
+    if "BARLEFT" in text or "$bar" in text:
+        out.append("%s: a loading bar is back; the progress lines are the number "
+                   "alone" % name)
+    if "GMAXPCT" not in text:
+        out.append("%s: the gauge can report a lower percentage than it just showed, "
+                   "so one run reads as a rewind" % name)
+    if "$whole" not in text:
+        out.append("%s: the download no longer reports the run's percentage" % name)
     return out
 
 
