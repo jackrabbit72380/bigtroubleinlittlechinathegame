@@ -3968,6 +3968,41 @@ function main.f_menuItemPlace(spr, x, y)
 	end
 	return pcall(textImgAddPos, spr, x, y)
 end
+
+-- A centred row that carries a setting draws its label and value as one block,
+-- the pair centred on the row's axis. The motif's value offset is a fixed 447 px
+-- to the right of the middle, which lines up with nothing once the rows are
+-- centred: the label sat on the axis and its value hung off beside it.
+main.menuValueGap = 32
+main.menuMargin = 40
+
+function main.f_menuRowPair(cx, labelW, valueW, gap, margin)
+	gap = gap or main.menuValueGap
+	margin = margin or main.menuMargin
+	local block = (labelW or 0) + gap + (valueW or 0)
+	local left = cx - block * 0.5
+	-- a pair too wide for the frame is pinned to the margin instead of running
+	-- off it, the way the command list's columns are
+	if left < margin then
+		left = margin
+	end
+	return left, left + (labelW or 0) + gap
+end
+
+-- Width of a row's text, in the units the sprite is drawn in. The section's own
+-- scale is applied to the measurement because that is how the sprite is drawn;
+-- a build with no textImgGetTextWidth returns nil and the caller keeps the
+-- motif's fixed offset rather than guessing a width.
+function main.f_menuTextWidth(spr, text, scale)
+	if spr == nil or text == nil then
+		return nil
+	end
+	local ok, w = pcall(textImgGetTextWidth, spr, text)
+	if not ok or w == nil then
+		return nil
+	end
+	return w * (scale or 1)
+end
 -- <<< pause menu item geometry
 
 -- >>> command list geometry (tools/test_pausemenu.py executes this block)
@@ -4101,18 +4136,47 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 			labelSprite = isActive and m.item.active.TextSpriteData or m.item.TextSpriteData
 		end
 		textImgReset(labelSprite)
+		textImgSetText(labelSprite, displayname)
+		-- A row that shows a setting draws its value as part of the row: the two
+		-- are measured, put one gap apart and the pair is centred on the row's
+		-- axis. A build that cannot measure keeps the motif's own placement.
+		local valueSprite, valueX, valueY
+		if itemData.vardisplay ~= nil and opts.align == 0 then
+			if itemData.conflict and m.item.value.conflict and m.item.value.conflict.TextSpriteData then
+				valueSprite = m.item.value.conflict.TextSpriteData
+			else
+				valueSprite = isActive and m.item.value.active.TextSpriteData or m.item.value.TextSpriteData
+			end
+		end
+		local labelX, labelAlign = posX, opts.align
+		if valueSprite ~= nil then
+			local itemScale = (m.item.scale or {1, 1})[1] or 1
+			local valueCfg = isActive and m.item.value.active or m.item.value
+			local valueScale = (valueCfg.scale or {itemScale, itemScale})[1] or itemScale
+			local labelW = main.f_menuTextWidth(labelSprite, displayname, itemScale)
+			local valueW = main.f_menuTextWidth(valueSprite, itemData.vardisplay, valueScale)
+			if labelW ~= nil and valueW ~= nil then
+				labelX, valueX = main.f_menuRowPair(posX, labelW, valueW)
+				labelAlign, valueY = 1, posY
+			end
+		end
 		-- A motif's align field is MUGEN's, where 0 is left, and this build bakes
 		-- it into the sprite: a list anchored at the middle of the frame drew its
 		-- rows to the right of it. A section that wants centred rows says so, and
 		-- says it after the reset, which drops what the sprite was made with.
-		if opts.align ~= nil then
-			pcall(textImgSetAlign, labelSprite, opts.align)
+		if labelAlign ~= nil then
+			pcall(textImgSetAlign, labelSprite, labelAlign)
 		end
-		main.f_menuItemPlace(labelSprite, posX, posY)
-		textImgSetText(labelSprite, displayname)
+		main.f_menuItemPlace(labelSprite, labelX, posY)
 		textImgDraw(labelSprite)
 		-- value / info sprites
-		if itemData.vardisplay ~= nil then
+		if valueX ~= nil then
+			textImgReset(valueSprite)
+			textImgSetText(valueSprite, itemData.vardisplay)
+			pcall(textImgSetAlign, valueSprite, 1)
+			main.f_menuItemPlace(valueSprite, valueX, valueY)
+			textImgDraw(valueSprite)
+		elseif itemData.vardisplay ~= nil then
 			if itemData.conflict and m.item.value.conflict and m.item.value.conflict.TextSpriteData then
 				local spr = m.item.value.conflict.TextSpriteData
 				textImgReset(spr)

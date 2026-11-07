@@ -246,6 +246,50 @@ def check_row_alignment():
         problems.append("pause rows: the draw path ignores the caller's alignment")
     if "{align = 0}" not in menu_text:
         problems.append("pause rows: menu.lua does not ask for centred rows")
+    if "main.f_menuRowPair(" not in block or "main.f_menuTextWidth(" not in block:
+        problems.append("pause rows: a row's value still sits at the motif's fixed offset")
+    return problems
+
+
+def check_value_pair():
+    """A centred row lays its value out with its label, not at a fixed offset.
+
+    The motif puts a row's value 447 px right of the middle, where it lines up
+    with nothing once the rows are centred. The label and the value are measured,
+    put one gap apart and the pair centred on the row's axis. Centring holds for
+    any width, because both are offset from the same axis; an oversized pair is
+    pinned to the margin instead of running off the frame.
+    """
+    problems = []
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    g = lua.globals()
+    lua.execute("main = {}")
+    lua.execute(STUB)
+    lua.execute(geometry_block())
+
+    gap = g.main.menuValueGap
+    for label_w, value_w in ((300.0, 150.0), (60.0, 40.0), (700.0, 420.0)):
+        left, value_x = lua.eval("main.f_menuRowPair(960, %r, %r)" % (label_w, value_w))
+        centre = (left + value_x + value_w) / 2.0
+        if abs(centre - 960) > 0.01:
+            problems.append("a %r+%r row centres on x=%.1f, not the middle"
+                            % (label_w, value_w, centre))
+        if abs(value_x - (left + label_w + gap)) > 0.01:
+            problems.append("a %r row's value is not one gap past its label" % label_w)
+        if left > 960 - label_w / 2.0 + 0.01:
+            problems.append("a %r row's label does not start left of the middle" % label_w)
+
+    left, _ = lua.eval("main.f_menuRowPair(960, 1800, 600)")
+    if abs(left - g.main.menuMargin) > 0.01:
+        problems.append("an oversized row runs off the frame at x=%.1f" % left)
+
+    lua.execute("textImgGetTextWidth = function(spr, text) return #text * 10 end")
+    w = lua.eval("main.f_menuTextWidth('spr', 'abcde', 1.5)")
+    if w is None or abs(w - 75) > 0.01:
+        problems.append("the measured width ignores the section's scale (%r)" % (w,))
+    lua.execute("textImgGetTextWidth = nil")
+    if lua.eval("main.f_menuTextWidth('spr', 'abcde', 1.5)") is not None:
+        problems.append("a build without textImgGetTextWidth still claims a width")
     return problems
 
 
@@ -282,6 +326,12 @@ def main():
         print(f"       {line}")
     problems += found
 
+    found = check_value_pair()
+    print("  %s a row's value is centred with its label" % ("ok " if not found else "FAIL"))
+    for line in found:
+        print(f"       {line}")
+    problems += found
+
     devhelp = read(DEVHELP)
     if "textImgSetPos(sec.movelist.title.TextSpriteData" not in devhelp:
         problems.append("the developer key heading is still added to its base")
@@ -291,7 +341,7 @@ def main():
     if problems:
         print(f"\nthe pause list regressed in {len(problems)} place(s)")
         return 1
-    print("\nthe pause list is centred, fits the frame and ignores the baked sprite base and align")
+    print("\nthe pause list is centred, fits the frame and ignores the baked sprite base and align and centres its values")
     return 0
 
 
