@@ -1045,6 +1045,28 @@ def check_team_screen():
                 err("select screen: %s.offset is %r, so the heading is not on the "
                     "list's own edge" % (key, keys.get(key + ".offset")))
 
+    for side in ("p1", "p2"):
+        for part in ("value.icon", "value.empty.icon"):
+            name = "%s.teammenu.%s.offset" % (side, part)
+            if keys.get(name, "").replace(" ", "") != "0,0":
+                err("select screen: %s is %r, but the markers are placed from the "
+                    "measured word width and any baked offset pushes them over the "
+                    "portrait grid" % (name, keys.get(name)))
+        spacing = keys.get("%s.teammenu.value.spacing" % side, "").replace(" ", "")
+        want = "38,0" if side == "p1" else "-38,0"
+        if spacing != want:
+            err("select screen: %s.teammenu.value.spacing is %r, expected %s so a "
+                "four-marker row fits between the mode names and the grid"
+                % (side, spacing, want))
+
+    select_lua = read(os.path.join(ROOT, "external", "script", "start.lua"))
+    if "local iconX0 = iconDir * (wordW + " not in select_lua:
+        err("select screen: start.f_teamMenu no longer places the team markers "
+            "beside the mode names")
+    if "x + (j - 1) * valueCfg.spacing[1]" in select_lua:
+        err("select screen: start.f_teamMenu still places the team markers at the "
+            "raw item offset, which lands on the portrait grid")
+
     want = {(180, 0): (22, 38), (181, 0): (30, 48), (182, 0): (30, 48),
             (191, 0): (30, 48), (192, 0): (30, 48)}
     data, sprites, palettes = sffmod.read_sff(
