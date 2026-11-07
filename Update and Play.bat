@@ -564,8 +564,8 @@ rem writes the count in the space right after the last pipe, so the bar and the
 rem number grow together and 100% is a barrel filled end to end. Where the window
 rem cannot hold a hundred pipes, two percentages share one and the bar still ends
 rem full. Only one character and three digits change: the pistol is not redrawn.
-set "PCT3=  %~1"
-call set "PCT3=%%PCT3:~-3%%"
+set "PCTX=  %~1%%"
+call set "PCTX=%%PCTX:~-4%%"
 if not defined VTOK goto gaugeone_plain
 set /a GPOS=%~1*%BARMAX%/100
 if %GPOS% LSS 1 set "GPOS=1"
@@ -574,7 +574,19 @@ rem Back to the line under the drawing, seven lines up to the barrel, along it t
 rem this percent's pipe, the pipe itself, then the count after the bar, and the
 rem rest of the line cleared so the number from the step before cannot leave a
 rem digit standing past the new one.
-set /p "=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| %PCT3%%%ESC%[K%ESC%[u" <nul
+rem
+rem The write is assembled in three steps, each of which ends on a variable name.
+rem A count written as a bare variable and then a percent sign puts an escaped
+rem percent straight against the next escape variable, and
+rem straight against the next %ESC%, and cmd reads that pair as text: the cursor
+rem then came back mid-sequence and the rest of the line was printed as letters.
+rem Holding the per cent sign in PCTX and appending one piece at a time leaves no
+rem such pair anywhere, and the finished string is expanded from GWRITE in one
+rem go, so nothing in it is read as a variable again.
+set "GWRITE=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| "
+set "GWRITE=%GWRITE%%PCTX%"
+set "GWRITE=%GWRITE%%ESC%[K%ESC%[u"
+set /p "=%GWRITE%" <nul
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
