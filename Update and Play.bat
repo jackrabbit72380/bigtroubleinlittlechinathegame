@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=64"
+set "UPDVER=65"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -451,6 +451,7 @@ set /a BSTEP=NCH/10
 if %BSTEP% LSS 1 set "BSTEP=1"
 set "BATCH="
 set "WRITEFAIL="
+del /q "%CACHE%\todo.txt" >nul 2>&1
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
 call :gitflush
 if defined WRITEFAIL goto gitfail
@@ -562,6 +563,7 @@ rem The last name in the batch is kept so a batch that will not land can say
 rem which file it was working on, instead of a percentage and nothing else.
 set "BLAST=%~nx1"
 set "BATCH=%BATCH% "%~1""
+>>"%CACHE%\todo.txt" echo %~1
 set /a BCOUNT+=1
 if %BCOUNT% GEQ 12 call :gitflush
 set /a BMOD=NDONE %% BSTEP
@@ -589,19 +591,45 @@ set "GBAT=%CACHE%\flush.bat"
 if exist "%GBAT%" start "" /b cmd /c ""%GBAT%""
 if not exist "%GBAT%" git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
 if not exist "%GBAT%" if errorlevel 1 (echo x>"%GBAD%") else (echo x>"%GOK%")
+call :says "  writing %BCOUNT% file(s)"
 call :spinwait "%GOK%" "%GBAD%" "writing %BCOUNT% file(s)" 300
-if errorlevel 1 goto gitflush_late
+if errorlevel 1 goto gitflush_retry
+del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
-:gitflush_late
-rem It is still writing, or git refused. Either way the batch is named in the
-rem window and in stuck.txt, and the run goes on rather than waiting for ever.
-set "WRITEFAIL=1"
->>"%CACHE%\stuck.txt" echo %BATCH%
-call :says "  gave up waiting on %BLAST% and the files with it"
+:gitflush_retry
+rem The batch did not finish. That is nearly always one file - one the game still
+rem has open, or one an antivirus is reading - so its files are tried one at a
+rem time and the window names the one that will not go, instead of a dozen names
+rem and a percentage. Whatever fails is written to stuck.txt, and the recheck at
+rem the end hashes everything that landed and writes the rest again.
+call :says "  the batch did not finish - trying its files one at a time"
+for /f "usebackq delims=" %%f in ("%CACHE%\todo.txt") do call :gitfile "%%f"
+del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
 set /a BCOUNT=0
+exit /b 0
+:gitfile
+rem %1 = one path. Only reached after a batch would not finish, so it can afford
+rem a wait of its own: the point here is the name, not the speed.
+set "G1OK=%CACHE%\flush1.ok"
+set "G1BAD=%CACHE%\flush1.bad"
+if exist "%G1OK%" del /q "%G1OK%" >nul 2>&1
+if exist "%G1BAD%" del /q "%G1BAD%" >nul 2>&1
+set "G1BAT=%CACHE%\flush1.bat"
+>  "%G1BAT%" echo @echo off
+>> "%G1BAT%" echo cd /d "%~dp0."
+>> "%G1BAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- "%~1" ^>^>"%CACHE%\git.log" 2^>^&1
+>> "%G1BAT%" echo if errorlevel 1 (echo x^>"%G1BAD%") else (echo x^>"%G1OK%")
+start "" /b cmd /c ""%G1BAT%""
+call :spinwait "%G1OK%" "%G1BAD%" "writing %~nx1" 120
+if errorlevel 1 goto gitfile_stuck
+exit /b 0
+:gitfile_stuck
+set "WRITEFAIL=1"
+>>"%CACHE%\stuck.txt" echo %~1
+call :says "  could not write %~nx1 - close the game, then run this again"
 exit /b 0
 :vt
 rem The percentage is written on the barrel line itself, which means coming back
@@ -894,6 +922,7 @@ set /a BSTEP=NBAD/10
 if %BSTEP% LSS 1 set "BSTEP=1"
 set "BATCH="
 set "WRITEFAIL="
+del /q "%CACHE%\todo.txt" >nul 2>&1
 for /f "usebackq delims=" %%c in ("%CACHE%\changed.txt") do call :gitone "%%c"
 call :gitflush
 git hash-object --stdin-paths <"%CACHE%\changed.txt" >"%CACHE%\hashes.txt" 2>>"%CACHE%\git.log"
@@ -1116,6 +1145,7 @@ goto verify_again
 :verify_git
 rem checkout writes the file whether or not the comparison thought it had
 rem changed, and a partial clone fetches that one blob on demand
+del /q "%CACHE%\todo.txt" >nul 2>&1
 for /f "usebackq delims=" %%p in ("%MISS%") do call :gitone "%%p"
 call :gitflush
 :verify_again
