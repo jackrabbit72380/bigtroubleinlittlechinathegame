@@ -139,6 +139,21 @@ def _progress_problems(name, raw):
     return out
 
 
+def _report_problems(name, raw):
+    """The end-of-update data report is the only place a player can see that a
+    fix actually arrived, so it is checked rather than trusted."""
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace")
+    out = []
+    if "call :datareport" not in text:
+        out.append("%s: the update no longer reports the data files it wrote" % name)
+    for need in ('call :note "data\\fight.def"', 'call :note "data\\music.json"'):
+        if need not in text:
+            out.append("%s: the data report no longer names %s" % (name, need))
+    return out
+
+
 def _variable_refs(line):
     """The %NAME% references on one line, read the way cmd reads them.
 
@@ -176,6 +191,7 @@ def problems(root):
             raw = fh.read()
             found.extend(_problems_for(name, raw))
             found.extend(_progress_problems(name, raw))
+            found.extend(_report_problems(name, raw))
     return found
 
 
