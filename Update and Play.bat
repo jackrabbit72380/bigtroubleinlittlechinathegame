@@ -576,10 +576,10 @@ rem rest of the line cleared so the number from the step before cannot leave a
 rem digit standing past the new one.
 rem
 rem The write is assembled in three steps, each of which ends on a variable name.
-rem A count written as a bare variable and then a percent sign puts an escaped
-rem percent straight against the next escape variable, and
-rem straight against the next %ESC%, and cmd reads that pair as text: the cursor
-rem then came back mid-sequence and the rest of the line was printed as letters.
+rem A count written as a bare variable and then a per cent sign puts an escaped
+rem percent straight against the next escape variable: cmd pairs the two and reads
+rem the pair as text, so the cursor came back mid-sequence and the rest of the
+rem line was printed as letters instead of a number.
 rem Holding the per cent sign in PCTX and appending one piece at a time leaves no
 rem such pair anywhere, and the finished string is expanded from GWRITE in one
 rem go, so nothing in it is read as a variable again.
