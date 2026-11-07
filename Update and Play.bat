@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=60"
+set "UPDVER=61"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -252,14 +252,18 @@ rem could never reach a folder running an older copy - a window on v19 was
 rem still failing against a repository already fixed at v24. Nothing else
 rem here is worth doing with an out-of-date script.
 call :selfupdate %1
+call :log step 6 launcher check returned
 
+call :log step 7 checking for updates
 call :pct 2 "Checking for updates"
+call :log step 7 done, no archive waiting in this folder
 if exist "%~dp0main.zip" goto manualzip
 if exist "%~dp0bigtroubleinlittlechinathegame-main.zip" goto manualzip2
 rem nothing left over from an interrupted run may be mistaken for an archive
 if exist "%CACHE%\main-1.zip" del /q "%CACHE%\main-1.zip" >nul 2>&1
 if exist "%CACHE%\main-2.zip" del /q "%CACHE%\main-2.zip" >nul 2>&1
 if exist "%CACHE%\main.zip" del /q "%CACHE%\main.zip" >nul 2>&1
+call :log step 8 looking for git
 if not exist "%WHERE%" goto download
 "%WHERE%" git >nul 2>&1
 if errorlevel 1 goto probe
@@ -294,6 +298,7 @@ rem and they are fetched straight into place. No second copy of the art is
 rem kept, and the folders the game never uses - artifacts, art_src, tools -
 rem are outside the paths below and are left alone.
 :trygit
+call :log step 9 git route
 call :pct 4 "Contacting GitHub"
 
 rem Git can be handed a certificate bundle path that only exists inside a Git
@@ -636,6 +641,7 @@ rem
 rem A step that jumps from 12 to 25 fills in 13 to 24 as well, so no number is
 rem skipped, and a step that re-reports the number it just showed prints nothing.
 if "%~1"=="" exit /b 0
+call :log pct %~1 vt=%VTOK%
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
 if %GPCT% GTR 100 set "GPCT=100"
@@ -663,6 +669,7 @@ rem number grow together and 100% is a barrel filled end to end. Where the windo
 rem cannot hold a hundred pipes, two percentages share one and the bar still ends
 rem full. Only one character and three digits change: the pistol is not redrawn.
 set "GNUM=%~1"
+call :log paint %~1 vt=%VTOK%
 rem Padded while it is digits and nothing else. Nothing about the count is
 rem handed to call: call reads its line a second time, and a per cent sign
 rem read a second time has no partner left - that is the line cmd cannot
@@ -691,6 +698,7 @@ set "GWRITE=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| "
 set "GWRITE=%GWRITE%%PCTX%"
 set "GWRITE=%GWRITE%%ESC%[K%ESC%[u"
 set /p "=%GWRITE%" <nul
+call :log painted %~1 on the barrel
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
@@ -705,10 +713,12 @@ if defined RPBAR if %RPOS% EQU %RPBAR% goto gaugeone_plain_title
 set "RPBAR=%RPOS%"
 call :gunredraw %~1 %RPOS%
 :gaugeone_plain_title
+call :log painted %~1 in the title
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 
 :gunredraw
+call :log art %~1 pipes %~2
 rem %1 = percent, %2 = how many pipes that is. The art is :gun's, with the barrel
 rem filled and the count beside it, so a console that will not take cursor moves
 rem still shows the run the way the window is meant to look. The pipes start two
@@ -731,6 +741,7 @@ echo    ....// (..) ), ----"
 echo    ...//___//
 echo    ..//___//
 echo    .//___//
+call :log art %~1 drawn
 exit /b 0
 
 :bar
@@ -1105,6 +1116,7 @@ rem recorded nothing about what it had applied, and nothing compared the
 rem folder against main. The head commit is a few KB and answers the same
 rem question, so an unchanged build costs one small request instead.
 :probe
+call :log step 9 archive route
 set "RSHA7="
 if not exist "%CACHE%\applied.txt" goto download
 if not exist "%~dp0data\fight.def" goto download
@@ -1180,6 +1192,7 @@ if defined RSHA set "RSHA7=%RSHA:~0,7%"
 exit /b 0
 rem ---- transports 2 to 4 -------------------------------------------------
 :download
+call :log step 10 downloading the archive
 call :pct 50 "Downloading 190 MB"
 call :say
 call :say
@@ -1395,7 +1408,13 @@ if errorlevel 1 goto selfupdate_partial
 "%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%" >nul 2>&1
 if errorlevel 1 goto selfupdate_partial
 "%SYS%\fc.exe" /b "%NEWB%" "%~f0" >nul 2>&1
-if not errorlevel 1 goto selfupdate_current
+set "FCRC=%ERRORLEVEL%"
+call :log launcher compare returned %FCRC%
+if "%FCRC%"=="0" goto selfupdate_current
+rem 2 is "could not compare", not "differs": treating it as a difference
+rem staged a refresh on every launch, and a staged copy that never lands
+rem leaves the folder on the same old launcher run after run.
+if not "%FCRC%"=="1" goto selfupdate_current
 echo.
 echo This launcher is not the current one - it is replaced for the next launch.
 rem cmd reads a batch file while it runs it, so this file cannot be written over
@@ -1418,6 +1437,7 @@ if exist "%CACHE%\swap.attempts" for /f "usebackq delims=" %%n in ("%CACHE%\swap
 set /a SWN+=1
 >"%CACHE%\swap.attempts" echo %SWN% 2>nul
 if %SWN% GTR 3 goto selfupdate_stuck
+call :log launcher refresh attempt %SWN%, staging a new copy
 copy /Y "%NEWB%" "%STAGE%" >nul 2>&1
 if not exist "%STAGE%" goto selfupdate_nostage
 for %%A in ("%STAGE%") do if %%~zA LSS 20000 goto selfupdate_partial
