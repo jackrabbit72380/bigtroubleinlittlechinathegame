@@ -193,6 +193,12 @@ def _progress_problems(name, raw):
     if not re.search(r"(?m)^:gaugeone_plain\s*$", text):
         out.append("%s: a console without cursor control is left with no progress "
                    "line at all" % name)
+    elif "call :gunredraw" not in text or not re.search(r"(?m)^:gunredraw\s*$", text):
+        out.append("%s: a console without cursor control only gets the title bar, "
+                   "so the window shows a picture with no number on it" % name)
+    elif "^|]=  %RBAR%" not in text:
+        out.append("%s: the redrawn barrel does not start its pipes where the "
+                   "drawn barrel ends, so the count does not sit at the muzzle" % name)
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
@@ -237,7 +243,7 @@ CONSOLE_LABELS = {
     "gitlocked", "gitfail_final", "dl_browser", "bwait_check", "launch_died",
     "selfupdate_got", "selfupdate_stuck", "launchfail", "folder_denied",
     "folder_denied_noexe", "wrongfolder", "downloadfailed", "close_soon",
-    "quit", "gun", "gaugeone_plain",
+    "quit", "gun", "gaugeone_plain", "gunredraw",
     # one failure line each; the rest of their lines go to the log
     "download", "skipver", "verify_again",
 }

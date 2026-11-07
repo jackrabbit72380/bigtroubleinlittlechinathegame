@@ -514,10 +514,16 @@ echo    ...//___//
 echo    ..//___//
 echo    .//___//
 set "GUNSHOWN=1"
+rem The full barrel is built once here and sliced per percent below, so a console
+rem without cursor control redraws the picture without a loop per redraw.
+if not defined BARFULL for /l %%P in (1,1,%BARMAX%) do call set "BARFULL=%%BARFULL%%|"
 rem The line under the drawing is remembered, so every percentage can write at
 rem the muzzle and come straight back here. The messages that follow print
 rem below the pistol, never over it.
 if defined VTOK set /p "=%ESC%[s" <nul
+rem A console that refused the cursor mode would otherwise sit on a bare picture
+rem until the first step reports, which on a slow first check can be a while.
+if not defined VTOK call :gunredraw 0 0
 exit /b 0
 
 :gauge
@@ -572,9 +578,40 @@ set /p "=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| %PCT3%%%ESC%[K%ESC%[u" <nul
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
-rem No cursor control here, so nothing is printed under the pistol: the window
-rem stays the drawing, and the title bar is where the number goes.
+rem No cursor control here. The title bar alone was all this did, and a run then
+rem showed a picture with no number on it at all - the number went where nobody
+rem looks. The pistol is drawn again with the barrel filled to this percent
+rem instead. The art is nine lines and the bar only changes when a pipe is added,
+rem so the screen is cleared once per pipe rather than once per percent.
+set /a RPOS=%~1*%BARMAX%/100
+if %~1 GTR 0 if %RPOS% LSS 1 set "RPOS=1"
+if defined RPBAR if %RPOS% EQU %RPBAR% goto gaugeone_plain_title
+set "RPBAR=%RPOS%"
+call :gunredraw %~1 %RPOS%
+:gaugeone_plain_title
 title Big Trouble in Little China: The Game - Updater - %~1 percent
+exit /b 0
+
+:gunredraw
+rem %1 = percent, %2 = how many pipes that is. The art is :gun's, with the barrel
+rem filled and the count beside it, so a console that will not take cursor moves
+rem still shows the run the way the window is meant to look. The pipes start two
+rem columns past the drawn barrel's end, where the muzzle write puts them.
+set "RBAR="
+if defined BARFULL call set "RBAR=%%BARFULL:~0,%~2%%"
+set "RPCT=  %~1%%"
+call set "RPCT=%%RPCT:~-4%%"
+cls
+echo.
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
+echo    ..._...^|..____________________, ,
+echo    ....../ '---___________----_____^|]=  %RBAR% %RPCT%
+echo    ...../_==o;;;;;;;;_______.:/
+echo    .....), ---.(_(__) /\
+echo    ....// (..) ), ----"
+echo    ...//___//
+echo    ..//___//
+echo    .//___//
 exit /b 0
 
 :bar
