@@ -14,12 +14,25 @@ cd /d "%~dp0"
 title Big Trouble in Little China: The Game - Updater
 set "REPO=jackrabbit72380/bigtroubleinlittlechinathegame"
 set "BOOT=%TEMP%\btilc-updater"
-set "BOOQ=%BOOT:'=''%"
-set "LOG=%BOOT%\last-run.log"
 if not exist "%BOOT%" mkdir "%BOOT%" 2>nul
+rem The run log goes beside the game, in save\logs, where it is found by
+rem looking in the folder the player already knows. A folder that refuses
+rem writes falls back to the temp copy, and the window says which one it wrote.
+set "LOGDIR=%~dp0save\logs"
+if not exist "%LOGDIR%" mkdir "%LOGDIR%" 2>nul
+set "LOG="
+if exist "%LOGDIR%" set "LOG=%LOGDIR%\btilc-updater.log"
+if not defined LOG if exist "%BOOT%" set "LOG=%BOOT%\last-run.log"
+if not defined LOG set "LOG=%TEMP%\btilc-updater.log"
+set "LOGQ=%LOG:'=''%"
+rem The last line of the previous run is read before this run replaces the
+rem file: it is the step that run stopped on, and it is the first thing the
+rem new log says, so one file carries both runs and the one before them.
+set "PREV="
+if exist "%LOG%" for /f "usebackq delims=" %%L in ("%LOG%") do set "PREV=%%L"
 >"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%~1 2>nul
-rem The rest of the file opens this log again a few lines in; until it gets
-rem there, this line is the proof that the window started at all.
+if defined PREV call :say previous run stopped after: %PREV%
+rem Everything the rest of the file does is added under these two lines.
 call "%~f0" --body %*
 goto stopped
 :stopped
@@ -33,7 +46,7 @@ if errorlevel 1 goto stopped_cut
 echo It ran off the end of a whole file, so its log says where it got to:
 echo.
 if not exist "%LOG%" goto stopped_nolog
-"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Get-Content -LiteralPath '%BOOQ%\last-run.log' -Tail 16" 2>nul
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -Command "Get-Content -LiteralPath '%LOGQ%' -Tail 16" 2>nul
 goto stopped_tail
 :stopped_nolog
 echo   (no log was written)
@@ -77,7 +90,10 @@ rem ===========================================================================
 setlocal EnableExtensions DisableDelayedExpansion
 color 0E
 cd /d "%~dp0"
-title Big Trouble in Little China: The Game - Updater
+rem The version the title bar, the banner and the run log all read, so the
+rem three cannot drift apart when the script is bumped.
+set "UPDVER=60"
+title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
 rem  The run log first: before the pistol, before the console is asked for its
@@ -98,10 +114,16 @@ rem character itself, so this is the copy they are given.
 set "CQ=%CACHE:'=''%"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem Every run leaves this behind. When a window closes before the game appears,
-rem this file is the only record of how far it got and why it stopped.
-set "LOG=%CACHE%\last-run.log"
->"%LOG%" echo [%DATE% %TIME%] launcher start  arg=%1 2>nul
+rem The log sits beside the game, in save\logs, where it is found without
+rem knowing about the temp folder; the wrapper has already opened it there and
+rem quoted the last run's final line. A folder that refuses writes falls back
+rem to the temp copy.
+set "LOGDIR=%~dp0save\logs"
+if not exist "%LOGDIR%" mkdir "%LOGDIR%" 2>nul
+if not exist "%LOGDIR%" set "LOGDIR=%CACHE%"
+set "LOG=%LOGDIR%\btilc-updater.log"
+if not exist "%LOG%" set "LOG=%CACHE%\last-run.log"
+>>"%LOG%" echo [%DATE% %TIME%] launcher v%UPDVER% running, folder %~dp0 2>nul
 call :log step 1 folder "%~dp0"
 
 set "SYS=%SystemRoot%\System32"
@@ -138,9 +160,6 @@ set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
 
-rem The version the title above the pistol and the run log both read, so the
-rem two cannot drift apart when the script is bumped.
-set "UPDVER=59"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
