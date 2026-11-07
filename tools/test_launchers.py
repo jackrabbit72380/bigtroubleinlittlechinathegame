@@ -118,6 +118,23 @@ MUTATIONS = [
 ]
 
 
+# ways the launcher could lose itself: each has to be reported
+SELFUPDATE = [
+    ("the launcher is written over in place",
+     b'move /Y "%STAGE%" "%~f0"', b'copy /Y "%NEWB%" "%~f0"',
+     "writes over the file this window"),
+    ("the last line the file ships with is gone",
+     b'\r\nrem btilc-launcher-end\r\n', b'\r\n',
+     "does not end with"),
+    ("the refresh needs curl alone",
+     b'if not defined CURL if not defined POWERSHELL exit /b 0',
+     b'if not defined CURL exit /b 0', "curl.exe"),
+    ("a download is not checked for its last line",
+     b'"%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%" >nul 2>&1\r\n', b'',
+     "stopped half way"),
+]
+
+
 def main():
     failures = 0
     for label, body in TRAPS:
@@ -155,6 +172,17 @@ def main():
             failures += 1
             continue
         found = checker._progress_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in SELFUPDATE:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._selfupdate_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

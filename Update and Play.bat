@@ -56,7 +56,7 @@ set "GIT_CONFIG_PARAMETERS="
 
 rem The version the title above the pistol and the run log both read, so the
 rem two cannot drift apart when the script is bumped.
-set "UPDVER=55"
+set "UPDVER=56"
 call :say "=============================================================="
 call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
@@ -1276,63 +1276,116 @@ rem the baton back and forth for ever.
 if /i "%~1"=="--updated" exit /b 0
 if defined LAUNCHARED exit /b 0
 set "LAUNCHARED=1"
-if not defined CURL exit /b 0
+if not defined CURL if not defined POWERSHELL exit /b 0
 rem The launcher is not in the six folders the update writes, so before this it
 rem could never be refreshed - a folder running v19 stayed on v19 no matter what
 rem main fixed. It is fetched on its own here, a few KB.
-"%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%CACHE%\launcher-new.bat" "https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat" >nul 2>&1
-if not errorlevel 1 goto selfupdate_got
+rem
+rem curl.exe only reached the system folder in Windows 1803, so an older machine
+rem could not refresh this file at all and stayed on whichever copy it was first
+rem given. The same file is fetched through PowerShell when curl is missing or
+rem fails, and only when neither of them has it does this copy carry on as it is.
+set "LAUNCHURL=https://raw.githubusercontent.com/%REPO%/main/Update%%20and%%20Play.bat"
+set "NEWB=%CACHE%\launcher-new.bat"
+set "STAGE=%~dp0Update and Play.new"
+if exist "%NEWB%" del /q "%NEWB%" >nul 2>&1
+if defined CURL "%CURL%" -sS -L --fail --ssl-no-revoke --connect-timeout 15 --max-time 40 -H "User-Agent: btilc-updater" -o "%NEWB%" "%LAUNCHURL%" >nul 2>&1
+if not exist "%NEWB%" if defined POWERSHELL call :selfupdate_ps
+if exist "%NEWB%" goto selfupdate_got
 call :say "Could not fetch a newer launcher - using this copy."
-exit /b 0
+goto selfupdate_nofetch
 :selfupdate_got
-if not exist "%CACHE%\launcher-new.bat" exit /b 0
+if not exist "%NEWB%" exit /b 0
 rem A truncated file, an error page or anything else that is not the launcher
-rem must never be copied over a working one.
-for %%A in ("%CACHE%\launcher-new.bat") do if %%~zA LSS 5000 exit /b 0
-"%FINDSTR%" /c:"BIG TROUBLE IN LITTLE CHINA" "%CACHE%\launcher-new.bat" >nul 2>&1
-if errorlevel 1 exit /b 0
-"%SYS%\fc.exe" /b "%CACHE%\launcher-new.bat" "%~f0" >nul 2>&1
+rem must never be copied over a working one. Size alone is the weakest test, so
+rem the title and the last line the file is shipped with have to be there too: a
+rem download that stopped half way holds neither.
+for %%A in ("%NEWB%") do if %%~zA LSS 20000 goto selfupdate_partial
+"%FINDSTR%" /c:"BIG TROUBLE IN LITTLE CHINA" "%NEWB%" >nul 2>&1
+if errorlevel 1 goto selfupdate_partial
+"%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%" >nul 2>&1
+if errorlevel 1 goto selfupdate_partial
+"%SYS%\fc.exe" /b "%NEWB%" "%~f0" >nul 2>&1
 if not errorlevel 1 goto selfupdate_current
 echo.
 echo This launcher is not the current one - updating it before anything else.
 rem cmd reads a batch file while it runs it, so this file cannot be written over
-rem by the window that is executing it. A detached helper waits for the window to
-rem close, copies the new launcher into place and starts it again with --updated.
-rem If the copy loses the race the restarted window carries on as it is: the next
-rem launch tries again, and nothing here can loop.
-rem Replacing this file can be refused outright - a read-only file, a folder
-rem under Windows' control, a scanner holding it. Three attempts is enough:
-rem past that this copy runs the update as it is instead of closing, fetching
-rem and closing again on every double-click.
+rem by the window that is executing it. A write in place either loses the race or
+rem cuts the file short under the reader, and the next read runs a fragment of a
+rem line: the window answers with a piece of text it cannot find as a command and
+rem stops there. The new copy is landed beside this one first and put in place
+rem with a rename, which is either the old file or the whole new one and never a
+rem half-written one. A detached helper waits for this window to close, renames,
+rem and starts it again with --updated.
+rem If the rename loses the race the restarted window carries on as it is: the
+rem next launch tries again, and nothing here can loop.
+rem A read-only file, a folder under Windows' control or a scanner holding it can
+rem refuse the rename outright. Three launches is enough: past that this copy
+rem runs the update as it is instead of closing, fetching and closing again on
+rem every double-click.
 set "SWN=0"
 if exist "%CACHE%\swap.attempts" for /f "usebackq delims=" %%n in ("%CACHE%\swap.attempts") do set "SWN=%%n"
 set /a SWN+=1
 >"%CACHE%\swap.attempts" echo %SWN% 2>nul
 if %SWN% GTR 3 goto selfupdate_stuck
+copy /Y "%NEWB%" "%STAGE%" >nul 2>&1
+if not exist "%STAGE%" goto selfupdate_nostage
+for %%A in ("%STAGE%") do if %%~zA LSS 20000 goto selfupdate_partial
 set "SWAP=%CACHE%\swap.bat"
 >"%SWAP%" echo @echo off
-rem Three tries, a few seconds apart: the window that started this has to
-rem close before the file it is running can be written over, and how long
-rem that takes is not known here. Whatever happens the launcher is started
-rem again at the end, so a copy that never lands costs one launch, not the
-rem update itself.
->>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
->>"%SWAP%" echo if not errorlevel 1 goto run
->>"%SWAP%" echo "%PING%" -n 4 127.0.0.1 ^>nul
->>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
->>"%SWAP%" echo if not errorlevel 1 goto run
->>"%SWAP%" echo "%PING%" -n 5 127.0.0.1 ^>nul
->>"%SWAP%" echo copy /Y "%CACHE%\launcher-new.bat" "%~f0" ^>nul 2^>^&1
+rem The staged copy sits in the same folder as the launcher, so the rename swaps
+rem one directory entry for another: no byte is rewritten, and the window still
+rem reading the old file keeps reading it to its last line. Eight tries, a few
+rem seconds apart, is far more than that window needs to close.
+>>"%SWAP%" echo set "N=0"
+>>"%SWAP%" echo :try
+>>"%SWAP%" echo move /Y "%STAGE%" "%~f0" ^>nul 2^>^&1
+>>"%SWAP%" echo if not exist "%STAGE%" goto run
+>>"%SWAP%" echo set /a N+=1
+>>"%SWAP%" echo if %%N%% GEQ 8 goto give
+>>"%SWAP%" echo "%PING%" -n 3 127.0.0.1 ^>nul
+>>"%SWAP%" echo goto try
+>>"%SWAP%" echo :give
+>>"%SWAP%" echo del /q "%STAGE%" ^>nul 2^>^&1
 >>"%SWAP%" echo :run
 >>"%SWAP%" echo start "" "%~f0" --updated
-if not exist "%SWAP%" exit /b 0
-rem A window of its own, minimised: a /b child shares this console and would
-rem go with it when this script exits on the next line.
+if not exist "%SWAP%" goto selfupdate_nostage
+rem A window of its own, minimised: a /b child shares this console and would go
+rem with it when this script exits on the next line.
 start "btilc launcher update" /min "%SWAP%"
 echo It restarts in a moment with the current one.
 echo.
 exit 0
-
+:selfupdate_ps
+rem The fetch curl could not make, for a machine that has no curl.exe. A script
+rem of its own rather than a -Command line, because the address has to be passed
+rem without the quoting a command line would eat.
+set "SUPS=%CACHE%\launcher.ps1"
+>  "%SUPS%" echo param([string]$Url, [string]$Out)
+>> "%SUPS%" echo $ErrorActionPreference = 'Stop'
+>> "%SUPS%" echo [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+>> "%SUPS%" echo $wc = New-Object Net.WebClient
+>> "%SUPS%" echo $wc.Headers.Add('User-Agent', 'btilc-updater')
+>> "%SUPS%" echo $wc.DownloadFile($Url, $Out)
+if not exist "%SUPS%" exit /b 0
+"%POWERSHELL%" -NoProfile -ExecutionPolicy Bypass -File "%SUPS%" -Url "%LAUNCHURL%" -Out "%NEWB%" >nul 2>&1
+exit /b 0
+:selfupdate_nostage
+call :say "Could not stage the new launcher - using this copy."
+exit /b 0
+:selfupdate_partial
+echo.
+echo The new launcher did not arrive whole, so this copy is doing the update.
+echo.
+call :say "launcher download incomplete, running this copy"
+exit /b 0
+:selfupdate_nofetch
+echo.
+echo Could not download the current launcher, so this copy is doing the
+echo update. The game files are still brought up to date.
+echo.
+call :say "could not download the launcher, running this copy"
+exit /b 0
 :selfupdate_current
 rem this copy is the current one: forget any failed attempts at replacing it
 if exist "%CACHE%\swap.attempts" del /q "%CACHE%\swap.attempts" >nul 2>&1
@@ -1710,4 +1763,4 @@ set "ZQ=%ZIP:'=''%"
 if errorlevel 1 exit /b 0
 set "ZIPOK=1"
 exit /b 0
-
+rem btilc-launcher-end

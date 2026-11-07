@@ -412,6 +412,57 @@ def _progress_problems(name, raw):
     return out
 
 
+SENTINEL = "rem btilc-launcher-end"
+
+
+def _selfupdate_problems(name, raw):
+    """The launcher can only replace itself once, and only safely.
+
+    Two ways of losing the launcher live here and neither is visible on a machine
+    this repo can run. A copy written in place over the file cmd is still reading
+    either loses the race or cuts the file short under the reader, and the next
+    read starts inside a line: the window then answers with a fragment of text it
+    cannot find as a command and stops there, at a prompt, before it has updated
+    anything. And the fetch itself needed curl.exe, which only reached the system
+    folder in Windows 1803, so an older machine could never refresh the file at
+    all and kept whichever copy it was first given.
+
+    The last line the file ships with is checked too: it is what makes a download
+    that stopped half way distinguishable from a whole one, and a half-written
+    launcher is the one thing here that cannot be recovered by running it.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    if not text.rstrip("\n").endswith(SENTINEL):
+        out.append("%s: the file does not end with %r, so a copy cut short cannot "
+                   "be told from a whole one" % (name, SENTINEL))
+    if not re.search(r'(?m)^set "STAGE=%~dp0', text):
+        out.append("%s: the new launcher is not staged in the game folder, so it is "
+                   "replaced by a copy across drives rather than by a rename" % name)
+    if 'move /Y "%STAGE%" "%~f0"' not in text:
+        out.append("%s: the launcher is not replaced by renaming the staged copy "
+                   "over it, so the file this window is running can be cut short "
+                   "under it" % name)
+    for number, line in enumerate(text.split("\n"), 1):
+        if re.search(r"(?i)\bcopy\s+/[a-z]*y\b", line) and "%~f0" in line:
+            out.append("%s:%d: a copy writes over the file this window is running, "
+                       "so cmd can read a half-written line and stop on a fragment "
+                       "of it: %s" % (name, number, line.strip()[:70]))
+    if "if not defined CURL if not defined POWERSHELL" not in text:
+        out.append("%s: refreshing the launcher needs curl.exe, which is missing "
+                   "before Windows 1803, so those machines can never update it"
+                   % name)
+    if "call :selfupdate_ps" not in text:
+        out.append("%s: there is no second way to fetch the launcher, so a machine "
+                   "without curl.exe keeps whichever copy it was first given" % name)
+    if '"%FINDSTR%" /c:"btilc-launcher-end" "%NEWB%"' not in text:
+        out.append("%s: a download is not checked for its last line, so one that "
+                   "stopped half way would be installed as the launcher" % name)
+    return out
+
+
 CONSOLE_LABELS = {
     "githere", "confirm", "gitdrop_many", "gamelock", "gamelock_wait",
     "gitlocked", "gitfail_final", "dl_browser", "bwait_check", "launch_died",
@@ -420,6 +471,8 @@ CONSOLE_LABELS = {
     "quit", "gun", "gaugeone_plain", "gunredraw",
     # one failure line each; the rest of their lines go to the log
     "download", "skipver", "verify_again",
+    # the launcher could not refresh itself: news the player has to see
+    "selfupdate_partial", "selfupdate_nofetch",
 }
 
 ECHO_LINE = re.compile(r"(?i)^(?:if .*?\s)?echo(?:\s|\.|$)")
@@ -640,6 +693,7 @@ def problems(root):
             found.extend(_progress_problems(name, raw))
             found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))
+            found.extend(_selfupdate_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 
