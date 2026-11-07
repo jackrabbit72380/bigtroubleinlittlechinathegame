@@ -885,84 +885,91 @@ function menu.f_commandlistRender(sec, t)
 	main.f_menuItemPlace(sec.movelist.title.TextSpriteData, frameW / 2, main.f_movelistTitleY(sec))
 	textImgDraw(sec.movelist.title.TextSpriteData)
 	--draw commands
+	-- Two measured columns rather than a fixed-width window: the names get as much
+	-- room as the longest one on screen and the keys start one gap past it, so a
+	-- short command does not have to reach across the frame to meet its input. The
+	-- pair is centred as a block. A row of one cell is a heading inside the list and
+	-- keeps the centre, and a row's own colour still wins.
+	local fontProps = motif.files.font['font' .. sec.movelist.text.font[1]]
+	local rowPitch = main.f_round((fontProps.size[2] + fontProps.spacing[2]) * sec.movelist.text.scale[2] + sec.movelist.text.spacing[2])
+	local cellSpacing = sec.movelist.text.spacing[1]
+	local first = t.tbl.movelistLine
+	local last = math.min(first + sec.movelist.window.visibleitems + 1, #cmdList)
+
+	local function glyphScale(v)
+		local g = v.glyph and motif.glyphs[v.text]
+		if g == nil or g.Size == nil or g.AnimData == nil then return nil end
+		return g, fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[1],
+			fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[2]
+	end
+
+	local function cellWidth(v)
+		if v.text == '' then return 0 end
+		local g, scaleX = glyphScale(v)
+		if g ~= nil then return g.Size[1] * scaleX end
+		textImgSetText(sec.movelist.text.TextSpriteData, v.text)
+		return textImgGetTextWidth(sec.movelist.text.TextSpriteData, v.text) * sec.movelist.text.scale[1]
+	end
+
+	local nameW, inputW = 0, 0
+	for n = first, last do
+		local row = cmdList[n]
+		if #row > 1 then
+			local w = cellWidth(row[1])
+			if w > nameW then nameW = w end
+			local wi, seen = 0, false
+			for k = 2, #row do
+				if row[k].text ~= '' then
+					wi = wi + cellWidth(row[k]) + (seen and cellSpacing or 0)
+					seen = true
+				end
+			end
+			if wi > inputW then inputW = wi end
+		end
+	end
+	local nameX, keyX = main.f_movelistColumns(frameW / 2, nameW, inputW)
+
 	local i = 0
-	for n = t.tbl.movelistLine, math.min(t.tbl.movelistLine + sec.movelist.window.visibleitems + 1, #cmdList) do
+	for n = first, last do
 		i = i + 1
-		local alignOffset = 0
-		local lengthOffset = 0
-		local align = 1
-		local width = 0
-		for k, v in ipairs(cmdList[n]) do
+		local row = cmdList[n]
+		local y = sec.movelist.pos[2] + sec.movelist.text.offset[2] + rowPitch * (i - 1)
+		local keyCursor = keyX
+		for k = 1, #row do
+			local v = row[k]
 			if v.text ~= '' then
-				alignOffset = 0
-				if v.align == 0 then --center align
-					alignOffset = sec.movelist.window.width * 0.5
-				elseif v.align == -1 then --right align
-					alignOffset = sec.movelist.window.width
-				end
-				if v.align ~= align then
-					lengthOffset = 0
-					align = v.align
-				end
-				local fontProps = motif.files.font['font' .. sec.movelist.text.font[1]]
-				--render glyph
-				if v.glyph and motif.glyphs[v.text] ~= nil then
-					local g = motif.glyphs[v.text]
-					if g.Size ~= nil and g.AnimData ~= nil then
-						local scaleX = fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[1]
-						local scaleY = fontProps.size[2] * sec.movelist.text.scale[2] / g.Size[2] * sec.movelist.glyphs.scale[2]
-						if v.align == -1 then
-							alignOffset = alignOffset - g.Size[1] * scaleX
-						end
-						animSetScale(g.AnimData, scaleX, scaleY)
-						--animSetFacing(g.AnimData, facing)
-						animSetPos(
-							g.AnimData,
-							math.floor(sec.movelist.pos[1] + sec.movelist.text.offset[1] + sec.movelist.glyphs.offset[1] + alignOffset + lengthOffset),
-							sec.movelist.pos[2] + sec.movelist.text.offset[2] + sec.movelist.glyphs.offset[2] + main.f_round((fontProps.size[2] + fontProps.spacing[2]) * sec.movelist.text.scale[2] + sec.movelist.text.spacing[2]) * (i - 1)
-						)
-						animSetWindow(g.AnimData, menu.movelistW[1], menu.movelistW[2], menu.movelistW[3], menu.movelistW[4])
-						--animUpdate(g.AnimData)
-						animDraw(g.AnimData)
-						if k < #cmdList[n] then
-							width = g.Size[1] * scaleX + sec.movelist.glyphs.spacing[1]
-						end
+				local w = cellWidth(v)
+				local x, align
+				if k == 1 and #row == 1 then
+					if v.align == 0 then
+						x, align = frameW / 2, 0
+					else
+						x, align = nameX, 1
 					end
-				--render text
+				elseif k == 1 then
+					x, align = nameX, 1
+				else
+					x, align = keyCursor, 1
+					keyCursor = keyCursor + w + cellSpacing
+				end
+				local g, scaleX, scaleY = glyphScale(v)
+				if g ~= nil then
+					animSetScale(g.AnimData, scaleX, scaleY)
+					animSetPos(
+						g.AnimData,
+						math.floor(x + (sec.movelist.glyphs.offset[1] or 0)),
+						y + (sec.movelist.glyphs.offset[2] or 0)
+					)
+					animSetWindow(g.AnimData, menu.movelistW[1], menu.movelistW[2], menu.movelistW[3], menu.movelistW[4])
+					animDraw(g.AnimData)
 				else
 					textImgReset(sec.movelist.text.TextSpriteData)
-					local align = v.align
-					if align == 0 and lengthOffset ~= 0 then
-						align = 1
-					end
 					textImgSetAlign(sec.movelist.text.TextSpriteData, align)
-					-- the name column keeps the motif gold, the input column takes the
-					-- accent, so the two read apart at a glance
 					local colR, colG, colB, colA = main.f_movelistColor(sec, k, v.col)
-					textImgSetColor(
-						sec.movelist.text.TextSpriteData,
-						colR,
-						colG,
-						colB,
-						colA
-					)
-					main.f_menuItemPlace(
-						sec.movelist.text.TextSpriteData,
-						main.f_movelistPos(sec, i, alignOffset, lengthOffset,
-							main.f_round((fontProps.size[2] + fontProps.spacing[2]) * sec.movelist.text.scale[2] + sec.movelist.text.spacing[2]))
-					)
+					textImgSetColor(sec.movelist.text.TextSpriteData, colR, colG, colB, colA)
+					main.f_menuItemPlace(sec.movelist.text.TextSpriteData, x, y)
 					textImgSetText(sec.movelist.text.TextSpriteData, v.text)
 					textImgDraw(sec.movelist.text.TextSpriteData)
-					if k < #cmdList[n] then
-						width = textImgGetTextWidth(sec.movelist.text.TextSpriteData, v.text) * sec.movelist.text.scale[1] + sec.movelist.text.spacing[1]
-					end
-				end
-				if v.align == 0 and not v.glyph and lengthOffset == 0 then
-					lengthOffset = lengthOffset + width / 2
-				elseif v.align == -1 then
-					lengthOffset = lengthOffset - width
-				else
-					lengthOffset = lengthOffset + width
 				end
 			end
 		end

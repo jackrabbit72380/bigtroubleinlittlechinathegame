@@ -244,12 +244,12 @@ PAUSE_LAYOUT = (
     # default motif instead of from ours, so without it written out that list's
     # first row draws on the heading's line.
     ("movelist.text.offset", "0, 54"),
-    # The command list is the last centred column. Its rows live in a window that
-    # starts at movelist.pos.x and is movelist.window.width wide, with the name
-    # column anchored on the left edge and the input column on the right, so the
-    # window has to be symmetric on the frame for the list to read as centred:
-    # 210 + 1500 = 1710, leaving 210 either side, and a centre-aligned cell lands
-    # on 960. It used to start at 100, which put the window's middle on 850.
+    # The command list's columns are measured on screen (the script gives the
+    # names the width of the longest one and puts the keys one gap past it), so
+    # this window is only the box those rows are clipped to and the heading's
+    # anchor. Keeping it symmetric on the frame - 210 + 1500 = 1710, 210 either
+    # side - means a long list that reaches the margin still has room. It used to
+    # start at 100, which put the box's middle on 850.
     # The heading offset keeps movelist.pos.x + title.offset.x on the frame's
     # middle (210 + 750 = 960).
     ("movelist.pos", "210, 90"),

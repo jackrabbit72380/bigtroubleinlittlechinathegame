@@ -3971,30 +3971,33 @@ end
 -- <<< pause menu item geometry
 
 -- >>> command list geometry (tools/test_pausemenu.py executes this block)
--- The command list lays its rows out inside movelist.window: a name column
--- anchored at movelist.pos.x, an input column anchored at pos.x + window.width,
--- and cells in between aligned left, centre or right inside that window. The
--- rows used to be added to the base the engine bakes into a text sprite, which
--- is not movelist.pos on this build, so the list drew off the frame; they are
--- placed from movelist.pos now. With pos.x 210 and width 1500 the window runs
--- 210..1710, symmetric on a 1920 frame, so a centred cell centres on 960.
-function main.f_movelistPos(sec, i, alignOffset, lengthOffset, pitch)
-	local m = sec.movelist
-	return m.pos[1] + (m.text.offset[1] or 0) + (alignOffset or 0) + (lengthOffset or 0),
-		m.pos[2] + (m.text.offset[2] or 0) + (pitch or 0) * (i - 1)
-end
+-- The command list's two columns are measured, not fitted to a fixed window: the
+-- name column is as wide as the longest name on screen and the input column
+-- starts one gap past it, so a short command does not leave a gulf before its
+-- keys. The pair is centred on the frame as a block, and an oversized list is
+-- pinned to the margin instead of being allowed to run off the edge.
+main.movelist = {input = {150, 186, 124}, gap = 60, margin = 60}
 
 function main.f_movelistTitleY(sec)
 	return sec.movelist.pos[2] + (sec.movelist.title.offset[2] or 0)
 end
 
--- The command list's two columns are told apart by colour as well as position:
--- the name keeps the motif's own gold (movelist.text.font) and the input it needs
--- is drawn in jade, the palette's one cool accent (the same one the developer keys
--- screen gives its third column), so a row reads "what" and then "keys" without
--- the eye having to follow the gap across the frame. A row that sets its own
--- colour still wins, and only cells after the name take the accent.
-main.movelist = {input = {150, 186, 124}}
+function main.f_movelistColumns(cx, nameW, inputW, gap, margin)
+	nameW = nameW or 0
+	gap = gap or main.movelist.gap
+	margin = margin or main.movelist.margin
+	local block = nameW + ((inputW or 0) > 0 and (gap + inputW) or 0)
+	local left = cx - block * 0.5
+	if left < margin then left = margin end
+	return left, left + nameW + gap
+end
+
+-- The two columns are told apart by colour as well as position: the name keeps
+-- the motif's own gold (movelist.text.font) and the input it needs is drawn in
+-- jade, the palette's one cool accent (the same one the developer keys screen
+-- gives its third column), so a row reads "what" and then "keys" without the eye
+-- having to follow the gap. A row that sets its own colour still wins, and only
+-- cells after the name take the accent.
 function main.f_movelistColor(sec, k, col)
 	col = col or {}
 	local f = sec.movelist.text.font or {}
