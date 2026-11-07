@@ -1802,11 +1802,10 @@ rem working from hung. These lines are kept in six slots so a redraw can put the
 rem back: the redraw starts with cls on a console without cursor control, and
 rem that is what made a message appear and vanish a moment later.
 if "%~1"=="" exit /b 0
-rem The redirect starts its own line: written after an if, cmd reads it as an
-rem operator on the condition, and the launcher checker reads it the same way.
-if not defined LOG goto says_window
->>"%LOG%" echo %~1 2>nul
-:says_window
+rem The log line goes through :say, which owns the redirect: written here it
+rem would need a branch of its own, and a second label inside this one would
+rem leave the echo below belonging to that label instead of this one.
+call :say "%~1"
 set "SAY1=%SAY2%"
 set "SAY2=%SAY3%"
 set "SAY3=%SAY4%"
