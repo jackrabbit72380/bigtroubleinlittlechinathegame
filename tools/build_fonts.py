@@ -250,22 +250,27 @@ PAUSE_LAYOUT = (
 
 SECTION_LAYOUT = {
     "Title Info": (
-        # The menu under a wordmark that fills the top half of a 1080p screen.
-        # At y=250 the list started inside the logo's bottom edge and "ARCADE"
-        # sat across "CHINA". The column is left-aligned at 800 - the wordmark
-        # is centred, so a list starting there reads as centred under it - and
-        # begins below the logo at 470 on a 56px pitch for the 45px face, so the
-        # rows end at 974 with the same headroom at the bottom as under the logo.
-        # It used to be right-aligned at 1240, which pushed the longest labels
-        # off the right-hand side of the frame.
-        ("menu.pos", "800, 470"),
+        # The same centred column as the pause and options lists, on the
+        # wordmark's own axis: labels are centre-aligned (0) on 1920/2 = 960, so
+        # every row centres under the centred logo instead of hanging off a
+        # left-aligned edge at 800 - the column used to be right-aligned at 1240,
+        # which pushed long labels off the frame, then left-aligned at 800, which
+        # left the block looking shifted. It stays at 470 instead of being
+        # centred vertically: the wordmark fills the top half of the screen, and
+        # a centred block would sit through "CHINA". From 470 the nine rows at a
+        # 56px pitch end at 963, which leaves the bottom headroom the logo has
+        # above them.
+        ("menu.pos", "960, 470"),
         # The keys this screen's script reads. options.lua and start.lua call
         # getInput with motif.title_info.menu.done.key and the section defined
         # no menu keys at all, so nothing confirmed anything here; the bindings
         # are the ones the select screen already uses (palmenu.done).
         ("menu.done.key", "a, b, c, x, y, z"),
-        ("menu.item.font", f"{D},0,1, {GOLD}"),
-        ("menu.item.active.font", f"{DA},0,1, {BRIGHT}"),
+        # Centre-aligned like the other two lists: the item's own box is centred
+        # on menu.pos.x, so a longer label grows either side of 960 rather than
+        # rightwards off the column.
+        ("menu.item.font", f"{D},0,0, {GOLD}"),
+        ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
         ("menu.item.spacing", "0, 56"),
         ("menu.window.visibleitems", "10"),
         # The engine's own footer ("I.K.E.M.E.N. GO" bottom-left, build number
