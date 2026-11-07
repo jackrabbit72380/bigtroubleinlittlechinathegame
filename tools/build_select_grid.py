@@ -84,7 +84,8 @@ FACE2_WIN_P2 = "%d,%d,%d,%d" % (1920 - SIDE_INSET - SIDE_ART[0] - FACE2_PAD,
                                1920 - SIDE_INSET + FACE2_PAD,
                                FACE2_TOP + SIDE_ART[1] + FACE2_PAD)
 
-GREEN = (72, 232, 96)          # player 1's cursor, the green the RANDOM frame uses
+GREEN = (72, 232, 96)          # player 1's cursor, the green the RANDOM word uses
+GREEN_LIT = (118, 246, 132)    # the RANDOM word once a player is on that stop
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
 GOLD_LIT = (244, 216, 120)
@@ -281,8 +282,8 @@ def cursor_frame(colour):
 
 
 # The random slot is a word under the wall, not a portrait: 151,0 is RANDOM set
-# in gold with nothing behind it, and 151,11 is the same word with the selection
-# rule under it, which start.lua draws where the cell cursor would have been.
+# in gold and 151,11 is the same word in green, which start.lua draws in place
+# of the cell cursor. Neither carries a plate or a frame.
 # The big side panels keep the stone card with the question mark.
 RANDOM_CELL = (151, 0)
 RANDOM_MARK = (151, 11)
@@ -326,33 +327,21 @@ def random_card(size):
 
 
 def random_label(size=RANDOM_LABEL, lit=False):
-    """RANDOM as plain type; and, when it is lit, the green selection frame.
+    """RANDOM as plain type: gold while it waits, green while it is selected.
 
-    The engine draws this sprite in place of both the cell plate and the box
-    cursor, so start.lua has nothing else to mark the RANDOM stop with. The lit
-    copy carries that frame itself - the same green the first player's cursor
-    uses, corner ticks and all - because brightening the word alone left RANDOM
-    the one position on the screen with no outline when it was selected.
+    The stop is marked by the word itself changing colour. Nothing is drawn
+    behind or around it: a plate there reads as an unselected cell and a frame
+    reads as a box, and the one thing this position must not look like is the
+    white selection box that used to sit under the wall. Both copies are painted
+    on the same canvas at the same type size, so the word cannot shift or change
+    size when a player's pick moves onto it.
     """
     w, h = size
-    if lit:
-        h += 4
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
-    ink = GOLD_LIT if lit else GOLD
-    if lit:
-        d.rounded_rectangle([0, 0, w - 1, h - 1], radius=7, outline=INK + (215,),
-                            width=1)
-        d.rounded_rectangle([1, 1, w - 2, h - 2], radius=6,
-                            outline=GREEN + (255,), width=3)
-        tick, inset = 12, 7
-        for x, y, dx, dy in ((inset, inset, 1, 1), (w - 1 - inset, inset, -1, 1),
-                             (inset, h - 1 - inset, 1, -1),
-                             (w - 1 - inset, h - 1 - inset, -1, -1)):
-            d.line([(x, y + dy * tick), (x, y), (x + dx * tick, y)],
-                   fill=GREEN + (255,), width=2)
-    room = w - (26 if lit else 10)
-    size_px = h - (14 if lit else 2)
+    ink = GREEN_LIT if lit else GOLD
+    room = w - 10
+    size_px = h - 2
     font = art.font(size_px)
     while size_px > 8 and (sum(font.getlength(c) for c in "RANDOM") + 10) > room:
         size_px -= 1

@@ -112,6 +112,29 @@ def check_sprites(problems):
             problems.append("RANDOM word sprite %d,%d is missing" % spr)
         elif have[spr]["axis"] != (0, 0):
             problems.append("RANDOM word sprite %d,%d has a shifted axis" % spr)
+    if (151, 0) in have and (151, 11) in have:
+        gold = sff.decode_sprite(_d, have[(151, 0)], _p).convert("RGBA")
+        green = sff.decode_sprite(_d, have[(151, 11)], _p).convert("RGBA")
+        if gold.size != green.size:
+            problems.append("the RANDOM word resizes when it is selected (%s vs %s)"
+                            % (gold.size, green.size))
+        else:
+            w, h = green.size
+            px = green.load()
+            ring = ([(x, 0) for x in range(w)] + [(x, h - 1) for x in range(w)]
+                    + [(0, y) for y in range(1, h - 1)]
+                    + [(w - 1, y) for y in range(1, h - 1)])
+            if any(px[x, y][3] > 10 for x, y in ring):
+                problems.append("the selected RANDOM stop is drawn as a box, not a word")
+            ink = [px[x, y] for y in range(h) for x in range(w) if px[x, y][3] > 120]
+            if not ink:
+                problems.append("the selected RANDOM word is blank")
+            else:
+                r = sum(p[0] for p in ink) / len(ink)
+                g = sum(p[1] for p in ink) / len(ink)
+                b = sum(p[2] for p in ink) / len(ink)
+                if not (g > r + 40 and g > b + 40):
+                    problems.append("the selected RANDOM word is not green")
     for spr in ((223, 0), (223, 1), (224, 0), (224, 1)):
         if spr not in have:
             problems.append("cursor sprite %d,%d is missing" % spr)
@@ -168,7 +191,7 @@ def main():
           % ("ok " if len(problems) == before else "FAIL"))
     before = len(problems)
     check_sprites(problems)
-    print("  %s the RANDOM word and the 2x cursor art are in system.sff"
+    print("  %s the RANDOM stop is green type and the cursors are 2x art"
           % ("ok " if len(problems) == before else "FAIL"))
     before = len(problems)
     check_vs_portraits(problems)
