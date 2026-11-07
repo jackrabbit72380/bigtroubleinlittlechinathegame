@@ -2472,8 +2472,8 @@ cursor.done.snd = 100, 1
 cancel.snd = 100, 2
 enter.snd = 100, 1
 exit.snd = 100, 2
-movelist.pos = 100, 90
-movelist.title.offset = 860, -18
+movelist.pos = 210, 90
+movelist.title.offset = 750, -18
 movelist.title.font = 10, 0, 0, 255, 228, 140
 movelist.title.scale = 1, 1
 movelist.title.text = Command List - %s
@@ -2515,11 +2515,12 @@ menu.itemname.music = MUSIC
 ;-------------------------------------------------------------------
 ;Training menu screen definition
 [Training Pause Menu]
+movelist.text.offset = 0, 54
 title.offset = 960, 160
-movelist.pos = 100, 90
+movelist.pos = 210, 90
 movelist.glyphs.offset = 0, 0
 movelist.title.text = Command List - %s
-movelist.title.offset = 860, -18
+movelist.title.offset = 750, -18
 menu.boxbg.visible = 0
 movelist.window.width = 1500
 movelist.text.spacing = 5, 4

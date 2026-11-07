@@ -3970,6 +3970,25 @@ function main.f_menuItemPlace(spr, x, y)
 end
 -- <<< pause menu item geometry
 
+-- >>> command list geometry (tools/test_pausemenu.py executes this block)
+-- The command list lays its rows out inside movelist.window: a name column
+-- anchored at movelist.pos.x, an input column anchored at pos.x + window.width,
+-- and cells in between aligned left, centre or right inside that window. The
+-- rows used to be added to the base the engine bakes into a text sprite, which
+-- is not movelist.pos on this build, so the list drew off the frame; they are
+-- placed from movelist.pos now. With pos.x 210 and width 1500 the window runs
+-- 210..1710, symmetric on a 1920 frame, so a centred cell centres on 960.
+function main.f_movelistPos(sec, i, alignOffset, lengthOffset, pitch)
+	local m = sec.movelist
+	return m.pos[1] + (m.text.offset[1] or 0) + (alignOffset or 0) + (lengthOffset or 0),
+		m.pos[2] + (m.text.offset[2] or 0) + (pitch or 0) * (i - 1)
+end
+
+function main.f_movelistTitleY(sec)
+	return sec.movelist.pos[2] + (sec.movelist.title.offset[2] or 0)
+end
+-- <<< command list geometry
+
 --common menu draw
 function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear, opts)
 	main.f_preloadTick(2)

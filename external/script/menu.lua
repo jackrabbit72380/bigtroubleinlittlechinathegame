@@ -870,8 +870,19 @@ function menu.f_commandlistRender(sec, t)
 	--draw overlay
 	rectDraw(sec.movelist.overlay.RectData)
 	--draw title
+	-- Centred on the frame and placed from the motif's own geometry: the heading
+	-- used to be left wherever the engine baked the sprite's base, which is not
+	-- movelist.pos + title.offset on this build, so it drew off the list.
+	local frameW = 1920
+	pcall(function()
+		if motif.info ~= nil and motif.info.localcoord ~= nil and motif.info.localcoord[1] ~= nil then
+			frameW = motif.info.localcoord[1]
+		end
+	end)
 	textImgReset(sec.movelist.title.TextSpriteData)
+	textImgSetAlign(sec.movelist.title.TextSpriteData, 0)   -- 0 = centred
 	textImgSetText(sec.movelist.title.TextSpriteData, main.f_itemnameUpper(string.format(sec.movelist.title.text, t.name), sec.movelist.title.uppercase))
+	main.f_menuItemPlace(sec.movelist.title.TextSpriteData, frameW / 2, main.f_movelistTitleY(sec))
 	textImgDraw(sec.movelist.title.TextSpriteData)
 	--draw commands
 	local i = 0
@@ -932,10 +943,10 @@ function menu.f_commandlistRender(sec, t)
 						v.col.b or sec.movelist.text.font[6],
 						v.col.a or sec.movelist.text.font[7]
 					)
-					textImgAddPos(
+					main.f_menuItemPlace(
 						sec.movelist.text.TextSpriteData,
-						alignOffset + lengthOffset,
-						main.f_round((fontProps.size[2] + fontProps.spacing[2]) * sec.movelist.text.scale[2] + sec.movelist.text.spacing[2]) * (i - 1)
+						main.f_movelistPos(sec, i, alignOffset, lengthOffset,
+							main.f_round((fontProps.size[2] + fontProps.spacing[2]) * sec.movelist.text.scale[2] + sec.movelist.text.spacing[2]))
 					)
 					textImgSetText(sec.movelist.text.TextSpriteData, v.text)
 					textImgDraw(sec.movelist.text.TextSpriteData)

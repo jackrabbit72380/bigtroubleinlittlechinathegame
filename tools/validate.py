@@ -667,6 +667,27 @@ def check_menu_theme():
             err("menu theme: [%s] runs its %dth row to y=%.0f, past the "
                 "%d-tall frame" % (name, rows, bottom, frame_h))
 
+    # The command list fills a window anchored at movelist.pos.x and
+    # movelist.window.width wide, with the name column on its left edge and the
+    # input column on its right. Symmetric margins are what centre that block on
+    # the frame, and the heading is meant to sit on the frame's middle too.
+    for name, keys in values.items():
+        if "movelist.pos" not in keys:
+            continue
+        try:
+            mpos = [float(v) for v in keys["movelist.pos"].split(",")]
+            width = float(keys["movelist.window.width"])
+            toff = [float(v) for v in keys["movelist.title.offset"].split(",")]
+        except (KeyError, ValueError, IndexError):
+            continue
+        if abs((mpos[0] + width) - (frame_w - mpos[0])) > 1:
+            err("menu theme: [%s] command list window runs %.0f..%.0f, which is "
+                "not symmetric on the %d-wide frame"
+                % (name, mpos[0], mpos[0] + width, frame_w))
+        if abs((mpos[0] + toff[0]) - frame_w / 2.0) > 1:
+            err("menu theme: [%s] command list heading sits at x=%.0f, not the "
+                "frame's middle" % (name, mpos[0] + toff[0]))
+
     notes.append("menu theme: logo face, gold face on maroon extrusion")
 
 
