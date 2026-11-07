@@ -824,6 +824,61 @@ def check_powerbar_fonts():
                         % (side, element))
     notes.append("powerbar: every counter/value level has a font")
 
+def check_hud_fonts():
+    """Text levels on the life, guard, stun and time bars must carry fonts.
+
+    Each of those bars picks a level by value and guards the draw with level 0's
+    font only (LifeBar.draw checks value[0].fnt, then draws value[fv2]). A level
+    with text but no font therefore reaches Layout.DrawText with a nil font,
+    which is dereferenced before the text is read - the same shape as the
+    counterMax crash the power bar already shipped. A family whose base has no
+    font is never drawn at all, so it is skipped. This screenpack currently has
+    no value levels and every [Time] counter has a font; the check keeps it that
+    way.
+    """
+    path = os.path.join(ROOT, "data", "fight.def")
+    if not os.path.isfile(path):
+        return
+    sections, name = {}, None
+    for line in read(path).splitlines():
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            name = s[1:-1].lower()
+            sections.setdefault(name, {})
+            continue
+        if name is None:
+            continue
+        m = re.match(r"\s*([A-Za-z0-9_.]+)\s*=\s*(.*)$", line)
+        if m:
+            sections[name].setdefault(m.group(1).lower(), m.group(2))
+
+    def families(section):
+        sides = ["p%d" % i for i in range(1, 9)]
+        if "lifebar" in section:
+            return [(side, fam) for side in sides
+                    for fam in ("value", "red.value")]
+        if "guardbar" in section or "stunbar" in section:
+            return [(side, "value") for side in sides]
+        if section == "time":
+            return [("", "counter")]
+        return []
+
+    levels = 0
+    for section, keys in sections.items():
+        for side, fam in families(section):
+            pre = (side + "." if side else "") + fam
+            if pre + ".font" not in keys:
+                continue  # no base font: the engine draws no level of this family
+            pat = re.compile(r"^" + re.escape(pre) + r"(\d*|[Mm]ax)\.[a-z0-9]+$")
+            found = {m.group(1).lower() for m in map(pat.match, keys) if m}
+            for level in sorted(found):
+                levels += 1
+                if pre + level + ".font" not in keys:
+                    err("hud: %s%s has no font, so the engine draws a nil font "
+                        "at that level (crash)" % (pre, level))
+    notes.append("hud: life, guard, stun and time text levels all have fonts "
+                 "(%d levels)" % levels)
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -835,6 +890,7 @@ def main():
     check_launchers()
     check_motif_ints()
     check_powerbar_fonts()
+    check_hud_fonts()
     check_select_screen(chars)
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
