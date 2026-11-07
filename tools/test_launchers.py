@@ -137,6 +137,17 @@ SELFUPDATE = [
      "costs the run it interrupted"),
 ]
 
+# a run that ends without a word: the file has to outlive its own last line
+SILENT = [
+    ("a branch that reaches the last line closes the window",
+     b'call "%~f0" --body %*', b'call "%~f0"',
+     "closes the window with nothing said"),
+    ("the early-end report does not wait",
+     b':stopped_tail\r\necho.\r\necho   saved as  %LOG%\r\necho.\r\npause',
+     b':stopped_tail\r\necho.\r\necho   saved as  %LOG%\r\necho.',
+     "does not wait for a key"),
+]
+
 # the folder's own repair tool: without it a cut-short launcher cannot come back
 REPAIR = [
     ("the launcher repair is gone",
@@ -195,6 +206,17 @@ def main():
             failures += 1
             continue
         found = checker._selfupdate_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in SILENT:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._silent_end_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))
