@@ -5,7 +5,7 @@ truckers, sorcerers, the Three Storms, and an emperor who has waited two thousan
 years for a wedding. Nine fighters, nine arenas painted at 1920×1080, and a HUD
 where the dragons *are* the meters.
 
-[![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/bY6NJ35c6P)
+[![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/Bn2kABJsK5)
 [![Latest release](https://img.shields.io/github/v/release/jackrabbit72380/bigtroubleinlittlechinathegame?label=latest%20release&color=brightgreen)](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
 ![Engine](https://img.shields.io/badge/engine-Ikemen%20GO-blue)
 ![Roster](https://img.shields.io/badge/roster-9%20fighters-red)
@@ -15,7 +15,7 @@ where the dragons *are* the meters.
 > **We are looking for people to build this with.** Coders, pixel and HD artists,
 > musicians, and anyone who will play it and tell us what feels wrong — all of it
 > is useful. Start with [Join development](#join-development) or just say hello in
-> the [Discord](https://discord.gg/bY6NJ35c6P).
+> the [Discord](https://discord.gg/Bn2kABJsK5).
 
 ## The HUD
 
@@ -94,7 +94,7 @@ python3 tools/build_all.py     # regenerate everything, then validate
 previews, palettes — with no engine required, so it is the fastest feedback loop
 while you work.
 
-Talk to us before starting anything large: the [Discord](https://discord.gg/bY6NJ35c6P)
+Talk to us before starting anything large: the [Discord](https://discord.gg/Bn2kABJsK5)
 is where the work is coordinated. Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
 for the pipeline, the art rules and the review expectations, and
 [docs/DEV_KEYS.md](docs/DEV_KEYS.md) for the in-game developer keys.
