@@ -69,17 +69,22 @@ textImgReset = function() end
 textImgAddPos = function() end
 textImgSetAlign = function() end
 textImgSetColor = function() end
-textImgSetPos = function() end
+textImgSetPos = function(t, x, y) POSX, POSY = x, y end
 textImgSetText = function(t, s) texts[#texts + 1] = s; if t ~= nil then t.text = s end end
 textImgSetFont = function() end
 -- the shared sprite's face measures about 30px per character at 1.0, which puts
 -- the longest album name past the screen at 1.5x: the reason the head is fitted
-LAST_SCALE, DRAWN = { 1, 1 }, {}
+LAST_SCALE, DRAWN, SPRITED, POS = { 1, 1 }, {}, {}, {}
+POSX, POSY = 0, 0
 textImgSetScale = function(t, sx, sy) LAST_SCALE = { sx or 1, sy or 1 } end
 textImgGetTextWidth = function(t) return #tostring(t ~= nil and t.text or '') * 30 end
 textImgDraw = function(t)
     draws[#draws + 1] = t and t.tag or '?'
-    if t ~= nil and t.text ~= nil then DRAWN[t.text] = LAST_SCALE[1] end
+    if t ~= nil and t.text ~= nil then
+        DRAWN[t.text] = LAST_SCALE[1]
+        SPRITED[t.text] = t.tag
+        POS[t.text] = { POSX, POSY }
+    end
 end
 sndPlay = function() end
 resetKey = function() end
@@ -95,6 +100,7 @@ ANIM = { localcoord = nil, pos = nil, window = nil, draws = 0 }
 animSetLocalcoord = function(a, w, h) ANIM.localcoord = { w, h } end
 animSetPos = function(a, x, y) ANIM.pos = { x, y } end
 animSetWindow = function(a, x1, y1, x2, y2) ANIM.window = { x1, y1, x2, y2 } end
+animSetScale = function(a, sx, sy) ANIM.scale = { sx, sy } end
 animDraw = function(a) ANIM.draws = ANIM.draws + 1 end
 -- deliberately broken: the browser must not need the engine's decoder
 jsonDecode = function() error('this build has no jsonDecode') end
@@ -140,7 +146,9 @@ motif = {
     titlebgdef = { bgclearcolor = { 0, 0, 0 }, BGDef = {} },
     title_info = { menu = {} },
     pause_menu = { pause_menu = {
-        menu = { done = { key = { 'b' } }, cancel = { key = { 'm' } } },
+        menu = { done = { key = { 'b' } }, cancel = { key = { 'm' } },
+                 item = { TextSpriteData = sprite('row'),
+                          active = { TextSpriteData = sprite('rowon') } } },
         cursor = { done = { snd = { 1, 1 } } },
         exit = { snd = { 1, 2 } }, cancel = { snd = { 1, 2 } },
         overlay = { RectData = {} },
@@ -284,23 +292,46 @@ def check(mode: str) -> list[str]:
         problems.append(f"the cover is placed at {pos[1]},{pos[2]}, not 470,470")
     if (g.ANIM.draws or 0) == 0:
         problems.append("the cover animation is never drawn")
+    # fitted, not cropped: the scale it is drawn at must put the whole packed
+    # cover inside the 660x680 box
+    sizes = [(a.get("ArtW"), a.get("ArtH"))
+             for a in json.loads(raw).values() if a.get("ArtW") and a.get("ArtH")]
+    sc = [g.ANIM.scale and g.ANIM.scale[1], g.ANIM.scale and g.ANIM.scale[2]]
+    if not sc:
+        problems.append("the cover is never scaled to its box")
+    elif sizes:
+        for w, h in sizes:
+            if w * sc[0] > 660 + 0.5 or h * sc[1] > 680 + 0.5:
+                problems.append(
+                    f"a {w}x{h} cover is drawn {w * sc[0]:.0f}x{h * sc[1]:.0f}, past its box")
     # The album title has to fit: at the stub's 30px per character the 44-letter
     # name is 1980px wide at 1.5x, so the head must be measured and scaled down
     # instead of running off both edges of a 1920 screen.
     heads = {str(k): float(v) for k, v in (g.DRAWN or {}).items() if "OST" in str(k).upper()}
     if not heads:
         problems.append("no album title reached the screen")
+    # the title belongs in the frame at the top of the screen, not halfway down it
+    head_y = [float(v[2]) for k, v in (g.POS or {}).items() if "OST" in str(k).upper()]
+    if head_y and min(head_y) > 120:
+        problems.append(f"the album title is drawn at y {min(head_y):.0f}, below its frame")
     for text, scale in heads.items():
         if scale > 1.5 + 1e-6:
             problems.append(f"the album title is drawn at {scale:.2f}x, above its own maximum")
         width = len(text) * 30 * scale
         if width > 1800 + 0.5:
             problems.append(f"the album title is {width:.0f}px wide on a 1920px screen")
-    # and the rows: they start at x 880, so 980px is all the room a title has
-    rows = {str(k): float(v) for k, v in (g.DRAWN or {}).items()
-            if str(k).startswith(("  ", "> "))}
+    # and the rows: they start at x 880, so 980px is all the room a title has,
+    # they carry no marker character, and the cursor is the motif's own highlight
+    rows = {str(k): float(v) for k, v in (g.DRAWN or {}).items() if str(k) in titles}
     if not rows:
         problems.append("no track rows reached the screen")
+    if any(str(k).startswith(("> ", "  ")) for k in (g.DRAWN or {})):
+        problems.append("a row is still marked with a '>' instead of the menu highlight")
+    sprited = {str(k): str(v) for k, v in (g.SPRITED or {}).items()}
+    if "rowon" not in sprited.values():
+        problems.append("the selected row is not drawn with the menu's active sprite")
+    if "row" not in sprited.values():
+        problems.append("the other rows are not drawn with the menu's item sprite")
     for text, scale in rows.items():
         width = len(text) * 30 * scale
         if width > 980 + 0.5:
