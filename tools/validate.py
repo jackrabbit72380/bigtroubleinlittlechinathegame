@@ -1157,6 +1157,42 @@ def check_fight_hud():
     notes.append("fight HUD: gold cells in both corners, clock between the yin-yang dots")
 
 
+def check_stage_camera():
+    """Every stage must let the camera pull back when the fighters separate.
+
+    They all shipped zoomout = 1, which pins the view at 1:1: the camera could
+    pan along a level but never widen, so two players walking apart simply hit
+    the edge of the screen. tools/build_camera.py sets zoomout on every stage and
+    the stage generators write the same value.
+    """
+    import glob as _glob
+    import re as _re
+
+    for path in sorted(_glob.glob(os.path.join(ROOT, "stages", "*.def"))):
+        if not os.path.isfile(path):
+            continue
+        name = os.path.basename(path)
+        text = read(path)
+        m = _re.search(r"(?im)^\[Camera\][ \t]*$", text)
+        if not m:
+            continue
+        body = text[m.end():].split("\n[", 1)[0]
+        z = _re.search(r"(?im)^\s*zoomout\s*=\s*([^;\r\n]+)", body)
+        if not z:
+            err("stage %s has no [Camera] zoomout, so the camera can never widen "
+                "and the fighters cannot walk apart to the full width" % name)
+            continue
+        try:
+            value = float(z.group(1).strip())
+        except ValueError:
+            err("stage %s: zoomout is %r, not a number" % (name, z.group(1).strip()))
+            continue
+        if value > 0.76:
+            err("stage %s: zoomout is %.2f, which pins the view at 1:1 - the camera "
+                "can pan but not pull back" % (name, value))
+    notes.append("stage camera: every stage can zoom out")
+
+
 def main():
     chars = check_select()
     check_menu_theme()
@@ -1172,6 +1208,7 @@ def main():
     check_select_screen(chars)
     check_team_screen()
     check_fight_hud()
+    check_stage_camera()
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):

@@ -168,6 +168,10 @@ def main():
     if os.path.isfile(preview_stage):
         scripts.append("preview_hud.py")
     # The updater compares this with main before it trusts "already up to date".
+    # Every stage's camera can pull back when the fighters separate; the stage
+    # generators write the same pair, this applies it to the stages already built
+    # and to any that were not.
+    scripts.append("build_camera.py")
     scripts.append("build_stamp.py")
     # ...and this fails if a file the Lua reads has fallen out of that stamp,
     # which is how the album art, the controller database and the shaders were

@@ -1596,7 +1596,7 @@ overdrawhigh = 0
 overdrawlow = 0
 cuthigh = {cuthigh}
 cutlow = {cutlow}
-zoomout = 1
+zoomout = 0.75
 zoomin = 1
 
 [PlayerInfo]
