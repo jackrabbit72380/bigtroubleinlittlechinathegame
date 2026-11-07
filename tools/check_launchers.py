@@ -467,13 +467,15 @@ def _selfupdate_problems(name, raw):
 
 
 def _paint_problems(name, raw):
-    """The progress paint must not redraw the pistol.
+    """The count belongs at the muzzle, and the bar must not be made of pipes.
 
-    :gunredraw is called, so its lines are read twice. The barrel is a variable
-    full of pipes, and on the second read a pipe is a pipeline again - a syntax
-    error that stops the batch dead, before it can print or log anything. The
-    first percent that is not zero ended a run exactly that way: the log had
-    "art 1 pipes 1" and never "art 1 drawn".
+    Without cursor control the only way to move the number is to draw the barrel
+    line again, so the no-cursor path redraws the art with the current count.
+    That redraw is reached through call, and its lines are read twice: a pipe
+    that arrives through a variable is a pipeline on the second read, which is a
+    syntax error that stops the batch before it can print or log anything. The
+    bar is therefore built from "=" characters, and the number is never printed
+    as a line of its own under the art.
     """
     if name != "Update and Play.bat":
         return []
@@ -485,13 +487,15 @@ def _paint_problems(name, raw):
                 "cursor control has no way to show the number" % name]
     end = text.find("\n:gaugeone_plain_title\n", start)
     block = text[start:end if end > 0 else len(text)]
-    if "call :gunredraw" in block:
-        out.append("%s: the progress paint redraws the pistol, whose pipe-filled "
-                   "barrel is read as a pipeline inside a called label and stops "
-                   "the batch dead" % name)
-    if "echo   ... %~1 percent" not in block:
-        out.append("%s: the no-cursor progress path prints no number, so a "
-                   "console without cursor control shows nothing" % name)
+    if "call :gunredraw %~1" not in block:
+        out.append("%s: the no-cursor path does not redraw the barrel, so the "
+                   "number never reaches the muzzle" % name)
+    if 'call set "BARFULL=%%BARFULL%%|"' in text:
+        out.append("%s: the bar is built from pipes, which a called label reads "
+                   "as a pipeline and which stops the batch dead" % name)
+    if "echo   ... %~1 percent" in block:
+        out.append("%s: the no-cursor path prints the word instead of the count "
+                   "on the barrel" % name)
     return out
 
 

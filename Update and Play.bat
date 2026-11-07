@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=62"
+set "UPDVER=63"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -619,7 +619,7 @@ rem the count into the letters of an escape sequence.
 set "PCT=%%"
 rem The full barrel is built once here and sliced per percent below, so a console
 rem without cursor control redraws the picture without a loop per redraw.
-if not defined BARFULL for /l %%P in (1,1,%BARMAX%) do call set "BARFULL=%%BARFULL%%|"
+if not defined BARFULL for /l %%P in (1,1,%BARMAX%) do call set "BARFULL=%%BARFULL%%="
 rem The line under the drawing is remembered, so every percentage can write at
 rem the muzzle and come straight back here. The messages that follow print
 rem below the pistol, never over it.
@@ -694,7 +694,7 @@ rem line was printed as letters instead of a number.
 rem Holding the per cent sign in PCTX and appending one piece at a time leaves no
 rem such pair anywhere, and the finished string is expanded from GWRITE in one
 rem go, so nothing in it is read as a variable again.
-set "GWRITE=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| "
+set "GWRITE=%ESC%[u%ESC%[7A%ESC%[%GCOL%G= "
 set "GWRITE=%GWRITE%%PCTX%"
 set "GWRITE=%GWRITE%%ESC%[K%ESC%[u"
 set /p "=%GWRITE%" <nul
@@ -702,17 +702,16 @@ call :log painted %~1 on the barrel
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
-rem No cursor control here, so nothing can be written back onto the barrel.
-rem The full-screen repaint that used to stand in for it is gone, and this run
-rem is why: it passed the barrel of pipes and the count into :gunredraw, and a
-rem pipe that arrives through a variable in a called label is read a second
-rem time as a pipeline, which is a cmd syntax error - the whole batch stops on
-rem the spot, before any message or log line of its own. A plain line every
-rem tenth percent shows the same number and cannot break the run.
-set /a RSTEP=%~1 %% 10
-if %RSTEP% NEQ 0 goto gaugeone_plain_title
-if "%~1"=="0" goto gaugeone_plain_title
-echo   ... %~1 percent
+rem No cursor control here, so the count cannot be written back onto the
+rem barrel the way the cursor version does it. The barrel line is drawn again
+rem instead, with the count it has now at the muzzle, so the number counts up
+rem where it belongs and nothing scrolls past underneath it. The bar is drawn
+rem from "=" characters and never from pipes: a pipe arriving through a
+rem variable inside a called label is read a second time as a pipeline, which
+rem stopped a run dead at its very first percent.
+set /a RPOS=%~1*%BARMAX%/100
+if %~1 GTR 0 if %RPOS% LSS 1 set "RPOS=1"
+call :gunredraw %~1 %RPOS%
 :gaugeone_plain_title
 call :log painted %~1 in the title
 title Big Trouble in Little China: The Game - Updater - %~1 percent

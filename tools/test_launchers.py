@@ -160,15 +160,18 @@ FIRSTLOG = [
      "is thrown away"),
 ]
 
-# the progress paint must not redraw the pistol
+# the count has to reach the muzzle, and the bar cannot be made of pipes
 PAINT = [
-    ("the progress keeps redrawing the pistol",
-     b':gaugeone_plain_title\r\n',
-     b'call :gunredraw %~1 1\r\n:gaugeone_plain_title\r\n',
+    ("the no-cursor path stops redrawing the barrel",
+     b'call :gunredraw %~1 %RPOS%\r\n', b'',
+     "never reaches the muzzle"),
+    ("the bar is built from pipes again",
+     b'call set "BARFULL=%%BARFULL%%="', b'call set "BARFULL=%%BARFULL%%|"',
      "stops the batch dead"),
-    ("the no-cursor path prints no number",
-     b'echo   ... %~1 percent\r\n', b'',
-     "shows nothing"),
+    ("the word is printed instead of the count",
+     b':gaugeone_plain_title\r\n',
+     b'echo   ... %~1 percent\r\n:gaugeone_plain_title\r\n',
+     "prints the word instead"),
 ]
 
 REPAIR = [
