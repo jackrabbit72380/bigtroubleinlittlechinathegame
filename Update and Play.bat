@@ -1616,9 +1616,14 @@ rem from the archive. robocopy still skips every file whose size and time
 rem already match, so only the files that changed are actually written; the
 rem scan is the cost, not the bytes.
 
-for %%F in (data chars stages font external sound) do (
+for %%F in (data chars stages font external sound tools) do (
   if exist "%SRC%\%%F" call :say "%%F"
   if exist "%SRC%\%%F" "%ROBOCOPY%" "%SRC%\%%F" "%~dp0%%F" /E /FFT /NFL /NDL /NJH /NJS /NP >nul
+)
+rem The launchers sit at the root, so they are copied by name: a launcher
+rem fix that never arrived is what kept a console open over the game.
+for %%F in ("Update and Play.bat" "Play Big Trouble.bat" "Test Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat") do (
+  if exist "%SRC%\%%~F" if not "%%~F"=="%~nx0" copy /Y "%SRC%\%%~F" "%~dp0%%~F" >nul 2>&1
 )
 exit /b 0
 
@@ -1636,6 +1641,12 @@ if /i "%TOP%"=="stages" goto syncfile_go
 if /i "%TOP%"=="font" goto syncfile_go
 if /i "%TOP%"=="external" goto syncfile_go
 if /i "%TOP%"=="sound" goto syncfile_go
+if /i "%TOP%"=="tools" goto syncfile_go
+if /i "%TOP%"=="Update and Play.bat" goto syncfile_go
+if /i "%TOP%"=="Play Big Trouble.bat" goto syncfile_go
+if /i "%TOP%"=="Test Big Trouble.bat" goto syncfile_go
+if /i "%TOP%"=="Apply main.zip.bat" goto syncfile_go
+if /i "%TOP%"=="Dump Stage Art.bat" goto syncfile_go
 exit /b 0
 
 :syncfile_go
