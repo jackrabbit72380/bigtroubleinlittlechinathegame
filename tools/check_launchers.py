@@ -177,12 +177,12 @@ def _progress_problems(name, raw):
         if not measured:
             out.append("%s: MUZZLE is never set, so the percentage is written "
                        "somewhere other than the end of the barrel" % name)
-        elif int(measured.group(1)) != column + 2:
+        elif int(measured.group(1)) != column + 3:
             out.append("%s: MUZZLE is %s but the drawn barrel ends at column %d, so "
-                       "the number would not sit at its end"
+                       "the bar would not start one breath past its end"
                        % (name, measured.group(1), column))
         up = f"%ESC%[u%ESC%[{below + 1}A"
-        bar = "%GCOL%G|%PCT3%%%ESC%[K%ESC%[u"
+        bar = "%GCOL%G| %PCT3%%%ESC%[K%ESC%[u"
         if up not in text or bar not in text:
             out.append("%s: the barrel is not filled with a pipe per percent "
                        "with the count after the bar and the cursor "
@@ -203,7 +203,7 @@ def _progress_problems(name, raw):
         out.append("%s: a loading bar is back; the progress is the number alone"
                    % name)
     # one pipe for every percent, on a bar sized to the window it draws in
-    if 'set "BARMAX=' not in text or "set /a BARMAX=%%w-%MUZZLE%-5" not in text:
+    if 'set "BARMAX=' not in text or "set /a BARMAX=%%w-%MUZZLE%-6" not in text:
         out.append("%s: the pipe bar has no width of its own, so it either "
                    "wraps over the drawing or cannot fill to 100%%" % name)
     if "set /a GPOS=%~1*%BARMAX%/100" not in text:
@@ -216,7 +216,8 @@ def _progress_problems(name, raw):
     if "$whole" not in text:
         out.append("%s: the download no longer reports the run's percentage" % name)
     if ("-Vt %VTFLAG% -Col %MUZZLE% -Bar %BARMAX%" not in text
-            or "'[7A'" not in text or "[char]124" not in text):
+            or "'[7A'" not in text or "[char]124" not in text
+            or "$pipe + ' ' + $pct" not in text):
         out.append("%s: the download writes its percentage somewhere other than "
                    "the muzzle" % name)
     if "-EncodedCommand" not in text or "VTDONE" not in text:

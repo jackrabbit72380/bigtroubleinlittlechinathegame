@@ -54,8 +54,11 @@ set "GIT_TERMINAL_PROMPT=0"
 set "GIT_CONFIG_PARAMETERS="
 
 
+rem The version the title above the pistol and the run log both read, so the
+rem two cannot drift apart when the script is bumped.
+set "UPDVER=53"
 call :say "=============================================================="
-call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v53"
+call :say "BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  Updater v%UPDVER%"
 call :say "=============================================================="
 rem The number that counts the run is written at the end of the pistol's
 rem barrel, so the console is asked for cursor control before the drawing.
@@ -483,21 +486,25 @@ rem Jack's pistol, in the characters the concept art was drawn with, drawn once
 rem under the game's title and left standing: the barrel fills with one pipe for
 rem every percent of the run, and the count follows the last pipe, so the job
 rem reads as rounds leaving the gun and ends on a full barrel at 100%.
-rem The barrel ends two columns before MUZZLE - one space, then the first pipe -
-rem and tools/check_launchers.py measures that from the drawing itself, so a
-rem changed picture cannot leave the bar floating beside it.
-set "MUZZLE=41"
-rem How many pipes this window has room for. One per percent needs a hundred and
-rem four columns from the muzzle, which a maximised window has; a narrower one
-rem gets the same bar squeezed into the room it does have, because a line that
-rem wrapped would crawl down over the drawing. :vt leaves the width in a file;
-rem without it the bar falls back to a width every console has.
+rem The barrel ends at column 39 and the bar starts two columns later: one space
+rem so the pipes do not touch the muzzle, and one so the count that follows the
+rem last pipe does not touch the bar either. tools/check_launchers.py measures
+rem both from the drawing, so a changed picture cannot leave them floating.
+set "MUZZLE=42"
+rem How many pipes this window has room for. One per percent, with the space and
+rem the four characters of the count, needs a hundred and forty-six columns,
+rem which a maximised window has; a narrower one gets the same bar squeezed into
+rem the room it does have, because a line that wrapped would crawl down over the
+rem drawing. :vt leaves the width in a file; without it the bar falls back to a
+rem width every console has.
 set "BARMAX=60"
-if exist "%TEMP%\btilc-width.txt" for /f "usebackq delims=" %%w in ("%TEMP%\btilc-width.txt") do set /a BARMAX=%%w-%MUZZLE%-5
+if exist "%TEMP%\btilc-width.txt" for /f "usebackq delims=" %%w in ("%TEMP%\btilc-width.txt") do set /a BARMAX=%%w-%MUZZLE%-6
 if %BARMAX% GTR 100 set "BARMAX=100"
 if %BARMAX% LSS 10 set "BARMAX=10"
 echo.
-echo   BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER
+rem The title sits on the drawing's own left edge - four spaces in, where the
+rem top line of the pistol starts - and carries the version the log records.
+echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
 echo    ..._...^|..____________________, ,
 echo    ....../ '---___________----_____^|]=
 echo    ...../_==o;;;;;;;;_______.:/
@@ -561,7 +568,7 @@ rem Back to the line under the drawing, seven lines up to the barrel, along it t
 rem this percent's pipe, the pipe itself, then the count after the bar, and the
 rem rest of the line cleared so the number from the step before cannot leave a
 rem digit standing past the new one.
-set /p "=%ESC%[u%ESC%[7A%ESC%[%GCOL%G|%PCT3%%%ESC%[K%ESC%[u" <nul
+set /p "=%ESC%[u%ESC%[7A%ESC%[%GCOL%G| %PCT3%%%ESC%[K%ESC%[u" <nul
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
@@ -1456,7 +1463,7 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   $pos = [int]($whole * $Bar / 100)
 >> "%DLSCRIPT%" echo   if ($pos -lt 1) { $pos = 1 }
 >> "%DLSCRIPT%" echo   $barcol = $Col + $pos - 1
->> "%DLSCRIPT%" echo   if ($Vt -eq 1) { $line = [char]27 + '[u' + [char]27 + '[7A' + [char]27 + '[' + $barcol + 'G' + $pipe + $pct + [char]27 + '[K' + [char]27 + '[u' }
+>> "%DLSCRIPT%" echo   if ($Vt -eq 1) { $line = [char]27 + '[u' + [char]27 + '[7A' + [char]27 + '[' + $barcol + 'G' + $pipe + ' ' + $pct + [char]27 + '[K' + [char]27 + '[u' }
 >> "%DLSCRIPT%" echo   if ($Vt -ne 1) { $line = [char]13 + '  ' + $pct }
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
