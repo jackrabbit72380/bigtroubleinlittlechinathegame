@@ -26,19 +26,20 @@ local ms = main.t_musicSelect
 -- is in the same 1920x1080 pixels the rest of the motif uses.
 local COVER = {x = 470, y = 470, w = 660, h = 680}
 local LIST = {x = 880, y = 290, pitch = 40, rows = 13}
-local HEAD = {x = 960, y = 90}
+local HEAD = {x = 960, y = 105}
 local HINT = {x = 960, y = 990}
 local CHOICE = {x = 960, y = 1030}
 
--- The shared sprite carries the motif's own face, so the rows sit at 1.0.
--- The old 1.5 came from the option-menu font this screen no longer needs.
+-- The shared sprite carries the motif's own face, so the rows sit at 1.0, and
+-- the album title is drawn at the same size as the list under it.
 local ROWSCALE = 1.0
 local SMALLSCALE = 0.8
-local HEADSCALE = 1.5
+local HEADSCALE = 1.0
 -- The two lines that can outgrow the frame: an album name (the longest in
--- sound/ is 44 characters, and at 1.5x it ran past both edges and lost its last
--- words) and a track title at the end of a row. Both are measured and scaled to
--- fit instead of being clipped, leaving 60px clear at the frame's edges.
+-- sound/ is 44 characters) and a track title at the end of a row, plus the
+-- now-playing line, which carries an album name and a track name at once. All
+-- three are measured and scaled to fit instead of being clipped, leaving 60px
+-- clear at the frame's edges.
 local MAXHEAD = 1800
 -- A row is drawn from LIST.x, so this is what is left of the 1920 frame for it.
 local MAXROW = 1920 - LIST.x - 60
@@ -384,6 +385,25 @@ local function doneSnd()
 	end)
 end
 
+-- Switching album silences the music that was already running: the left and
+-- right keys are there to look at another album, and the track from before the
+-- browser opened is not it. Engine builds differ on whether this call exists at
+-- all, so it is probed like every other engine call in this file - a build
+-- without it browses exactly as before.
+local function stopGameMusic()
+	if type(bgmStop) == 'function' then
+		if pcall(bgmStop) then
+			return true
+		end
+	end
+	if type(musicStop) == 'function' then
+		if pcall(musicStop) then
+			return true
+		end
+	end
+	return false
+end
+
 local function doneKeys()
 	local ui = motif.option_info
 	if ui and ui.menu and ui.menu.done and ui.menu.done.key then
@@ -498,7 +518,19 @@ function ms.open()
 	end
 
 	local albumNo, songNo, scroll = 1, 1, 1
+	-- Z picks a track exactly like Enter. The motif's own done keys are added to
+	-- it rather than used instead: this screenpack lists a, b, c, x, y, z, s in
+	-- some sections and only a, b, c in others, and reaching for Z must work on
+	-- either of them.
+	local acceptKeys = { 'z' }
 	local confirmKeys = doneKeys()
+	if type(confirmKeys) == 'table' then
+		for _, key in ipairs(confirmKeys) do
+			acceptKeys[#acceptKeys + 1] = key
+		end
+	elseif confirmKeys ~= nil then
+		acceptKeys[#acceptKeys + 1] = confirmKeys
+	end
 
 	-- A stale Escape from the menu that opened this would close it on frame one.
 	esc(false)
@@ -543,9 +575,12 @@ function ms.open()
 				LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE, MAXROW)
 		end
 
-		drawLine(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
-			CHOICE.x, CHOICE.y, 0, SMALLSCALE)
-		drawLine(spr, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER  use      ESC  back',
+		-- Centred on the screen and measured, so a chosen track's long
+		-- "album - title" keeps the line centred instead of running past the
+		-- frame; the short line and the long one sit in the same place.
+		drawFitted(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
+			CHOICE.x, CHOICE.y, 0, SMALLSCALE, MAXHEAD)
+		drawLine(spr, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER / Z  use      ESC  back',
 			HINT.x, HINT.y, 0, SMALLSCALE)
 
 		refresh()
@@ -578,6 +613,7 @@ function ms.open()
 			end
 		elseif hit(LEFT) then
 			moveSnd()
+			stopGameMusic()
 			albumNo = albumNo - 1
 			if albumNo < 1 then
 				albumNo = #albums
@@ -585,12 +621,13 @@ function ms.open()
 			songNo, scroll = 1, 1
 		elseif hit(RIGHT) then
 			moveSnd()
+			stopGameMusic()
 			albumNo = albumNo + 1
 			if albumNo > #albums then
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-		elseif hit(confirmKeys) or hit(OK_FALLBACK) then
+		elseif hit(acceptKeys) or hit(OK_FALLBACK) then
 			doneSnd()
 			if song ~= nil and song.file ~= nil then
 				ms.params = 'bgmusic = ' .. song.file
