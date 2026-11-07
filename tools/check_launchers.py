@@ -194,7 +194,7 @@ def _progress_problems(name, raw):
     if "for /l %%P in (%GFROM%,1,%GTO%)" not in text:
         out.append("%s: the percentage no longer counts every point, so the run "
                    "skips from one milestone to the next instead of 1 to 100" % name)
-    if text.count("%PCT3%%%") != 2:
+    if text.count("%PCT3%%%") != 1:
         out.append("%s: the percentage is printed more or less than once per step"
                    % name)
     if "BARLEFT" in text or "$bar" in text:
@@ -208,13 +208,62 @@ def _progress_problems(name, raw):
     if "-Vt %VTFLAG% -Col %MUZZLE%" not in text or "'[7A'" not in text:
         out.append("%s: the download writes its percentage somewhere other than "
                    "the muzzle" % name)
-    if "-EncodedCommand" not in text or "esc.txt" not in text:
-        out.append("%s: the console helper is gone, so no escape character is "
-                   "ever read and the number can only fall back to plain "
-                   "lines" % name)
-    if "-bor 4" not in text or "[char]27" not in text:
-        out.append("%s: the console is never asked for the mode the muzzle write "
-                   "needs, so the number can only go out as text" % name)
+    if "-EncodedCommand" not in text or "VTDONE" not in text:
+        out.append("%s: the console helper is gone, so the mode the muzzle "
+                   "write needs is never asked for" % name)
+    if "\x1b" not in text:
+        out.append("%s: the escape character is no longer in the file, so the "
+                   "number cannot be written at the muzzle" % name)
+    if "-bor 4" not in text:
+        out.append("%s: nothing turns on the console mode the escape "
+                   "sequences need" % name)
+    return out
+
+
+CONSOLE_LABELS = {
+    "githere", "confirm", "gitdrop_many", "gamelock", "gamelock_wait",
+    "gitlocked", "gitfail_final", "dl_browser", "bwait_check", "launch_died",
+    "selfupdate_got", "selfupdate_stuck", "launchfail", "folder_denied",
+    "folder_denied_noexe", "wrongfolder", "downloadfailed", "close_soon",
+    "quit", "gun", "gaugeone_plain",
+    # one failure line each; the rest of their lines go to the log
+    "download", "skipver", "verify_again",
+}
+
+ECHO_LINE = re.compile(r"(?i)^(?:if .*?\s)?echo(?:\s|\.|$)")
+
+
+def _quiet_window_problems(name, raw):
+    """The window is the pistol and one number, so routine lines stay out.
+
+    Every message that is only news goes to the run log through :say; what may
+    still print is a failure the player has to act on. Walking the file label by
+    label means a new echo in a routine step fails here instead of scrolling
+    over the drawing.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    label = ""
+    for i, line in enumerate(text.split("\n"), 1):
+        stripped = line.strip()
+        m = re.fullmatch(r":([A-Za-z0-9_]+)", stripped)
+        if m:
+            label = m.group(1).lower()
+            continue
+        if not ECHO_LINE.match(stripped):
+            continue
+        if ">" in stripped or "|" in stripped:
+            continue                  # writes a file or pipes into a tool
+        if label in CONSOLE_LABELS:
+            continue
+        out.append("%s:%d: %s prints to the window; routine lines belong in the run "
+                   "log (:say), because the window is the pistol and its number"
+                   % (name, i, stripped[:60]))
+    if "call :say" not in text:
+        out.append("%s: routine messages have nowhere to go; the log-only printer "
+                   "is gone" % name)
     return out
 
 
@@ -270,6 +319,7 @@ def problems(root):
             raw = fh.read()
             found.extend(_problems_for(name, raw))
             found.extend(_progress_problems(name, raw))
+            found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))
     return found
 
