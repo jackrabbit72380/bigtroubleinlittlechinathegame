@@ -343,8 +343,21 @@ local function drawAlbumArt(albumData, album)
 	if not ok or anim == nil then
 		return
 	end
+	-- A runtime animation is not in the motif's coordinate space until it is told
+	-- to be. The engine starts it in its own default one, and on this 1080p
+	-- screenpack that multiplied both the position and the size: 470,470 became
+	-- about 2820,2115 and the cover about six times too big, so a corner of it
+	-- appeared in the bottom-right of the screen instead of the cover column on
+	-- the left. main.lua sets this for every portrait, for the same reason. With
+	-- the motif's own space, the numbers below are the same 1920x1080 pixels every
+	-- text line on this screen uses.
+	pcall(animSetLocalcoord, anim, motif.info.localcoord[1], motif.info.localcoord[2])
+	pcall(animSetPos, anim, COVER.x, COVER.y)
+	-- Clipped to the cover's own column, so artwork of any shape stays clear of
+	-- the track list at x 880.
+	pcall(animSetWindow, anim, COVER.x - 330, COVER.y - 340, COVER.x + 330, COVER.y + 340)
 	pcall(animUpdate, anim)
-	pcall(main.f_animPosDraw, anim, COVER.x, COVER.y)
+	pcall(animDraw, anim)
 end
 
 -- Opens the browser. Runs its own frame loop, like main.f_warning, and returns

@@ -45,7 +45,7 @@ from lupa import LuaRuntime
 PRELUDE = r"""
 local MODE = ...
 draws, logs, frames, texts, WRITES = {}, {}, 0, {}, {}
-INPUT_DOWN, ESC_READY = false, false
+INPUT_DOWN, ESC_READY, RIGHT_FRAMES = false, false, 0
 FILE_TEXT, JSON = '', {}
 
 local function sprite(tag) return { tag = tag } end
@@ -83,14 +83,30 @@ bgDraw = function() end
 sffNew = function() return {} end
 animNew = function() return {} end
 animUpdate = function() end
+-- the cover: what the browser asks the engine for, so the test can tell the
+-- difference between "drawn" and "drawn in the right place, at the right size"
+ANIM = { localcoord = nil, pos = nil, window = nil, draws = 0 }
+animSetLocalcoord = function(a, w, h) ANIM.localcoord = { w, h } end
+animSetPos = function(a, x, y) ANIM.pos = { x, y } end
+animSetWindow = function(a, x1, y1, x2, y2) ANIM.window = { x1, y1, x2, y2 } end
+animDraw = function(a) ANIM.draws = ANIM.draws + 1 end
 -- deliberately broken: the browser must not need the engine's decoder
 jsonDecode = function() error('this build has no jsonDecode') end
 getKey = function() return '' end
-refresh = function() frames = frames + 1; ESC_READY = true end
+-- Escape stays down for the first frames: when the stub answered it on frame
+-- one the browser left before a single key was read, so no test could ever get
+-- past the "Default" album or see the artwork.
+refresh = function() frames = frames + 1; if frames > 2 then ESC_READY = true end end
 esc = function(clear) if clear == false then ESC_READY = false; return false end return ESC_READY end
 getInput = function(player, keys)
     if type(keys) == 'table' then
         local first = keys[1]
+        -- one step right, then the key is released: the browser opens on the
+        -- "Default" option album, which has no cover art to draw
+        if first == 'R' and RIGHT_FRAMES > 0 then
+            RIGHT_FRAMES = RIGHT_FRAMES - 1
+            return true
+        end
         if first == 'U' or first == 'D' or first == 'L' or first == 'R' then return false end
     end
     return INPUT_DOWN
@@ -234,8 +250,11 @@ def check(mode: str) -> list[str]:
     if problems:
         return problems
 
-    # selecting MUSIC from the pause menu, done key held
+    # selecting MUSIC from the pause menu, done key held. One step right first:
+    # album one is the "Default" option row and has no artwork, so a screen that
+    # only ever showed that album would still hide a broken cover.
     g.INPUT_DOWN = True
+    g.RIGHT_FRAMES = 1
     lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
     problems += after_press(lua, g, "pause menu")
     # a draw count alone does not prove the albums reached the screen: one empty
@@ -244,6 +263,21 @@ def check(mode: str) -> list[str]:
         drawn = [str(v) for v in g.texts.values()] if g.texts else []
         if not any(title in d for title in titles for d in drawn):
             problems.append("no track title from data/music.json reached the screen")
+    # The cover: an animation left in the engine's default coordinate space was
+    # drawn six times its size in the bottom-right corner. It has to be opened in
+    # the motif's own space, placed at the cover column, and drawn.
+    lc = g.ANIM.localcoord
+    if lc is None:
+        problems.append("the cover is never given the motif's local coordinates")
+    elif abs(lc[1] - 1920) > 0.5 or abs(lc[2] - 1080) > 0.5:
+        problems.append(f"the cover is opened in localcoord {lc[1]}x{lc[2]}, not 1920x1080")
+    pos = g.ANIM.pos
+    if pos is None:
+        problems.append("the cover is never positioned")
+    elif abs(pos[1] - 470) > 0.5 or abs(pos[2] - 470) > 0.5:
+        problems.append(f"the cover is placed at {pos[1]},{pos[2]}, not 470,470")
+    if (g.ANIM.draws or 0) == 0:
+        problems.append("the cover animation is never drawn")
     g.INPUT_DOWN = False
 
     # and from the title menu, which opens the same browser in place
