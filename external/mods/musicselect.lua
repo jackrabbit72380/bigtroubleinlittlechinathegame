@@ -142,6 +142,18 @@ local function drawAt(spr, text)
 	pcall(textImgDraw, spr)
 end
 
+
+-- A failure the player can see. The console keeps the whole story; the screen
+-- gets the one sentence. modnotice.lua is autoloaded beside this file; if a
+-- build somehow lacks it, the print still happens.
+local function report(consoleText, screenText)
+	if type(modNotice) == 'function' then
+		pcall(modNotice, consoleText, screenText)
+	else
+		print(consoleText)
+	end
+end
+
 -- The browser borrows the option menu's sound and confirm keys, and falls back
 -- to the title menu's when a screenpack has no [Option Info].
 local function moveSnd()
@@ -193,6 +205,8 @@ end
 function ms.open()
 	local albums = albumsFromJson()
 	if #albums == 0 then
+		report('musicselect: data/music.json has no albums',
+			'No music albums found - see console.')
 		return false
 	end
 
@@ -213,7 +227,8 @@ function ms.open()
 	local choice = newText(rowFont, 0, SMALLSCALE, CHOICE.x, CHOICE.y)
 
 	if head == nil and rows[1] ~= nil and rows[1].normal == nil then
-		print('musicselect: no text sprite could be created, cannot draw the browser')
+		report('musicselect: no text sprite could be created, cannot draw the browser',
+			'Music list unavailable - see console.')
 		return false
 	end
 
@@ -381,8 +396,8 @@ local pauseEntry = pcall(function()
 			-- not take the pause menu down, so it is caught and logged.
 			local ok, err = pcall(ms.open)
 			if not ok then
-				print('musicselect: the browser could not open from the pause menu: '
-					.. tostring(err))
+				report('musicselect: the browser could not open from the pause menu: '
+					.. tostring(err), 'Music list unavailable - see console.')
 			end
 		end
 		return true
@@ -397,6 +412,7 @@ main.t_itemname.music = function(t, item)
 	-- with an error dialog: it is logged and the title menu is left standing.
 	local ok, err = pcall(ms.open)
 	if not ok then
-		print('musicselect: the browser could not open: ' .. tostring(err))
+		report('musicselect: the browser could not open: ' .. tostring(err),
+			'Music list unavailable - see console.')
 	end
 end

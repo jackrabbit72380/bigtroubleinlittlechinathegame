@@ -28,6 +28,7 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MOD = os.path.join(ROOT, "external", "mods", "musicselect.lua")
 MUSIC = os.path.join(ROOT, "data", "music.json")
+NOTICE = os.path.join(ROOT, "external", "mods", "modnotice.lua")
 
 # The browser draws a title, the album tabs and a page of rows; anything under
 # this means it opened but had nothing to show.
@@ -43,7 +44,7 @@ from lupa import LuaRuntime
 
 PRELUDE = r"""
 local MODE = ...
-draws, logs, frames = {}, {}, 0
+draws, logs, frames, texts = {}, {}, 0, {}
 INPUT_DOWN, ESC_READY = false, false
 FILE_TEXT, JSON = '', {}
 
@@ -61,7 +62,7 @@ textImgAddPos = function() end
 textImgSetAlign = function() end
 textImgSetColor = function() end
 textImgSetPos = function() end
-textImgSetText = function() end
+textImgSetText = function(t, s) texts[#texts + 1] = s; if t ~= nil then t.text = s end end
 textImgSetFont = function() end
 textImgSetScale = function() end
 textImgGetTextWidth = function() return 120 end
@@ -75,6 +76,7 @@ sffNew = function() return {} end
 animNew = function() return {} end
 animUpdate = function() end
 jsonDecode = function() return JSON end
+getKey = function() return '' end
 refresh = function() frames = frames + 1; ESC_READY = true end
 esc = function(clear) if clear == false then ESC_READY = false; return false end return ESC_READY end
 getInput = function(player, keys)
@@ -131,6 +133,10 @@ main = {
     f_appendItemname = function() end,
 }
 menu = { t_itemname = {}, itemname = '', f_run = function() return true end }
+if MODE == 'faildraw' then
+    -- the browser raises mid-frame, the way a missing engine binding would
+    main.f_itemnameUpper = function() error('this build cannot measure text') end
+end
 """
 
 # label, motif shape
@@ -185,6 +191,8 @@ def check(mode: str) -> list[str]:
     g.FILE_TEXT = raw
     lua.execute("JSON = " + lua_literal(json.loads(raw)))
 
+    with open(NOTICE, encoding="utf-8") as handle:
+        lua.execute(handle.read())
     with open(MOD, encoding="utf-8") as handle:
         lua.execute(handle.read())
 
@@ -210,6 +218,49 @@ def check(mode: str) -> list[str]:
     return problems
 
 
+def notice_problems(g, screen: str, console: str) -> list[str]:
+    problems: list[str] = []
+    drawn = [str(v) for v in g.texts.values()] if g.texts else []
+    if not any(screen in text for text in drawn):
+        problems.append(f"nothing said {screen!r} on screen (drew {len(drawn)} strings)")
+    logs = [str(v) for v in g.logs.values()] if g.logs else []
+    if not any(console in line for line in logs):
+        problems.append("the console line is missing")
+    return problems
+
+
+def engine_for(mode: str, raw: str):
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    g = lua.globals()
+    lua.execute(PRELUDE, mode)
+    g.FILE_TEXT = raw
+    lua.execute("JSON = " + lua_literal(json.loads(raw)))
+    with open(NOTICE, encoding="utf-8") as handle:
+        lua.execute(handle.read())
+    with open(MOD, encoding="utf-8") as handle:
+        lua.execute(handle.read())
+    return lua, g
+
+
+def failure_cases():
+    cases = []
+    # the album list is empty: open() bails, and the player must be told
+    lua, g = engine_for("nobgclearcolor", "{}")
+    g.INPUT_DOWN = True          # the done key: the handler only opens on a press
+    lua.execute("pcall(menu.t_itemname['music'], nil, 1, 1, 0, motif.pause_menu.pause_menu)")
+    cases.append(("an empty album list reports on screen",
+                  notice_problems(g, "No music albums found", "has no albums")))
+    # the browser raises mid-frame: the handler must not leave it silent
+    with open(MUSIC, encoding="utf-8") as handle:
+        raw = handle.read()
+    lua, g = engine_for("faildraw", raw)
+    g.INPUT_DOWN = True
+    lua.execute("menu.t_itemname['music'](nil, 1, 1, 0, motif.pause_menu.pause_menu)")
+    cases.append(("a raise inside the browser reports on screen",
+                  notice_problems(g, "Music list unavailable", "could not open from the pause menu")))
+    return cases
+
+
 def main() -> int:
     failures = []
     for label, mode in MODES:
@@ -218,8 +269,13 @@ def main() -> int:
               + ("" if not problems else f": {'; '.join(problems)}"))
         if problems:
             failures.append((label, problems))
+    for label, problems in failure_cases():
+        print(f"  {'ok ' if not problems else 'FAIL'} {label}"
+              + ("" if not problems else f": {'; '.join(problems)}"))
+        if problems:
+            failures.append((label, problems))
     if failures:
-        print(f"\nthe music browser regressed in {len(failures)} motif shape(s)")
+        print(f"\nthe music browser regressed in {len(failures)} case(s)")
         return 1
     print("\nthe music browser opens, draws its albums and hands the menu back in every motif shape")
     return 0
