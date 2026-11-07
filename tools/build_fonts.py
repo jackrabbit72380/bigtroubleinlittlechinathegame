@@ -239,12 +239,21 @@ PAUSE_LAYOUT = (
     ("movelist.title.scale", "1, 1"),
     ("movelist.glyphs.scale", "1, 1"),
     ("movelist.text.spacing", "5, 4"),
-    # The command list's text column is clipped to movelist.window.width from
-    # movelist.pos.x, and the motif still had the 1280-era 900: 283.5 + 900 cuts
-    # the right-hand key column mid-glyph at x=1183 on a 1920 frame. Widening the
-    # window only reveals text that was being clipped.
-    ("movelist.pos", "100, 90"),
-    ("movelist.title.offset", "860, -18"),
+    # Rows start below the heading. [Pause Menu] inherits this offset from the
+    # stock motif, but [Training Pause Menu] is topped up from the engine's own
+    # default motif instead of from ours, so without it written out that list's
+    # first row draws on the heading's line.
+    ("movelist.text.offset", "0, 54"),
+    # The command list is the last centred column. Its rows live in a window that
+    # starts at movelist.pos.x and is movelist.window.width wide, with the name
+    # column anchored on the left edge and the input column on the right, so the
+    # window has to be symmetric on the frame for the list to read as centred:
+    # 210 + 1500 = 1710, leaving 210 either side, and a centre-aligned cell lands
+    # on 960. It used to start at 100, which put the window's middle on 850.
+    # The heading offset keeps movelist.pos.x + title.offset.x on the frame's
+    # middle (210 + 750 = 960).
+    ("movelist.pos", "210, 90"),
+    ("movelist.title.offset", "750, -18"),
     ("movelist.window.width", "1500"),
 )
 

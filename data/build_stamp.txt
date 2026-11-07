@@ -1,7 +1,7 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-0a874e04502134b85fca92ca6cf0fda1b121b5bc9e407c831d657c5bea9fb375  data/ikemen1/system.def
+fd0fa4936432cd84ec11243d817e07f5a0f8d5f542ccfdc240257bf0f0184b31  data/ikemen1/system.def
 6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
 05ead882a678c36c7d9f02a5699677d0e00aec573a38678b16ef4456058396d2  data/fight.def
 7dfe5b848633cf55cf5bf04eae9d7a30093755bcf40746deab618a453bbb5daa  data/select.def

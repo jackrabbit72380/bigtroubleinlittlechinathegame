@@ -20,10 +20,13 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 MAIN = os.path.join(ROOT, "external", "script", "main.lua")
+MENU = os.path.join(ROOT, "external", "script", "menu.lua")
 DEVHELP = os.path.join(ROOT, "external", "mods", "devhelp.lua")
 
 BEGIN = "-- >>> pause menu item geometry"
 END = "-- <<< pause menu item geometry"
+MOV_BEGIN = "-- >>> command list geometry"
+MOV_END = "-- <<< command list geometry"
 
 STUB = """
 main = {}
@@ -138,6 +141,53 @@ def check_section(label, values, frame_w, frame_h):
     return problems
 
 
+def movelist_block():
+    text = read(MAIN)
+    start = text.index(MOV_BEGIN)
+    return text[start:text.index(MOV_END, start)]
+
+
+def check_movelist(label, values, frame_w):
+    """The command list's window and heading have to straddle the frame."""
+    problems = []
+    try:
+        pos = numbers(values["movelist.pos"])
+        width = float(values["movelist.window.width"])
+        title = numbers(values["movelist.title.offset"])
+        toff = numbers(values["movelist.text.offset"])
+    except (KeyError, ValueError, IndexError) as exc:
+        return [f"{label}: the command list has no geometry ({exc})"]
+
+    if abs((pos[0] + width) - (frame_w - pos[0])) > 1:
+        problems.append(f"{label}: command list window {pos[0]:.0f}..{pos[0]+width:.0f} "
+                        "is not symmetric on the frame")
+    if abs(pos[0] + title[0] - frame_w / 2) > 1:
+        problems.append(f"{label}: command list heading at x={pos[0]+title[0]:.0f}, "
+                        "not the frame's middle")
+
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    lua.execute("main = {}")
+    lua.execute(movelist_block())
+    lua.execute("sec = {movelist = {pos = %s, text = {offset = %s}, title = {offset = %s}}}"
+                % (lua_literal(pos), lua_literal(toff), lua_literal(title)))
+    for i in (1, 3, 7):
+        x, y = lua.eval("main.f_movelistPos(sec, %d, 750, 0, 41)" % i)
+        want_x = pos[0] + toff[0] + 750
+        want_y = pos[1] + toff[1] + 41 * (i - 1)
+        if abs(x - want_x) > 0.01:
+            problems.append(f"{label}: row {i} is placed at x={x:.0f}, not {want_x:.0f}")
+        if abs(y - want_y) > 0.01:
+            problems.append(f"{label}: row {i} is placed at y={y:.0f}, not {want_y:.0f}")
+    ty = lua.eval("main.f_movelistTitleY(sec)")
+    if abs(ty - (pos[1] + title[1])) > 0.01:
+        problems.append(f"{label}: heading y={ty:.0f}, not {pos[1] + title[1]:.0f}")
+
+    menu_text = read(MENU)
+    if "textImgAddPos" in menu_text:
+        problems.append(f"{label}: the command list still adds to a baked sprite base")
+    return problems
+
+
 def main():
     problems = []
     try:
@@ -154,6 +204,13 @@ def main():
     for name in names:
         found = check_section(f"[{name}]", section_values(text, name), frame_w, frame_h)
         print(f"  {'ok ' if not found else 'FAIL'} [{name}]")
+        for line in found:
+            print(f"       {line}")
+        problems += found
+
+    for name in names:
+        found = check_movelist(f"[{name}]", section_values(text, name), frame_w)
+        print(f"  {'ok ' if not found else 'FAIL'} [{name}] command list")
         for line in found:
             print(f"       {line}")
         problems += found
