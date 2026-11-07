@@ -119,9 +119,8 @@ rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 if not exist "%CACHE%" mkdir "%CACHE%" 2>nul
 if not exist "%CACHE%" set "CACHE=%TEMP%"
-rem Progress counts every percent of the run, 1 to 100, one printed line each,
-rem and nothing here moves the cursor: the bar, its muzzle and the number are
-rem printed once per point, so the window reads like a counter, not a redraw.
+rem Progress counts every percent of the run, 1 to 100: one plain number per
+rem line under the pistol and nothing else. Nothing here moves the cursor.
 rem Every run leaves this behind. When a window closes before the game appears,
 rem this file is the only record of how far it got and why it stopped.
 set "LOG=%CACHE%\last-run.log"
@@ -461,20 +460,18 @@ set "GUNSHOWN=1"
 exit /b 0
 
 :gauge
-rem %1 = percent for the whole run, %2 = what is happening.
+rem %1 = percent for the whole run. %2 is the name of the step: the callers still
+rem pass it, nothing prints it - the window shows the number and nothing else.
 rem
-rem One complete line per update, and one bar for the whole run: the bar is the
-rem barrel, the bullet is the shot travelling down it, its right end is the
-rem pistol's muzzle, and the percentage of the entire process - 0 at the start,
-rem 100 when the game is up - sits at that muzzle.
+rem One printed line per percentage, under the pistol that is already standing
+rem there: 1%, 2%, 3% ... 100%. The game starts at 100.
 rem
 rem The line is printed, never redrawn. The version that walked the cursor back
 rem with backspaces left a wall of overlapping text wherever a backspace did not
 rem erase - Windows Terminal, a log redirect - so nothing here moves the cursor.
 rem
-rem It prints 1, 2, 3 ... 100: every point of the run gets its own line, and the
-rem game starts the moment the bar reaches 100. A step that jumps from 12 to 25
-rem fills in 13 to 24 as well, so no number is ever skipped.
+rem A step that jumps from 12 to 25 fills in 13 to 24 as well, so no number is
+rem skipped, and a step that re-reports the number it just showed prints nothing.
 if "%~1"=="" exit /b 0
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
@@ -484,14 +481,11 @@ rem label arriving late, not a rewind: the whole-process percentage only climbs.
 if defined GMAXPCT if %GPCT% LSS %GMAXPCT% set "GPCT=%GMAXPCT%"
 set "GMAXPCT=%GPCT%"
 if not defined GLASTPCT goto gauge_print
-if not "%GLASTLBL%"=="%~2" goto gauge_print
-if %GPCT% GEQ 100 goto gauge_print
 set /a GADV=GPCT-GLASTPCT
 if %GADV% GEQ 1 goto gauge_print
 exit /b 0
 :gauge_print
 if not defined GLASTPCT set "GLASTPCT=0"
-set "GLASTLBL=%~2"
 set /a GFROM=GLASTPCT+1
 set /a GTO=GPCT
 if %GTO% LSS %GFROM% set /a GFROM=GTO
@@ -500,17 +494,11 @@ set "GLASTPCT=%GTO%"
 exit /b 0
 
 :gaugeone
-rem %1 = the percent to draw, %2 = what is happening. One printed line: the bar,
-rem its right end the pistol's muzzle, and the percentage of the whole run at it.
+rem %1 = the percent to print. The pistol above stays where it is; the run
+rem counts up one plain number at a time and prints nothing beside it.
 set "PCT3=  %~1"
 call set "PCT3=%%PCT3:~-3%%"
-set "BARFILL=#################################"
-set "BAREMPTY=---------------------------------"
-set /a BARLEFTN=%~1*33/100
-set /a BARRIGHTN=33-BARLEFTN
-call set "BARLEFT=%%BARFILL:~0,%BARLEFTN%%%"
-call set "BARRIGHT=%%BAREMPTY:~0,%BARRIGHTN%%%"
-echo   [%BARLEFT%o%BARRIGHT%^|]=  %PCT3%%  %~2
+echo   %PCT3%%%
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 
@@ -1362,10 +1350,10 @@ rem The renderer lives in a file of its own: a twenty-line PowerShell script
 rem cannot be passed on a command line without a quoting argument, and every
 rem line below is plain text with no character cmd would eat.
 rem
-rem It draws the run's one bar, not a bar of its own: the same 33 cells, the
-rem same bullet at the fill, the same pistol muzzle and the same whole-process
-rem percentage at it. Downloading is 50-80% of the run, so the bar it leaves
-rem behind is where the next step picks up instead of starting a second gauge.
+rem It prints the run's own number, not a meter of its own: the same plain
+rem percentage the lines above it show, redrawn in place as the bytes land.
+rem Downloading is 50-80% of the run, so the number it leaves behind is where
+rem the next step carries on instead of a second count starting over.
 set "DLSCRIPT=%CACHE%\download.ps1"
 >  "%DLSCRIPT%" echo param([string]$Url, [string]$Out, [int]$From = 50)
 >> "%DLSCRIPT%" echo $ErrorActionPreference = 'Stop'
@@ -1387,18 +1375,11 @@ set "DLSCRIPT=%CACHE%\download.ps1"
 >> "%DLSCRIPT%" echo   $elapsed = ((Get-Date) - $start).TotalSeconds
 >> "%DLSCRIPT%" echo   if (($elapsed - $drawn) -lt 0.25 -and ($total -le 0 -or $got -lt $total)) { continue }
 >> "%DLSCRIPT%" echo   $drawn = $elapsed
->> "%DLSCRIPT%" echo   $width = 33
 >> "%DLSCRIPT%" echo   $whole = $From
 >> "%DLSCRIPT%" echo   if ($From -lt 80) { if ($total -gt 0) { $whole = $From + [int]((80 - $From) * $got / $total) } }
->> "%DLSCRIPT%" echo   $fill = [int]($width * $whole / 100)
->> "%DLSCRIPT%" echo   if ($fill -gt $width) { $fill = $width }
->> "%DLSCRIPT%" echo   if ($fill -lt 0) { $fill = 0 }
->> "%DLSCRIPT%" echo   $bar = ('#' * $fill) + 'o' + ('-' * ($width - $fill))
 >> "%DLSCRIPT%" echo   $pct = '  ?'
 >> "%DLSCRIPT%" echo   if ($total -gt 0) { $pct = $whole.ToString().PadLeft(3) + '%' }
->> "%DLSCRIPT%" echo   $speed = 0.0
->> "%DLSCRIPT%" echo   if ($elapsed -gt 0) { $speed = $got / $elapsed }
->> "%DLSCRIPT%" echo   $line = [char]13 + '  [' + $bar + '^|]=  ' + $pct + '  Downloading ' + ($got / 1MB).ToString('N1') + ' / ' + ($total / 1MB).ToString('N1') + ' MB  ' + ($speed / 1MB).ToString('N1') + ' MB/s   '
+>> "%DLSCRIPT%" echo   $line = [char]13 + '  ' + $pct
 >> "%DLSCRIPT%" echo   Write-Host -NoNewline $line
 >> "%DLSCRIPT%" echo }
 >> "%DLSCRIPT%" echo $file.Close()
