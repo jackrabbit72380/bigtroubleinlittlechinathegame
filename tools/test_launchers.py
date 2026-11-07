@@ -160,6 +160,17 @@ FIRSTLOG = [
      "is thrown away"),
 ]
 
+# the progress paint must not redraw the pistol
+PAINT = [
+    ("the progress keeps redrawing the pistol",
+     b':gaugeone_plain_title\r\n',
+     b'call :gunredraw %~1 1\r\n:gaugeone_plain_title\r\n',
+     "stops the batch dead"),
+    ("the no-cursor path prints no number",
+     b'echo   ... %~1 percent\r\n', b'',
+     "shows nothing"),
+]
+
 REPAIR = [
     ("the launcher repair is gone",
      b"call :fixlauncher\r\n", b"", "never called"),
@@ -228,6 +239,17 @@ def main():
             failures += 1
             continue
         found = checker._silent_end_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in PAINT:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._paint_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

@@ -466,6 +466,35 @@ def _selfupdate_problems(name, raw):
     return out
 
 
+def _paint_problems(name, raw):
+    """The progress paint must not redraw the pistol.
+
+    :gunredraw is called, so its lines are read twice. The barrel is a variable
+    full of pipes, and on the second read a pipe is a pipeline again - a syntax
+    error that stops the batch dead, before it can print or log anything. The
+    first percent that is not zero ended a run exactly that way: the log had
+    "art 1 pipes 1" and never "art 1 drawn".
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    start = text.find("\n:gaugeone_plain\n")
+    if start < 0:
+        return ["%s: the no-cursor progress path is gone, so a console without "
+                "cursor control has no way to show the number" % name]
+    end = text.find("\n:gaugeone_plain_title\n", start)
+    block = text[start:end if end > 0 else len(text)]
+    if "call :gunredraw" in block:
+        out.append("%s: the progress paint redraws the pistol, whose pipe-filled "
+                   "barrel is read as a pipeline inside a called label and stops "
+                   "the batch dead" % name)
+    if "echo   ... %~1 percent" not in block:
+        out.append("%s: the no-cursor progress path prints no number, so a "
+                   "console without cursor control shows nothing" % name)
+    return out
+
+
 def _firstlog_problems(name, raw):
     """The log has to exist before the run can fail.
 
@@ -575,6 +604,8 @@ CONSOLE_LABELS = {
     "selfupdate_partial", "selfupdate_nofetch",
     # a run that ran off the end of the file, with no message of its own
     "stopped", "stopped_nolog", "stopped_tail", "stopped_cut",
+    # the progress line a console without cursor control gets
+    "gaugeone_plain", "gaugeone_plain_title",
 }
 
 ECHO_LINE = re.compile(r"(?i)^(?:if .*?\s)?echo(?:\s|\.|$)")
@@ -799,6 +830,7 @@ def problems(root):
             found.extend(_launcherrepair_problems(name, raw))
             found.extend(_silent_end_problems(name, raw))
             found.extend(_firstlog_problems(name, raw))
+            found.extend(_paint_problems(name, raw))
             found.extend(_powershell_problems(name, raw))
     return found
 

@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=61"
+set "UPDVER=62"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -702,16 +702,17 @@ call :log painted %~1 on the barrel
 title Big Trouble in Little China: The Game - Updater - %~1 percent
 exit /b 0
 :gaugeone_plain
-rem No cursor control here. The title bar alone was all this did, and a run then
-rem showed a picture with no number on it at all - the number went where nobody
-rem looks. The pistol is drawn again with the barrel filled to this percent
-rem instead. The art is nine lines and the bar only changes when a pipe is added,
-rem so the screen is cleared once per pipe rather than once per percent.
-set /a RPOS=%~1*%BARMAX%/100
-if %~1 GTR 0 if %RPOS% LSS 1 set "RPOS=1"
-if defined RPBAR if %RPOS% EQU %RPBAR% goto gaugeone_plain_title
-set "RPBAR=%RPOS%"
-call :gunredraw %~1 %RPOS%
+rem No cursor control here, so nothing can be written back onto the barrel.
+rem The full-screen repaint that used to stand in for it is gone, and this run
+rem is why: it passed the barrel of pipes and the count into :gunredraw, and a
+rem pipe that arrives through a variable in a called label is read a second
+rem time as a pipeline, which is a cmd syntax error - the whole batch stops on
+rem the spot, before any message or log line of its own. A plain line every
+rem tenth percent shows the same number and cannot break the run.
+set /a RSTEP=%~1 %% 10
+if %RSTEP% NEQ 0 goto gaugeone_plain_title
+if "%~1"=="0" goto gaugeone_plain_title
+echo   ... %~1 percent
 :gaugeone_plain_title
 call :log painted %~1 in the title
 title Big Trouble in Little China: The Game - Updater - %~1 percent
