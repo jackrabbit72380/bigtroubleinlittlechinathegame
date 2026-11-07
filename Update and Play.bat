@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=65"
+set "UPDVER=66"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -674,7 +674,7 @@ rem The barrel ends at column 39 and the bar starts two columns later: one space
 rem so the pipes do not touch the muzzle, and one so the count that follows the
 rem last pipe does not touch the bar either. tools/check_launchers.py measures
 rem both from the drawing, so a changed picture cannot leave them floating.
-set "MUZZLE=42"
+set "MUZZLE=53"
 rem How many pipes this window has room for. One per percent, with the space and
 rem the four characters of the count, needs a hundred and forty-six columns,
 rem which a maximised window has; a narrower one gets the same bar squeezed into
@@ -690,10 +690,10 @@ rem The title sits on the drawing's own left edge - four spaces in, where the
 rem top line of the pistol starts - and carries the version the log records.
 echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
 echo    ..._...^|..____________________, ,
-echo    ....../ '---___________----_____^|]=
-echo    ...../_==o;;;;;;;;_______.:/
-echo    .....), ---.(_(__) /
-echo    ....// (..) ), ----"
+echo    ....../ '---___________----_____^|##########^|]=
+echo    ...../_=^(O^)^(O^)^(O^);;;_______.:/^|##########^|
+echo    .....^), ---.^(_^(__^) /\
+echo    ....// ^(..^) ^), ----"
 echo    ...//___//
 echo    ..//___//
 echo    .//___//
@@ -710,6 +710,14 @@ rem The line under the drawing is remembered, so every percentage can write at
 rem the muzzle and come straight back here. The messages that follow print
 rem below the pistol, never over it.
 if defined VTOK set /p "=%ESC%[s" <nul
+rem The anchor sits on the rule under the drawing: :ui writes the status line
+rem one row below it and comes straight back, so the panel never scrolls.
+set "STIMEF=0:00"
+set "SPCTX=0%%"
+set "SSTEP=Starting up"
+set "SDETAIL="
+call :stext
+call :panel_foot
 rem A console that refused the cursor mode would otherwise sit on a bare picture
 rem until the first step reports, which on a slow first check can be a while.
 if not defined VTOK call :gunredraw 0 0
@@ -746,6 +754,7 @@ set /a GTO=GPCT
 if %GTO% LSS %GFROM% set /a GFROM=GTO
 for /l %%P in (%GFROM%,1,%GTO%) do call :gaugeone %%P "%~2"
 set "GLASTPCT=%GTO%"
+call :ui
 exit /b 0
 
 :gaugeone
@@ -820,21 +829,17 @@ cls
 echo.
 echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
 echo    ..._...^|..____________________, ,
-echo    ....../ '---___________----_____^|]=  %RBAR% %RPCT%
-echo    ...../_==o;;;;;;;;_______.:/
-echo    .....), ---.(_(__) /\
-echo    ....// (..) ), ----"
+echo    ....../ '---___________----_____^|##########^|]=  %RBAR% %RPCT%
+echo    ...../_=^(O^)^(O^)^(O^);;;_______.:/^|##########^|
+echo    .....^), ---.^(_^(__^) /\
+echo    ....// ^(..^) ^), ----"
 echo    ...//___//
 echo    ..//___//
 echo    .//___//
-rem The messages go back on screen: this redraw starts with cls, which is what
-rem erased them a moment after they appeared.
-if defined SAY1 echo   %SAY1%
-if defined SAY2 echo   %SAY2%
-if defined SAY3 echo   %SAY3%
-if defined SAY4 echo   %SAY4%
-if defined SAY5 echo   %SAY5%
-if defined SAY6 echo   %SAY6%
+rem The foot of the panel, drawn again with the art on a console that cannot
+rem write in place: the rule, the status line, and the last thing said.
+call :panel_foot
+if defined SAY6 echo    %SAY6%
 call :log art %~1 drawn
 exit /b 0
 
@@ -843,33 +848,89 @@ rem %1 = files written, %2 = files to write. Writing is 25-80% of the job.
 if "%~2"=="0" exit /b 0
 set /a GSTEP=%~1*55/%~2
 set /a GOPCT=25+GSTEP
+set "SPCTX=%GOPCT%%PCT%"
+set "SDETAIL=%~1 of %~2 files"
 call :gauge %GOPCT% "Writing files"
 exit /b 0
 
 :pct
-rem %1 = percent, %2 = the label for it. The label is said in the window once per
-rem step, so the run names what it is doing instead of only counting: a number
-rem on its own said nothing about a step that was taking minutes.
-if not "%~2"=="" if /i not "%~2"=="%LASTPCT%" call :says "  %~1%%  %~2"
-if not "%~2"=="" set "LASTPCT=%~2"
+rem %1 = percent, %2 = the label for it. Both go on the panel's one status
+rem line: the number says how far and the label says what it is counting.
+if not "%~1"=="" set "SPCTX=%~1%PCT%"
+if not "%~2"=="" set "SSTEP=%~2"
+if not "%~2"=="" set "SDETAIL="
 call :gauge %~1 "%~2"
+call :ui
 exit /b 0
 
 :barflush
 rem Every line ends itself now, so there is nothing to flush.
 exit /b 0
 
+:panel_foot
+rem The rule under the drawing and the status line beneath it, in one place: :gun
+rem draws it once when the window opens, :gunredraw redraws it on a console that
+rem cannot write in place. It sits in a label of its own so the drawing above
+rem stays the only echo block in :gun - the checker measures the muzzle column,
+rem and the row the count comes back from, out of that block.
+echo    ----------------------------------------------------------------------
+echo    %STEXT%
+exit /b 0
+
+:stext
+rem The panel's one line: clock, percentage, step, and the detail of the step.
+set "STEXT="
+if defined STIMEF set "STEXT=%STIMEF%"
+if defined SPCTX set "STEXT=%STEXT%   %SPCTX%"
+if defined SSTEP set "STEXT=%STEXT%   %SSTEP%"
+if defined SDETAIL set "STEXT=%STEXT% - %SDETAIL%"
+if not defined STEXT set "STEXT=starting up"
+exit /b 0
+
+:ui
+rem Writes that line where it belongs: the anchor :gun left is the rule under
+rem the drawing and the status is one row below it. Nothing else prints there -
+rem the old run stacked a line under the art for every step and every five
+rem seconds of every wait, and that pile is what read as noise.
+if not defined VTOK goto ui_plain
+call :stext
+set "UISEQ=%ESC%[u%ESC%[B%ESC%[1G%STEXT%%ESC%[K%ESC%[u"
+set /p "=%UISEQ%" <nul
+exit /b 0
+:ui_plain
+rem No cursor control, so the panel is drawn again from the top - and only
+rem when the line has actually changed, or it would clear once a second.
+call :stext
+if defined UIPLAINLAST if "%UIPLAINLAST%"=="%STEXT%" exit /b 0
+set "UIPLAINLAST=%STEXT%"
+if not defined GPCT set "GPCT=0"
+set /a RPOS=GPCT*BARMAX/100
+call :gunredraw %GPCT% %RPOS%
+exit /b 0
+
 rem %1 = seconds waited, %2 = what is being waited for. One plain line every
 rem five seconds: a spinner would have to redraw in place, which is the cursor
 rem movement that broke the old progress bar on this console.
 :spin
-set /a SMOD=%~1 %% 5
-if %SMOD% NEQ 0 exit /b 0
-call :says "%~2 %~1s"
+rem %1 = seconds waited, %2 = what is being waited for. The clock on the panel
+rem is ticked while the wait goes round, so a slow step reads as work and never
+rem as a freeze - which is how the 20% and the 79% stalls read before.
+set "STIMES=%~1"
+if not "%~2"=="" set "SSTEP=%~2"
+set /a SMIN=STIMES/60
+set /a SSEC=STIMES%%60
+if %SSEC% LSS 10 set "SSEC=0%SSEC%"
+set "STIMEF=%SMIN%:%SSEC%"
+call :ui
 exit /b 0
 :spin_plain
-set /a SDOT=%~1 %% 5
-if %SDOT%==0 call :says "%~2 %~1s"
+set "STIMES=%~1"
+if not "%~2"=="" set "SSTEP=%~2"
+set /a SMIN=STIMES/60
+set /a SSEC=STIMES%%60
+if %SSEC% LSS 10 set "SSEC=0%SSEC%"
+set "STIMEF=%SMIN%:%SSEC%"
+call :ui
 exit /b 0
 
 :spinwait
