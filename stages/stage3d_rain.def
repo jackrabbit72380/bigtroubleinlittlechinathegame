@@ -1,0 +1,112 @@
+;This stage's model and base preview are licensed under MIT (SuperFromND's
+;Third Heights pack); the reframing and the card's rain are painted here.
+;Three Storms, three stages: this is rain's terrace. The pack ships one island
+;in two renders, so rather than invent a third scene the same model is framed
+;lower and wider under a rain-stained sky, and its card is graded cold with rain
+;streaked across it so the select screen tells the three apart at a glance.
+;--------------------------------------------------------
+[Info]
+name = "Third Heights Rainfall"
+displayname = "Third Heights Rainfall"
+versiondate = 11,25,2023
+mugenversion = 1.1
+author = "SuperFromND; reframed for this roster"
+
+;--------------------------------------------------------
+[Camera]
+startx = 0
+starty = 0
+boundleft = -520
+boundright = 520
+boundhigh = -420
+boundlow = 0
+
+verticalfollow = .85
+floortension = 200
+tension = 200
+
+overdrawhigh = 120
+overdrawlow = 120
+cuthigh = 0
+cutlow = 0
+
+;Wider and further back than the other two passes (fov 38 against their 30,
+;zoomout 0.72 against 0.75), so the same island reads as a different place.
+fov = 38
+zoomout = 0.72
+zoomin = 1
+;--------------------------------------------------------
+[PlayerInfo]
+;--- Player 1 ---
+p1startx = -280
+p1starty = 0
+p1facing = 1
+
+;--- Player 2 ---
+p2startx = 280
+p2starty = 0
+p2facing = -1
+
+;--- Common ---
+leftbound  = -4000
+rightbound =  4000
+
+;--------------------------------------------------------
+[Bound]
+screenleft = 60
+screenright = 60
+
+;--------------------------------------------------------
+[StageInfo]
+zoffset = 660
+
+autoturn = 1
+resetBG = 1
+
+localcoord = 1280, 720
+xscale = 1
+yscale = 1
+
+; The stage card draws each stage's 240x100-class portrait at the same
+; apparent size, and the engine's automatic portrait scale falls with the
+; stage's localcoord - so a 1280x720 stage draws 1.5x larger than this
+; roster's 1920x1080 ones. 4 / 1.5 = 3.375 lands this stage's 240x100
+; portrait at the same 1215-wide card as every other stage.
+portraitscale = 3.375
+
+;--------------------------------------------------------
+[Shadow]
+intensity = 132
+color = 26,18,52
+yscale = .3
+fade.range = 0,0
+
+;--------------------------------------------------------
+[Reflection]
+intensity = 0
+
+;--------------------------------------------------------
+[Music]
+bgmusic =
+bgmvolume = 100
+
+;========================================================
+[BGdef]
+
+;The same island as stage3d.def, framed lower and further back.
+model = stage3d.glb
+
+;Its own card, so the select screen shows the rainy pass.
+spr = stage3d_rain.sff
+
+;-------------------------------------
+; Model element definition
+[Model]
+
+offset = 0,-0.16,-0.62
+scale = 0.045, 0.045, 0.045
+
+;-------------------------------------
+; Stage portrait data
+[Begin Action 9000]
+9000,1, 0,0,-1

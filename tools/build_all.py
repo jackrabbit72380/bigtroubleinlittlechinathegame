@@ -177,6 +177,7 @@ def main():
     # generators write the same pair, this applies it to the stages already built
     # and to any that were not.
     scripts.append("build_camera.py")
+    scripts.append("build_stage3d_rain.py")
     scripts.append("build_stamp.py")
     # ...and this fails if a file the Lua reads has fallen out of that stamp,
     # which is how the album art, the controller database and the shaders were
