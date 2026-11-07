@@ -69,9 +69,9 @@ security1_rig/security1.def, stages/wingkong_exchange.def, order=2
 security2_rig/security2.def, stages/lopans_hallway.def, order=2
 
  ; --- the bosses: the bottom row of the select wall -------------------------
-lightning_rig/lightning.def, stages/chinatown_alley.def, order=1
+lightning_rig/lightning.def, stages/stage3d.def, order=1
 rain_rig/rain.def, stages/porkchop_express.def, order=1
-thunder_rig/thunder.def,  stages/lopans_throne.def, order=2
+thunder_rig/thunder.def, stages/stage3d_outline.def, order=2
 lopan_rig/lopan.def,  stages/lopans_throne.def, order=4
 
  ; --- the RANDOM stop: seven placeholders, then the pick itself ---------------
@@ -102,7 +102,9 @@ stages/the_upside_down.def
 stages/hell_sinners.def
 stages/stage0.def        ; training room
 stages/stage3d.def        ; Third Heights - a 3D model stage, not sprite layers
+                          ; (lightning's stage in the arcade ladder)
 stages/stage3d_outline.def ; Third Heights, drawn as an outline pass
+                          ; (thunder's stage in the arcade ladder)
 
 ;-------------------------------------------------------------------------------
 [Options]
