@@ -667,10 +667,10 @@ def check_menu_theme():
             err("menu theme: [%s] runs its %dth row to y=%.0f, past the "
                 "%d-tall frame" % (name, rows, bottom, frame_h))
 
-    # The command list fills a window anchored at movelist.pos.x and
-    # movelist.window.width wide, with the name column on its left edge and the
-    # input column on its right. Symmetric margins are what centre that block on
-    # the frame, and the heading is meant to sit on the frame's middle too.
+    # The command list's columns are measured at draw time, so this window is the
+    # box they are clipped to. Keep it symmetric on the frame so a list that runs
+    # to the margin is not cut short on one side, and keep the heading on the
+    # frame's middle, over the block the rows settle in.
     for name, keys in values.items():
         if "movelist.pos" not in keys:
             continue

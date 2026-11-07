@@ -170,14 +170,22 @@ def check_movelist(label, values, frame_w):
     lua.execute(movelist_block())
     lua.execute("sec = {movelist = {pos = %s, text = {offset = %s}, title = {offset = %s}}}"
                 % (lua_literal(pos), lua_literal(toff), lua_literal(title)))
-    for i in (1, 3, 7):
-        x, y = lua.eval("main.f_movelistPos(sec, %d, 750, 0, 41)" % i)
-        want_x = pos[0] + toff[0] + 750
-        want_y = pos[1] + toff[1] + 41 * (i - 1)
-        if abs(x - want_x) > 0.01:
-            problems.append(f"{label}: row {i} is placed at x={x:.0f}, not {want_x:.0f}")
-        if abs(y - want_y) > 0.01:
-            problems.append(f"{label}: row {i} is placed at y={y:.0f}, not {want_y:.0f}")
+    # the columns are measured: the block is centred and the keys start one gap
+    # past the longest name instead of at the far edge of a fixed window
+    left, key_x = lua.eval("main.f_movelistColumns(960, 300, 200)")
+    if abs(left - (960 - 560 / 2)) > 0.01:
+        problems.append(f"{label}: a 300+200 block starts at x={left:.0f}, not 680")
+    if abs(key_x - (left + 360)) > 0.01:
+        problems.append(f"{label}: the input column starts at x={key_x:.0f}, "
+                        "not one gap past the longest name")
+    mid = (left + key_x + 200) / 2
+    if abs(mid - 960) > 0.01:
+        problems.append(f"{label}: the measured block settles at x={mid:.0f}, "
+                        "not the frame's middle")
+    left2, _ = lua.eval("main.f_movelistColumns(960, 1800, 400)")
+    if left2 < 59.99:
+        problems.append(f"{label}: an oversized list is left at x={left2:.0f}, "
+                        "off the frame")
     ty = lua.eval("main.f_movelistTitleY(sec)")
     if abs(ty - (pos[1] + title[1])) > 0.01:
         problems.append(f"{label}: heading y={ty:.0f}, not {pos[1] + title[1]:.0f}")
@@ -201,6 +209,10 @@ def check_movelist(label, values, frame_w):
         problems.append(f"{label}: the command list still adds to a baked sprite base")
     if "main.f_movelistColor(sec, k, v.col)" not in menu_text:
         problems.append(f"{label}: menu.lua draws the cells in one colour")
+    if "main.f_movelistColumns(" not in menu_text:
+        problems.append(f"{label}: menu.lua does not measure the two columns")
+    if "sec.movelist.window.width * 0.5" in menu_text:
+        problems.append(f"{label}: the rows are still positioned from the fixed window")
     return problems
 
 
