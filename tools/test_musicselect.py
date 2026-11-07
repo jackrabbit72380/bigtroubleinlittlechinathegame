@@ -296,6 +296,16 @@ def check(mode: str) -> list[str]:
         width = len(text) * 30 * scale
         if width > 1800 + 0.5:
             problems.append(f"the album title is {width:.0f}px wide on a 1920px screen")
+    # and the rows: they start at x 880, so 980px is all the room a title has
+    rows = {str(k): float(v) for k, v in (g.DRAWN or {}).items()
+            if str(k).startswith(("  ", "> "))}
+    if not rows:
+        problems.append("no track rows reached the screen")
+    for text, scale in rows.items():
+        width = len(text) * 30 * scale
+        if width > 980 + 0.5:
+            problems.append(
+                f"the row {text.strip()[:28]!r} is {width:.0f}px wide past the list edge")
     g.INPUT_DOWN = False
 
     # and from the title menu, which opens the same browser in place

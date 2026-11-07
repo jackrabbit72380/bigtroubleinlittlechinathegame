@@ -32,11 +32,13 @@ local CHOICE = {x = 960, y = 1030}
 local ROWSCALE = 1.0
 local SMALLSCALE = 0.8
 local HEADSCALE = 1.5
--- The album name is the one line that can outgrow the frame: the longest name in
+-- The two lines that can outgrow the frame: an album name (the longest in
 -- sound/ is 44 characters, and at 1.5x it ran past both edges and lost its last
--- words. It is measured and scaled to fit this width instead, with 60px clear at
--- each edge.
+-- words) and a track title at the end of a row. Both are measured and scaled to
+-- fit instead of being clipped, leaving 60px clear at the frame's edges.
 local MAXHEAD = 1800
+-- A row is drawn from LIST.x, so this is what is left of the 1920 frame for it.
+local MAXROW = 1920 - LIST.x - 60
 
 ms.params = nil
 ms.chosen = nil
@@ -249,23 +251,24 @@ local function drawLine(spr, text, x, y, align, scale)
 	end)
 end
 
--- The album title, sized to fit. Measuring at 1.0 and scaling down is the only
--- way to do this without guessing glyph widths: textImgGetTextWidth reports the
--- string in the sprite's own face, so a short name keeps the full HEADSCALE and
--- a long one shrinks until it fits rather than being clipped at both edges.
-local function drawHead(spr, text, x, y)
+-- A line sized to fit. Measuring at 1.0 and scaling down is the only way to do
+-- this without guessing glyph widths: textImgGetTextWidth reports the string in
+-- the sprite's own face, so a short line keeps its full scale and a long one
+-- shrinks until it fits rather than being clipped at the frame's edge.
+local function drawFitted(spr, text, x, y, align, ceiling, maxWidth)
 	if spr == nil then
 		return false
 	end
 	return pcall(function()
 		textImgReset(spr)
-		pcall(textImgSetAlign, spr, 0)
+		pcall(textImgSetAlign, spr, align or 0)
 		pcall(textImgSetColor, spr, 255, 255, 255, 255)
 		textImgSetText(spr, text or '')
-		local scale = HEADSCALE
+		local scale = ceiling or 1
 		local ok, width = pcall(textImgGetTextWidth, spr)
-		if ok and type(width) == 'number' and width > 0 and width * scale > MAXHEAD then
-			scale = MAXHEAD / width
+		if ok and type(width) == 'number' and width > 0 and maxWidth ~= nil
+			and width * scale > maxWidth then
+			scale = maxWidth / width
 		end
 		pcall(textImgSetScale, spr, scale, scale)
 		textImgSetPos(spr, x, y)
@@ -471,9 +474,9 @@ function ms.open()
 		end
 		drawAlbumArt(albumData, album)
 
-		drawHead(spr,
+		drawFitted(spr,
 			main.f_itemnameUpper(album.name ~= '' and album.name or 'Default (stage music)', true),
-			HEAD.x, HEAD.y)
+			HEAD.x, HEAD.y, 0, HEADSCALE, MAXHEAD)
 
 		if songNo < scroll then
 			scroll = songNo
@@ -489,7 +492,7 @@ function ms.open()
 			if s ~= nil then
 				mark = (index == songNo and '> ' or '  ') .. s.title
 			end
-			drawLine(spr, mark, LIST.x, LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE)
+			drawFitted(spr, mark, LIST.x, LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE, MAXROW)
 		end
 
 		drawLine(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
