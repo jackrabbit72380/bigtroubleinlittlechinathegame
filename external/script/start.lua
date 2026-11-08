@@ -1,26 +1,77 @@
--- Grid metrics from the motif, flattened. Older builds hand back a plain pair
--- (cell.size = 128,160); newer ones nest it per side (cell.size = {{128,160}}),
--- and multiplying a table is what crashed the select screen.
-local function flatNums(v, out)
-	out = out or {}
+-- Motif metrics arrive in more than one shape. The engine turns a pair like
+-- cell.size = 128,160 into a flat array {128,160}, but builds and screenpacks
+-- also hand back nested ({{128,160}}), named ({width=,height=}) and per-side
+-- ({p1={...}}) tables. Reading one of those straight is what put a
+-- multiplication between a number and a table on the select screen, so every
+-- metric read goes through peek(), which finds the first pair of numbers in
+-- whatever shape the engine used.
+local function numOf(v)
 	if type(v) == 'number' then
-		out[#out + 1] = v
-	elseif type(v) == 'table' then
-		for i = 1, #v do
-			flatNums(v[i], out)
+		return v
+	elseif type(v) == 'string' then
+		return tonumber(v)
+	end
+	return nil
+end
+
+local function namedNum(v, keys)
+	for i = 1, #keys do
+		local n = numOf(v[keys[i]])
+		if n ~= nil then
+			return n
 		end
 	end
-	return out
+	return nil
+end
+
+-- width and height, or nil when the value holds no numbers at all
+local function peek(v, depth)
+	depth = depth or 0
+	local n = numOf(v)
+	if n ~= nil then
+		return n, n
+	end
+	if type(v) ~= 'table' or depth > 4 then
+		return nil, nil
+	end
+	if #v >= 1 then
+		if type(v[1]) == 'table' then
+			return peek(v[1], depth + 1)
+		end
+		local w = numOf(v[1])
+		if w ~= nil then
+			return w, numOf(v[2]) or w
+		end
+	end
+	local w = namedNum(v, {'width', 'w', 'x', 'Width', 'W', 'X'})
+	if w ~= nil then
+		return w, namedNum(v, {'height', 'h', 'y', 'Height', 'H', 'Y'}) or w
+	end
+	local sides = {'default', 'p1', 'size', 'Size', 'p2'}
+	for i = 1, #sides do
+		local sw, sh = peek(v[sides[i]], depth + 1)
+		if sw ~= nil then
+			return sw, sh
+		end
+	end
+	local keys = {}
+	for k in pairs(v) do
+		if type(k) == 'string' and string.sub(k, 1, 2) ~= '__' then
+			keys[#keys + 1] = k
+		end
+	end
+	table.sort(keys)
+	for i = 1, #keys do
+		local sw, sh = peek(v[keys[i]], depth + 1)
+		if sw ~= nil then
+			return sw, sh
+		end
+	end
+	return nil, nil
 end
 
 local function dims(v, dflt)
-	local w, h
-	if type(v) == 'number' then
-		w = v
-	elseif type(v) == 'table' then
-		local n = flatNums(v)
-		w, h = n[1], n[2]
-	end
+	local w, h = peek(v)
 	if w == nil then
 		w = dflt or 0
 	end
@@ -39,6 +90,7 @@ local function metricH(v)
 	local _, h = dims(v, 0)
 	return h
 end
+
 
 local start = {}
 
@@ -1432,7 +1484,7 @@ function start.f_drawPlayerLabels()
 	if title == nil or pos == nil then
 		return
 	end
-	local oy = type(title.offset) == 'table' and flatNums(title.offset)[2] or nil
+	local oy = select(2, peek(title.offset))
 	local y = oy or 2
 	local scale = title.scale
 	local col = title.font
