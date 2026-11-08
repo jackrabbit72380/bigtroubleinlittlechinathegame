@@ -1,10 +1,10 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-4475a1c8bc5c697518f008aebb7593e4e2072f3a24f7bfa9857e353ae52527db  data/ikemen1/system.def
-b7b1a1d00d6c3a7d5b4f5949cfddabb882251b23c1e757f5ad0bfe4a7d52ada7  data/ikemen1/system.sff
+184b7b1ddd4ddd623dae3c3812755a41c20f4ac6f373858cde2b534c1d9236bc  data/ikemen1/system.def
+371a180c6ea95226313753ce1cd6db7ac7c50918c306b12e550a97c50d3d3c20  data/ikemen1/system.sff
 6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
-41ce8c12934321363c04a5bb688d7d9a09fc3bb22bbb35f9cf2396e2b1a68775  data/fight.def
+df1da71fd018517203671aa1d321947ce326cdb69597ccd90169fc991ec5e69b  data/fight.def
 b1e3f0d2f5458d3fc4653fba38fd7bed859630b89b2b36b3774f52d2ea1e023a  data/system.snd
 e6a95fdf361ee2dcb5112d8b8b97f27c4605177d4681071ec1b8fb4646e9c304  data/select.def
 ea09f5ecebca9bc359fcbbf361898ba90d31a40853bdb6ba73e286222cb9293c  data/music.json
@@ -32,7 +32,7 @@ b7bc8d3e7d199541f2c9b97149bba31348fde9618dc12b1036a952a5d72bbc6f  external/mods/
 14723743e3c1e3559832312360cbeef0c3b2df7d48e434c2a095e9bf740a4acc  external/script/main.lua
 53e09be24836ba1a0ae04b9508d88e06e9e9dfe51edd84957db8466f853c49a3  external/script/menu.lua
 adbed4d7a6f9d601d976a6a5119449c9ae7ac848a72aa4096bb68c560dc46afe  external/script/options.lua
-10d7d38e9b352545e759ed907142e994f65552d767bf45e15caf6477b66b91fe  external/script/start.lua
+9260e836c2fc0b9948eed2253890fe713cb3e08c87043b2fb707dabb7f9c4b20  external/script/start.lua
 13b3d51de186c8e35c62651825270c72bcf2c46acbe154b0836980c485a5f1ad  external/shaders/HQ2x.frag
 657aec55a90fa2c363181c2873b4833c4a27d1fe82962848c250e429723a35fb  external/shaders/HQ2x.frag.spv
 3c542524fffd57a915f5f9c2e631f78a310dfc63a890704bf6c674befd90c6b9  external/shaders/HQ2x.vert
