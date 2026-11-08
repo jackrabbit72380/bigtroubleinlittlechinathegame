@@ -940,7 +940,7 @@ suffix, so this block IS the list.
 ; the one window where every sprite lands on whole pixels; 2560x1440 and
 ; 3840x2160 are clean 1.33x and 2x scales of that same art.
 """
-    "menu.itemname.menuvideo.resolution = RENDER SIZE\n"
+    "menu.itemname.menuvideo.resolution = Render Size\n"
     "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)\n"
     "menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)\n"
     "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)\n"
@@ -953,7 +953,7 @@ suffix, so this block IS the list.
     "menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)\n"
     "menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)\n"
     "menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.resolution.back = BACK\n"
+    "menu.itemname.menuvideo.resolution.back = Back\n"
 )
 
 # Video.GameWidth/GameHeight is the engine's RENDER size; the window it is drawn
@@ -965,7 +965,7 @@ suffix, so this block IS the list.
 # handler by the bare last segment of the itemname, so "3840x2160" would
 # overwrite the resolution row's handler. The labels still show the real size.
 WINDOW_MENU = (
-    "menu.itemname.menuvideo.window = WINDOW SIZE\n"
+    "menu.itemname.menuvideo.window = Window Size\n"
     "menu.itemname.menuvideo.window.windowauto = Match Render Size\n"
     "menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)\n"
     "menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)\n"
@@ -979,7 +979,7 @@ WINDOW_MENU = (
     "menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)\n"
     "menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)\n"
     "menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.window.back = BACK\n"
+    "menu.itemname.menuvideo.window.back = Back\n"
 )
 
 RESOLUTION_ANCHOR = re.compile(r"^menu\.itemname\.options\s*=.*$", re.MULTILINE)
