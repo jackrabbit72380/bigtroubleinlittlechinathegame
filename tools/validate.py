@@ -276,6 +276,32 @@ def check_stage(def_path):
         notes.append(f"{label}: {layers} layers, {len(sprites)} sprites")
 
 
+def check_stage_models():
+    """A [Model] section with no model behind it takes the whole game down.
+
+    The painted 3D stages switch their model off by commenting out model =. The
+    [Model] block that describes that model has to go with it: on its own it
+    makes the engine dereference the missing model while the stage loads, and
+    the game dies with a nil pointer panic before the first round. A def may
+    have an active model, or no [Model] block at all - never the block alone.
+    """
+    stages = os.path.join(ROOT, "stages")
+    for name in sorted(os.listdir(stages)):
+        if not name.endswith(".def"):
+            continue
+        text = read(os.path.join(stages, name))
+        if not re.search(r"(?mi)^\s*\[model\]\s*$", text):
+            continue
+        if not re.search(r"(?mi)^\s*model\s*=\s*\S", text):
+            err("%s: has a [Model] block but no model = line, so the engine "
+                "panics when the stage loads" % name)
+            continue
+        model = re.search(r"(?mi)^\s*model\s*=\s*(\S+)", text).group(1)
+        if not os.path.isfile(os.path.join(stages, model)):
+            err("%s: [Model] names %s, which is not next to the def" % (name, model))
+    notes.append("stages: every [Model] block has a model, or has gone")
+
+
 def check_select_screen(chars):
     """The portrait grid painted by tools/build_select_grid.py."""
     def_text = read(os.path.join(ROOT, "data", "ikemen1", "system.def"))
@@ -1871,6 +1897,7 @@ def main():
     check_ladder()
     check_intro_states()
     check_stage_aspect()
+    check_stage_models()
     check_launchers()
     check_launcher_checks()
     check_motif_ints()
