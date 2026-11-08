@@ -3970,13 +3970,33 @@ local function charPalettesLoaded(ref)
 end
 -- Loads palettes for a character if needed, prepares the animation, and applies the palette
 function start.f_loadPalettes(a, ref, pal)
-	if not charPalettesLoaded(ref) then
-		animLoadPalettes(a, ref)
+	if a == nil then
+		return nil
+	end
+	if ref ~= nil and not charPalettesLoaded(ref) then
+		pcall(animLoadPalettes, a, ref)
 	end
 	local srcAnim = a
-	a = animPrepare(a)
-	animApplyVel(a, srcAnim)
-	a = animSetColorPalette(a, pal)
+	local num = tonumber(pal) or 1
+	-- animPrepare takes the palette to prepare the animation in. This engine's
+	-- binding wants that second argument and fails with "Argument 2 is not a
+	-- number: nil" when it is missing, which took the whole game down the moment
+	-- a character was chosen. Both call shapes are tried and neither is fatal:
+	-- an anim that cannot take the palette loses its tint, not the session.
+	local ok, prepared = pcall(animPrepare, a, num)
+	if not ok or prepared == nil then
+		ok, prepared = pcall(animPrepare, a)
+	end
+	if ok and prepared ~= nil then
+		a = prepared
+	else
+		a = srcAnim
+	end
+	pcall(animApplyVel, a, srcAnim)
+	local okPal, coloured = pcall(animSetColorPalette, a, num)
+	if okPal and coloured ~= nil then
+		a = coloured
+	end
 	return a
 end
 
