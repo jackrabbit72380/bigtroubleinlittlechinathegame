@@ -222,8 +222,8 @@ def sprites_for(name):
          "axis": (0, 0)},
         # the lightning sheet: a clear frame, the strike, and its afterglow
         {"group": 2, "number": 0, "image": blank(), "axis": (0, 0)},
-        {"group": 2, "number": 1, "image": flash(150, 8801), "axis": (0, 0)},
-        {"group": 2, "number": 2, "image": flash(64), "axis": (0, 0)},
+        {"group": 2, "number": 1, "image": flash(88, 8801), "axis": (0, 0)},
+        {"group": 2, "number": 2, "image": flash(30), "axis": (0, 0)},
     ]
 
 
