@@ -70,7 +70,9 @@ BLUE_DEEP = (26, 44, 92)
 WHITE = (255, 255, 255)
 
 PLATES = (os.path.join(ROOT, "art_src", "ui", "title_logo.png"),
-          os.path.join(ROOT, "concept_art", "ui", "title_logo.png"))
+          os.path.join(ROOT, "art_src", "ui", "title_logo_logo.png"),
+          os.path.join(ROOT, "concept_art", "ui", "title_logo.png"),
+          os.path.join(ROOT, "concept_art", "ui", "title_logo_logo.png"))
 
 
 # ------------------------------------------------------------------- type

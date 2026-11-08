@@ -10,6 +10,7 @@ screen instead of painting one:
 
 ```
 art_src/ui/title_logo.png        (preferred)
+art_src/ui/title_logo_logo.png   (same thing, art-pack file name)
 concept_art/ui/title_logo.png    (also picked up)
 ```
 

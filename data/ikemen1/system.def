@@ -364,17 +364,10 @@ overlay.alpha = 0, 128
 
 ;----------------------------
 [Infobox Text]
-Welcome to I.K.E.M.E.N GO engine! (%s - %s)
-
-* This is a public development release, for testing purposes.
-* This build may contain bugs and incomplete features.
-* Your help and cooperation are appreciated!
-* Source code: https://github.com/ikemen-engine/Ikemen-GO
-* Bug reports: https://github.com/ikemen-engine/Ikemen-GO/issues
-* Docs: https://github.com/ikemen-engine/Ikemen-GO/wiki
-
-;-------------------------------------------------------------------
-;Character select definition
+; The engine welcome text used to sit here. It is what the title screen showed
+; over the art (and what F1 opens), so blanking it keeps I.K.E.M.E.N release
+; notes off the game. The box is empty rather than deleted: the section itself
+; has to stay for the motif to parse.
 [Select Info]
 p2.teammenu.item.cursor.spr = 180,0
 p1.teammenu.item.cursor.spr = 180,0
