@@ -192,68 +192,68 @@ cancel.snd = 100,2
 ;Full documentation of this feature is available on Ikemen GO features wiki
 
 ; Submenu: Arcade
-menu.itemname.menuarcade = Arcade
-menu.itemname.menuarcade.arcade = Single Mode
-menu.itemname.menuarcade.teamarcade = Team Arcade
-menu.itemname.menuarcade.teamcoop = Team Co-op
-menu.itemname.menuarcade.back = Back
+menu.itemname.menuarcade = Dragon's Challenge
+menu.itemname.menuarcade.arcade = Lo Pan's Legacy
+menu.itemname.menuarcade.teamarcade = Wing Kong War
+menu.itemname.menuarcade.teamcoop = Dragon Brotherhood
+menu.itemname.menuarcade.back = Return to Chinatown
 
 ; Submenu: Versus
-menu.itemname.menuversus = Versus Mode
-menu.itemname.menuversus.versus = 1P vs 2P
-menu.itemname.menuversus.teamversus = Team Versus
-menu.itemname.menuversus.versuscoop = Versus Co-op
-menu.itemname.menuversus.freebattle = Quick Match
-menu.itemname.menuversus.back = Back
+menu.itemname.menuversus = Black Blood Arena
+menu.itemname.menuversus.versus = Dragon Duel
+menu.itemname.menuversus.teamversus = Gang War
+menu.itemname.menuversus.versuscoop = Blood Oath
+menu.itemname.menuversus.freebattle = Street Showdown
+menu.itemname.menuversus.back = Return to Chinatown
 
 ; Submenu: Story Mode
-menu.itemname.storymode = Story Mode
+menu.itemname.storymode = The Legacy of Lo Pan
 ; story arcs menu items are automatically added before storymode.back
-menu.itemname.storymode.back = Back
+menu.itemname.storymode.back = Return to Chinatown
 
 ; Submenu: Network
-menu.itemname.menunetwork = Network
-menu.itemname.menunetwork.serverhost = Host Game
-menu.itemname.menunetwork.serverjoin = Join Game
-menu.itemname.menunetwork.back = Back
+menu.itemname.menunetwork = Tournament of Storms
+menu.itemname.menunetwork.serverhost = Open the Portal
+menu.itemname.menunetwork.serverjoin = Enter the Portal
+menu.itemname.menunetwork.back = Return to Chinatown
 
 ; known IP addresses show up before serverjoin.back item
-menu.itemname.menunetwork.serverjoin.joinadd = New Address
-menu.itemname.menunetwork.serverjoin.back = Back
+menu.itemname.menunetwork.serverjoin.joinadd = Hidden Refuge
+menu.itemname.menunetwork.serverjoin.back = Return to Chinatown
 
 ; This group is hidden and should not be moved to other menus.
 ; It's opened automatically, after synchronization with online player.
-menu.itemname.server.netplayversus = Versus 2P
-menu.itemname.server.netplayteamcoop = Arcade Co-op
-menu.itemname.server.netplaysurvivalcoop = Survival Co-op
-menu.itemname.server.back = Exit
+menu.itemname.server.netplayversus = Storm Clash
+menu.itemname.server.netplayteamcoop = Pork-Chop Alliance
+menu.itemname.server.netplaysurvivalcoop = Brotherhood Survival
+menu.itemname.server.back = Leave Chinatown
 
 ; Submenu: Practice
-menu.itemname.menupractice = Practice
-menu.itemname.menupractice.training = Training
-menu.itemname.menupractice.back = Back
+menu.itemname.menupractice = Mystic Training
+menu.itemname.menupractice.training = Egg Shen's Workshop
+menu.itemname.menupractice.back = Return to Chinatown
 
 ; Submenu: Mission
-menu.itemname.menumission = Mission
-menu.itemname.menumission.survival = Survival
-menu.itemname.menumission.survivalcoop = Survival Co-op
-menu.itemname.menumission.timeattack = Time Attack
-menu.itemname.menumission.bonusgames = Bonus Games
-menu.itemname.menumission.back = Back
+menu.itemname.menumission = Lo Pan's Trials
+menu.itemname.menumission.survival = Three Storms
+menu.itemname.menumission.survivalcoop = Storm Brothers
+menu.itemname.menumission.timeattack = Escape Lo Pan
+menu.itemname.menumission.bonusgames = Egg Shen's Trials
+menu.itemname.menumission.back = Return to Chinatown
 
 ; Submenu: Mission => Bonus Games
 ; bonus characters menu items are automatically added before bonusgames.back
-menu.itemname.menumission.bonusgames.back = Back
+menu.itemname.menumission.bonusgames.back = Return to Chinatown
 
 ; Submenu: Watch Mode
-menu.itemname.menuwatch = Watch Mode
-menu.itemname.menuwatch.watch = CPU Match
-menu.itemname.menuwatch.randomtest = Random Test
-menu.itemname.menuwatch.replay = Replay
-menu.itemname.menuwatch.back = Back
+menu.itemname.menuwatch = Eye of the Dragon
+menu.itemname.menuwatch.watch = Spirit Challenge
+menu.itemname.menuwatch.randomtest = Wheel of Fate
+menu.itemname.menuwatch.replay = Relive the Legend
+menu.itemname.menuwatch.back = Return to Chinatown
 
 ; Options
-menu.itemname.options = Options
+menu.itemname.options = Ancient Secrets
 
 ; Options > Video > Resolution. The engine takes the size straight from the
 suffix, so this block IS the list.
@@ -270,7 +270,7 @@ suffix, so this block IS the list.
 
 
 ; Exit Game
-menu.itemname.exit = Exit
+menu.itemname.exit = Leave Chinatown
 
 ;----------------------------
 ;Title background definition
@@ -2132,7 +2132,7 @@ menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)
 menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)
 menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)
 menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)
-menu.itemname.menuvideo.resolution.back = Back
+menu.itemname.menuvideo.resolution.back = Return to Chinatown
 menu.itemname.menuvideo.window = Window Size
 menu.itemname.menuvideo.window.windowauto = Match Render Size
 menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)
@@ -2147,7 +2147,7 @@ menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)
 menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)
 menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)
 menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)
-menu.itemname.menuvideo.window.back = Back
+menu.itemname.menuvideo.window.back = Return to Chinatown
 ; <<< video submenu
 keymenu.done.key = a, b, c, x, y, z
 menu.cancel.key = m

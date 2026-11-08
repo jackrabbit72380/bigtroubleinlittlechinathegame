@@ -953,7 +953,7 @@ suffix, so this block IS the list.
     "menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)\n"
     "menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)\n"
     "menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.resolution.back = Back\n"
+    "menu.itemname.menuvideo.resolution.back = Return to Chinatown\n"
 )
 
 # Video.GameWidth/GameHeight is the engine's RENDER size; the window it is drawn
@@ -979,7 +979,7 @@ WINDOW_MENU = (
     "menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)\n"
     "menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)\n"
     "menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.window.back = Back\n"
+    "menu.itemname.menuvideo.window.back = Return to Chinatown\n"
 )
 
 RESOLUTION_ANCHOR = re.compile(r"^menu\.itemname\.options\s*=.*$", re.MULTILINE)
