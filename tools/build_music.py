@@ -89,8 +89,12 @@ EXTS = ("ogg", "mp3", "flac", "wav", "mid", "midi")
 UNSUPPORTED = ("opus", "m4a", "aac", "wma", "aiff", "aif", "mp4", "mod", "xm", "it", "s3m")
 
 COVER_NAMES = ("boxfront.png", "boxfront.jpg", "boxfront.jpeg")
-COVER_MAX = 640  # packed covers are capped at this; the browser scales them
-                 # to fit its box, so the size is recorded with the album
+COVER_MAX = 660  # packed covers are capped at this; the browser scales them
+                 # to fit its box, so the size is recorded with the album.
+                 # The box is 660x680, so 660 is the widest a cover can be drawn
+                 # without the engine resampling it: at the old cap of 640 every
+                 # cover was packed smaller than the space it had and drawn back
+                 # up at the box's edge, which is what made the large ones soft.
 
 
 def cover_size(path):

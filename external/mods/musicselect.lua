@@ -24,6 +24,12 @@ local ms = main.t_musicSelect
 -- The album title sits in the frame across the top of this screen, the cover
 -- fills the box on the left, and the rows start to its right. Every number
 -- is in the same 1920x1080 pixels the rest of the motif uses.
+-- The motif is a 1920x1080 screen and a text sprite has to be told so before
+-- its scale and position are set. Left to itself the engine measures a text
+-- sprite in a smaller space of its own, which drew every line on this screen
+-- about twice its size and twice as far apart: the track list overlapped
+-- itself and ran off the right of the frame.
+local SPRITE_W, SPRITE_H = 1920, 1080
 local COVER = {x = 470, y = 470, w = 660, h = 680}
 local LIST = {x = 880, y = 290, pitch = 40, rows = 13}
 local HEAD = {x = 960, y = 105}
@@ -276,6 +282,7 @@ local function drawLine(spr, text, x, y, align, scale)
 	end
 	return pcall(function()
 		textImgReset(spr)
+		pcall(textImgSetLocalcoord, spr, SPRITE_W, SPRITE_H)
 		pcall(textImgSetAlign, spr, align or 0)
 		pcall(textImgSetScale, spr, scale or 1, scale or 1)
 		pcall(textImgSetColor, spr, 255, 255, 255, 255)
@@ -295,6 +302,7 @@ local function drawFitted(spr, text, x, y, align, ceiling, maxWidth)
 	end
 	return pcall(function()
 		textImgReset(spr)
+		pcall(textImgSetLocalcoord, spr, SPRITE_W, SPRITE_H)
 		pcall(textImgSetAlign, spr, align or 0)
 		pcall(textImgSetColor, spr, 255, 255, 255, 255)
 		textImgSetText(spr, text or '')
