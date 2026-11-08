@@ -911,49 +911,78 @@ def ensure_font_files(text):
 # The one ordered copy of the size ladder. Both tables that can drive
 # Options > Video > Resolution are written from it: RESOLUTION_MENU for the
 # motif, and ensure_widescreen_resolutions() for data/system.base.def.
+# Every display the game has ever been asked to fill, in ascending order,
+# labelled the way the size is spoken about. 4:3 and 21:9 sizes are in here
+# on purpose: they are windows, and the picture stretches to whatever window
+# is picked (KeepAspect is off by default).
 RESOLUTION_LADDER = (
-    ("1280x720", "(720p)"),
-    ("1366x768", "(768p)"),
-    ("1600x900", "(900p)"),
-    ("1920x1080", "(1080p)"),
-    ("2560x1440", "(2K)"),
-    ("3840x2160", "(4K)"),
-    ("5120x2880", "(5K)"),
-    ("6016x3384", "(6K)"),
-    ("7168x4032", "(7K)"),
-    ("7680x4320", "(8K)"),
-    ("7680x2160", "(2x 4K)"),
-    ("11520x2160", "(3x 4K)"),
+    ("320x200", "(CGA)"),
+    ("320x240", "(QVGA)"),
+    ("400x300", "(QVGA+)"),
+    ("512x384", "(Half VGA)"),
+    ("640x360", "(nHD)"),
+    ("640x400", "(VGA 400)"),
+    ("640x480", "(VGA)"),
+    ("800x600", "(SVGA)"),
+    ("1024x576", "(WSVGA)"),
+    ("1024x600", "(Netbook)"),
+    ("1024x768", "(XGA)"),
+    ("1152x648", "(HD Variant)"),
+    ("1152x864", "(XGA+)"),
+    ("1280x720", "(HD / 720p)"),
+    ("1280x768", "(WXGA)"),
+    ("1280x800", "(WXGA)"),
+    ("1280x960", "(SXGA-)"),
+    ("1280x1024", "(SXGA)"),
+    ("1360x768", "(HD)"),
+    ("1366x768", "(WXGA)"),
+    ("1400x1050", "(SXGA+)"),
+    ("1440x900", "(WXGA+)"),
+    ("1600x900", "(HD+)"),
+    ("1600x1200", "(UXGA)"),
+    ("1680x1050", "(WSXGA+)"),
+    ("1920x1080", "(Full HD / 1080p)"),
+    ("1920x1200", "(WUXGA)"),
+    ("2048x1080", "(DCI 2K)"),
+    ("2048x1152", "(QWXGA)"),
+    ("2560x1080", "(UW-FHD)"),
+    ("2560x1440", "(QHD / WQHD / 1440p)"),
+    ("2560x1600", "(WQXGA)"),
+    ("3200x1800", "(QHD+)"),
+    ("3440x1440", "(UWQHD)"),
+    ("3840x1600", "(UW WQHD+)"),
+    ("3840x2160", "(4K UHD / 2160p)"),
+    ("4096x2160", "(DCI 4K)"),
+    ("5120x1440", "(DQHD)"),
+    ("5120x2160", "(5K2K)"),
+    ("5120x2880", "(5K UHD)"),
+    ("6016x3384", "(Retina 6K)"),
+    ("6144x3456", "(6K UHD)"),
+    ("6880x2880", "(UW 6K)"),
+    ("7680x2160", "(Dual 4K UHD)"),
+    ("7680x4320", "(8K UHD / 4320p)"),
+    ("8192x4320", "(DCI 8K)"),
 )
 
+def _video_rows(prefix, suffix=""):
+    """One menu row per rung of the ladder, engine key and label."""
+    return "".join(
+        "menu.itemname.menuvideo.%s.%s%s = %s   %s\n"
+        % (prefix, size, suffix, size, label)
+        for size, label in RESOLUTION_LADDER)
+
+
 RESOLUTION_MENU = (
-    """; Options > Video > Resolution. The engine takes the size straight from the
-suffix, so this block IS the list.
+    """; Options > Video > Render Size. The engine takes the size straight from the
+suffix, so this block IS the list: every entry of RESOLUTION_LADDER, in order.
 ;
 ; This is the WINDOW size, not the render size. Ikemen's render resolution is
-; Video.GameWidth/GameHeight in config.ini and it has no option-menu item at
-; all, so nothing in this list can add detail to the art - picking 4K here
-; draws the same sprites, scaled up, into a 4K window. The labels say so
-; rather than implying the picture gets sharper.
-;
-; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
-; the one window where every sprite lands on whole pixels; 2560x1440 and
-; 3840x2160 are clean 1.33x and 2x scales of that same art.
+; Video.GameWidth/GameHeight in config.ini, so nothing in this list adds detail
+; to the art - it picks the window the 1920x1080 picture is drawn into.
 """
     "menu.itemname.menuvideo.resolution = Render Size\n"
-    "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)\n"
-    "menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)\n"
-    "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)\n"
-    "menu.itemname.menuvideo.resolution.1920x1080 = 1920x1080   (1080p)\n"
-    "menu.itemname.menuvideo.resolution.2560x1440 = 2560x1440   (2K)\n"
-    "menu.itemname.menuvideo.resolution.3840x2160 = 3840x2160   (4K)\n"
-    "menu.itemname.menuvideo.resolution.5120x2880 = 5120x2880   (5K)\n"
-    "menu.itemname.menuvideo.resolution.6016x3384 = 6016x3384   (6K)\n"
-    "menu.itemname.menuvideo.resolution.7168x4032 = 7168x4032   (7K)\n"
-    "menu.itemname.menuvideo.resolution.7680x4320 = 7680x4320   (8K)\n"
-    "menu.itemname.menuvideo.resolution.7680x2160 = 7680x2160   (2x 4K)\n"
-    "menu.itemname.menuvideo.resolution.11520x2160 = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.resolution.back = Return to Chinatown\n"
+    + _video_rows("resolution")
+    + "menu.itemname.menuvideo.resolution.back = Return to Chinatown\n"
 )
 
 # Video.GameWidth/GameHeight is the engine's RENDER size; the window it is drawn
@@ -967,31 +996,16 @@ suffix, so this block IS the list.
 WINDOW_MENU = (
     "menu.itemname.menuvideo.window = Window Size\n"
     "menu.itemname.menuvideo.window.windowauto = Match Render Size\n"
-    "menu.itemname.menuvideo.window.1280x720w = 1280x720   (720p)\n"
-    "menu.itemname.menuvideo.window.1366x768w = 1366x768   (768p)\n"
-    "menu.itemname.menuvideo.window.1600x900w = 1600x900   (900p)\n"
-    "menu.itemname.menuvideo.window.1920x1080w = 1920x1080   (1080p)\n"
-    "menu.itemname.menuvideo.window.2560x1440w = 2560x1440   (2K)\n"
-    "menu.itemname.menuvideo.window.3840x2160w = 3840x2160   (4K)\n"
-    "menu.itemname.menuvideo.window.5120x2880w = 5120x2880   (5K)\n"
-    "menu.itemname.menuvideo.window.6016x3384w = 6016x3384   (6K)\n"
-    "menu.itemname.menuvideo.window.7168x4032w = 7168x4032   (7K)\n"
-    "menu.itemname.menuvideo.window.7680x4320w = 7680x4320   (8K)\n"
-    "menu.itemname.menuvideo.window.7680x2160w = 7680x2160   (2x 4K)\n"
-    "menu.itemname.menuvideo.window.11520x2160w = 11520x2160   (3x 4K)\n"
-    "menu.itemname.menuvideo.window.back = Return to Chinatown\n"
+    + _video_rows("window", "w")
+    + "menu.itemname.menuvideo.window.back = Return to Chinatown\n"
 )
 
 RESOLUTION_ANCHOR = re.compile(r"^menu\.itemname\.options\s*=.*$", re.MULTILINE)
 
-# The engine's base text table still offers three 4:3 sizes next to our 16:9
-# ones. KeepAspect is on by default, so picking one pillarboxes the whole game
-# between black bars - and every stage, menu and character in this build is 16:9
-# end to end, so those entries can only break the picture.
+# The engine's base text table is the other place Options > Video reads its
+# rows from, so it gets the same ladder. It used to have the 4:3 sizes
+# commented out here; every size is wanted, so nothing is hidden any more.
 BASE_DEF = os.path.join(ROOT, "data", "system.base.def")
-FOUR_THREE = ("menu.itemname.menuvideo.resolution.320x240",
-              "menu.itemname.menuvideo.resolution.640x480",
-              "menu.itemname.menuvideo.resolution.960x720")
 
 
 def ensure_widescreen_resolutions():
@@ -999,10 +1013,9 @@ def ensure_widescreen_resolutions():
 
     The engine builds the Options > Video > Resolution submenu out of the
     ``menu.itemname.menuvideo.resolution.*`` keys it finds, and this table is
-    what it ships with. Two things were wrong for a widescreen build: the 4:3
-    sizes it lists (320x240, 640x480, 960x720) pillarbox the game behind black
-    bars, and the list stopped at 1920x1080, so a 1440p or 4K display had
-    nothing to pick - naming them in the motif alone was not enough.
+    what it ships with. Its own list stops at 1920x1080 and hides the 4:3 sizes
+    it does carry, so the whole ladder is written here instead - every size from
+    320x200 up to 8192x4320, once, in order.
     """
     if not os.path.isfile(BASE_DEF):
         return 0
@@ -1010,13 +1023,13 @@ def ensure_widescreen_resolutions():
               newline="") as fh:
         text = fh.read()
     changed = 0
-    for key in FOUR_THREE:
-        pattern = re.compile(r"^([ \t]*)(" + re.escape(key) + r")([ \t]*=.*)$",
-                             re.MULTILINE)
-        text, n = pattern.subn(
-            lambda m: f"{m.group(1)};{m.group(2)}{m.group(3)}  ; 4:3 pillarboxes",
-            text)
-        changed += n
+    # Rows an older build commented out are switched back on before the block is
+    # rewritten, so no size can be stranded as a comment.
+    text, n = re.subn(
+        r"^[ \t]*;[ \t]*(menu\.itemname\.menuvideo\.resolution\.\d+x\d+[^;\r\n]*?)"
+        r"[ \t]*;[^\r\n]*$",
+        lambda m: m.group(1).rstrip(), text, flags=re.MULTILINE)
+    changed += n
 
     # The submenu is whatever keys exist, in file order, so the ladder is
     # rewritten as one block on every run: a row per size, ascending, labelled
@@ -1031,14 +1044,14 @@ def ensure_widescreen_resolutions():
     if rows:
         indent = re.match(r"[ \t]*", rows[0]).group(0)
         nl = "\r\n" if rows[0].endswith("\r\n") else "\n"
-        known = {size for size, _label in RESOLUTION_LADDER}
-        extra = "".join(row for row in rows
-                        if re.search(r"resolution\.(\d+x\d+)", row).group(1)
-                        not in known)
+        # The ladder is the whole list, so a size row that is not on it - the
+        # engine's leftover 960x720, say - is dropped rather than kept beside
+        # it: two tables with different rows is how the submenu ended up
+        # ordered by history instead of by size.
         block = "".join(
             "%smenu.itemname.menuvideo.resolution.%s = %s   %s%s"
             % (indent, size, size, label, nl)
-            for size, label in RESOLUTION_LADDER) + extra
+            for size, label in RESOLUTION_LADDER)
         start = size_row.search(text).start()
         stripped = size_row.sub("", text)
         candidate = stripped[:start] + block + stripped[start:]
