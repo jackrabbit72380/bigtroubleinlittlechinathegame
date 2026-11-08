@@ -41,12 +41,10 @@ if exist "%~dp0save\.wtest" (
 rem Where the picture is drawn. Video.GameWidth/GameHeight is the size the game
 rem is actually rendered at - the art is painted at 1920x1080, so this is the
 rem honest one - and Video.WindowWidth/WindowHeight is the window it is drawn
-rem into. Options > Video > Resolution only sets the window. The values already
-rem on disk are kept, so a size chosen in the game's own menu survives the next
-rem launch; the defaults below apply only when there is nothing to keep. Two
-rem arguments override the render size:
-rem
-rem   "Play Big Trouble.bat" 2560 1440
+rem into. Options > Video > Resolution sets the window, and the render follows it:
+rem the game is drawn at the window's own pixels, so 2K and 4K are not a 1080p
+rem picture stretched over a bigger window. A size chosen in the game's own menu
+rem is kept and used on the next launch.
 rem
 rem KeepAspect off fills the window whatever shape it is; on, a window that is not
 rem 16:9 (a maximised one on a widescreen desktop, say) leaves black bars beside the
@@ -58,34 +56,42 @@ rem Window size when this folder has none saved yet: the largest of the 16:9
 rem sizes in Options > Video > Resolution that fits the desktop - 1280x720,
 rem 1920x1080, 2560x1440 (2K), 3840x2160 (4K) - so a small laptop gets a 720p
 rem window it can show whole instead of a 1080p one running off the screen, and
-rem a 4K desktop is not handed a quarter-size window. The render size stays
-rem 1920x1080, the size the art is painted at: every one of those window sizes
-rem is a whole multiple of it, so none of them stretches the picture.
+rem a 4K desktop is not handed a quarter-size window. The render size then follows
+rem the window, so each of those sizes is drawn at its own pixels.
 set "GW=1920"
 set "GH=1080"
 set "WW="
 set "WH="
 set "FS=false"
 if exist "%CFG%" (
-  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"GameWidth" "%CFG%" 2^>nul') do set "GW=%%v"
-  for /f "tokens=2 delims==" %%v in ('findstr /b /c:"GameHeight" "%CFG%" 2^>nul') do set "GH=%%v"
   for /f "tokens=2 delims==" %%v in ('findstr /b /c:"WindowWidth" "%CFG%" 2^>nul') do set "WW=%%v"
   for /f "tokens=2 delims==" %%v in ('findstr /b /c:"WindowHeight" "%CFG%" 2^>nul') do set "WH=%%v"
   for /f "tokens=2 delims==" %%v in ('findstr /b /c:"Fullscreen" "%CFG%" 2^>nul') do set "FS=%%v"
 )
-if not "%~1"=="" set "GW=%~1"
-if not "%~2"=="" set "GH=%~2"
-rem "GameWidth = 1920" leaves the value with its leading space on it.
-set "GW=%GW: =%"
-set "GH=%GH: =%"
+rem "WindowWidth = 1920" leaves the value with its leading space on it.
 set "WW=%WW: =%"
 set "WH=%WH: =%"
 set "FS=%FS: =%"
-if "%GW%"=="" set "GW=1920"
-if "%GH%"=="" set "GH=1080"
+rem The window is settled first, because the render size is taken from it: a size
+rem saved by Options > Video > Resolution, else the largest 16:9 size the screen
+rem can show (see :screenfit at the end).
 if "%WW%"=="" call :screenfit
 if "%WW%"=="" set "WW=1920"
 if "%WH%"=="" set "WH=1080"
+rem Draw at the window's own pixels instead of 1920x1080 stretched over it, so a
+rem 2K or 4K window is rendered at 2K or 4K and nothing is resampled twice. The
+rem render is capped at 2160 lines: the art is painted at 1080p, and past 4K a
+rem bigger render only costs frame time. Two arguments still override it:
+rem
+rem   "Play Big Trouble.bat" 2560 1440
+set "GW=%WW%"
+set "GH=%WH%"
+if %GW% GTR 3840 set "GW=3840"
+if %GH% GTR 2160 set "GH=2160"
+if not "%~1"=="" set "GW=%~1"
+if not "%~2"=="" set "GH=%~2"
+set "GW=%GW: =%"
+set "GH=%GH: =%"
 if "%FS%"=="" set "FS=false"
 
 >  "%CFG%" echo [Video]
