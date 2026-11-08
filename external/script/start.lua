@@ -1433,6 +1433,27 @@ local function motifSprite(def, group, number)
 	return motifSpace(a)
 end
 
+-- Drawing one of these sprites. main.f_animPosDraw is not used for them: it
+-- resets the animation before drawing it, and a reset animation is back in the
+-- engine's own 240p space - the 1080p art came out four and a half times too
+-- big, with the wall of cells pushed clean off the screen and the two PLAYER
+-- captions across the top of it. The space is re-asserted on every frame, just
+-- before the position, so the numbers passed here are the 1920x1080 pixels the
+-- art was painted at.
+local function spriteDraw(a, x, y)
+	if a == nil then
+		return
+	end
+	local w, h = 1920, 1080
+	if motif ~= nil and motif.info ~= nil and motif.info.localcoord ~= nil then
+		w, h = motif.info.localcoord[1], motif.info.localcoord[2]
+	end
+	pcall(animSetLocalcoord, a, w, h)
+	pcall(animSetPos, a, x, y)
+	pcall(animDraw, a)
+	pcall(animUpdate, a)
+end
+
 local stageFrameAnims = {}
 local STAGE_FRAME_W, STAGE_FRAME_H = 1215, 398
 
@@ -1481,7 +1502,7 @@ end
 function start.f_drawSelectGrid()
 	local a = selectGridAnim()
 	if a ~= nil then
-		main.f_animPosDraw(a, 0, 0)
+		spriteDraw(a, 0, 0)
 	end
 end
 
@@ -1527,12 +1548,12 @@ function start.f_drawRandomStop()
 	local y = py + wallH + 19
 	local base = randomStopAnim(false)
 	if base ~= nil then
-		main.f_animPosDraw(base, x, y)
+		spriteDraw(base, x, y)
 	end
 	if randomStopLit() then
 		local lit = randomStopAnim(true)
 		if lit ~= nil then
-			main.f_animPosDraw(lit, x, y)
+			spriteDraw(lit, x, y)
 		end
 	end
 end
@@ -1568,7 +1589,7 @@ function start.f_drawPlayerLabels()
 		local a = labelAnim(pn)
 		if a ~= nil then
 			local pos = LABEL_POS[pn]
-			main.f_animPosDraw(a, pos[1] - LABEL_HALF[1], pos[2] - LABEL_HALF[2])
+			spriteDraw(a, pos[1] - LABEL_HALF[1], pos[2] - LABEL_HALF[2])
 		end
 	end
 end
@@ -3614,7 +3635,7 @@ function start.f_selectScreen()
 									if frame ~= nil then
 										animSetScale(frame, cell.w / STAGE_FRAME_W, cell.h / STAGE_FRAME_H)
 										pcall(animSetAlpha, frame, 256)
-										main.f_animPosDraw(frame, cell.x, cell.y)
+										spriteDraw(frame, cell.x, cell.y)
 										pcall(animReset, frame, { "scale" })
 									end
 								end

@@ -196,6 +196,9 @@ def check_script(problems):
     if "animNew, nil" in text:
         problems.append("start.lua builds runtime art with a nil sprite file, "
                         "so every frame is a missing sprite and nothing draws")
+    if "spriteDraw(a, 0, 0)" not in text:
+        problems.append("start.lua draws the wall through main.f_animPosDraw, "
+                        "whose reset drops the 1080p space and blows the art up")
     if "not sideOnRandomStop(v.player)" not in text:
         problems.append("start.lua still draws a box cursor on the RANDOM stop")
     if "local stagePhase = false" not in text:
