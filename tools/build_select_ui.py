@@ -250,7 +250,11 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(998, portrait=True, card_w=VS_CARD_W)   # [Select Info]: the stage screen
+# The stage screen's card is the VS card's size, sitting dead centre of the frame
+# (341 tall, so 711 at the bottom puts its centre on 540) instead of hanging from
+# the name row: the screen carries one picture, and it belongs in the middle of
+# it with the name underneath.
+STAGE_PORTRAIT = _card(711, portrait=True, card_w=VS_CARD_W)   # [Select Info]: the stage screen
 def _stage_backdrop():
     """The screen the stage card sits on: the select grid's own background.
 
