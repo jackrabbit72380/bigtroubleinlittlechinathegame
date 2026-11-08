@@ -1830,6 +1830,16 @@ function start.f_stageGrid(count, cols, pad, window)
 end
 -- <<< stage preview grid geometry
 
+-- How many cards the wall puts in one row. The stage cursor moves by this
+-- much on up/down, so the arrows follow the grid the player can see.
+function start.f_stageGridCols(count)
+	local grid = start.stageGrid
+	local pad = grid.pad
+	local availW = grid.window[3] - grid.window[1]
+	local maxCols = math.max(1, math.floor((availW + pad) / (grid.card[1] + pad)))
+	return math.max(1, math.min(count or 0, maxCols))
+end
+
 function start.f_getCharData(ref)
 	return main.t_selChars[ref + 1]
 end
@@ -4728,26 +4738,27 @@ function start.f_stageMenu()
 			start.stageSide = side
 		end
 	end
-	if getInput(-1, motif.select_info.stage.previous.key) then
+	-- The wall is a grid, so the arrows move in two dimensions: left and right
+	-- step one card, up and down step a whole row. The old wiring stepped one
+	-- card on up/down and jumped ten on left/right, which walked off the end of
+	-- the wall and read as a cursor that moved once and then stuck.
+	local cols = start.f_stageGridCols(#main.t_selectableStages)
+	local span = stageListMaxIdx - stageListMinIdx + 1
+	if span < 1 then span = 1 end
+	local function stepStage(by)
+		stageListNo = stageListNo + by
+		while stageListNo > stageListMaxIdx do stageListNo = stageListNo - span end
+		while stageListNo < stageListMinIdx do stageListNo = stageListNo + span end
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
-		stageListNo = stageListNo - 1
-		if stageListNo < stageListMinIdx then stageListNo = stageListMaxIdx end
-	elseif getInput(-1, motif.select_info.stage.next.key) then
-		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
-		stageListNo = stageListNo + 1
-		if stageListNo > stageListMaxIdx then stageListNo = stageListMinIdx end
-	elseif getInput(-1, motif.select_info.stage.skip.previous.key) then
-		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
-		for i = 1, 10 do
-			stageListNo = stageListNo - 1
-			if stageListNo < stageListMinIdx then stageListNo = stageListMaxIdx end
-		end
-	elseif getInput(-1, motif.select_info.stage.skip.next.key) then
-		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
-		for i = 1, 10 do
-			stageListNo = stageListNo + 1
-			if stageListNo > stageListMaxIdx then stageListNo = stageListMinIdx end
-		end
+	end
+	if getInput(-1, {"L"}) then
+		stepStage(-1)
+	elseif getInput(-1, {"R"}) then
+		stepStage(1)
+	elseif getInput(-1, {"U"}) then
+		stepStage(-cols)
+	elseif getInput(-1, {"D"}) then
+		stepStage(cols)
 	end
 	local selected, handled = start.f_stageSlotSelected(main.t_selectableStageSlots[stageListNo])
 	local ref = start.f_stageMenuRef()
