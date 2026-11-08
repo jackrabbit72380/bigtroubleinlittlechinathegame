@@ -101,6 +101,27 @@ spr = stage3d_rain.sff
 
 ;-------------------------------------
 ; Model element definition
+[BG rain behind]
+type = normal
+spriteno = 1,0
+layerno = 0
+start = 0, 0
+delta = 1, 1
+tile = 1, 1
+velocity = 2, 10
+trans = add
+
+[BG rain in front]
+type = normal
+spriteno = 1,3
+layerno = 1
+start = 0, 0
+delta = 1, 1
+tile = 1, 1
+velocity = 3, 16
+trans = add
+
+
 [Model]
 
 offset = 0,-0.16,-0.62
