@@ -1517,6 +1517,7 @@ if exist "%GLOG%" del /q "%GLOG%" >nul 2>&1
 if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo del "save\restart.flag" ^>nul 2^>^&1
 >>"%RUN%" echo :btilc_again
 >>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
 >>"%RUN%" echo set "RC=%%errorlevel%%"

@@ -168,6 +168,7 @@ rem and closing this window cannot end the game.
 set "RUN=%TEMP%\btilc-play.bat"
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo del "%BTILC_FLAG%" ^>nul 2^>^&1
 >>"%RUN%" echo :btilc_again
 >>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
 >>"%RUN%" echo if not exist "%BTILC_FLAG%" goto btilc_done
