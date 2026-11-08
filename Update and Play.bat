@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=69"
+set "UPDVER=70"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -1088,7 +1088,19 @@ del /q "%GITSTORE%\.git\refs\heads\main.lock" >nul 2>&1
 del /q "%GITSTORE%\.git\refs\remotes\origin\main.lock" >nul 2>&1
 exit /b 0
 
+:exehead
+rem tasklist prints only the first 25 characters of an image name, so a search
+rem for BigTroubleInLittleChinaTheGame.exe never matched the process this window
+rem had just started - the update sat over a running game. The start of the name
+rem is what tasklist prints in full, and it is what gets searched for now.
+set "EXEHEAD="
+if not defined EXE exit /b 0
+for %%A in ("%EXE%") do set "EXEHEAD=%%~nA"
+if defined EXEHEAD set "EXEHEAD=%EXEHEAD:~0,20%"
+exit /b 0
+
 :gamelock
+call :exehead
 call :barflush
 rem The engine keeps its data files open while it runs and Windows will not let
 rem git replace one. Updating under a running game fails with "being used by
@@ -1096,7 +1108,7 @@ rem another process", so this waits for it to close rather than writing into a
 rem folder that cannot be written.
 if not defined EXE exit /b 0
 if not defined TASKLIST exit /b 0
-"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXEHEAD%" >nul 2>&1
 if errorlevel 1 exit /b 0
 echo.
 echo The game is running. Close it - this window continues by itself.
@@ -1104,7 +1116,7 @@ set /a GWAIT=0
 :gamelock_wait
 call :sleep 3
 set /a GWAIT+=3
-"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXEHEAD%" >nul 2>&1
 if errorlevel 1 (
   echo            Closed - carrying on.
   exit /b 0
@@ -1518,12 +1530,17 @@ rem over can take it down.
 if not defined POWERSHELL start "" /d "%~dp0" "%EXE%" -config "save\config.ini"
 rem Without tasklist there is no way to tell whether the game came up, so
 rem the window closes as it did before rather than reporting a false failure.
+call :exehead
 if not exist "%TASKLIST%" exit 0
 set /a LW=0
 :launch_wait
 call :sleep 1
 set /a LW+=1
-"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXE%" >nul 2>&1
+rem The helper writes the engine's exit code when the engine ends, so its
+rem absence is the plainest sign that the game is up: a first load of 190 MB of
+rem art can take minutes, and the old wait called that a game that did not start.
+if exist "%GCODE%" goto launch_died
+"%TASKLIST%" /fi "imagename eq %EXE%" /nh 2>nul | "%FINDSTR%" /i /c:"%EXEHEAD%" >nul 2>&1
 if not errorlevel 1 goto launch_ok
 rem A game still loading has already written to its log, because the helper
 rem redirects the engine's output there before the engine runs. Twelve seconds
@@ -1531,10 +1548,17 @@ rem was shorter than a first load of 190 MB of art, so a game that came up was
 rem called a game that did not, and this window waited over it. The window now
 rem gives the engine 45 seconds and treats any output as "it is running".
 if exist "%GLOG%" for %%A in ("%GLOG%") do if %%~zA GTR 0 goto launch_ok
-if %LW% GEQ 45 goto launch_died
+if %LW% GEQ 20 goto launch_slow
 goto launch_wait
 :launch_ok
 call :log game is running after %LW%s
+exit 0
+
+:launch_slow
+rem Twenty seconds with no exit code and no trace of the process is a slow
+rem load, not a failure: the engine shows its own reason in its own window and
+rem the run log has it. This window closes instead of sitting over the game.
+call :log no sign of the game after %LW%s - closing, it has its own window
 exit 0
 :launch_died
 call :barflush
