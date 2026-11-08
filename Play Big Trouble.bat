@@ -181,12 +181,12 @@ if exist "%PS1%" for /f "usebackq tokens=1,2" %%a in (`"%PS1%" -NoProfile -Execu
   set "SCRW=%%a"
   set "SCRH=%%b"
 )
-rem Anything that is not a plain number - no PowerShell, a policy that blocks it,
-rem an error message instead of a size - leaves the window size alone.
-for /f "delims=0123456789" %%v in ("%SCRW%") do set "SCRW="
-for /f "delims=0123456789" %%v in ("%SCRH%") do set "SCRH="
-if not defined SCRW exit /b 0
-if not defined SCRH exit /b 0
+rem Only a plain number is trusted. No PowerShell, a policy that blocks it or an
+rem error message instead of a size leaves both at 0, and the 720p window below.
+set /a "SCRW=SCRW" 2>nul
+if errorlevel 1 set /a "SCRW=0"
+set /a "SCRH=SCRH" 2>nul
+if errorlevel 1 set /a "SCRH=0"
 set "WW=1280"
 set "WH=720"
 if %SCRW% GEQ 1920 if %SCRH% GEQ 1080 (
