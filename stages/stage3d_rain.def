@@ -115,10 +115,11 @@ spr = stage3d_rain.sff
 ;-------------------------------------
 ; Model element definition - the offsets and scale stage3d.def is known to frame
 ; correctly, so the island is in view however wide the camera goes.
-[Model]
+; No [Model] block here on purpose. This stage draws a painted island (see
+; [BGdef]) and its 3D model is switched off; a [Model] section left behind with
+; no model to describe makes the engine dereference the missing model while the
+; stage loads, and the game dies with a nil pointer panic. Removed 2026-11-08.
 
-offset = 0,-0.2,-0.9
-scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
 ; The storm sky. The engine draws the model first and every zero-layer BG over it,

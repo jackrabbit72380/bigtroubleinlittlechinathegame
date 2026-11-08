@@ -103,13 +103,14 @@ spr = stage3d_outline.sff
 
 ;-------------------------------------
 ; Model element definition
-[Model]
+; No [Model] block here on purpose. This stage draws a painted island (see
+; [BGdef]) and its 3D model is switched off; a [Model] section left behind with
+; no model to describe makes the engine dereference the missing model while the
+; stage loads, and the game dies with a nil pointer panic. Removed 2026-11-08.
 
 ; X, Y, and Z coordinates of the model
-offset = 0,-0.2,-0.9
 
 ; Scale of the model
-scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
 ; Night weather: a violet wash sits over the whole scene, cold motes climb through
