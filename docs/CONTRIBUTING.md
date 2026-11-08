@@ -12,7 +12,7 @@ fancy working on; it stops two people building the same thing.
 
 | Job | Notes |
 |---|---|
-| **Original fighter sprites** | The biggest and most valuable job. All nine fighters still use Kung Fu Man's silhouettes, recoloured. See [DESIGN.md](DESIGN.md) for the folder layout and animation list. |
+| **Original fighter sprites** | The biggest and most valuable job. Every fighter still uses Kung Fu Man's silhouettes, recoloured. See [DESIGN.md](DESIGN.md) for the folder layout and animation list. |
 | **Character-specific specials** | The command set is shared only because everyone shares one animation set; it should stop being shared. |
 | **Intro and ending storyboards** | Arcade mode per fighter. |
 | **Music and voice stings** | Slots in `sound/` are wired already — see [MUSIC.md](MUSIC.md). |

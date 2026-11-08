@@ -2,7 +2,7 @@
 
 A fan-made 2D fighting game for [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO) —
 truckers, sorcerers, the Three Storms, and an emperor who has waited two thousand
-years for a wedding. Nine fighters, nine arenas painted at 1920×1080, and a HUD
+years for a wedding. Twelve fighters, nine arenas painted at 1920×1080, and a HUD
 where the dragons *are* the meters.
 
 [![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/Bn2kABJsK5)
@@ -54,7 +54,7 @@ a renderer crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## What is in the build
 
-- **Nine fighters** with their own stats, palettes, movelists and victory quotes.
+- **Twelve fighters** with their own stats, palettes, movelists and victory quotes.
 - **Nine arenas**, procedurally painted at **1920×1080** and packed into SFF v2,
   plus the engine's training room. Custom art drops straight in.
 - **A custom screenpack** with a dragon HUD: the health bar is the dragon's back
@@ -103,7 +103,7 @@ for the pipeline, the art rules and the review expectations, and
 
 | Path | What lives there |
 |---|---|
-| `chars/` | nine fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
+| `chars/` | twelve fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
 | `stages/` | nine arena definitions and their SFF art |
 | `data/` | screenpack, `fight.def` HUD, motif, system and select definitions |
 | `tools/` | every asset generator plus `validate.py` |
