@@ -152,34 +152,50 @@ echo Starting the game - the window title should read
 echo "Big Trouble in Little China: The Game".
 echo.
 
-rem Start the game in a console of its own, hidden. The engine is a console
-rem program: run from this window it takes the window for its own log, and the
-rem window then has to stay open for as long as the game runs - that is the
-rem black box that sat over the game with "Press any key to continue" in it.
-rem WScript.Shell.Run with a window style of 0 creates the game's console already
-rem hidden, and needs nothing installed. The paths are handed over in the
-rem environment, so no quoting of paths with spaces has to be got right here.
+rem The engine leaves this file behind when a saved setting needs the program
+rem started again. The runner below watches it: while it is there after the game
+rem closes, the runner deletes it and starts the engine once more, so a change in
+rem Options comes back by itself instead of sending the player back to the icon.
+set "BTILC_FLAG=%CFG%"
+set "BTILC_FLAG=%BTILC_FLAG:config.ini=restart.flag%"
+
+rem What runs the game: a batch of its own, so the engine is not attached to this
+rem window. The engine is a console program: run from here it takes this window for
+rem its own log, and the window then has to stay open for as long as the game runs -
+rem that is the black box that sat over the game. The helper is started hidden
+rem (below), so the game gets a hidden console, nothing visible is left running,
+rem and closing this window cannot end the game.
+set "RUN=%TEMP%\btilc-play.bat"
+>"%RUN%" echo @echo off
+>>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo :btilc_again
+>>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
+>>"%RUN%" echo if not exist "%BTILC_FLAG%" goto btilc_done
+>>"%RUN%" echo del "%BTILC_FLAG%" ^>nul 2^>^&1
+>>"%RUN%" echo goto btilc_again
+>>"%RUN%" echo :btilc_done
+
+rem WScript.Shell.Run with a window style of 0 starts that helper hidden and
+rem returns at once, so this window can close while the game runs. The paths are
+rem handed over in the environment, so no quoting of paths with spaces has to be
+rem got right in the script itself.
 set "BTILC_DIR=%~dp0."
-set "BTILC_EXE=%~dp0%EXE%"
-set "BTILC_CFG=%CFG%"
+set "BTILC_RUN=%RUN%"
 set "RUNV=%TEMP%\btilc-play.vbs"
 > "%RUNV%" echo Set sh = CreateObject("WScript.Shell")
 >> "%RUNV%" echo Set env = sh.Environment("PROCESS")
 >> "%RUNV%" echo q = Chr(34)
 >> "%RUNV%" echo sh.CurrentDirectory = env("BTILC_DIR")
->> "%RUNV%" echo sh.Run q ^& env("BTILC_EXE") ^& q ^& " -config " ^& q ^& env("BTILC_CFG") ^& q, 0, False
+>> "%RUNV%" echo sh.Run "cmd /c " ^& q ^& env("BTILC_RUN") ^& q, 0, False
 set "WSCRIPT=%SystemRoot%\System32\wscript.exe"
 if exist "%WSCRIPT%" if exist "%RUNV%" (
   "%WSCRIPT%" //nologo "%RUNV%" >nul 2>&1
   if not errorlevel 1 exit /b 0
 )
 
-rem Two fallbacks, for a Windows where the script host is locked down.
-set "RUN=%TEMP%\btilc-play.bat"
+rem Two fallbacks, for a Windows where the script host is locked down. They run
+rem the same helper, so a restart works there too.
 set "RUNQ=%RUN:'=''%"
->"%RUN%" echo @echo off
->>"%RUN%" echo cd /d "%~dp0."
->>"%RUN%" echo "%~dp0%EXE%" -config "%CFG%" ^>nul 2^>^&1
 set "PSEXE=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
 if not exist "%PSEXE%" set "PSEXE="
 if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1

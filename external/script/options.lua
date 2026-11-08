@@ -26,6 +26,40 @@ function options.f_precision(v, decimal)
 	return tonumber(string.format(decimal, v))
 end
 
+-- Path of the restart flag: the file the launcher watches for. It sits in the
+-- same folder as the config this session was started with, so the engine and
+-- the launcher always agree on where it is. Returns nil when the engine was
+-- started without -config, since then no launcher is waiting for it.
+function options.f_restartFlag()
+	local cfg = getCommandLineValue("-config")
+	if cfg == nil then
+		return nil
+	end
+	cfg = cfg:gsub('"', '')
+	if cfg == "" then
+		return nil
+	end
+	local dir = cfg:match("^(.*[/\\])")
+	if dir == nil then
+		return "restart.flag"
+	end
+	return dir .. "restart.flag"
+end
+
+-- Ask the launcher for a fresh engine, if one is watching. Returns true only
+-- once the flag is really on disk, so a folder that cannot be written to keeps
+-- the warning instead of closing the game with nothing to bring it back.
+function options.f_requestRestart()
+	local flag = options.f_restartFlag()
+	if flag == nil then
+		return false
+	end
+	if not pcall(main.f_fileWrite, flag, "1") then
+		return false
+	end
+	return fileExists(flag)
+end
+
 --- Save the current configuration to the config file and handle common file modifications
 local t_commonFilesOriginal = gameOption('Common')
 function options.f_saveCfg(reload)
@@ -37,8 +71,16 @@ function options.f_saveCfg(reload)
 	-- Save the current configuration to 'config.ini'
 	saveGameOption(getCommandLineValue("-config"))
 	hook.run("options.save", reload)
-	-- Reload the game if the reload parameter is true
+	-- Reload the game if the reload parameter is true. The launcher that started
+	-- this session watches for a flag beside the config file and starts the
+	-- engine again once it finds one, so a saved setting that needs a restart
+	-- comes back by itself instead of sending the player back to the icon.
+	-- Started without -config (the exe run on its own) nothing is watching, and
+	-- the warning is still the honest thing to show.
 	if reload then
+		if options.f_requestRestart() then
+			os.exit()
+		end
 		main.f_warning(motif.warning_info.text.text.reload, motif.option_info, motif.optionbgdef)
 		os.exit()
 	end

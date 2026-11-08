@@ -1517,8 +1517,14 @@ if exist "%GLOG%" del /q "%GLOG%" >nul 2>&1
 if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >"%RUN%" echo @echo off
 >>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo :btilc_again
 >>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
->>"%RUN%" echo echo %%errorlevel%% ^>"%GCODE%"
+>>"%RUN%" echo set "RC=%%errorlevel%%"
+>>"%RUN%" echo if not exist "save\restart.flag" goto btilc_done
+>>"%RUN%" echo del "save\restart.flag" ^>nul 2^>^&1
+>>"%RUN%" echo goto btilc_again
+>>"%RUN%" echo :btilc_done
+>>"%RUN%" echo echo %%RC%% ^>"%GCODE%"
 call :log starting %EXE%
 if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
 rem Without PowerShell there is no hidden helper to run the game in, and a
