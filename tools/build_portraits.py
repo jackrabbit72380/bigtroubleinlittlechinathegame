@@ -34,7 +34,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The grid's cell is 80px, the size the reference screen uses, and the standing
 # art beside it gets a 214px column; painting the art at the column width is
 # what keeps the whole fighter visible instead of cropped by the frame.
-CELL = (128, 160)          # the grid's cell, in build_select_grid.py
+CELL = (112, 140)          # the grid's cell, in build_select_grid.py
 # Painted at twice the cell and drawn at portrait.scale 0.5 in
 # build_select_grid.py, so a 960-localcoord fighter keeps 128x160 pixels of
 # detail instead of being a 64x80 sprite that the engine blows up 2x.

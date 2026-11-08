@@ -23,7 +23,7 @@ import random
 import re
 import sys
 
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -40,16 +40,25 @@ SCREEN = (1920, 1080)
 # more - it is a label under the wall, and the seventh row of the grid is only
 # there to give it a cursor stop (seven skipslot slots and the randomselect).
 #
-# 8 * 128 + 7 * 2 = 1038 wide, 6 * 160 + 5 * 2 = 970 tall, so the wall spans
-# x=441 to x=1479 and the two side columns keep their air either side.
-CELL, CELL_H = 128, 160
+# 8 * 112 + 7 * 2 = 910 wide, 6 * 140 + 5 * 2 = 850 tall, so the wall spans
+# x=505 to x=1415 and the two side columns keep their air either side.
+# The cells were 128x160 until the header and the RANDOM word were taken to the
+# mode title's own size: that size needs a clean band at the top of the screen
+# and a taller one under the frame, so the grid gives up 12px across and 15px
+# down - still 4:5, so the portraits keep their shape, and the whole cast still
+# fits one page.
+CELL, CELL_H = 112, 140
 CELL_PAD = 0               # no air: cell.spacing alone separates the boxes
 GAP = 2
 COLS, ROWS = 8, 7
 # The painted wall, its frame and the name row are the fighter rows only: the
 # last logical row is the RANDOM stop, drawn as text outside the frame.
 FIGHTER_ROWS = ROWS - 1
-GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 46)
+# The wall is centred and hangs from y=108, not y=46: the header row (PLAYER 1 /
+# VERSUS / PLAYER 2) is drawn at the mode title's own size, so the frame starts
+# below that row instead of cutting through it, and the band under the frame is
+# deep enough for RANDOM at the same size.
+GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 108)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = FIGHTER_ROWS * CELL_H + (FIGHTER_ROWS - 1) * GAP
 
@@ -226,8 +235,83 @@ def background(grid=True):
 
 
 LABEL_SPR = ((151, 20), (151, 21))
-LABEL_SIZE = (320, 48)
-LABEL_FONT = 34
+LABEL_WORDS = ("PLAYER 1", "PLAYER 2")
+
+# The words on the select screen are painted in the mode title's own face, at the
+# title's own size. title.font is font 10, i.e. the bitmap Display face baked by
+# tools/build_fonts.py, drawn at title.scale 0.75 - so copying glyphs out of
+# Display.sff at that scale gives PLAYER 1, PLAYER 2 and RANDOM the exact size,
+# shape, face and colours the engine gives VERSUS, instead of a second face
+# (DejaVu at a size of its own, flat gold) that only looked similar.
+DISPLAY_DEF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.def")
+DISPLAY_SFF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.sff")
+TITLE_SCALE = 0.75             # title.scale in [Select Info]
+WORD_PAD = 2                   # clear pixels round every word, so no ink on the edge
+
+
+def display_face():
+    """(glyphs by character, the face's space advance) from Display.sff."""
+    if not (os.path.isfile(DISPLAY_DEF) and os.path.isfile(DISPLAY_SFF)):
+        raise SystemExit("select screen: the Display face is missing")
+    space = 30.0
+    with open(DISPLAY_DEF, encoding="utf-8-sig", errors="replace") as fh:
+        for line in fh:
+            if line.strip().lower().startswith("size"):
+                try:
+                    space = float(line.split("=", 1)[1].split(",")[0]) or space
+                except (IndexError, ValueError):
+                    pass
+                break
+    raw, sprites, pals = sff.read_sff(DISPLAY_SFF)
+    glyphs = {}
+    for sp in sprites:
+        if sp["group"] == 0 and 33 <= sp["number"] <= 126:
+            glyphs[chr(sp["number"])] = sff.decode_sprite(raw, sp, pals).convert("RGBA")
+    if not glyphs:
+        raise SystemExit("select screen: Display.sff has no glyphs")
+    return glyphs, space
+
+
+def tint_word(img, colour):
+    """Recolour a word, keeping the face's extrusion and lip shading."""
+    alpha = img.getchannel("A")
+    lum = img.convert("L")
+    shade = Image.eval(lum, lambda v: 96 + (v * 159) // 255)
+    out = Image.new("RGBA", img.size, tuple(colour) + (255,))
+    out.putalpha(ImageChops.multiply(alpha, shade))
+    return out
+
+
+def display_word(text, scale=TITLE_SCALE, tint=None):
+    """A word set the way the engine sets the mode title.
+
+    Same glyph art, same advance (the engine advances by the sprite's width) and
+    same text scale as title.font / title.scale, so a caption drawn from this is
+    the title's own type, not an imitation of it.
+    """
+    glyphs, space = display_face()
+    cell_h = max(g.height for g in glyphs.values())
+    x = 0.0
+    pieces = []
+    for ch in text:
+        if ch == " ":
+            x += space * scale
+            continue
+        g = glyphs.get(ch)
+        if g is None:
+            raise SystemExit("select screen: the Display face has no %r" % ch)
+        w = max(1, int(round(g.width * scale)))
+        h = max(1, int(round(g.height * scale)))
+        pieces.append((x, g.resize((w, h), Image.LANCZOS) if (w, h) != g.size else g))
+        x += g.width * scale
+    img = Image.new("RGBA", (int(round(x)) + 2 * WORD_PAD,
+                             int(round(cell_h * scale)) + 2 * WORD_PAD),
+                    (0, 0, 0, 0))
+    for px, g in pieces:
+        img.alpha_composite(g, (int(round(px)) + WORD_PAD, WORD_PAD))
+    if tint is not None:
+        img = tint_word(img, tint)
+    return img
 
 
 def grid_overlay():
@@ -255,24 +339,14 @@ def grid_overlay():
 
 
 def label_word(text):
-    """PLAYER 1 / PLAYER 2 as their own sprite, centred in a 320x48 canvas.
+    """PLAYER 1 / PLAYER 2 as their own sprite, in the mode title's own face.
 
     The select screen used to carry these two captions in the backdrop picture
     itself: they sat through the stage screen and could not be sized against the
-    mode title drawn between them. start.lua draws them now.
+    mode title drawn between them. They are drawn by start.lua now, at the size
+    they are painted, so they sit on the title's own row.
     """
-    img = Image.new("RGBA", LABEL_SIZE, (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    size = LABEL_FONT
-    face = art.font(size)
-    while size > 8 and (face.getlength(text) + 2 * (len(text) - 1)) > LABEL_SIZE[0] - 8:
-        size -= 1
-        face = art.font(size)
-    box = face.getbbox(text)
-    tw = face.getlength(text) + 2 * (len(text) - 1)
-    tracked(d, ((LABEL_SIZE[0] - tw) / 2.0, (LABEL_SIZE[1] - (box[3] - box[1])) / 2.0 - box[1]),
-            text, face, GOLD_LIT + (255,), tracking=2)
-    return img
+    return display_word(text)
 
 
 def _plate(accent, dim):
@@ -415,30 +489,16 @@ def random_card(size):
 
 
 def random_label(size=RANDOM_LABEL, lit=False):
-    """RANDOM as plain type: gold while it waits, green while it is selected.
+    """RANDOM as plain type, in the mode title's own face and size.
 
     The stop is marked by the word itself changing colour. Nothing is drawn
     behind or around it: a plate there reads as an unselected cell and a frame
     reads as a box, and the one thing this position must not look like is the
     white selection box that used to sit under the wall. Both copies are painted
-    on the same canvas at the same type size, so the word cannot shift or change
+    from the same glyphs at the same size, so the word cannot shift or change
     size when a player's pick moves onto it.
     """
-    w, h = size
-    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
-    ink = GREEN_LIT if lit else GOLD
-    room = w - 10
-    size_px = h - 2
-    font = art.font(size_px)
-    while size_px > 8 and (sum(font.getlength(c) for c in "RANDOM") + 10) > room:
-        size_px -= 1
-        font = art.font(size_px)
-    box = d.textbbox((0, 0), "RANDOM", font=font)
-    tw = sum(font.getlength(c) for c in "RANDOM") + 2 * (len("RANDOM") - 1)
-    tracked(d, ((w - tw) / 2.0, (h - (box[3] - box[1])) / 2.0 - box[1]), "RANDOM",
-            font, ink + (255,), tracking=2)
-    return img
+    return display_word("RANDOM", tint=GREEN_LIT if lit else None)
 
 
 def repaint_random_mark():
@@ -544,11 +604,12 @@ KEYS = (
     # nudging it in again double-counted the inset and pushed the art 4px past
     # the frame on two sides
     ("portrait.offset", "0,0"),
-    # The cell art is painted at twice the cell (build_portraits.CELL_RES) and
-    # drawn at half scale, so the roster is 1:1 on screen instead of a 64x80
+    # The portrait art is painted at twice the cell (build_portraits.CELL_RES)
+    # and drawn at half scale, so the roster is 1:1 on screen instead of a 56x70
     # sheet blown up 2x. Both the engine and this motif's Lua select
     # multiply the portrait scale by motif.localcoord / the character's
-    # localcoord, so the doubling cancels for every fighter.
+    # localcoord, so the doubling cancels for every fighter. build_portraits.CELL
+    # carries the same cell size, so a re-bake keeps the two in step.
     ("portrait.scale", "0.5,0.5"),
     # The stage card's position, scale, window and name band all belong to
     # tools/build_select_ui.py, which runs after this one; stage.pos is

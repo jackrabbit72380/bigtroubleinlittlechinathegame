@@ -43,6 +43,17 @@ def caption_scale():
     scale = 67.5 / cell
     return "%g,%g" % (scale, scale)
 SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
+
+
+def grid_cell():
+    """The roster cell, read from the generator that paints the wall."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "build_select_grid.py")
+    with open(path, encoding="utf-8") as fh:
+        m = re.search(r"^CELL, CELL_H = (\d+), (\d+)", fh.read(), re.M)
+    if not m:
+        raise SystemExit("build_select_grid.py has no CELL, CELL_H line")
+    return int(m.group(1)), int(m.group(2))
 START = os.path.join(ROOT, "external", "script", "start.lua")
 
 
@@ -163,7 +174,7 @@ def check_sprites(problems):
     for spr in ((223, 0), (223, 1), (224, 0), (224, 1)):
         if spr not in have:
             problems.append("cursor sprite %d,%d is missing" % spr)
-        elif (have[spr]["w"], have[spr]["h"]) != (256, 320):
+        elif (have[spr]["w"], have[spr]["h"]) != (2 * grid_cell()[0], 2 * grid_cell()[1]):
             problems.append("cursor sprite %d,%d is %dx%d, not 2x the cell"
                             % (spr[0], spr[1], have[spr]["w"], have[spr]["h"]))
     bg = have.get((220, 0))

@@ -1460,8 +1460,8 @@ local function spriteDraw(a, x, y, scale)
 	if motif ~= nil and motif.info ~= nil and motif.info.localcoord ~= nil then
 		w, h = motif.info.localcoord[1], motif.info.localcoord[2]
 	end
-	-- 1,1 is the art's own size; the captions pass their own factor (see
-	-- LABEL_SCALE) because they were painted smaller than the screen's text.
+	-- 1,1 is the art's own size. Every sprite this screen draws is painted at
+	-- the size it shows at, so the default is the only scale it needs.
 	local k = scale or 1
 	pcall(animSetLocalcoord, a, w, h)
 	pcall(animSetScale, a, k, k)
@@ -1565,21 +1565,20 @@ function start.f_drawRandomStop()
 			sh = lc[2]
 		end
 	end)
-	local s = RANDOM_SCALE
-	-- The word is centred on its own ink, not the canvas it was packed in.
-	local x = px + math.floor(wallW / 2) - math.floor((RANDOM_INK[1] + RANDOM_INK[3]) * s / 2)
-	-- Hung under the frame's bottom rail, which is the only gap on this screen
-	-- deep enough for the larger word: between the last row of cells (y 1016)
-	-- and that rail (y 1045) there is no room for it.
-	local y = sh - 2 - RANDOM_INK[4] * s
+	-- The word is painted at the title's own size, so it is drawn 1:1, centred on
+	-- the wall and centred in the band the frame leaves under itself (15px of rail
+	-- plus the 13px corner diamond).
+	local x = px + math.floor(wallW / 2) - math.floor(RANDOM_ART[1] / 2)
+	local frameBottom = py + wallH + 28
+	local y = frameBottom + math.floor((sh - frameBottom - RANDOM_ART[2]) / 2)
 	local base = randomStopAnim(false)
 	if base ~= nil then
-		spriteDraw(base, x, y, s)
+		spriteDraw(base, x, y)
 	end
 	if randomStopLit() then
 		local lit = randomStopAnim(true)
 		if lit ~= nil then
-			spriteDraw(lit, x, y, s)
+			spriteDraw(lit, x, y)
 		end
 	end
 end
@@ -1593,29 +1592,22 @@ end
 -- PLAYER 1 / mode / PLAYER 2.
 -- PLAYER 1 and PLAYER 2 are sprites of their own (151,20 / 151,21, painted by
 -- tools/build_select_grid.py), not part of the backdrop. Painted into the
--- picture they sat through the stage screen and could not be sized against the
--- mode title; this build refuses the textImg* font call, which is why they are
--- art. LABEL_POS is the centre the word is drawn on, in 1920x1080 pixels.
+-- picture they sat through the stage screen; as their own sprites they are drawn
+-- on the title's own row, in the title's face and at the title's size.
 local labelAnims = {}
--- The captions and the RANDOM word are painted art, so they have to be sized
--- against the screen's own text instead of being left at the size they were
--- packed: the mode title between the captions is the engine's Display face at
--- 0.75, about 45px of capital on this screenpack, while PLAYER carries 25px of
--- ink in its 320x48 canvas and RANDOM 15px in its 128x30 one. PLAYER is taken to
--- the title's own height, and each caption is centred on its own canvas so the
--- growth is symmetric; the row moves down a little (17 -> 30) so the taller
--- capitals still clear the top edge. RANDOM cannot go that high - the frame
--- leaves only the rail under it - so it is taken to the 30px that gap holds,
--- twice the size it was packed at.
-local LABEL_SCALE = 1.8
-local RANDOM_SCALE = 2.0
--- The word's ink inside its 128x30 canvas, so it can be centred and hung by the
--- ink rather than by the packing.
-local RANDOM_INK = {7, 7, 120, 22}
-local LABEL_POS = {{232, 30}, {1688, 30}}
--- The word sits centred in its canvas, so the anim is placed at the canvas's
--- top-left corner and the canvas is 320x48.
-local LABEL_HALF = {160, 24}
+-- The captions and the RANDOM word are painted in the mode title's own face at
+-- the title's own size: tools/build_select_grid.py copies the glyphs out of the
+-- bitmap Display face (title.font = 10) at title.scale 0.75, which is what the
+-- engine draws VERSUS with. Every word on this screen is therefore one size,
+-- one face and one colour by construction, and each is drawn here 1:1 - no
+-- scale, no second face. The canvases are 318x72 (captions) and 294x72 (RANDOM)
+-- with the ink 4px in and 10px down, so x=58 lands the left caption's ink 62px
+-- from the edge and x=1544 lands the right one 62px from the other edge. y=0 is
+-- the title's own row: title.offset = 960,0.
+local LABEL_ART = {318, 72}
+local LABEL_X = {58, 1544}
+local WORD_Y = 0
+local RANDOM_ART = {294, 72}
 
 local function labelAnim(pn)
 	if labelAnims[pn] == nil then
@@ -1629,9 +1621,7 @@ function start.f_drawPlayerLabels()
 	for pn = 1, 2 do
 		local a = labelAnim(pn)
 		if a ~= nil then
-			local pos = LABEL_POS[pn]
-			spriteDraw(a, pos[1] - LABEL_HALF[1] * LABEL_SCALE,
-				pos[2] - LABEL_HALF[2] * LABEL_SCALE, LABEL_SCALE)
+			spriteDraw(a, LABEL_X[pn], WORD_Y)
 		end
 	end
 end

@@ -340,7 +340,7 @@ VS_TEXT = (
     ("p1.done.anim", "9000"),
     ("p2.done.anim", "9000"),
     # the VS screen's "Match %i" caption: same gold as every other caption
-    ("match.font", "2, 0, 0, " + NAME_GOLD),
+    ("match.font", f"{NAME_FONT}, 0, 0, " + NAME_GOLD),
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),
     ("stage.text", "%s"),
     ("stage.scale", NAME_SCALE),

@@ -1,6 +1,6 @@
 """Frame each HUD corner portrait in the select screen's own gold cell.
 
-The select screen draws a fighter in a 128x160 cell: the character's 9000,0 art
+The select screen draws a fighter in a 112x140 cell: the character's 9000,0 art
 inside the gold cell frame (system.sff 222,0). The fight HUD framed the same art
 in its own small blue-grey boxes, 100x100 and 108x108, and cropped the portrait
 with a 92x92 window, so the corner showed a cut-down sliver of a fighter in a box
@@ -34,7 +34,7 @@ FIGHT_SFF = os.path.join(ROOT, "data", "fight.sff")
 FIGHT_DEF = os.path.join(ROOT, "data", "fight.def")
 
 CELL = (222, 0)                 # the gold cell frame on the select screen
-CELL_SIZE = (128, 160)          # as authored, in select-screen pixels
+CELL_SIZE = (112, 140)          # as authored, in select-screen pixels
 SCALE = 1280.0 / 1920.0         # fight.def's coordinate space
 # The portrait is drawn as large as the frame's opening allows. It used to take
 # the frame's own 0.667 - the scale of the 128x160 cell against the 1280-wide
@@ -106,7 +106,7 @@ def cell_window(side, image=None):
     The cell is drawn from POS at SCALE with its axis at the top-left, so the
     opening lands at pos + opening * SCALE; player two's cell is mirrored, so its
     opening is mirrored too. This is the box the portrait is held inside, and it
-    is the same 128x160 cell the select screen uses, scaled for the fight space.
+    is the same 112x140 cell the select screen uses, scaled for the fight space.
     """
     if image is None:
         image = cell_image()

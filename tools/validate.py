@@ -1207,9 +1207,9 @@ def check_fight_hud():
                  if (s["group"], s["number"]) == (222, 0)), None)
     if cell is None:
         err("fight HUD: fight.sff has no 222,0 gold cell frame")
-    elif (cell["w"], cell["h"]) != (128, 160):
-        err("fight HUD: the cell frame in fight.sff is %dx%d, expected 128x160"
-            % (cell["w"], cell["h"]))
+    elif (cell["w"], cell["h"]) != CELL_SIZE:
+        err("fight HUD: the cell frame in fight.sff is %dx%d, expected %dx%d"
+            % ((cell["w"], cell["h"]) + CELL_SIZE))
 
     parts = text.split("[Time]", 1)
     if len(parts) == 2:
