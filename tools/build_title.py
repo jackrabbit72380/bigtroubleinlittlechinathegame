@@ -63,6 +63,42 @@ PLATES = (os.path.join(ROOT, "art_src", "ui", "title_logo.png"),
 
 
 # ------------------------------------------------------------------- type
+
+# The main menu and the VS screen draw each other's backdrop: the title layers
+# now show the art the VS screen used to own, and tools/build_select_ui.py points
+# the VS layers at the title set, so the two screens have swapped backgrounds.
+# Only the sprite numbers change - every layer keeps its own start, window, tile,
+# velocity and trans, and both skies are baked at 1920x1080 with a zero axis, so
+# nothing has to be reseated or rescaled.
+BACKDROP_SWAP = (("titlebg background sky", 204, 0),
+                 ("titlebg background clouds top", 102, 2),
+                 ("titlebg background clouds bottom", 102, 3))
+
+
+def swap_backdrop_layers():
+    """Point this screen's backdrop layers at the other screen's art."""
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return 0
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    wanted = {name: (group, number) for name, group, number in BACKDROP_SWAP}
+    out, section, changed = [], "", 0
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            section = s.strip("[]").strip()
+        elif s.startswith("spriteno") and section in wanted:
+            group, number = wanted[section]
+            line = "spriteno = " + str(group) + "," + str(number)
+            changed += 1
+        out.append(line)
+    if changed:
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            f.write("\n".join(out) + "\n")
+        os.replace(path + ".tmp", path)
+    return changed
+
 def cap_height(size):
     font = art.font(size)
     box = font.getbbox("H")
@@ -432,6 +468,7 @@ def place_overlay(start):
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     return placed
+    swap_backdrop_layers()
 
 
 # -------------------------------------------------------------------- logo
