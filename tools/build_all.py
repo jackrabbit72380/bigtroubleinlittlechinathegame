@@ -161,7 +161,8 @@ def main():
     # hand. external/mods/devhelp.lua supplies the screen it opens.
     devhelp_motif = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "system.def")
     if os.path.isfile(devhelp_motif):
-        scripts.append("build_devhelp.py")
+        scripts.append("build_aura.py")
+    scripts.append("build_devhelp.py")
     # Every caption in the motif joins the fight screen's face at the fight
     # screen's size: one face, one size, across the whole game. It edits the same
     # file the Developer Keys entry goes into, so it runs straight after it.

@@ -63,6 +63,7 @@ DATA_FILES = (
     # absent from this list, so a repainted stage shipped without moving the stamp
     # and a folder that had played it before compared equal to main - the update
     # that carried the fix never ran.
+    "data/aura.zss",
     "stages/stage3d.def",
     "stages/stage3d.sff",
     "stages/stage3d.glb",

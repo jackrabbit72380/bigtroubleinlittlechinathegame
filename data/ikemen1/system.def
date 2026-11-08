@@ -2504,6 +2504,7 @@ movelist.arrow.down.scale = 1.5, 1.5
 ;Pause menu screen background
 menu.itemname.devkeys = Developer Keys
 menu.itemname.music = Music
+menu.itemname.aura = Aura
 [PauseBGdef]
 
 ;-------------------------------------------------------------------
@@ -2547,6 +2548,7 @@ menu.pos = 960, 300
 ;Attract mode definition
 menu.itemname.devkeys = Developer Keys
 menu.itemname.music = Music
+menu.itemname.aura = Aura
 [Attract Mode]
 enabled = 0
 fadein.time = 10
