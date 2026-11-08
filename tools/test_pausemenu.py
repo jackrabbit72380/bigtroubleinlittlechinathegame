@@ -317,6 +317,33 @@ def check_value_pair():
     return problems
 
 
+def check_call_sites():
+    """The title and options lists centre rows the way the pause list does.
+
+    All three are drawn by main.f_menuCommonDraw, and asking for centred rows is
+    not enough on its own: a menu sprite carries the motif's alignment baked in.
+    The pause list passes align = 0 and gets measured rows; the title list has to
+    pass it too, and the options list has to ask for its two measured columns, or
+    those screens keep leaning on whatever the motif baked in.
+    """
+    problems = []
+    main_text = read(MAIN)
+    title = ("motif[main.group], motif[main.background], false, {align = 0}")
+    if title not in main_text:
+        problems.append("title menu: the list is drawn without asking for centred rows")
+    options_text = read(os.path.join(ROOT, "external", "script", "options.lua"))
+    if "motif.optionbgdef, false, {align = 0, columns = true}" not in options_text:
+        problems.append("options menu: the list does not ask for its measured columns")
+    block = main_text[main_text.find("local function drawItem"):]
+    if "opts.columns" not in block:
+        problems.append("options menu: the draw path ignores the columns request")
+    if "labelX, labelAlign = posX, -1" not in block:
+        problems.append("options menu: labels are not right-aligned on the row's axis")
+    if "valueX, valueY = posX + gutter, posY" not in block:
+        problems.append("options menu: values are not placed one gutter past the axis")
+    return problems
+
+
 def main():
     problems = []
     try:
@@ -352,6 +379,12 @@ def main():
 
     found = check_value_pair()
     print("  %s a row's value is centred with its label" % ("ok " if not found else "FAIL"))
+    for line in found:
+        print(f"       {line}")
+    problems += found
+
+    found = check_call_sites()
+    print("  %s title and options centre rows like the pause list" % ("ok " if not found else "FAIL"))
     for line in found:
         print(f"       {line}")
     problems += found

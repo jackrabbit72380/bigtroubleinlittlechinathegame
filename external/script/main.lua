@@ -2894,7 +2894,11 @@ function main.f_createMenu(tbl, bool_bgreset, bool_main, bool_f1, bool_del)
 			if tbl.reset then
 				tbl.reset = false
 			else
-				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif[main.group], motif[main.background], false)
+				-- The title list is centred the way the pause list is: rows are
+				-- placed from their measured width instead of the motif's baked
+				-- alignment, so a long item and a short one share one axis under
+				-- the wordmark. Submenus come through here too.
+				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif[main.group], motif[main.background], false, {align = 0})
 			end
 			-- While fading, ignore normal menu inputs, but still allow ESC / menu-cancel to skip the fade.
 			if fadeActive() then
@@ -4065,6 +4069,10 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 	--   align                    : label alignment, in this API's convention
 	--                              (1 = left, 0 = centred, -1 = right); nil
 	--                              keeps whatever the motif baked in
+	--   columns                  : a two-column screen (the options list): a
+	--                              row's labels end on the row's axis and its
+	--                              values start one gutter past it, placed
+	--                              here instead of at the motif's fixed offset
 	--   forceInactive            : treat "selected" row as inactive (no highlight, no cursor)
 	opts = opts or {}
 	local offx = opts.offx or 0
@@ -4168,11 +4176,22 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 		if valueSprite ~= nil then
 			local valueCfg = isActive and m.item.value.active or m.item.value
 			local valueScale = (valueCfg.scale or {itemScale, itemScale})[1] or itemScale
-			local labelW = main.f_menuTextWidth(labelSprite, displayname, itemScale)
-			local valueW = main.f_menuTextWidth(valueSprite, itemData.vardisplay, valueScale)
-			if labelW ~= nil and valueW ~= nil then
-				labelX, valueX = main.f_menuRowPair(posX, labelW, valueW)
-				labelAlign, valueY = 1, posY
+			if opts.columns then
+				-- Labels end on the row's axis and values begin one gutter past it,
+				-- both placed here, so the columns are arithmetic rather than the
+				-- motif's baked alignment. The section's own value offset is the
+				-- gutter: with menu.pos on the frame's middle it puts the boundary
+				-- between the columns on the middle too, and every row straddles it.
+				local gutter = ((valueCfg.offset or m.item.value.offset or {0, 0})[1]) or 0
+				labelX, labelAlign = posX, -1
+				valueX, valueY = posX + gutter, posY
+			else
+				local labelW = main.f_menuTextWidth(labelSprite, displayname, itemScale)
+				local valueW = main.f_menuTextWidth(valueSprite, itemData.vardisplay, valueScale)
+				if labelW ~= nil and valueW ~= nil then
+					labelX, valueX = main.f_menuRowPair(posX, labelW, valueW)
+					labelAlign, valueY = 1, posY
+				end
 			end
 		elseif opts.align == 0 and labelMeasured ~= nil then
 			labelX, labelAlign = main.f_menuRowLeft(posX, labelMeasured), 1

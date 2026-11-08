@@ -1403,7 +1403,10 @@ function options.f_createMenu(tbl, bool_main)
 			if tbl.reset then
 				tbl.reset = false
 			else
-				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif.option_info, motif.optionbgdef, false)
+				-- Two measured columns: labels end on menu.pos.x and values start
+				-- one gutter past it, so every row straddles the frame's middle
+				-- without leaning on the alignment the motif baked in.
+				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif.option_info, motif.optionbgdef, false, {align = 0, columns = true})
 			end
 			-- While fading, ignore normal option-menu inputs, but still allow ESC / menu-cancel to skip the fade.
 			if fadeActive() then
