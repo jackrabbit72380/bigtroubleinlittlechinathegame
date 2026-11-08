@@ -421,12 +421,15 @@ def overlay():
     if not path:
         return None, None
     img = flat_key(Image.open(path))
-    k = max(SCREEN[0] / float(img.width), SCREEN[1] / float(img.height))
+    # FRAME, not SCREEN: this layer is drawn in the title's 1920x1080 localcoord
+    # (every [TitleBG] sprite in the screenpack is 1920x1080 with a zero axis),
+    # so a 1280x720 plate would cover only two thirds of the title screen.
+    k = max(FRAME[0] / float(img.width), FRAME[1] / float(img.height))
     img = img.resize((max(1, int(round(img.width * k))),
                       max(1, int(round(img.height * k)))), Image.LANCZOS)
-    left = (img.width - SCREEN[0]) // 2
-    top = (img.height - SCREEN[1]) // 2
-    img = img.crop((left, top, left + SCREEN[0], top + SCREEN[1]))
+    left = (img.width - FRAME[0]) // 2
+    top = (img.height - FRAME[1]) // 2
+    img = img.crop((left, top, left + FRAME[0], top + FRAME[1]))
     return img.convert("RGBA"), path
 
 
