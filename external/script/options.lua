@@ -203,7 +203,10 @@ options.t_itemname = {
 			modifyGameOption('Video.WindowScaleMode', true)
 			modifyGameOption('Video.FightAspectWidth', -1)
 			modifyGameOption('Video.FightAspectHeight', -1)
-			modifyGameOption('Video.KeepAspect', true)
+			-- KeepAspect off: the picture stretches to fill the window, so a window
+			-- that is not 16:9 has no black bars beside it. Options > Video >
+			-- Keep Aspect Ratio is where a player turns the bars back on.
+			modifyGameOption('Video.KeepAspect', false)
 			modifyGameOption('Video.EnableModel', true)
 			modifyGameOption('Video.EnableModelShadow', true)
 			--modifyGameOption('Sound.SampleRate', 44100)
