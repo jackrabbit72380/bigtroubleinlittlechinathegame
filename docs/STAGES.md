@@ -81,3 +81,18 @@ On Windows, `Dump Stage Art.bat` does the same from a double-click.
 `tools/build_stages.py` accepts `STAGE_DEBUG=1` to dump each layer as PNG into
 `artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to save
 4:3 and 16:9 crops of each arena for eyeballing.
+
+## The map wall is baked
+
+The stage screen's wall of maps is not assembled at runtime. `tools/build_stage_wall.py`
+reads the pool from `data/select.def`, decodes each stage's `9000,1` preview, frames
+it, prints its name under it and composites all twelve at the boxes
+`start.f_stageGrid` lays out, then writes the finished 1920x1080 wall into
+`data/ikemen1/system.sff` as `240,0` - with `241,<n>` and `242,<n>` as the picked
+card's frame for player 1 and player 2. The screen draws those at `0,0`, 1:1.
+
+Before that it scaled each preview anim through the motif's `stage.portrait.scale`,
+the stage's own `portraitscale`, the stage/motif localcoord ratio and the grid fit,
+inside a clip window. Those factors did not agree: cards landed at half the box the
+grid reserved for them, and the picked card's frame was drawn out in the gap beside
+it. Painting the wall settles the layout once, in Python, where it can be looked at.

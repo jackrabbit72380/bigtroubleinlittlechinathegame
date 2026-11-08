@@ -534,17 +534,14 @@ def main(argv=()):
         # The card already in the sheet is the approved one: re-grading it on
         # every run would drift the colour a little each time. Grading only
         # happens when the sheet is new, or when REGRADE=1 asks for it.
-        if os.path.isfile(path) and not os.environ.get("REGRADE"):
-            picture, sp = preview(path)
-        else:
-            picture, sp = preview(BASE)
-            if name == "stage3d":
-                picture = grade(picture, warm=True)
-            elif name == "stage3d_outline":
-                picture = grade(picture, night=True)
-            else:
-                picture = rain_card(picture)
-        axis = center_axis(sp)
+        # The card is painted from the island this stage draws, not carried over
+        # from the sheet it is being written into: that 9000,1 was a placeholder -
+        # a gradient with a play badge on it - and it is what the stage-select wall
+        # showed for all three of these stages while the arenas themselves were
+        # the painted terrace.
+        mode = {"stage3d": "day", "stage3d_outline": "night"}.get(name, "storm")
+        picture = island_layer(mode).resize(SIZE, Image.LANCZOS)
+        axis = (SIZE[0] // 2, SIZE[1] // 2)
         weather = sprites_for(name) + [island_sprite(name), lip_sprite(name)]
         write_sheet(path, picture, axis, weather)
         print("  stages/%s.sff: %dx%d card at %d,%d + %d weather sprite(s)"

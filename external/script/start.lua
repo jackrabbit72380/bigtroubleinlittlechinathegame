@@ -1482,6 +1482,38 @@ function start.f_stageFrame(side)
 	return stageFrameAnims[key] or nil
 end
 
+-- The stage wall is baked, not assembled. tools/build_stage_wall.py paints every
+-- card, its gold frame and its name into system.sff at the size it is drawn at,
+-- and this screen draws that one sprite at 0,0. The runtime version scaled each
+-- stage's preview through the motif's stage.portrait.scale, the stage's own
+-- portraitscale, the stage/motif localcoord ratio, the grid's fit and a clip
+-- window, and landed the cards at half their box with the picked card's frame
+-- out in the gap beside them. 240,0 is the wall; 241,<n> and 242,<n> are the
+-- picked card's frame for player 1 and player 2, one per pool position, each
+-- carrying its card's corner in its own axis.
+local stageWallAnim, stageWallTried = nil, false
+
+function start.f_stageWall()
+	if not stageWallTried then
+		stageWallTried = true
+		stageWallAnim = motifSprite('240,0, 0,0, -1', 240, 0) or false
+	end
+	return stageWallAnim or nil
+end
+
+local stageWallFrames = {}
+
+function start.f_stageWallFrame(side, index)
+	local group = (side == 2) and 242 or 241
+	local number = math.max(0, (index or 1) - 1)
+	local key = group .. ':' .. number
+	if stageWallFrames[key] == nil then
+		stageWallFrames[key] = motifSprite(
+			string.format('%d,%d, 0,0, -1', group, number), group, number) or false
+	end
+	return stageWallFrames[key] or nil
+end
+
 local randomAnims = {}
 
 -- The RANDOM word, drawn from the sprites tools/build_select_grid.py paints into
@@ -3644,43 +3676,19 @@ function start.f_selectScreen()
 					-- the stage screen's own window: stage.portrait.window is the
 					-- character select's stage-hint thumbnail, and reusing it put the
 					-- whole wall of maps in a 1034x335 strip
-					local cards = start.f_stageGrid(stCount)
-					for i = 1, stCount do
-						local cell = cards[i]
-						local ref = main.t_selectableStages[i]
-						if cell ~= nil and ref ~= nil then
-							main.f_materializeStagePortrait(ref)
-							local st = main.t_selStages[ref]
-							local anim = st and st.anim_data
-							if anim == nil and hasPortraitAnim(portrait.loading) then
-								anim = portrait.loading.AnimData
+					local wall = start.f_stageWall()
+					if wall ~= nil then
+						spriteDraw(wall, 0, 0)
+						local pick = nil
+						for i = 1, stCount do
+							if main.t_selectableStages[i] == stageRef then
+								pick = i
+								break
 							end
-							if anim ~= nil then
-								-- drawn at the stage's own natural scale: portraitscale is what
-								-- makes every card 1215x398, so one fraction works for all of them
-								local factor = (portrait.scale[1] or 1) * ((st and st.portraitscale) or 1)
-								if st ~= nil and st.localcoord and st.localcoord > 0 then
-									factor = factor * motif.info.localcoord[1] / st.localcoord
-								end
-								local scale = factor * cell.scale
-								animSetScale(anim, scale, scale)
-								animSetWindow(anim, cell.x, cell.y, cell.x + cell.w, cell.y + cell.h)
-								pcall(animSetAlpha, anim, ref == stageRef and 256 or 120)
-								main.f_animPosDraw(anim, cell.x, cell.y)
-								-- the picked map is outlined in the colour of the player who
-								-- moved the stage cursor: the card art carries the gold rule,
-								-- this is the lit one, drawn at the card's own aspect and put
-								-- back afterwards.
-								if ref == stageRef then
-									local frame = start.f_stageFrame(start.stageSide or 1)
-									if frame ~= nil then
-										animSetScale(frame, cell.w / STAGE_FRAME_W, cell.h / STAGE_FRAME_H)
-										pcall(animSetAlpha, frame, 256)
-										spriteDraw(frame, cell.x, cell.y)
-										pcall(animReset, frame, { "scale" })
-									end
-								end
-							end
+						end
+						local frame = pick ~= nil and start.f_stageWallFrame(start.stageSide or 1, pick) or nil
+						if frame ~= nil then
+							spriteDraw(frame, 0, 0)
 						end
 					end
 				end
@@ -3742,6 +3750,13 @@ function start.f_selectScreen()
 				local stage_text = motif.select_info.stage.random.text
 				if stageListNo ~= 0 then
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
+				end
+				-- The wall prints each stage's name under its card, so the caption
+				-- line stops talking while the wall is up: it shared y=1005 with the
+				-- two fighter names and a long stage name ran straight into the
+				-- second player's. On the confirm frame it still speaks ("FIGHT!").
+				if not stageEnd and stageListNo ~= 0 and start.f_stageWall() ~= nil then
+					stage_text = ''
 				end
 				textImgReset(stageTextData)
 				textImgSetText(stageTextData, stage_text)
