@@ -591,7 +591,6 @@ rem are one quick checkout, and git says why in git.log when it refuses - with
 rem the same low-speed limit the fetch carries, so a stalled transfer gives up
 rem on its own instead of holding the window.
 type nul > "%CACHE%\git.log"
-call :says "  writing %BCOUNT% file(s) - %NDONE% of %NCH% done"
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitflush_retry
 call :log wrote %NDONE% of %NCH% file(s)
@@ -607,8 +606,8 @@ rem time and the window names the one that will not go, instead of a dozen names
 rem and a percentage. Whatever fails is written to stuck.txt, and the recheck at
 rem the end hashes everything that landed and writes the rest again.
 call :gitflush_log
-call :says "  the batch did not finish - trying its files one at a time"
-call :says "  git refused - what it said is in btilc-updater.log"
+call :says "the batch did not finish - trying its files one at a time"
+call :says "git refused - what it said is in btilc-updater.log"
 for /f "usebackq delims=" %%f in ("%CACHE%\todo.txt") do call :gitfile "%%f"
 del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
@@ -630,7 +629,7 @@ exit /b 0
 :gitfile_stuck
 set "WRITEFAIL=1"
 >>"%CACHE%\stuck.txt" echo %~1
-call :says "  could not write %~nx1 - close the game, then run this again"
+call :says "could not write %~nx1 - close the game, then run this again"
 exit /b 0
 :vt
 rem The percentage is written on the barrel line itself, which means coming back
@@ -713,7 +712,6 @@ rem below the pistol, never over it.
 if defined VTOK set /p "=%ESC%[s" <nul
 rem The anchor sits on the blank row under the drawing: :ui writes the status
 rem line one row below it and comes straight back, so the panel never scrolls.
-set "STIMEF=0:00"
 set "SPCTX=0%%"
 set "SSTEP=Starting up"
 set "SDETAIL="
@@ -840,7 +838,7 @@ echo    .//___//
 rem The foot of the panel, drawn again with the art on a console that cannot
 rem write in place: the status line, and the last thing said.
 call :panel_foot
-if defined SAY6 echo    %SAY6%
+if defined SAY6 echo %SAY6%
 call :log art %~1 drawn
 exit /b 0
 
@@ -850,7 +848,8 @@ if "%~2"=="0" exit /b 0
 set /a GSTEP=%~1*55/%~2
 set /a GOPCT=25+GSTEP
 set "SPCTX=%GOPCT%%PCT%"
-set "SDETAIL=%~1 of %~2 files"
+set "SSTEP=Writing files %~1 - %~2"
+set "SDETAIL="
 call :gauge %GOPCT% "Writing files"
 exit /b 0
 
@@ -875,18 +874,18 @@ rem cannot write in place. It sits in a label of its own so the drawing above
 rem stays the only echo block in :gun - the checker measures the muzzle column,
 rem and the row the count comes back from, out of that block.
 echo.
-echo    %STEXT%
+echo %STEXT%
 exit /b 0
 
 :stext
-rem The panel's one line: clock, step, and the detail of the step. The count
-rem of percent is not repeated here - it is written at the muzzle, on the
+rem The panel's one line: the step, and the detail of the step. There is no
+rem clock on it - a ticking time is noise next to the barrel. The count of
+rem percent is not repeated here either: it is written at the muzzle, on the
 rem barrel, where it moves with the pipes instead of sitting in two places.
 set "STEXT="
-if defined STIMEF set "STEXT=%STIMEF%"
-if defined SSTEP set "STEXT=%STEXT%   %SSTEP%"
-if defined SDETAIL set "STEXT=%STEXT% - %SDETAIL%"
-if not defined STEXT set "STEXT=starting up"
+if defined SSTEP set "STEXT=%SSTEP%"
+if defined SDETAIL set "STEXT=%STEXT%   %SDETAIL%"
+if not defined STEXT set "STEXT=Starting up"
 exit /b 0
 
 :ui
@@ -914,24 +913,15 @@ rem %1 = seconds waited, %2 = what is being waited for. One plain line every
 rem five seconds: a spinner would have to redraw in place, which is the cursor
 rem movement that broke the old progress bar on this console.
 :spin
-rem %1 = seconds waited, %2 = what is being waited for. The clock on the panel
-rem is ticked while the wait goes round, so a slow step reads as work and never
-rem as a freeze - which is how the 20% and the 79% stalls read before.
-set "STIMES=%~1"
+rem %1 = seconds waited, %2 = what is being waited for. The step named on the
+rem panel is the one being waited for, so a slow step reads as work and never
+rem as a freeze - which is how the 20% and the 79% stalls read before. The
+rem seconds are kept in the title and the log, not on the panel.
 if not "%~2"=="" set "SSTEP=%~2"
-set /a SMIN=STIMES/60
-set /a SSEC=STIMES%%60
-if %SSEC% LSS 10 set "SSEC=0%SSEC%"
-set "STIMEF=%SMIN%:%SSEC%"
 call :ui
 exit /b 0
 :spin_plain
-set "STIMES=%~1"
 if not "%~2"=="" set "SSTEP=%~2"
-set /a SMIN=STIMES/60
-set /a SSEC=STIMES%%60
-if %SSEC% LSS 10 set "SSEC=0%SSEC%"
-set "STIMEF=%SMIN%:%SSEC%"
 call :ui
 exit /b 0
 
@@ -965,7 +955,7 @@ rem so once a minute.
 title Big Trouble in Little China: The Game - Updater v%UPDVER% - %~2 %~1s
 call :log still %~2 - %~1s
 set /a SBMOD=%~1 %% 60
-if %SBMOD%==0 call :says "  still %~2 - %~1s"
+if %SBMOD%==0 call :says "still %~2 - %~1s"
 exit /b 0
 
 :gitflush_log
@@ -1490,6 +1480,9 @@ if defined VER (>"%CACHE%\applied.txt" echo %VER%)
 call :verify
 
 :sync
+rem The files are written. One word for the end of it, said once, instead of
+rem a line per file under the drawing.
+call :says "Done"
 call :pct 95 "Finishing up"
 if not "%WHICH%"=="git" goto skipver2
 

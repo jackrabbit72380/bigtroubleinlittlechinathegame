@@ -422,7 +422,7 @@ def _progress_problems(name, raw):
     if not re.search(r"(?m)^:ui\r?$", text) or not re.search(r"(?m)^:stext\r?$", text):
         out.append("%s: the panel has no status line, so a step that takes a while "
                    "shows a number and nothing about what it is doing" % name)
-    elif "echo    %STEXT%" not in text:
+    elif "echo %STEXT%" not in text:
         out.append("%s: the status line is never drawn under the drawing" % name)
     return out
 
