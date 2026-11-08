@@ -120,8 +120,13 @@ build_engine() {
     cp -a "$entry" "$ENGINE"/
   done
   # unzip drops the executable bit on the Linux build.
-  chmod +x "$ENGINE"/Ikemen_GO* 2>/dev/null || true
-  ENGINE_BIN="$(find -L "$ENGINE" -maxdepth 1 -type f -name 'Ikemen_GO*' -perm -u+x -print -quit)"
+  chmod +x "$ENGINE"/Ikemen_GO_Linux "$ENGINE"/Ikemen_GO 2>/dev/null || true
+  # Ikemen_GO.command is the macOS launcher and Ikemen_GO.desktop a desktop
+  # entry: neither is the game, and the launcher swallows the command line
+  # (-p1/-p2/-s), so it must never be picked over the real binary.
+  ENGINE_BIN="$(find -L "$ENGINE" -maxdepth 1 -type f \( -name 'Ikemen_GO_Linux' -o -name 'Ikemen_GO' \) -perm -u+x -print -quit)"
+  [ -n "$ENGINE_BIN" ] || ENGINE_BIN="$(find -L "$ENGINE" -maxdepth 1 -type f -name 'Ikemen_GO*' \
+    ! -name '*.command' ! -name '*.desktop' -perm -u+x -print -quit)"
   [ -n "$ENGINE_BIN" ] || { say "engine binary missing from the release"; exit 1; }
 }
 
