@@ -43,8 +43,9 @@ either way — a plate only has to be one picture.
 The same `splash.png` also becomes a full-screen layer *on the title screen*,
 drawn over the animated clouds and under the wordmark and the menu:
 
-- **1280x720, opaque.** Cover-cropped like the splash card, so a wider or
-  taller export loses its edges rather than being squashed.
+- **1920x1080, cover-cropped.** It fills the title frame, so a wider or taller
+  export loses its edges rather than being squashed. Transparency is kept, so a
+  cut-out lets the clouds show through behind it.
 - It is packed as sprite `205, 0` and added to `[TitleBGdef]` as
   `[TitleBG Title Overlay]`, between the cloud layers and the logo layers —
   that definition order is what puts it above the sky and below the logo
@@ -66,14 +67,18 @@ art_src/ui/splash.png            (preferred)
 concept_art/ui/splash.png        (also picked up)
 ```
 
-- **1280×720.** The frame is full-screen and opaque. Other sizes are scaled to
-  fill and centre-cropped, with a warning if the aspect is more than 6% off 16:9.
+- **1920×1080 is what the game draws.** The title layer is 1920×1080, the motif's
+  localcoord, and the card that plays before the title is 1280×720. Any other
+  size is scaled to fill and centre-cropped, so an 8K export keeps no more detail
+  than a 1920×1080 one - the screens are 1920×1080 art, and the 4K and 8K window
+  sizes in the options menu are clean 2x and 4x scales of it, like every other
+  title asset.
 - **RGB or RGBA.** It sits on black, so a flat poster JPEG works as well as a PNG.
 - **Full bleed.** Details at the frame edges may be cropped on other sizes.
 
 What the build does with it:
 
-- packs it into `data/ikemen1/system.sff` as sprite `220, 0` (a group the
+- packs it into `data/ikemen1/system.sff` as sprite `225, 0` (a group the
   engine does not use), axis at the frame centre;
 - rewrites `data/ikemen1/logo.def` as one scene: fade up from black, hold, fade
   out into the title. The timing lives in `tools/build_splash.py`
