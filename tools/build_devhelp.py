@@ -24,12 +24,17 @@ ENTRIES = (
     # MUSIC. The browser itself is external/mods/musicselect.lua; this is the row
     # that opens it, so the track can be picked from a paused fight as well as
     # from the title menu.
-    "menu.itemname.music = MUSIC",
+    "menu.itemname.music = Music",
 )
 SECTIONS = ("[Pause Menu]", "[Training Pause Menu]")
 
 # Anything already declaring one of the keys, so a second run cannot add twice.
 EXISTING = re.compile(r"^\s*menu\.itemname\.(devkeys|music)\s*=", re.IGNORECASE)
+
+# The label each key must carry. A motif that already declares the key keeps its
+# place in the section but takes this text, so a label fixed here reaches installs
+# that were patched by an older run.
+CANON = {entry.split("=", 1)[0].strip().lower(): entry for entry in ENTRIES}
 
 
 def patch(text):
@@ -60,7 +65,10 @@ def patch(text):
         if current in SECTIONS:
             m = EXISTING.match(line)
             if m:
-                has_key[current].add("menu.itemname." + m.group(1).lower())
+                key = "menu.itemname." + m.group(1).lower()
+                if key not in has_key[current]:
+                    has_key[current].add(key)
+                    line = CANON.get(key, line)
         out.append(line)
     close_section()
 

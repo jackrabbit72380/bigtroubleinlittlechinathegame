@@ -707,7 +707,7 @@ end
 -- Title menu entry. Appended before EXIT so it reads with the other modes, and
 -- the handler opens the browser in place, exactly like OPTIONS.
 if type(motif) == 'table' and type(motif.title_info) == 'table' and type(motif.title_info.menu) == 'table' then
-	pcall(main.f_appendItemname, motif.title_info.menu, '', 'music', 'MUSIC', 'exit')
+	pcall(main.f_appendItemname, motif.title_info.menu, '', 'music', 'Music', 'exit')
 end
 
 -- Returns nothing on purpose: the title menu assigns the return value to

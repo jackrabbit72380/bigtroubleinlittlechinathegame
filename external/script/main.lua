@@ -3976,16 +3976,23 @@ end
 main.menuValueGap = 32
 main.menuMargin = 40
 
+-- Left edge of a row centred on cx: half a measured width to the left of
+-- the axis, never past the frame's margin. The arithmetic, not the sprite's
+-- own alignment, is what puts a row in the middle.
+function main.f_menuRowLeft(cx, w, margin)
+	margin = margin or main.menuMargin
+	local left = cx - (w or 0) * 0.5
+	if left < margin then
+		left = margin
+	end
+	return left
+end
+
 function main.f_menuRowPair(cx, labelW, valueW, gap, margin)
 	gap = gap or main.menuValueGap
 	margin = margin or main.menuMargin
 	local block = (labelW or 0) + gap + (valueW or 0)
-	local left = cx - block * 0.5
-	-- a pair too wide for the frame is pinned to the margin instead of running
-	-- off it, the way the command list's columns are
-	if left < margin then
-		left = margin
-	end
+	local left = main.f_menuRowLeft(cx, block, margin)
 	return left, left + (labelW or 0) + gap
 end
 
@@ -4137,6 +4144,15 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 		end
 		textImgReset(labelSprite)
 		textImgSetText(labelSprite, displayname)
+		-- A centred row is centred here, from its own measured width, the way the
+		-- command list places its columns. Asking the engine to centre the row was
+		-- not enough: the list drew staggered and left of the frame's middle,
+		-- because a sprite carries the motif's alignment baked into it. Putting the
+		-- label's left edge half a width left of the axis is arithmetic no baked
+		-- field can undo. A build that cannot measure keeps the motif's placement.
+		local itemScale = (isActive and (m.item.active.scale or m.item.scale)
+			or m.item.scale or {1, 1})[1] or 1
+		local labelMeasured = main.f_menuTextWidth(labelSprite, displayname, itemScale)
 		-- A row that shows a setting draws its value as part of the row: the two
 		-- are measured, put one gap apart and the pair is centred on the row's
 		-- axis. A build that cannot measure keeps the motif's own placement.
@@ -4150,7 +4166,6 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 		end
 		local labelX, labelAlign = posX, opts.align
 		if valueSprite ~= nil then
-			local itemScale = (m.item.scale or {1, 1})[1] or 1
 			local valueCfg = isActive and m.item.value.active or m.item.value
 			local valueScale = (valueCfg.scale or {itemScale, itemScale})[1] or itemScale
 			local labelW = main.f_menuTextWidth(labelSprite, displayname, itemScale)
@@ -4159,6 +4174,8 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 				labelX, valueX = main.f_menuRowPair(posX, labelW, valueW)
 				labelAlign, valueY = 1, posY
 			end
+		elseif opts.align == 0 and labelMeasured ~= nil then
+			labelX, labelAlign = main.f_menuRowLeft(posX, labelMeasured), 1
 		end
 		-- A motif's align field is MUGEN's, where 0 is left, and this build bakes
 		-- it into the sprite: a list anchored at the middle of the frame drew its

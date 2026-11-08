@@ -248,6 +248,20 @@ def check_row_alignment():
         problems.append("pause rows: menu.lua does not ask for centred rows")
     if "main.f_menuRowPair(" not in block or "main.f_menuTextWidth(" not in block:
         problems.append("pause rows: a row's value still sits at the motif's fixed offset")
+    # A centred row is placed from its measured width, not by asking the engine to
+    # centre it: the motif's alignment is baked into the sprite, and leaving the
+    # centring to it drew the list staggered and left of the middle.
+    if "main.f_menuRowLeft(posX, labelMeasured)" not in block:
+        problems.append("pause rows: a centred row is not placed by its measured "
+                        "width, so nothing puts it in the middle")
+    if "labelMeasured = main.f_menuTextWidth(labelSprite, displayname" not in block:
+        problems.append("pause rows: the row's own text is never measured")
+    elif block.find("textImgSetText(labelSprite, displayname)") > block.find(
+            "labelMeasured = main.f_menuTextWidth"):
+        problems.append("pause rows: the width is measured before the row's text is set")
+    if "labelX, labelAlign = main.f_menuRowLeft(posX, labelMeasured), 1" not in block:
+        problems.append("pause rows: a measured row is not drawn left-aligned from "
+                        "its computed left edge")
     return problems
 
 
@@ -282,6 +296,16 @@ def check_value_pair():
     left, _ = lua.eval("main.f_menuRowPair(960, 1800, 600)")
     if abs(left - g.main.menuMargin) > 0.01:
         problems.append("an oversized row runs off the frame at x=%.1f" % left)
+
+    # a plain row's left edge is half its measured width left of the axis
+    for width, want in ((300.0, 810.0), (100.0, 910.0), (0.0, 960.0)):
+        got = lua.eval("main.f_menuRowLeft(960, %r)" % width)
+        if abs(got - want) > 0.01:
+            problems.append("a %r row starts at x=%.1f, not %.1f"
+                            % (width, got, want))
+    # 1900 wide cannot fit: half of it is past the margin, so it is pinned
+    if abs(lua.eval("main.f_menuRowLeft(960, 1900)") - g.main.menuMargin) > 0.01:
+        problems.append("an oversized row is not pinned to the margin")
 
     lua.execute("textImgGetTextWidth = function(spr, text) return #text * 10 end")
     w = lua.eval("main.f_menuTextWidth('spr', 'abcde', 1.5)")
