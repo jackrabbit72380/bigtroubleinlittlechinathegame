@@ -131,7 +131,12 @@ def write_sprite(image, axis=(STRIP[0] // 2, STRIP[1] // 2)):
 # land 307px wide inside a 460px window, a postage stamp in a frame. Scaling by
 # the reciprocal makes the art cover the window and the window clip it.
 STAGE_ART = (1215, 398)
-CARD_W = 520                  # the card's own width, independent of the grid
+CARD_W = 520                  # the grid card's width, on the character wall
+# The stage screens draw the preview at 2x the wall card: 520px on a 1920 frame
+# read as a thumbnail on the screen whose whole job is showing the stage, so the
+# stage screen and the VS screen now carry the same 1040x341 picture, centred on
+# 960, with the name row underneath it.
+VS_CARD_W = 1040
 ART_H = int(round(CARD_W * STAGE_ART[1] / float(STAGE_ART[0])))   # 151
 CARD_H = ART_H
 CARD_CX = 960
@@ -245,19 +250,41 @@ SELECT_TEXT = (
 
 # The card hangs from its bottom edge, which is where both screens had it
 # before, so nothing else on either screen moves.
-STAGE_PORTRAIT = _card(1020, portrait=True)   # [Select Info]: the stage screen
-SELECT_PLATE = STAGE_PORTRAIT + (
+STAGE_PORTRAIT = _card(998, portrait=True, card_w=VS_CARD_W)   # [Select Info]: the stage screen
+def _stage_backdrop():
+    """The screen the stage card sits on: the select grid's own background.
+
+    The stage screen used to clear to black and put a small card in the middle
+    of it, which read as a screen that had failed to draw. The grid background
+    is the picture the character wall already sits on, so the same sprite is
+    drawn behind the card, over the whole frame, anchored on the stage name row
+    the way every other stage key is (stage.pos = 960, 1035).
+    """
+    frame = (1920, 1080)          # the motif's localcoord
+    grid_spr = (220, 0)           # [SelectBG Portrait Grid]
+    _d, sprites, _p = sff.read_sff(SYSTEM_SFF)
+    grid = next((sp for sp in sprites
+                 if (sp["group"], sp["number"]) == grid_spr), None)
+    if grid is None:
+        raise SystemExit("system.sff has no grid background %d,%d" % grid_spr)
+    return (
+        ("stage.portrait.bg.anim", "-1"),
+        ("stage.portrait.bg.spr", "%d,%d" % grid_spr),
+        ("stage.portrait.bg.offset", "%d, %d" % (-frame[0] // 2, -NAME_ROW_Y)),
+        ("stage.portrait.bg.scale", "%.4f, %.4f" % (
+            frame[0] / float(grid["w"]), frame[1] / float(grid["h"]))),
+    )
+
+
+SELECT_PLATE = STAGE_PORTRAIT + _stage_backdrop() + (
     # the select screen draws the plate as [Begin Action 110]; pin it to its
     # first sprite so the anim's own offsets cannot shift the plate
-    ("stage.portrait.bg.anim", "-1"),
-    ("stage.portrait.bg.spr", "110,0"),
 ) + SELECT_TEXT
 # The VS screen is the one screen the stage preview is actually for. 520px on a
 # 1920 frame read as a thumbnail, and 900 was still short of "twice as big";
 # 1040 is exactly 2x the card the character wall used to carry, and gives a
 # 1040x341 picture centred on 960 whose top edge (657) clears the VS mark and
 # whose bottom (998) leaves the caption row at 1035 to the names.
-VS_CARD_W = 1040
 VS_PLATE = _card(998, card_w=VS_CARD_W) + (
     ("stage.portrait.bg.spr", "112,0"),
 )

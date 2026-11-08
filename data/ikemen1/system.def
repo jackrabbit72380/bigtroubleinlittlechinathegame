@@ -632,19 +632,19 @@ stage.layerno = 2
 ;Stage portraits
 ;stage.portrait.anim = 
 stage.portrait.spr = 9000,1
-stage.portrait.offset = 0, -100
-stage.portrait.scale = 0.4280, 0.4280
+stage.portrait.offset = 0, -208
+stage.portrait.scale = 0.8560, 0.8560
 stage.portrait.bg.anim = -1
-stage.portrait.bg.spr = 110,0
-stage.portrait.bg.offset = -260, -185
+stage.portrait.bg.spr = 220,0
+stage.portrait.bg.offset = -960, -1035
 stage.portrait.bg.scale = 1.0000, 1.0000
 stage.portrait.bg.layerno = 2
 ; stage.portrait.loading.spr = 
 stage.portrait.loading.anim = -1
-stage.portrait.loading.offset = -260, -185
+stage.portrait.loading.offset = -520, -378
 stage.portrait.loading.scale = 1, 1
 stage.portrait.loading.layerno = 2
-stage.portrait.window = 703, 853, 1217, 1017
+stage.portrait.window = 443, 660, 1477, 995
 stage.portrait.layerno = 2
 
 ;Stage Slot Indicator
@@ -830,7 +830,7 @@ p3.cursor.done.offset = 0,0
 p4.cursor.active.spr = 223,3
 p4.cursor.active.offset = 0,0
 p4.cursor.done.offset = 0,0
-stage.portrait.loading.window = 703, 853, 1217, 1017
+stage.portrait.loading.window = 443, 660, 1477, 995
 stage.text = %s
 stage.active.text = %s
 stage.scale = 1.5, 1.5
