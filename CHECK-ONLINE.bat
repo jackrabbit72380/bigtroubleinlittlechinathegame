@@ -19,7 +19,7 @@ for %%I in ("%~dp0..\Big Trouble Online") do call :one "Big Trouble Online" "%%~
 call :net "%~dp0"
 for %%I in ("%~dp0..\Big Trouble Online") do call :net "%%~fI\"
 >>"%OUT%" echo.
->>"%OUT%" echo --- how to play online on a stock v1.0.0 build ---
+>>"%OUT%" echo --- how to play online: HOST GAME opens a port, JOIN GAME calls one ---
 >>"%OUT%" echo HOST GAME opens a TCP port and waits; JOIN GAME needs that machine's
 >>"%OUT%" echo address and the same game. The room list (ONLINE LOBBY) comes only
 >>"%OUT%" echo from the Online Lobby Pack, which installs into external of that build.

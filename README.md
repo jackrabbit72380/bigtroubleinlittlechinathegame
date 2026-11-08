@@ -77,11 +77,13 @@ crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
 
 ### Play online
 
-Online play uses the same download: **Update and Play.bat** in the game folder
-prepares an `Ikemen GO v1.0.0` build beside it and starts the game from there.
-[ONLINE-SETUP.md](ONLINE-SETUP.md) covers it, and
-[TEST-ONLINE-WITH-A-FRIEND.md](TEST-ONLINE-WITH-A-FRIEND.md) covers testing -
-including how to test both sides on one PC.
+Online play uses the same download: **Update and Play.bat** prepares an
+`Ikemen GO` nightly build beside the game - engine and scripts from one archive -
+and starts the game from there. Both players need the same engine, so compare the
+SHA-256 lines from `CHECK-ONLINE.bat` before a match.
+[ONLINE-SETUP.md](ONLINE-SETUP.md) explains why the tagged v1.0.0 cannot run this
+screenpack, and [TEST-ONLINE-WITH-A-FRIEND.md](TEST-ONLINE-WITH-A-FRIEND.md)
+covers testing, including how to be both players on one PC.
 
 ## What is in the build
 

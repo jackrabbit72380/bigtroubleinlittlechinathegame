@@ -2155,42 +2155,63 @@ set "PREVSZ=%CANDSZ%"
 exit /b 0
 
 :online
-rem ---- online play: the v1.0.0 engine and the Online Lobby Pack ------------
+rem ---- online play: one matched engine, plus this game's content ------------
 rem After the files above are current, this keeps a second folder ready -
-rem ....\Big Trouble Online - holding Ikemen GO v1.0.0 (the release the lobby
-rem pack asks for) with this game's content copied into it, and the pack
-rem unpacked over it when the pack zip is sitting in this folder. The game is
-rem started from there, so one double-click of this file updates the game and
+rem ....\Big Trouble Online - holding Ikemen GO's latest nightly build with this
+rem game's characters, stages, screenpack, mods and *.zss state files copied
+rem into it. The nightly is the engine this screenpack is drawn for: the tagged
+rem v1.0.0 panics on data/system.zss ("Invalid data: inrunstate") before it draws
+rem a frame. Engine and scripts come out of one archive, so they always agree.
+rem The game is started from there, so one double-click updates the game and
 rem opens it with online play. This folder is only ever read.
 call :pct 96 "Preparing online play"
 set "ONLINE="
 for %%I in ("%~dp0..\Big Trouble Online") do set "ONLINE=%%~fI"
 if not defined ONLINE exit /b 0
-set "OURL=https://github.com/ikemen-engine/Ikemen-GO/releases/download/v1.0.0/Ikemen_GO-v1.0.0-windows.zip"
-set "OVZIP=%CACHE%\ikemen-v100.zip"
+set "OURL=https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/Ikemen_GO-dev-windows.zip"
+set "OVZIP=%CACHE%\ikemen-nightly.zip"
 set "OURLQ=%OURL:'=''%"
 set "OVZIPQ=%OVZIP:'=''%"
 set "OENG="
+set "OSIZE="
 if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
 for /d %%D in ("%ONLINE%\*") do if exist "%%D\Ikemen_GO.exe" set "OENG=%%D"
-if defined OENG goto online_copy
+rem A cached engine archive older than a day is fetched again: the nightly is
+rem rebuilt all the time, and a stale engine beside fresh content is exactly
+rem what used to crash this folder.
+if exist "%OVZIP%" if defined POWERSHELL "%POWERSHELL%" -NoProfile -Command "if ((Get-Item -LiteralPath '%OVZIPQ%').LastWriteTime -lt (Get-Date).AddDays(-1)) { exit 1 } else { exit 0 }"
+if errorlevel 1 del /q "%OVZIP%" >nul 2>&1
+if exist "%OVZIP%" goto online_unpack
 if not defined POWERSHELL if not defined CURL goto online_fail
 if not defined TAR goto online_fail
-call :say "Online: fetching Ikemen GO v1.0.0 (once, about 40 MB)"
-if exist "%OVZIP%" del /q "%OVZIP%" >nul 2>&1
+call :say "Online: fetching the Ikemen GO nightly engine (about 55 MB)"
 if not exist "%ONLINE%" mkdir "%ONLINE%" 2>nul
 if defined CURL "%CURL%" -L --fail --retry 2 -o "%OVZIP%" "%OURL%" >>"%LOG%" 2>&1
 if not defined CURL "%POWERSHELL%" -NoProfile -Command "try { Invoke-WebRequest -Uri '%OURLQ%' -OutFile '%OVZIPQ%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
 if not exist "%OVZIP%" goto online_fail
+
+:online_unpack
+rem Unpacking replaces the engine and its scripts together. It runs again when
+rem the cached archive changes size, and once for a folder built by an older
+rem version of this file - that is how a v1.0.0 folder becomes a nightly one.
+if not defined TAR goto online_fail
+for %%A in ("%OVZIP%") do set "OSIZE=%%~zA"
+set "OMARK="
+if exist "%ONLINE%\engine-archive.txt" set /p OMARK=<"%ONLINE%\engine-archive.txt"
+if defined OENG if "%OMARK%"=="%OSIZE%" goto online_copy
+call :pct 96 "Unpacking the online engine"
+if not exist "%ONLINE%" mkdir "%ONLINE%" 2>nul
 "%TAR%" -xf "%OVZIP%" -C "%ONLINE%" >>"%LOG%" 2>&1
+>"%ONLINE%\engine-archive.txt" echo %OSIZE%
+set "OENG="
 if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
 for /d %%D in ("%ONLINE%\*") do if exist "%%D\Ikemen_GO.exe" set "OENG=%%D"
 if not defined OENG goto online_fail
 
 :online_copy
 call :pct 97 "Copying the game into the online build"
-rem Content only: the engine's own *.zss state files stay v1.0.0's, and
-rem external\script stays the pack's and v1.0.0's, never this folder's.
+rem Content, this game's *.zss state files included: they are written for the
+rem same nightly engine that was just unpacked, so engine and states agree.
 if not exist "%OENG%\chars" mkdir "%OENG%\chars" 2>nul
 robocopy "%~dp0chars" "%OENG%\chars" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%~dp0stages" "%OENG%\stages" /E /NFL /NDL /NJH /NJS /NP >nul
@@ -2198,17 +2219,14 @@ robocopy "%~dp0sound" "%OENG%\sound" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%~dp0font" "%OENG%\font" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%~dp0save" "%OENG%\save" /E /NFL /NDL /NJH /NJS /NP >nul
 robocopy "%~dp0external\mods" "%OENG%\external\mods" /E /NFL /NDL /NJH /NJS /NP >nul
-robocopy "%~dp0data" "%OENG%\data" /E /XF *.zss /NFL /NDL /NJH /NJS /NP >nul
-rem The lobby pack, if it has been put in this folder. Unpacking it again is
-rem how the pack is installed, so this is safe on every run.
-for %%F in ("%~dp0IkemenGO-OnlineLobbyPack*.zip") do if exist "%%~fF" if defined TAR "%TAR%" -xf "%%~fF" -C "%OENG%" >>"%LOG%" 2>&1
+robocopy "%~dp0data" "%OENG%\data" /E /NFL /NDL /NJH /NJS /NP >nul
 for %%I in ("%OENG%") do set "ONLINE=%%~fI"
 set "GAMEDIR=%ONLINE%"
 set "EXE="
 if exist "%GAMEDIR%\BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
 if not defined EXE if exist "%GAMEDIR%\Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
 if not defined EXE goto online_fail
-call :log online build ready: %GAMEDIR%  exe %EXE%
+call :log online build ready: %GAMEDIR%  exe %EXE%  engine archive %OSIZE% bytes
 exit /b 0
 
 :online_fail

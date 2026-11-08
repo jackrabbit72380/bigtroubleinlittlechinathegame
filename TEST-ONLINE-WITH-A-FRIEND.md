@@ -4,17 +4,19 @@ Two machines, two players. Nothing here needs a server.
 
 ## The one rule
 
-Both machines must be running **the same build**: the same Ikemen GO version,
-the same game files (characters, stages, screenpack), and - if you use it - the
-same Online Lobby Pack version. A v1.0.0 on one side and an old nightly on the
-other will not connect, and if it does connect the match will fall apart.
+Both machines must be running **the same build**: the same Ikemen GO nightly,
+and the same game files (characters, stages, screenpack). Two nightlies from
+different days will not connect, and if they do connect the match will fall
+apart - the engine changes between builds.
 
 **The easy way to guarantee that:** zip your finished `Big Trouble Online`
 folder and give your friend that exact zip. He unzips it anywhere and runs
 `Ikemen_GO.exe` in it. Nothing to install, nothing to match up.
 
-If he downloads a release himself, it must be **Ikemen GO v1.0.0** plus your
-game's data over it - not the latest nightly, and not a different game's build.
+If he downloads a release himself, make sure he then runs **Update and Play.bat**
+in it and starts the game from `Big Trouble Online`, on the same day you do. The
+tagged v1.0.0 cannot run this screenpack at all - `ONLINE-SETUP.md` has the
+panic it produces.
 
 ## Checking you match
 
@@ -28,7 +30,7 @@ One PC can be both players, because a host and a guest are just two copies of th
 same game talking over the network - and a PC can talk to itself.
 
 1. Start the game the way you normally do (`Update and Play.bat`), so it launches
-   from `Big Trouble Online`, the v1.0.0 build.
+   from `Big Trouble Online`, the nightly build.
 2. Title menu: **NETWORK > HOST GAME**. It sits on "Waiting for player 2... (7500)".
    Leave it there.
 3. Start the same game a **second** time: go into `Big Trouble Online` and
@@ -88,14 +90,13 @@ TCP 7500.
 |---|---|
 | Host waits forever, guest says it cannot reach | Wrong address or port, or the firewall/router is blocking 7500 |
 | Connects, then instantly drops | Builds do not match - compare the `Version:` lines |
-| Connects, then the game freezes or panics | A fight is starting on an old binary; both must be on v1.0.0 |
+| Connects, then the game freezes or panics | The two engine builds differ; compare the SHA-256 lines and update both the same day |
 | Host's screen never changes | Guest joined a different port, or the host's window lost focus and stopped listening |
 | The game will not start, or the exe has vanished | Antivirus took it: `Trojan:Win32/Tecabans.A!cl` is a known false alarm on Ikemen GO's unsigned engine. Run **ALLOW-IN-DEFENDER.bat** on that PC, then **Update and Play.bat** to fetch the engine again |
 
-## Later: the room list
+## The room list
 
-HOST GAME and JOIN GAME are manual - someone has to know someone's address. The
-Online Lobby Pack adds **ONLINE LOBBY**, a list of rooms, so nobody types an
-address. It has to be on both machines, same version, and it goes in the same
-folder as the game (`IkemenGO-OnlineLobbyPack-<version>.zip` unzipped over it, or
-dropped in the folder your updater reads).
+There is none yet. The Online Lobby Pack that provides it targets the tagged
+v1.0.0 engine, which cannot run this screenpack, so the updater does not install
+it. HOST GAME and JOIN GAME are what works today; each pair of players only has
+to exchange an address once, because JOIN GAME remembers the ones it is given.
