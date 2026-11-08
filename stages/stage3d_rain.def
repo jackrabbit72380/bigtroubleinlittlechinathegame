@@ -3,9 +3,11 @@
 ;Three Storms, three stages: this is rain's terrace. The pack ships one island
 ;in two renders, so rather than invent a third scene the same model is framed
 ;lower and wider, and two painted rain sheets fall across it - one behind the
-;fighters, one in front - under a slate wash and driving mist. Its card is
-;graded cold with rain streaked over it, so the select screen tells the three
-;apart at a glance.
+;fighters, one in front - under a slate wash and driving mist. Lightning strikes
+;across the sky every few seconds, and external/mods/rainthunder.lua rumbles
+;behind each flash from the sample tools/build_thunder.py puts in system.snd.
+;Its card is graded cold with rain streaked over it, so the select screen tells
+;the three apart at a glance.
 ;--------------------------------------------------------
 [Info]
 name = "Third Heights Rainfall"
@@ -13,6 +15,13 @@ displayname = "Third Heights Rainfall"
 versiondate = 11,25,2023
 mugenversion = 1.1
 author = "SuperFromND; reframed for this roster"
+
+;-------------------------------------
+; A stage DEF cannot play a sound, so the storm's rumble is played by
+; external/mods/rainthunder.lua, which reads this constant back with the
+; stageConst() trigger and rumbles two ticks after each lightning strike.
+[Constants]
+RainThunder = 1
 
 ;--------------------------------------------------------
 [Camera]
@@ -149,6 +158,34 @@ velocity = 3.2, 30
 trans = none
 
 ;-------------------------------------
+; Lightning: an animated sheet, clear most of the time, that throws a flash across
+; the sky every few seconds. Drawn with trans = add, so it lifts the scene instead
+; of painting over it, and above the rain so a strike reads through it. The cycle
+; itself is action 9001, at the end of this file.
+[BG lightning]
+type = anim
+actionno = 9001
+layerno = 1
+start = 0, 0
+tile = 1,1
+trans = add
+
+;-------------------------------------
 ; Stage portrait data
 [Begin Action 9000]
 9000,1, 0,0,-1
+
+;-------------------------------------
+; The lightning cycle, timed in game ticks (60 to the second): a long quiet, a
+; strike with the bolt in it, a restrike, then a distant flash, then round again.
+[Begin Action 9001]
+2,0, 0,0, 150
+2,1, 0,0, 2
+2,2, 0,0, 5
+2,0, 0,0, 4
+2,1, 0,0, 2
+2,2, 0,0, 6
+2,0, 0,0, 145
+2,1, 0,0, 3
+2,2, 0,0, 9
+2,0, 0,0, 1

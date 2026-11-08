@@ -151,6 +151,43 @@ def band(y0, y1, colour, peak, wobble=0):
     return img
 
 
+def blank():
+    return Image.new("RGBA", FRAME, (0, 0, 0, 0))
+
+
+def flash(strength, bolt_seed=None):
+    """A flash across the sky, with a bolt tearing down out of it when asked.
+
+    Drawn with trans = add, so the sky lifts rather than being painted over.
+    """
+    img = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    for y in range(FRAME[1]):
+        t = y / float(FRAME[1])
+        a = int(strength * max(0.0, 1.0 - t ** 1.5))
+        if a:
+            draw.line([(0, y), (FRAME[0], y)], fill=(206, 224, 255, a))
+    if bolt_seed is not None:
+        rng = random.Random(bolt_seed)
+        x, y = rng.uniform(300, 980), -20.0
+        path = [(x, y)]
+        while y < FRAME[1] * 0.7:
+            y += rng.uniform(45, 95)
+            x += rng.uniform(-50, 50)
+            path.append((x, y))
+        for width, alpha in ((16, 26), (7, 70), (2, 235)):
+            draw.line(path, fill=(228, 238, 255, alpha), width=width, joint="curve")
+        for _ in range(2):                       # short forks off the channel
+            bx, by = path[rng.randrange(1, max(2, len(path) - 2))]
+            fork = [(bx, by)]
+            for _step in range(3):
+                bx += rng.uniform(-90, 90)
+                by += rng.uniform(30, 70)
+                fork.append((bx, by))
+            draw.line(fork, fill=(214, 228, 255, 120), width=2)
+    return img
+
+
 def wash(colour, alpha):
     return Image.new("RGBA", FRAME, tuple(colour) + (alpha,))
 
@@ -183,6 +220,10 @@ def sprites_for(name):
         {"group": 1, "number": 2, "image": wash((24, 32, 52), 88), "axis": (0, 0)},
         {"group": 1, "number": 3, "image": band(420, 700, (172, 196, 220), 66),
          "axis": (0, 0)},
+        # the lightning sheet: a clear frame, the strike, and its afterglow
+        {"group": 2, "number": 0, "image": blank(), "axis": (0, 0)},
+        {"group": 2, "number": 1, "image": flash(150, 8801), "axis": (0, 0)},
+        {"group": 2, "number": 2, "image": flash(64), "axis": (0, 0)},
     ]
 
 

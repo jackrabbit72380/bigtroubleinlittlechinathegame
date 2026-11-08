@@ -165,6 +165,8 @@ def main():
     # The menu's confirm sample is a struck bell rather than the stock beep.
     # It lives in data/system.snd, which the engine copy above resets.
     scripts.append("build_ui_sounds.py")
+    # ...and the rainfall stage's thunder, which lives in the same bank.
+    scripts.append("build_thunder.py")
     # The in-game HUD render shown on the project page. Compositing it here
     # means the picture cannot drift from the HUD that ships in data/, and a
     # push refreshes it without anyone opening the engine.
