@@ -1440,6 +1440,17 @@ end
 -- captions across the top of it. The space is re-asserted on every frame, just
 -- before the position, so the numbers passed here are the 1920x1080 pixels the
 -- art was painted at.
+--
+-- animSetLocalcoord moves these anims but does not resize them: the sprite is
+-- still drawn at the engine's own 240-unit animation space, on this 1080p
+-- screenpack that is 1080 / 240 = 4.5x its painted size. On screen that was a
+-- wall of cells 8640px across (so the grid never appeared at all) with the two
+-- PLAYER captions and the RANDOM word 4.5x too big across the top and bottom.
+-- The position was already in 1920x1080 pixels, so only the sprite has to be
+-- brought back down: scale it into the engine's space and leave x, y alone.
+-- external/mods/musicselect.lua sets its album covers the same way.
+local ANIM_SPACE_H = 240
+
 local function spriteDraw(a, x, y)
 	if a == nil then
 		return
@@ -1448,7 +1459,9 @@ local function spriteDraw(a, x, y)
 	if motif ~= nil and motif.info ~= nil and motif.info.localcoord ~= nil then
 		w, h = motif.info.localcoord[1], motif.info.localcoord[2]
 	end
+	local k = ANIM_SPACE_H / h
 	pcall(animSetLocalcoord, a, w, h)
+	pcall(animSetScale, a, k, k)
 	pcall(animSetPos, a, x, y)
 	pcall(animDraw, a)
 	pcall(animUpdate, a)
