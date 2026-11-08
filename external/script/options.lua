@@ -195,6 +195,13 @@ function options.f_saveCfg(reload, screen, item, cursorPosY)
 	end
 end
 
+-- Brief confirmation after a save that needs no restart, so pressing Save
+-- Settings never looks like nothing happened.
+function options.f_savedNote()
+	main.f_warning("Your settings have been saved.", motif.option_info, motif.optionbgdef,
+		nil, nil, nil, nil, nil, 36, "SAVED")
+end
+
 --;===========================================================
 --; LOOPS
 --;===========================================================
@@ -1501,6 +1508,9 @@ options.t_itemname = {
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
 				options.f_saveCfg(options.needReload, options.f_menuPath(t), item, cursorPosY)
+				if not options.needReload then
+					options.f_savedNote()
+				end
 			end
 			fadeOutInit(motif.option_info.fadeout.FadeData)
 			main.close = true
@@ -1527,6 +1537,9 @@ options.t_itemname = {
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
 				options.f_saveCfg(options.needReload, options.f_menuPath(t), item, cursorPosY)
+				if not options.needReload then
+					options.f_savedNote()
+				end
 			end
 		end
 		return true
