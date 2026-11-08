@@ -213,11 +213,6 @@ menu.itemname.storymode.back = BACK
 
 ; Submenu: Network
 menu.itemname.menunetwork = NETWORK
-; Nakama build only. The stock engine prunes itemnames it has no handler
-; for, so this submenu is unchanged on the engine this game ships.
-menu.itemname.menunetwork.onlinematch = QUICK MATCH
-menu.itemname.menunetwork.onlineranked = RANKED MATCH
-menu.itemname.menunetwork.onlinelobby = ONLINE LOBBIES
 menu.itemname.menunetwork.serverhost = HOST GAME
 menu.itemname.menunetwork.serverjoin = JOIN GAME
 menu.itemname.menunetwork.back = BACK

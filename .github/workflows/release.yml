@@ -169,11 +169,7 @@ jobs:
 
             # The README sends players to these for online play and for checking
             # which build they are on, so they travel with the game.
-            for f in "Update and Play.bat" CHECK-ONLINE.bat ONLINE-SETUP.md \
-                     TEST-ONLINE-WITH-A-FRIEND.md; do
-              test -s "$f" || { echo "$f is missing from the repo"; exit 1; }
-              cp "$f" "$out/$f"
-            done
+            cp "Update and Play.bat" "$out/Update and Play.bat"
           fi
           if [ ! -f "$out/LICENCE.txt" ]; then cp dl/LICENCE.txt "$out/LICENCE.txt"; fi
           # Render resolution is a CONFIG value, not an option-menu item: Ikemen
@@ -286,10 +282,8 @@ jobs:
               || { echo "READ-ME-FIRST.txt does not carry the hash of the engine this bundle ships"; exit 1; }
             test -s "$out/ALLOW-IN-DEFENDER.bat" \
               || { echo "ALLOW-IN-DEFENDER.bat is missing from the Windows bundle"; exit 1; }
-            for f in "Update and Play.bat" CHECK-ONLINE.bat ONLINE-SETUP.md \
-                     TEST-ONLINE-WITH-A-FRIEND.md; do
-              test -s "$out/$f" || { echo "$f is missing from the Windows bundle"; exit 1; }
-            done
+            test -s "$out/Update and Play.bat" \
+              || { echo "Update and Play.bat is missing from the Windows bundle"; exit 1; }
             echo "antivirus note carries $want_hash"
           fi
           test -f "$out/VERSION.txt" || { echo "VERSION.txt is missing from the bundle"; exit 1; }

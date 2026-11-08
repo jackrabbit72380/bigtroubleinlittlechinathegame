@@ -1378,42 +1378,6 @@ def halve_paired_scales(text):
 # items; the stock engine has no handler for them. Its menu builder prunes
 # itemnames it has no handler for (main.lua, "Remove / recurse submenus"), so the
 # NETWORK submenu is exactly as it was before on the engine this game ships.
-ONLINE_ITEMS = (
-    ("menu.itemname.menunetwork.onlinematch", "QUICK MATCH"),
-    ("menu.itemname.menunetwork.onlineranked", "RANKED MATCH"),
-    ("menu.itemname.menunetwork.onlinelobby", "ONLINE LOBBIES"),
-)
-
-
-def ensure_online_menu(text):
-    """Put the online items at the top of the NETWORK submenu.
-
-    They sit directly after the parent row so they lead the submenu, before
-    HOST GAME and JOIN GAME. A row that is already written is left alone, so
-    this runs again without adding anything.
-    """
-    have = sum(1 for key, _ in ONLINE_ITEMS if key in text)
-    if have == len(ONLINE_ITEMS):
-        return text, 0
-    if have:
-        print("  warning: only some online itemnames are present; leaving the "
-              "NETWORK submenu alone")
-        return text, 0
-    m = re.search(r"^[ \t]*menu\.itemname\.menunetwork[ \t]*=[^\r\n]*(\r?\n)",
-                  text, re.MULTILINE)
-    if m is None:
-        print("  warning: no menu.itemname.menunetwork row to add the online "
-              "items after")
-        return text, 0
-    eol = m.group(1)
-    block = (
-        "; Nakama build only. The stock engine prunes itemnames it has no handler" + eol
-        + "; for, so this submenu is unchanged on the engine this game ships." + eol
-    )
-    for key, label in ONLINE_ITEMS:
-        block += f"{key} = {label}{eol}"
-    end = m.end()
-    return text[:end] + block + text[end:], len(ONLINE_ITEMS)
 
 
 def main():
@@ -1440,9 +1404,6 @@ def main():
     if win_added:
         print(f"  wrote the window-size submenu in {os.path.basename(MOTIF)}")
 
-    text, online_added = ensure_online_menu(text)
-    if online_added:
-        print(f"  wrote {online_added} online item(s) into the NETWORK submenu")
 
     text, dedented = dedent_menuvideo(text)
     if dedented:

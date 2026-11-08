@@ -6,3 +6,5 @@ _menu2.b64
 _menu4.b64
 _menu5.b64
 MIGRATE-TO-ONLINE.bat
+UPGRADE-AND-GO-ONLINE.bat
+CHECK-ONLINE.bat

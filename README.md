@@ -77,13 +77,12 @@ crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
 
 ### Play online
 
-Online play uses the same download: **Update and Play.bat** prepares an
-`Ikemen GO` nightly build beside the game - engine and scripts from one archive -
-and starts the game from there. Both players need the same engine, so compare the
-SHA-256 lines from `CHECK-ONLINE.bat` before a match.
-[ONLINE-SETUP.md](ONLINE-SETUP.md) explains why the tagged v1.0.0 cannot run this
-screenpack, and [TEST-ONLINE-WITH-A-FRIEND.md](TEST-ONLINE-WITH-A-FRIEND.md)
-covers testing, including how to be both players on one PC.
+Double-click **Update and Play.bat**. It keeps a second folder beside the game -
+`Big Trouble Online` - holding the Ikemen GO engine this screenpack is drawn for
+plus your game files, and starts the game from there. Both players need the same
+build, so run it the same day: NETWORK > HOST GAME on one machine, then
+NETWORK > JOIN GAME > NEW ADDRESS on the other with the host's address
+(port 7500 unless changed). One PC can do both sides to check it works.
 
 ## What is in the build
 

@@ -51,8 +51,7 @@ start "" "windowsdefender://threat" 2>nul
 if errorlevel 1 echo   Could not open it; use the steps above by hand.
 :done
 echo.
-echo   Done. Notes for both players are in ONLINE-SETUP.md and
-echo   TEST-ONLINE-WITH-A-FRIEND.md.
+echo   Done. Online play is covered in README.md.
 echo.
 pause
 exit /b 0
