@@ -2758,7 +2758,9 @@ p*.teammate.ko.hide = 1
 [Time]
 pos = 640,34
 ; Uncomment the following line to use a bg component
-;bg.spr = 
+bg.spr = 30,0
+bg.offset = 0,55
+bg.palfx.sinmul = 26, 26, 26, 24
 ; Time count display
 counter.offset = 0,17
 counter.font = 2,0, 0, 255, 228, 140
@@ -2790,7 +2792,7 @@ counter11.layerno = 0
 
 ;-----------------------------------------------------------
 bg.spr = 30,0
-bg.offset = 0,0
+bg.offset = 0,55
 [Combo]
 team1.pos = 130,260        ;Coords to show
 team1.start.x = -240      ;Starting x-coords

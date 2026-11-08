@@ -3,7 +3,7 @@
 # the folder needs an update, whatever the recorded commit says.
 a2c5c01ddd9b442e3acf62b5aba1512c0117ba8b9d3099cb59b9865fb9226eba  data/ikemen1/system.def
 6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
-c61eefc0ec8a527fceba4d951d8233ca407cd83c853de0ca1da5c172a58f348e  data/fight.def
+5b2dfeb9cfab7a02d85f16569935aa7912d8a71618d7ce97d06a29e0f6d3db23  data/fight.def
 e6a95fdf361ee2dcb5112d8b8b97f27c4605177d4681071ec1b8fb4646e9c304  data/select.def
 3074e15b4300bd9683841d18abf759c65b26a954c47c4e55d99437e807902772  data/music.json
 57bb6634840f4afc30b4d014a9a20f16c5843db9454db018f1e0c9a2d90b9112  data/retired.txt
