@@ -4527,6 +4527,11 @@ end
 
 main.f_loadingRefresh()
 
+-- A restart asked for by the options menu leaves a note saying which screen the
+-- player was on. Take it here, before the title screen, so the setting they just
+-- saved arrives with them back in Options instead of on the title.
+options.f_resumeAfterRestart()
+
 if motif.attract_mode.enabled then
 	main.f_attractMode()
 else

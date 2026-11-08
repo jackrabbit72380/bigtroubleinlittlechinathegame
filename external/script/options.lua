@@ -26,11 +26,12 @@ function options.f_precision(v, decimal)
 	return tonumber(string.format(decimal, v))
 end
 
--- Path of the restart flag: the file the launcher watches for. It sits in the
--- same folder as the config this session was started with, so the engine and
--- the launcher always agree on where it is. Returns nil when the engine was
--- started without -config, since then no launcher is waiting for it.
-function options.f_restartFlag()
+-- Path of one of the restart handshake files: the flag the launcher watches
+-- for, and the note saying which screen to reopen. Both sit in the same folder
+-- as the config this session was started with, so the engine and the launcher
+-- always agree on where they are. Returns nil when the engine was started
+-- without -config, since then no launcher is waiting for either of them.
+function options.f_restartPath(name)
 	local cfg = getCommandLineValue("-config")
 	if cfg == nil then
 		return nil
@@ -41,18 +42,51 @@ function options.f_restartFlag()
 	end
 	local dir = cfg:match("^(.*[/\\])")
 	if dir == nil then
-		return "restart.flag"
+		return name
 	end
-	return dir .. "restart.flag"
+	return dir .. name
 end
 
--- Ask the launcher for a fresh engine, if one is watching. Returns true only
--- once the flag is really on disk, so a folder that cannot be written to keeps
--- the warning instead of closing the game with nothing to bring it back.
-function options.f_requestRestart()
+function options.f_restartFlag()
+	return options.f_restartPath("restart.flag")
+end
+
+-- Path of the options table the player is looking at, as submenu names joined
+-- by slashes ("video/resolution"), or "" for the top level. That is all the
+-- fresh engine needs to put them back where they were.
+function options.f_menuPath(target)
+	if options.menu == nil or target == nil then
+		return nil
+	end
+	local function walk(tbl, prefix)
+		if tbl == target then
+			return prefix
+		end
+		for name, sub in pairs(tbl.submenu or {}) do
+			if type(sub) == 'table' then
+				local found = walk(sub, prefix == '' and name or (prefix .. '/' .. name))
+				if found ~= nil then
+					return found
+				end
+			end
+		end
+		return nil
+	end
+	return walk(options.menu, '')
+end
+
+-- Ask the launcher for a fresh engine, if one is watching, and leave it the
+-- screen to open once it is up. Returns true only once the flag is really on
+-- disk, so a folder that cannot be written to keeps the warning instead of
+-- closing the game with nothing to bring it back.
+function options.f_requestRestart(screen)
 	local flag = options.f_restartFlag()
 	if flag == nil then
 		return false
+	end
+	local note = options.f_restartPath("restart.screen")
+	if note ~= nil then
+		pcall(main.f_fileWrite, note, screen or "")
 	end
 	if not pcall(main.f_fileWrite, flag, "1") then
 		return false
@@ -60,9 +94,52 @@ function options.f_requestRestart()
 	return fileExists(flag)
 end
 
+-- Take the screen the previous engine left behind, and forget it, so the next
+-- ordinary start is not sent into Options by a note it has already used.
+function options.f_takeRestartScreen()
+	local path = options.f_restartPath("restart.screen")
+	if path == nil or not fileExists(path) then
+		return nil
+	end
+	local text = main.f_fileRead(path, 'r', true) or ""
+	if os.remove ~= nil then
+		pcall(os.remove, path)
+	end
+	return (text:gsub('%s+$', ''))
+end
+
+-- Reopen the screen the player saved from, then the normal options menu, so a
+-- restart no longer dumps them on the title screen with their setting changed
+-- but their place lost.
+function options.f_resumeAfterRestart()
+	local screen = options.f_takeRestartScreen()
+	if screen == nil then
+		return false
+	end
+	-- The same entry the options menu performs for itself when opened from the
+	-- title, so a submenu resumed directly has its backdrop and music.
+	bgReset(motif.optionbgdef.BGDef)
+	fadeInInit(motif.option_info.fadein.FadeData)
+	playBgm({source = "motif.option"})
+	main.close = false
+	local tbl = options.menu
+	if screen ~= "" then
+		for name in screen:gmatch("[^/]+") do
+			tbl = (tbl ~= nil and tbl.submenu ~= nil) and tbl.submenu[name] or nil
+		end
+	end
+	if tbl ~= nil and tbl ~= options.menu and tbl.loop ~= nil then
+		tbl.loop()
+		main.f_menuSnap(motif.option_info)
+		main.f_menuItemBgAnimReset(motif.option_info)
+	end
+	options.menu.loop()
+	return true
+end
+
 --- Save the current configuration to the config file and handle common file modifications
 local t_commonFilesOriginal = gameOption('Common')
-function options.f_saveCfg(reload)
+function options.f_saveCfg(reload, screen)
 	-- Restore the original content of the common files
 	local t_commonFiles = gameOption('Common')
 	for _, k in ipairs({'Air', 'Cmd', 'Const', 'States', 'Fx', 'Modules', 'Lua'}) do
@@ -78,7 +155,7 @@ function options.f_saveCfg(reload)
 	-- Started without -config (the exe run on its own) nothing is watching, and
 	-- the warning is still the honest thing to show.
 	if reload then
-		if options.f_requestRestart() then
+		if options.f_requestRestart(screen) then
 			os.exit()
 		end
 		main.f_warning(motif.warning_info.text.text.reload, motif.option_info, motif.optionbgdef)
@@ -1395,7 +1472,7 @@ options.t_itemname = {
 		if getInput(-1, motif.option_info.menu.done.key) then
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
-				options.f_saveCfg(options.needReload)
+				options.f_saveCfg(options.needReload, options.f_menuPath(t))
 			end
 			fadeOutInit(motif.option_info.fadeout.FadeData)
 			main.close = true
@@ -1421,7 +1498,7 @@ options.t_itemname = {
 		if getInput(-1, motif.option_info.menu.done.key) then
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
-				options.f_saveCfg(options.needReload)
+				options.f_saveCfg(options.needReload, options.f_menuPath(t))
 			end
 		end
 		return true
