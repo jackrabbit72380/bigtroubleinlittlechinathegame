@@ -409,11 +409,18 @@ def plate():
 
 
 def overlay():
-    """The full-screen backdrop from art_src/ui/splash.png, cover-cropped."""
+    """The full-screen backdrop from art_src/ui/splash.png, cover-cropped.
+
+    Transparency survives on purpose. This layer sits above the clouds, so an
+    opaque poster hides the sky completely while a cut-out one lets it show
+    through - and a flat plate colour is keyed out the same way the logo's is,
+    so an export with a white or grey box does not paint a rectangle over the
+    animated clouds.
+    """
     path = first_plate(SPLASHES)
     if not path:
         return None, None
-    img = Image.open(path).convert("RGB")
+    img = flat_key(Image.open(path))
     k = max(SCREEN[0] / float(img.width), SCREEN[1] / float(img.height))
     img = img.resize((max(1, int(round(img.width * k))),
                       max(1, int(round(img.height * k)))), Image.LANCZOS)
