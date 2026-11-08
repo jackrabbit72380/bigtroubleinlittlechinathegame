@@ -55,6 +55,22 @@ GOLD_DIM = (120, 96, 46)
 INK = (10, 12, 13)
 
 
+
+# The stage card's own gold rule, the same one tools/build_stages.py bakes, so the
+# training room's card is not the one bare tile in the stage wall.
+CARD_GOLD = (240, 196, 88, 255)
+CARD_DARK = (10, 14, 22, 255)
+
+
+def frame_card(img):
+    """A gold rule around a stage card, with a dark line outside it."""
+    out = img.convert("RGBA").copy()
+    draw = ImageDraw.Draw(out)
+    w, h = out.size
+    draw.rectangle([0, 0, w - 1, h - 1], outline=CARD_DARK, width=2)
+    draw.rectangle([2, 2, w - 3, h - 3], outline=CARD_GOLD, width=4)
+    return out
+
 def backdrop():
     """Concrete hall, timber floor, a grid chalked down the middle."""
     img = art.vgrad((W, SCREEN[1]),
@@ -219,7 +235,7 @@ def main():
     img = backdrop()
     sprites = [
         {"group": 0, "number": 0, "image": img, "axis": (0, 0)},
-        {"group": 9000, "number": 1, "image": preview(img), "axis": (0, 0)},
+        {"group": 9000, "number": 1, "image": frame_card(preview(img)), "axis": (0, 0)},
     ]
     with open(STAGE + ".sff", "wb") as f:
         f.write(sff.write_sff(sprites))
