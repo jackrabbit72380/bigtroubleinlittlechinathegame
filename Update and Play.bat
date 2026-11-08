@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=68"
+set "UPDVER=69"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -583,23 +583,19 @@ set "GOK=%CACHE%\flush.ok"
 set "GBAD=%CACHE%\flush.bad"
 if exist "%GOK%" del /q "%GOK%" >nul 2>&1
 if exist "%GBAD%" del /q "%GBAD%" >nul 2>&1
-set "GBAT=%CACHE%\flush.bat"
-rem git writes why it refuses into this file and nothing ever read it back, so
-rem a failed write was silent on the one machine that could explain it. It is
-rem emptied for the batch and its lines go into the run log if the batch fails,
-truncating also keeps that dump short: it is one batch of twelve files.
+rem The batch is written in this window. It used to be handed to a started
+rem helper, and the wait on the helper's marker is where the run stopped: a
+rem marker that never came, and a started batch file the shell could not find,
+rem both ended the update with a message and no line in the log. Twelve files
+rem are one quick checkout, and git says why in git.log when it refuses - with
+rem the same low-speed limit the fetch carries, so a stalled transfer gives up
+rem on its own instead of holding the window.
 type nul > "%CACHE%\git.log"
->  "%GBAT%" echo @echo off
->> "%GBAT%" echo cd /d "%~dp0."
->> "%GBAT%" echo echo [helper] started ^>^>"%CACHE%\git.log"
->> "%GBAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% ^>^>"%CACHE%\git.log" 2^>^&1
->> "%GBAT%" echo if errorlevel 1 (echo x^>"%GBAD%") else (echo x^>"%GOK%")
-if exist "%GBAT%" start "" /b cmd /c ""%GBAT%""
-if not exist "%GBAT%" git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
-if not exist "%GBAT%" if errorlevel 1 (echo x>"%GBAD%") else (echo x>"%GOK%")
-call :says "  writing %BCOUNT% file(s)"
-call :spinwait "%GOK%" "%GBAD%" "writing %BCOUNT% file(s)" 120
+call :says "  writing %BCOUNT% file(s) - %NDONE% of %NCH% done"
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitflush_retry
+call :log wrote %NDONE% of %NCH% file(s)
+
 del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
 set /a BCOUNT=0
@@ -612,26 +608,24 @@ rem and a percentage. Whatever fails is written to stuck.txt, and the recheck at
 rem the end hashes everything that landed and writes the rest again.
 call :gitflush_log
 call :says "  the batch did not finish - trying its files one at a time"
+call :says "  git refused - what it said is in btilc-updater.log"
 for /f "usebackq delims=" %%f in ("%CACHE%\todo.txt") do call :gitfile "%%f"
 del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
 set /a BCOUNT=0
 exit /b 0
 :gitfile
-rem %1 = one path. Only reached after a batch would not finish, so it can afford
-rem a wait of its own: the point here is the name, not the speed.
+rem %1 = one path. Only reached after a batch refused, so it can afford a wait
+rem of its own: the point here is the name, not the speed. Written in this
+rem window, like the batch above, so a helper that cannot start cannot end the
+rem run either.
+call :log writing %~1
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- "%~1" >>"%CACHE%\git.log" 2>&1
 set "G1OK=%CACHE%\flush1.ok"
 set "G1BAD=%CACHE%\flush1.bad"
 if exist "%G1OK%" del /q "%G1OK%" >nul 2>&1
 if exist "%G1BAD%" del /q "%G1BAD%" >nul 2>&1
-set "G1BAT=%CACHE%\flush1.bat"
->  "%G1BAT%" echo @echo off
->> "%G1BAT%" echo cd /d "%~dp0."
->> "%G1BAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- "%~1" ^>^>"%CACHE%\git.log" 2^>^&1
->> "%G1BAT%" echo if errorlevel 1 (echo x^>"%G1BAD%") else (echo x^>"%G1OK%")
-start "" /b cmd /c ""%G1BAT%""
-call :spinwait "%G1OK%" "%G1BAD%" "writing %~nx1" 60
-if errorlevel 1 goto gitfile_stuck
+
 exit /b 0
 :gitfile_stuck
 set "WRITEFAIL=1"
@@ -1628,8 +1622,13 @@ rem A read-only file, a folder under Windows' control or a scanner holding it ca
 rem refuse the rename outright. Three launches is enough: past that this copy
 rem runs the update as it is instead of closing, fetching and closing again on
 rem every double-click.
+rem The count is per launch. Kept in a file across launches it locked a folder
+rem out of every newer launcher: three crashed runs left a four in swap.attempts
+rem and every launch after that refused to fetch, on the very copy that was
+rem crashing, so nothing the repository fixed could ever reach it. It is cleared
+rem here, and the three tries below are three tries in this launch.
+del /q "%CACHE%\swap.attempts" >nul 2>&1
 set "SWN=0"
-if exist "%CACHE%\swap.attempts" for /f "usebackq delims=" %%n in ("%CACHE%\swap.attempts") do set "SWN=%%n"
 set /a SWN+=1
 >"%CACHE%\swap.attempts" echo %SWN% 2>nul
 if %SWN% GTR 3 goto selfupdate_stuck
