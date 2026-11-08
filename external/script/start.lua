@@ -1545,6 +1545,13 @@ end
 
 -- Where the word sits: centred under the painted wall, using the section's own
 -- grid metrics rather than a number typed to fit one layout.
+-- The RANDOM canvas, 294x72, painted by tools/build_select_grid.py. It is
+-- declared up here, not with the caption constants further down: a local
+-- declared after a function is not visible inside it, so f_drawRandomStop
+-- would read a nil global and the select screen would stop on the first
+-- frame it was drawn.
+local RANDOM_ART = {294, 72}
+
 function start.f_drawRandomStop()
 	local si = motif.select_info
 	local pos = si and si.pos
@@ -1607,7 +1614,6 @@ local labelAnims = {}
 local LABEL_ART = {318, 72}
 local LABEL_X = {58, 1544}
 local WORD_Y = 0
-local RANDOM_ART = {294, 72}
 
 local function labelAnim(pn)
 	if labelAnims[pn] == nil then
