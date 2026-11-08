@@ -953,8 +953,12 @@ def paint():
     # punched last: it has to survive every layer drawn after it.
     painted.putalpha(ImageChops.subtract(painted.split()[3], aperture))
     # The fog is the fog.webm clip itself, drawn behind the hall, so the
-    # aperture is the only place it can be seen. Its layer is FOG_BG below.
-    hd.EXTRA_BG["lopans_throne"] = FOG_BG
+    # aperture is the only place it can be seen. Its layer is FOG_BG below, and
+    # that is empty unless video/fog.webm is really there: the clip is not part
+    # of the game, and a layer pointing at a missing file does not leave the
+    # mouth clear, it leaves it black.
+    if FOG_BG:
+        hd.EXTRA_BG["lopans_throne"] = FOG_BG
     return [("bg", 0, 0, painted, 0),
             ("fg", 3, 0, fg, 1)]
 
@@ -973,7 +977,10 @@ def paint():
 #   * video does not repeat unless `loop = 1` is set (is.ReadBool("loop", ...)
 #     in the video branch of BG parsing). Without it the clip ran its fifteen
 #     seconds and the mouth went dark for good.
-FOG_BG = """
+_FOG_CLIP = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                      "video", "fog.webm")
+
+FOG_BG = ("""
 ; the mouth is a hole into the throat: the fog film sits at the bottom of the
 ; stack, so the aperture is the only place it can be seen. It covers the whole
 ; view, so the fog keeps running in the mouth as the camera pans.
@@ -984,7 +991,7 @@ loop = 1
 layerno = 0
 start = -%d,0
 delta = 0,0
-""" % (hd.LOCAL_W,)
+""" % (hd.LOCAL_W,)) if os.path.exists(_FOG_CLIP) else ""
 
 
 def main():
