@@ -1470,7 +1470,10 @@ def check_retired():
     elif 'del /q "%~dp0%R%"' not in launcher:
         err("retired: Update and Play.bat lists the retired files but never deletes "
             "one")
-    elif "call :retired" not in launcher:
+    elif not any(line.strip().lower() == "call :retired"
+                 for line in launcher.splitlines()):
+        # the substring also matches "call :retiredone", which is the loop body,
+        # so this has to be the call itself or a launcher that never runs it passes
         err("retired: Update and Play.bat never calls :retired, so nothing is "
             "removed before the game starts")
 
