@@ -59,8 +59,8 @@ TIME_Y = 34                 # yin-yang centre
 # digits sat above the yin-yang, over the dragon's heads, which read as part of
 # the banner instead of as the clock. +half a cell puts their centre line on the
 # disc's centre, between the two dots.
-TIME_NUM_SCALE = 0.7
-TIME_NUM_CELL = 49
+TIME_NUM_SCALE = 1.0
+TIME_NUM_CELL = 45          # the Display face's cell, the same as every caption
 TIME_NUM_Y = int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
 METER_W = 202               # fillable length of the audacity bar
 BAR_X1 = 568                # p1.pos.x: inner end of the audacity bar
@@ -636,6 +636,10 @@ def patch_def():
     body = re.sub(r"(?m)^([ \t]*counter\w*\.scale[ \t]*=[ \t]*)\d+(\.\d+)?[ \t]*,[ \t]*\d+(\.\d+)?[ \t]*$",
                   lambda m: "%s%.2f, %.2f" % (m.group(1), TIME_NUM_SCALE,
                                                TIME_NUM_SCALE), body)
+    # the digits are the Display face now, in the caption's own colour, so the
+    # clock reads as part of the HUD instead of the stock Timer numerals
+    body = re.sub(r"(?m)^([ \t]*counter\w*\.font[ \t]*=[ \t]*)\d+",
+                  r"\g<1>10", body)
     lines[s:e] = body.split("\n")
 
     s, e = _section(lines, "Score")

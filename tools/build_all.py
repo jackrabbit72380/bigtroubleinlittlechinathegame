@@ -162,6 +162,11 @@ def main():
     devhelp_motif = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "system.def")
     if os.path.isfile(devhelp_motif):
         scripts.append("build_devhelp.py")
+    # Every caption in the motif joins the fight screen's face at the fight
+    # screen's size: one face, one size, across the whole game. It edits the same
+    # file the Developer Keys entry goes into, so it runs straight after it.
+    if devhelp_motif and os.path.isfile(devhelp_motif):
+        scripts.append("build_text_faces.py")
     # The menu's confirm sample is a struck bell rather than the stock beep.
     # It lives in data/system.snd, which the engine copy above resets.
     scripts.append("build_ui_sounds.py")

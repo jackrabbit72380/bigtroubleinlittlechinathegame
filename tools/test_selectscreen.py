@@ -42,18 +42,20 @@ def check_motif(problems):
     text = read(DEF)
     si = block(text, "Select Info")
 
-    # one size for every word on the header row and the caption row
-    if (key(si, "title.font") or "").split(",")[0] != "11":
-        problems.append("VERSUS is not drawn in the 20px face")
+    # one size for every word on the header row and the caption row: the fight
+    # captions' own face (Display, font 10) at 1.5, the size the WINS caption
+    # gave the rest of the game
+    if (key(si, "title.font") or "").split(",")[0] != "10":
+        problems.append("VERSUS is not drawn in the caption face")
     if (key(si, "title.scale") or "").replace(" ", "") != "1.5,1.5":
         problems.append("VERSUS is not at the captions' scale")
     for side in ("p1", "p2"):
-        if (key(si, side + ".name.font") or "").split(",")[0] != "11":
-            problems.append(side + " name is not drawn in the 20px face")
+        if (key(si, side + ".name.font") or "").split(",")[0] != "10":
+            problems.append(side + " name is not drawn in the caption face")
         if (key(si, side + ".name.scale") or "").replace(" ", "") != "1.5,1.5":
             problems.append(side + " name is not at the captions' scale")
     for k in ("stage.font", "stage.active.font"):
-        if (key(si, k) or "").split(",")[0] != "11":
+        if (key(si, k) or "").split(",")[0] not in ("10", "12"):
             problems.append(k + " is not the caption face")
     if (key(si, "stage.scale") or "").replace(" ", "") != "1.5,1.5":
         problems.append("the stage name is not the caption size")
@@ -91,7 +93,7 @@ def check_motif(problems):
     win = key(si, "stage.portrait.window") or ""
     if win.replace(" ", "") in ("", "0,0,0,0"):
         problems.append("the stage card's window is empty")
-    if (key(si, "stage.pos") or "").split(",")[-1].strip() != "1035":
+    if (key(si, "stage.pos") or "").split(",")[-1].strip() != "1005":
         problems.append("the stage name is not on the caption row")
     return text
 

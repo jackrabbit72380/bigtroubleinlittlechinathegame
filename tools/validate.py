@@ -1203,7 +1203,8 @@ def check_fight_hud():
     parts = text.split("[Time]", 1)
     if len(parts) == 2:
         body = parts[1].split("\n[", 1)[0]
-        want = int(round(49 * 0.70 / 2.0))
+        import build_banner as bb
+        want = int(round(bb.TIME_NUM_CELL * bb.TIME_NUM_SCALE / 2.0))
         m = _re.search(r"(?m)^\s*counter\.offset\s*=\s*(-?\d+)\s*,\s*(-?\d+)", body)
         if not m or int(m.group(2)) != want:
             err("fight HUD: [Time] counter.offset is %s, so the countdown is not on "

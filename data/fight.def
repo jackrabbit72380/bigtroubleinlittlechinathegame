@@ -2768,30 +2768,30 @@ bg.spr = 30,0
 bg.offset = 0,0
 bg.palfx.sinmul = 26, 26, 26, 24
 ; Time count display
-counter.offset = 0,17
-counter.font = 2,0, 0, 255, 228, 140
-counter.scale = 0.70, 0.70
+counter.offset = 0,22
+counter.font = 10,0, 0, 255, 228, 140
+counter.scale = 1.00, 1.00
 counter.palfx.mul = 256, 0, 0
 ; Ticks for each count
 framespercount = 60
 
-counter1.scale = 0.70, 0.70
-counter1.offset = 0,17
-counter1.font = 2, 0, 0, 255, 228, 140
+counter1.scale = 1.00, 1.00
+counter1.offset = 0,22
+counter1.font = 10, 0, 0, 255, 228, 140
 counter1.palfx.mul = 256, 128, 128
 counter1.palfx.sinmul = 0, 128, 128, 20
 counter1.layerno = 0
 
-counter10.font = 2, 0, 0, 255, 228, 140
-counter10.offset = 0,17
-counter10.scale = 0.70, 0.70
+counter10.font = 10, 0, 0, 255, 228, 140
+counter10.offset = 0,22
+counter10.scale = 1.00, 1.00
 counter10.palfx.mul = 256, 128, 128
 counter10.palfx.sinmul = 0, 128, 128, 20
 counter10.layerno = 0
 
-counter11.offset = 0,17
-counter11.font = 2, 0, 0, 255, 255, 255
-counter11.scale = 0.70, 0.70
+counter11.offset = 0,22
+counter11.font = 10, 0, 0, 255, 255, 255
+counter11.scale = 1.00, 1.00
 ;counter11.palfx.mul = 256, 128, 128
 counter11.layerno = 0
 ;counter11.palfx.sinmul = 0, 128, 128, 20

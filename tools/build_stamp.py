@@ -43,6 +43,9 @@ DATA_FILES = (
     "data/ikemen1/system.def",
     "data/system.base.def",
     "data/fight.def",
+    # the motif's own sound bank: external/mods/rainthunder.lua plays the rain
+    # stage's rumble out of it, so a re-painted sample has to count as an update
+    "data/system.snd",
     "data/select.def",
     "data/music.json",
     "data/retired.txt",
