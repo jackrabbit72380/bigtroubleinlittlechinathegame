@@ -1331,7 +1331,7 @@ local function showSessionWarning()
 end
 
 --warning display
-function main.f_warning(text, sec, background, overlay, titleData, textData, cancel_snd, done_snd)
+function main.f_warning(text, sec, background, overlay, titleData, textData, cancel_snd, done_snd, hold, titleText)
 	local overlay = overlay or motif.warning_info.overlay.RectData
 	local titleData = titleData or motif.warning_info.title.TextSpriteData
 	local textData = textData or motif.warning_info.text.TextSpriteData
@@ -1340,6 +1340,13 @@ function main.f_warning(text, sec, background, overlay, titleData, textData, can
 	local ret
 	textImgReset(textData)
 	textImgSetText(textData, text)
+	-- A caller that is about to close the game itself passes its own title and
+	-- a number of frames instead of waiting for a key: the message stays up
+	-- long enough to read and any key still skips it.
+	if titleText ~= nil then
+		textImgSetText(titleData, titleText)
+	end
+	local frames = 0
 	resetKey()
 	esc(false)
 	while true do
@@ -1370,6 +1377,12 @@ function main.f_warning(text, sec, background, overlay, titleData, textData, can
 		main.f_preloadTick(2)
 		--end loop
 		refresh()
+		if hold ~= nil then
+			frames = frames + 1
+			if frames >= hold then
+				break
+			end
+		end
 	end
 	resetTokenGuard()
 	return ret

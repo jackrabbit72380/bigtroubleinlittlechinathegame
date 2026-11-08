@@ -179,6 +179,11 @@ function options.f_saveCfg(reload, screen, item, cursorPosY)
 	-- the warning is still the honest thing to show.
 	if reload then
 		if options.f_requestRestart(screen, item, cursorPosY) then
+			-- Say what is happening before the window goes. A setting that needs a
+			-- restart used to make the game vanish for a moment, which reads as a
+			-- crash; the message stays up for a moment and any key skips it.
+			main.f_warning("Applying your settings.\nThe game will come back on its own.",
+				motif.option_info, motif.optionbgdef, nil, nil, nil, nil, nil, 60, "RESTARTING")
 			os.exit()
 		end
 		main.f_warning(motif.warning_info.text.text.reload, motif.option_info, motif.optionbgdef)
