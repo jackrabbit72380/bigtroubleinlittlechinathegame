@@ -100,6 +100,9 @@ REWRITES = (
     # it on the frame while its dots run.
     ("loading.font", f"{D}, 0, 0, {GOLD}"),
     ("loading.xshear", "0"),
+    # Centred on the frame: 960 is its middle, and the caption sits under the
+    # spinner at 594. The stock 1800,1020 put it in the bottom-right corner.
+    ("loading.offset", "960, 594"),
     # The engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is not rewritten
     # here but removed outright - see DROP_KEYS below.
     # infobox, game over text, story text

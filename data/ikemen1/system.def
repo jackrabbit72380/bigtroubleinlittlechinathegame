@@ -150,7 +150,7 @@ menu.item.layerno = 2
 menu.item.active.layerno = 2
 
 loading.font = 10, 0, 0, 240, 196, 88
-loading.offset = 1800, 1020
+loading.offset = 960, 594
 loading.scale = 0.75, 0.75
 loading.xshear = 0
 loading.text = NOW LOADING...
@@ -1303,7 +1303,7 @@ done.time = 180
 
 ; Anim/text rendered during background loading
 loading.anim = 600
-loading.offset = 1833, 69
+loading.offset = 960, 594
 loading.scale = 0.75, 0.75
 
 ; Anim/text rendered after background loading finishes

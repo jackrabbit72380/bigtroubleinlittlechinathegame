@@ -701,11 +701,54 @@ end
 --sprite beside the ring has no font or text of its own, so text put there would
 --not be guaranteed to show. The percentage leads, so even if the caption's end
 --is cut off the figure is still the thing the player sees.
---The caption's scale, matching system.def's loading.scale, so the measured
---width is the width the engine draws.
+--The boot screen: a spinner and one line, both centred on the frame. The
+--caption used to sit in the bottom-right corner on the motif's own offset, in
+--the small Body face, skewed by an xshear, and the shell then overwrote it with
+--a bare percentage. The spinner was never drawn at all unless the caption
+--failed, and the one runtime animation that was drawn came out four and a half
+--times too big (the engine draws a runtime anim at its own 240-unit space).
+--
+--The caption is placed with the align the engine centres on (0), so nothing has
+--to be measured: textImgGetTextWidth is not dependable in this build, and a
+--caption left on its motif offset whenever it failed is what kept it in the
+--corner. A build without the align call still gets the measured fallback.
 local LOADING_SCALE = 0.75
+local LOADING_SPINNER_Y = 0.40   -- of the frame's height, above the caption
+local LOADING_CAPTION_Y = 0.55
+
+local function loadingScreen()
+	local w, h = 1920, 1080
+	pcall(function()
+		local lc = motif.info.localcoord
+		if lc ~= nil and lc[1] ~= nil and lc[2] ~= nil and lc[1] > 0 and lc[2] > 0 then
+			w, h = lc[1], lc[2]
+		end
+	end)
+	return w, h
+end
+
+--A runtime animation is positioned in the motif's space but drawn at the
+--engine's own 240-unit one, so it is scaled into it here as well. The select
+--screen's sprites needed the same correction (external/script/start.lua).
+local function loadingDrawAnim(a, x, y)
+	if a == nil then
+		return
+	end
+	local w, h = loadingScreen()
+	local k = 240 / h
+	pcall(animSetLocalcoord, a, w, h)
+	pcall(animSetScale, a, k, k)
+	pcall(animSetPos, a, x, y)
+	pcall(animDraw, a)
+	pcall(animUpdate, a)
+end
 
 function main.f_loadingDraw()
+	local w, h = loadingScreen()
+	local spinner = nil
+	pcall(function() spinner = motif.title_info.loading.wait.AnimData end)
+	loadingDrawAnim(spinner, w / 2, h * LOADING_SPINNER_Y)
+
 	local text = motif.title_info.loading.TextSpriteData
 	local done, total = main.f_loadingProgress()
 	local pct = 0
@@ -713,28 +756,35 @@ function main.f_loadingDraw()
 		pct = math.floor(done * 100 / total)
 	end
 	if pct > 100 then pct = 100 end
-	--The caption is one centred line with its dots running, so a slow load still
-	--looks like the game is working at it. The motif anchors it to a corner by
-	-- its offset, so the line is measured and placed by its own centre here
-	-- instead of being nudged by hand.
+	--The dots run while the line sits still, so a slow load still looks like the
+	--game is working at it.
 	local dots = string.rep('.', math.floor(os.clock() * 2) % 4)
 	local caption = 'NOW LOADING' .. dots .. '   ' .. pct .. '%'
-	local ok = false
+	local drawn = false
 	if text ~= nil then
-		ok = pcall(function()
+		drawn = pcall(function()
 			textImgSetText(text, caption)
 			pcall(textImgSetScale, text, LOADING_SCALE, LOADING_SCALE)
-			local gotWidth, width = pcall(textImgGetTextWidth, text)
-			if gotWidth and type(width) == 'number' and width > 0 then
-				pcall(textImgSetPos, text, 960 - width * LOADING_SCALE / 2, 540)
+			local x = w / 2
+			local centred = pcall(textImgSetAlign, text, 0)
+			if not centred then
+				local got, width = pcall(textImgGetTextWidth, text)
+				if got and type(width) == 'number' and width > 0 then
+					x = w / 2 - width * LOADING_SCALE / 2
+				end
 			end
+			textImgSetPos(text, x, h * LOADING_CAPTION_Y)
 			textImgDraw(text)
 		end)
 	end
-	if not ok then
+	if not drawn then
 		--an older build without a writable caption still gets the load art
-		main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
-		textImgDraw(motif.title_info.loading.wait.TextSpriteData)
+		pcall(function()
+			main.f_animPosDraw(motif.title_info.loading.wait.AnimData)
+		end)
+		if motif.title_info.loading.wait.TextSpriteData ~= nil then
+			textImgDraw(motif.title_info.loading.wait.TextSpriteData)
+		end
 	end
 end
 
