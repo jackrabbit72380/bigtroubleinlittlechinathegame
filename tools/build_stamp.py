@@ -45,6 +45,7 @@ DATA_FILES = (
     "data/fight.def",
     "data/select.def",
     "data/music.json",
+    "data/retired.txt",
     "data/albums.sff",
     "data/ikemen1/logo.def",
     "data/ikemen1/credits.def",

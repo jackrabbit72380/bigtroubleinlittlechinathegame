@@ -1466,6 +1466,7 @@ if not defined VER call :say "main @ local archive"
 call :datareport
 
 :launch
+call :retired
 call :pct 100 "Starting the game"
 call :barflush
 rem The engine runs in a helper of its own, so this window can close as soon as
@@ -1941,6 +1942,24 @@ rem Appends one line to the run log. Cheap enough to call at every step.
 if not defined LOG exit /b 0
 >>"%LOG%" echo [%TIME%] %* 2>nul
 exit /b 0
+
+:retired
+rem Root files main used to ship and has since dropped are deleted here, so a
+rem folder that has updated for years does not keep what the project removed.
+rem The list is data\retired.txt, delivered by the update like the other data
+rem files; tools\validate.py keeps it equal to this repository's history, so a
+rem root file deleted from main cannot be forgotten.
+if not exist "%~dp0data\retired.txt" exit /b 0
+for /f "usebackq delims=" %%R in ("%~dp0data\retired.txt") do call :retiredone "%%R"
+exit /b 0
+
+:retiredone
+set "R=%~1"
+if not defined R exit /b 0
+if exist "%~dp0%R%" del /q "%~dp0%R%" >nul 2>&1
+if not exist "%~dp0%R%" call :log removed %R% - main no longer ships it
+exit /b 0
+
 
 :snap
 rem %1 = a path from this folder, %2 = the variable that keeps its hash.

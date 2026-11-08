@@ -1410,8 +1410,76 @@ def check_media_refs():
 
 
 
+def check_retired():
+    """Root files main stopped shipping have to be deleted from the folder.
+
+    The updater copies the six game folders, so a file that used to sit at the
+    root - Start.html, Test Big Trouble.bat - stayed in every folder that had ever
+    updated, for good, after main dropped it. data/retired.txt is the list the
+    updater deletes from; this keeps that list equal to the repository's own
+    history, so retiring a root file cannot be forgotten, and refuses to name a
+    file the repo still ships.
+    """
+    path = os.path.join(ROOT, "data", "retired.txt")
+    if not os.path.isfile(path):
+        err("retired: data/retired.txt is missing, so dropped root files are never "
+            "removed from a folder that has them")
+        return
+
+    listed = []
+    for raw in read(path).splitlines():
+        name = raw.split(";", 1)[0].strip()
+        if name:
+            listed.append(name)
+
+    tracked = _tracked()
+    for name in listed:
+        if "/" in name or "\\" in name:
+            err("retired: %s is listed, but only files at the root of the game "
+                "folder can be retired this way - the update already removes "
+                "dropped files inside the game folders" % name)
+        elif tracked is not None and name in tracked:
+            err("retired: %s is listed as retired, but the repo still ships it"
+                % name)
+
+    if tracked is not None:
+        try:
+            out = subprocess.run(["git", "-C", ROOT, "log", "--diff-filter=D",
+                                  "--name-only", "--format="],
+                                 stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                                 check=True).stdout
+        except Exception:
+            out = b""
+        gone = set()
+        for raw in out.decode("utf-8", "replace").splitlines():
+            name = raw.strip()
+            if name and "/" not in name:
+                gone.add(name)
+        missing = sorted(gone - set(listed))
+        if missing:
+            err("retired: %s was deleted from the root of the repo but is not in "
+                "data/retired.txt, so folders that still have it keep it"
+                % ", ".join(missing))
+
+    launcher = read(os.path.join(ROOT, "Update and Play.bat"))
+    if "data\\retired.txt" not in launcher:
+        err("retired: Update and Play.bat no longer reads data\\retired.txt, so the "
+            "list is never acted on")
+    elif 'for /f "usebackq delims=" %%R in ("%~dp0data\\retired.txt")' not in launcher:
+        err("retired: Update and Play.bat does not loop over data\\retired.txt")
+    elif 'del /q "%~dp0%R%"' not in launcher:
+        err("retired: Update and Play.bat lists the retired files but never deletes "
+            "one")
+    elif "call :retired" not in launcher:
+        err("retired: Update and Play.bat never calls :retired, so nothing is "
+            "removed before the game starts")
+
+    notes.append("retired: %d dropped root file(s) are removed on update" % len(listed))
+
+
 def main():
     check_media_refs()
+    check_retired()
     chars = check_select()
     check_menu_theme()
     check_commands()
