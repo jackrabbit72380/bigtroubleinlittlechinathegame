@@ -75,11 +75,6 @@ jobs:
           # sprites are unpacked next to the game as PNGs.
           if [ -f "Dump Stage Art.bat" ]; then cp "Dump Stage Art.bat" "$out"; fi
 
-          # A one-click launcher: the engine reads save/config.ini, so a config
-          # beside the exe does nothing on its own. This puts it where it is read
-          # and then starts the game, which is the difference between a bundle
-          # that boots and one that sits on a renderer it cannot use.
-          if [ -f "Play Big Trouble.bat" ]; then cp "Play Big Trouble.bat" "$out"; fi
           mkdir -p "$out/tools"
           cp tools/dump_stage_art.py tools/sff.py "$out/tools/"
 

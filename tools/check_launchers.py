@@ -22,7 +22,6 @@ import re
 LAUNCHERS = (
     "Update and Play.bat",
     "Apply main.zip.bat",
-    "Play Big Trouble.bat",
     "Dump Stage Art.bat",
 )
 
