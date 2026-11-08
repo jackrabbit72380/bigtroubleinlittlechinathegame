@@ -24,16 +24,38 @@ engine executable.
 
 ## Testing on your own, no second person
 
-One PC can do both sides: start the game twice from the same folder.
+One PC can be both players, because a host and a guest are just two copies of the
+same game talking over the network - and a PC can talk to itself.
 
-1. First window: NETWORK > HOST GAME. Leave it on "Waiting for player 2... (7500)".
-2. Start the same game again (double-click the same exe a second time).
-3. Second window: NETWORK > JOIN GAME, address `127.0.0.1`, port 7500.
+1. Start the game the way you normally do (`Update and Play.bat`), so it launches
+   from `Big Trouble Online`, the v1.0.0 build.
+2. Title menu: **NETWORK > HOST GAME**. It sits on "Waiting for player 2... (7500)".
+   Leave it there.
+3. Start the same game a **second** time: go into `Big Trouble Online` and
+   double-click `Ikemen_GO.exe`. A second window opens.
+4. In the second window: **NETWORK > JOIN GAME > NEW ADDRESS**. It asks for two
+   things, in this order:
+   - a **name** for the address - type anything, e.g. `me` (this is just a label
+     that gets remembered for next time),
+   - the **address** - type `127.0.0.1`, which always means "this PC".
+   There is no port box: the guest uses the host's listen port, 7500 by default.
+5. The first window leaves the waiting screen and both windows show a small
+   netplay menu - **VERSUS 2P**, **ARCADE CO-OP**, **SURVIVAL CO-OP**, **EXIT**.
+   Pick **VERSUS 2P**, then characters and a stage as usual.
 
-If a match starts, then hosting, joining, the port and the build all work, and a
-friend only adds distance. If the second window cannot connect, the firewall is
-blocking 7500 - allow it. If they connect and drop at once, the two builds differ,
-which is what `CHECK-ONLINE.bat` is for.
+If a match starts, hosting, joining, the port and the build all work, and a friend
+only adds distance. The keyboard is shared by both windows, so this is a
+connection test rather than a real fight: click into one window to move that
+player, click into the other to move theirs.
+
+What the outcomes mean:
+
+| What happens | What it means |
+|---|---|
+| Second window connects, match starts | Everything works: port, build, content |
+| Second window cannot connect at all | Firewall blocking 7500 - allow it for private networks |
+| Connects, then drops or desyncs instantly | The two copies are not identical; `CHECK-ONLINE.bat` shows it |
+| First window never leaves "Waiting for player 2..." | The guest typed the address wrong, or hit a different port in `save\config.ini` |
 
 ## Same house / same network
 
@@ -41,7 +63,9 @@ which is what `CHECK-ONLINE.bat` is for.
    and stays there. Leave it alone.
 2. **Host:** find his local address: press Win+R, run `cmd`, type `ipconfig`,
    read **IPv4 Address** (looks like 192.168.1.24).
-3. **Guest:** open NETWORK > JOIN GAME, type that address, port 7500.
+3. **Guest:** open NETWORK > JOIN GAME > NEW ADDRESS, give it a name (anything,
+   e.g. `host`), then type that address. There is no port prompt: the guest calls
+   the host's listen port, 7500 unless it was changed in `save\config.ini`.
 4. The host's screen changes, a match starts.
 
 ## Different houses / over the internet
