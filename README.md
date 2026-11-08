@@ -77,12 +77,14 @@ crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
 
 ### Play online
 
-Double-click **Update and Play.bat**. It keeps a second folder beside the game -
-`Big Trouble Online` - holding the Ikemen GO engine this screenpack is drawn for
-plus your game files, and starts the game from there. Both players need the same
-build, so run it the same day: NETWORK > HOST GAME on one machine, then
-NETWORK > JOIN GAME > NEW ADDRESS on the other with the host's address
-(port 7500 unless changed). One PC can do both sides to check it works.
+Nothing extra to install: the engine's own NETWORK menu does it. On one machine
+pick NETWORK > HOST GAME and leave it waiting; on the other, NETWORK > JOIN GAME
+> NEW ADDRESS, name the address anything, and type the host's address (port 7500
+unless you changed it in `save\config.ini`). Both sides then pick VERSUS 2P.
+
+The game runs from this one folder, on the engine that is in it, so the menus
+and text look exactly as they should. Both players need the same build, so both
+run **Update and Play.bat** on the same day before playing.
 
 ## What is in the build
 
