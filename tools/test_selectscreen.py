@@ -180,6 +180,22 @@ def check_script(problems):
         problems.append("a done cursor can still be drawn on the RANDOM stop")
 
 
+def check_metrics(problems):
+    text = read(START)
+    if "local function dims(" not in text:
+        problems.append("start.lua has no flattener for the motif's grid metrics")
+    if not re.search(r"local cellW, cellH = dims\(si\.cell\.size\)", text):
+        problems.append("start.lua still reads cell.size as a flat pair")
+    # This engine build nests pair metrics per side (cell.size = {{128,160}});
+    # indexing one straight and multiplying it is what put the menu in the
+    # error box, so every read has to go through the flattener.
+    for m in re.finditer(r"(?m)^.*\.(?:size|spacing|pos|offset)\[\d\].*$", text):
+        line = m.group(0).strip()
+        if line.startswith("--"):
+            continue
+        problems.append("start.lua indexes a motif metric straight: " + line[:90])
+
+
 def main():
     problems = []
     text = check_motif(problems)
@@ -200,6 +216,10 @@ def main():
     before = len(problems)
     check_script(problems)
     print("  %s the screen runs the wall, the word and the stage phase"
+          % ("ok " if len(problems) == before else "FAIL"))
+    before = len(problems)
+    check_metrics(problems)
+    print("  %s the grid metrics are read through the flattener"
           % ("ok " if len(problems) == before else "FAIL"))
     if problems:
         print("\nthe select screen regressed in %d place(s)" % len(problems))
