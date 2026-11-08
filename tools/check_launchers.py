@@ -208,6 +208,17 @@ def _syntax_problems(name, raw):
                            "the rest of the line as text: %s"
                            % (name, i, stripped[:70]))
                 break
+        # call reads its line a second time, so a sign escaped as %% on a call
+        # line arrives at the second read with nothing to pair it with and cmd
+        # stops the whole batch there. %%P is a for variable and is left alone.
+        call_at = re.search(r"(?i)\bcall\s+:[A-Za-z0-9_]+", line)
+        if call_at:
+            for m in re.finditer(r"%%(?![A-Za-z0-9])", line[call_at.end():]):
+                out.append("%s:%d: a per cent sign is passed to call, which reads "
+                           "the line again and leaves the sign with no partner, so "
+                           "the batch stops there: %s"
+                           % (name, i, stripped[:70]))
+                break
         if stripped.endswith("^"):
             out.append("%s:%d: the line ends in a caret, so it continues onto "
                        "the next one: %s" % (name, i, stripped[:60]))

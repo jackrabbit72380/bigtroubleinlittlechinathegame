@@ -135,6 +135,25 @@ skips the network completely.
 `Apply main.zip.bat` remains for the case where you would rather do the download
 by hand: save the zip in the game folder and double-click it.
 
+### The updater closes itself
+
+If `Update and Play.bat` disappears in the middle of a run, it reached a line cmd
+cannot parse - usually a percent sign or an operator that a second read of the
+line left behind - and a batch file that cannot parse a line stops there and
+closes its window, which looks like a crash. The folder is not stuck with that
+copy:
+
+1. look for `Update and Play.new` next to the launcher and rename it over
+   `Update and Play.bat` if it is still there - the launcher stages a whole
+   replacement before it starts work;
+2. or double-click `Apply main.zip.bat`, which puts a whole launcher in place
+   even when no zip was downloaded;
+3. or download `Update and Play.bat` from the repository and save it over the
+   old one.
+
+The version in use is in the window title and on the first line of
+`btilc-updater.log`, so it is easy to say which copy is running.
+
 ### Why the scripts name `System32` tools in full
 
 A Git for Windows install that puts its `usr\bin` on `PATH` shadows the Windows

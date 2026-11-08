@@ -48,6 +48,8 @@ TRAPS = [
     ("a literal ! with delayed expansion",
      ("setlocal EnableDelayedExpansion", "echo a!b!")),
     ("a path passed to call unquoted", ("call :log folder %~dp0  exe %EXE%",)),
+    ("a per cent sign handed to call",
+     ('call :says "  2%%  Checking for updates"',)),
 ]
 
 # the same things written the way cmd reads them: none may be reported
@@ -66,6 +68,8 @@ CLEAN = [
     ("a quoted path passed to call", ('call :log folder "%~dp0"  exe %EXE%',)),
     ("a quoted operator", ('echo "a | b > c"',)),
     ("a padded count", ('if %GNUM% LSS 10 set "GNUM=  %GNUM%"',)),
+    ("a for variable handed to call",
+     ("for /l %%P in (1,1,3) do call :gaugeone %%P",)),
 ]
 
 
