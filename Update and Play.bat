@@ -92,7 +92,7 @@ color 0E
 cd /d "%~dp0"
 rem The version the title bar, the banner and the run log all read, so the
 rem three cannot drift apart when the script is bumped.
-set "UPDVER=67"
+set "UPDVER=68"
 title Big Trouble in Little China: The Game - Updater v%UPDVER%
 
 rem ---------------------------------------------------------------------------
@@ -584,15 +584,21 @@ set "GBAD=%CACHE%\flush.bad"
 if exist "%GOK%" del /q "%GOK%" >nul 2>&1
 if exist "%GBAD%" del /q "%GBAD%" >nul 2>&1
 set "GBAT=%CACHE%\flush.bat"
+rem git writes why it refuses into this file and nothing ever read it back, so
+rem a failed write was silent on the one machine that could explain it. It is
+rem emptied for the batch and its lines go into the run log if the batch fails,
+truncating also keeps that dump short: it is one batch of twelve files.
+type nul > "%CACHE%\git.log"
 >  "%GBAT%" echo @echo off
 >> "%GBAT%" echo cd /d "%~dp0."
+>> "%GBAT%" echo echo [helper] started ^>^>"%CACHE%\git.log"
 >> "%GBAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% ^>^>"%CACHE%\git.log" 2^>^&1
 >> "%GBAT%" echo if errorlevel 1 (echo x^>"%GBAD%") else (echo x^>"%GOK%")
 if exist "%GBAT%" start "" /b cmd /c ""%GBAT%""
 if not exist "%GBAT%" git -c core.longpaths=true checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
 if not exist "%GBAT%" if errorlevel 1 (echo x>"%GBAD%") else (echo x>"%GOK%")
 call :says "  writing %BCOUNT% file(s)"
-call :spinwait "%GOK%" "%GBAD%" "writing %BCOUNT% file(s)" 300
+call :spinwait "%GOK%" "%GBAD%" "writing %BCOUNT% file(s)" 120
 if errorlevel 1 goto gitflush_retry
 del /q "%CACHE%\todo.txt" >nul 2>&1
 set "BATCH="
@@ -604,6 +610,7 @@ rem has open, or one an antivirus is reading - so its files are tried one at a
 rem time and the window names the one that will not go, instead of a dozen names
 rem and a percentage. Whatever fails is written to stuck.txt, and the recheck at
 rem the end hashes everything that landed and writes the rest again.
+call :gitflush_log
 call :says "  the batch did not finish - trying its files one at a time"
 for /f "usebackq delims=" %%f in ("%CACHE%\todo.txt") do call :gitfile "%%f"
 del /q "%CACHE%\todo.txt" >nul 2>&1
@@ -623,7 +630,7 @@ set "G1BAT=%CACHE%\flush1.bat"
 >> "%G1BAT%" echo git -c core.longpaths=true checkout FETCH_HEAD -- "%~1" ^>^>"%CACHE%\git.log" 2^>^&1
 >> "%G1BAT%" echo if errorlevel 1 (echo x^>"%G1BAD%") else (echo x^>"%G1OK%")
 start "" /b cmd /c ""%G1BAT%""
-call :spinwait "%G1OK%" "%G1BAD%" "writing %~nx1" 120
+call :spinwait "%G1OK%" "%G1BAD%" "writing %~nx1" 60
 if errorlevel 1 goto gitfile_stuck
 exit /b 0
 :gitfile_stuck
@@ -942,6 +949,7 @@ set /a SW=0
 :spinwait_loop
 call :sleep 1
 set /a SW+=1
+if %SW% GEQ 15 if not exist "%~1" if not exist "%~2" call :spinwait_beat %SW% "%~3"
 call :spin %SW% "%~3"
 if exist "%~1" goto spinwait_ok
 if exist "%~2" goto spinwait_bad
@@ -953,6 +961,27 @@ exit /b 0
 exit /b 1
 :spinwait_late
 exit /b 2
+
+:spinwait_beat
+rem A wait that prints nothing reads as a hang, and a window with no new line
+rem in it is closed before the work is done. The log keeps one line every
+rem fifteen seconds, the title counts the seconds, and the window itself says
+rem so once a minute.
+title Big Trouble in Little China: The Game - Updater v%UPDVER% - %~2 %~1s
+call :log still %~2 - %~1s
+set /a SBMOD=%~1 %% 60
+if %SBMOD%==0 call :says "  still %~2 - %~1s"
+exit /b 0
+
+:gitflush_log
+rem The lines git wrote while it refused. Echo, not call: a line of git output
+rem is re-read by call, and a per cent sign in it is the class of line that ends
+rem a batch.
+if not defined LOG exit /b 0
+if not exist "%CACHE%\git.log" exit /b 0
+>>"%LOG%" echo git: %CACHE%\git.log
+for /f "usebackq delims=" %%L in ("%CACHE%\git.log") do >>"%LOG%" echo git: %%L
+exit /b 0
 :confirm
 call :pct 82 "Checking the writes"
 rem A file that was just written is checked against main by CONTENT: it is
