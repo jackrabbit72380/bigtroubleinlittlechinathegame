@@ -7,6 +7,10 @@ Checks, without launching the engine:
   * stage DEFs reference sprites that exist in their .sff, plus preview sprite
   * optional: roster palettes differ from the base character
   * the Windows launchers parse, and the rules that read them still fire
+  * every Lua file parses, so a script error is caught before a playtest
+
+The Lua check needs lupa (python3 -m pip install lupa) or luac; with neither
+it says so and the rest of the run carries on.
 
 Run:  python3 tools/validate.py
 """
@@ -15,7 +19,9 @@ from __future__ import annotations
 
 import re
 
+import importlib
 import os
+import shutil
 import subprocess
 import sys
 
@@ -1500,7 +1506,109 @@ def check_retired():
     notes.append("retired: %d dropped root file(s) are removed on update" % len(listed))
 
 
+def _lupa_parser(runtime_class):
+    """A parser backed by one lupa runtime, whatever Lua version it carries."""
+    # Lua 5.1 loads a string with loadstring and only a reader function with
+    # load; 5.2 merged the two. gopher-lua is 5.1, so both names are used
+    # here and the same check works on every runtime this machine has.
+    load = runtime_class().eval(
+        "function(source, name) local chunk, why = (loadstring or load)(source, name)"
+        " if chunk ~= nil then return nil end return tostring(why) end")
+
+    def parse(path):
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            src = fh.read()
+        return load(src, "@" + os.path.relpath(path, ROOT).replace(os.sep, "/"))
+
+    return parse
+
+
+def _lua_parser():
+    """(parse(path) -> error or None, parser name, does it accept Lua 5.1 code).
+
+    gopher-lua, the engine's Lua, is 5.1: it allows what Lua 5.4 turned into an
+    error, such as assigning to the control variable of a for-in loop, and the
+    default scripts do exactly that. So the oldest runtime on the machine is
+    used first, and where the only parser is newer than the engine the files it
+    refuses are reported as unread rather than as broken.
+    """
+    for name in ("lupa.lua51", "lupa.lua52", "lupa.lua53", "lupa.lua54"):
+        try:
+            module = importlib.import_module(name)
+        except Exception:                                # noqa: BLE001
+            continue
+        runtime = getattr(module, "LuaRuntime", None)
+        if runtime is not None:
+            return _lupa_parser(runtime), name.rsplit(".", 1)[-1], True
+
+    try:
+        from lupa import LuaRuntime
+    except Exception:                                    # noqa: BLE001
+        LuaRuntime = None
+    if LuaRuntime is not None:
+        return _lupa_parser(LuaRuntime), "lupa", False
+
+    for name in ("luac5.1", "luac", "luac5.5", "luac5.4", "luac5.3"):
+        exe = shutil.which(name)
+        if exe is None:
+            continue
+
+        def parse_luac(path, exe=exe):
+            done = subprocess.run([exe, "-p", path], capture_output=True, text=True)
+            if done.returncode == 0:
+                return None
+            return (done.stderr or done.stdout).strip() or "luac refused it"
+
+        return parse_luac, os.path.basename(exe), name.startswith("luac5.1")
+    return None, "", False
+
+
+def check_lua_syntax():
+    """Every Lua file the game loads has to parse before it ships.
+
+    A syntax error in a script is invisible in the data files and only shows up
+    when the engine first runs it: for external/mods that is a few seconds into
+    the game, for start.lua it is the select screen, and both arrive as a window
+    of nested errors that says nothing about the file. Reading the files here
+    turns that into one line before a playtest.
+    """
+    files = []
+    for base, dirs, names in os.walk(ROOT):
+        dirs[:] = sorted(d for d in dirs if d != ".git")
+        for name in sorted(names):
+            if name.endswith(".lua"):
+                files.append(os.path.join(base, name))
+    if not files:
+        return
+    parse, tool, engine_lua = _lua_parser()
+    if parse is None:
+        notes.append("lua syntax: no parser here, so %d script(s) were not read "
+                     "(python3 -m pip install lupa)" % len(files))
+        return
+    bad, newer = 0, []
+    for path in files:
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        try:
+            problem = parse(path)
+        except Exception as exc:                         # noqa: BLE001
+            problem = str(exc)
+        if not problem:
+            continue
+        if not engine_lua and "assign to const variable" in problem:
+            newer.append(rel)
+            continue
+        bad += 1
+        err("lua syntax: %s does not parse: %s" % (rel, problem))
+    if not bad:
+        note = "lua syntax: all %d Lua file(s) parse with %s" % (len(files), tool)
+        if newer:
+            note += " (%d too new for %s: read with the engine's Lua or luac5.1)"
+            note = note % (len(newer), tool)
+        notes.append(note)
+
+
 def main():
+    check_lua_syntax()
     check_media_refs()
     check_retired()
     chars = check_select()
