@@ -54,10 +54,17 @@ rem picture. It is forced off here rather than kept from the last launch, becaus
 rem every build until now wrote true: a true on disk is that old forcing, not a
 rem choice the player made. Options > Video > Keep Aspect Ratio turns the bars
 rem back on for that session.
+rem Window size when this folder has none saved yet: the largest of the 16:9
+rem sizes in Options > Video > Resolution that fits the desktop - 1280x720,
+rem 1920x1080, 2560x1440 (2K), 3840x2160 (4K) - so a small laptop gets a 720p
+rem window it can show whole instead of a 1080p one running off the screen, and
+rem a 4K desktop is not handed a quarter-size window. The render size stays
+rem 1920x1080, the size the art is painted at: every one of those window sizes
+rem is a whole multiple of it, so none of them stretches the picture.
 set "GW=1920"
 set "GH=1080"
-set "WW=1920"
-set "WH=1080"
+set "WW="
+set "WH="
 set "FS=false"
 if exist "%CFG%" (
   for /f "tokens=2 delims==" %%v in ('findstr /b /c:"GameWidth" "%CFG%" 2^>nul') do set "GW=%%v"
@@ -76,6 +83,7 @@ set "WH=%WH: =%"
 set "FS=%FS: =%"
 if "%GW%"=="" set "GW=1920"
 if "%GH%"=="" set "GH=1080"
+if "%WW%"=="" call :screenfit
 if "%WW%"=="" set "WW=1920"
 if "%WH%"=="" set "WH=1080"
 if "%FS%"=="" set "FS=false"
@@ -158,4 +166,39 @@ if not exist "%PSEXE%" set "PSEXE="
 if defined PSEXE "%PSEXE%" -NoProfile -Command "Start-Process -FilePath 'cmd.exe' -ArgumentList '/c',([char]34 + '%RUNQ%' + [char]34) -WindowStyle Hidden" >nul 2>&1
 if not defined PSEXE start "" /min "%RUN%"
 exit /b 0
+exit /b 0
+
+:screenfit
+rem Ask Windows for the primary screen's size, then take the largest 16:9 window
+rem from the resolution menu that fits inside it. The whole screen rather than the
+rem space above the taskbar, so a 1080p desktop still gets a 1080p window: a
+rem window that tall reaching under the taskbar is what every build before this
+rem one did anyway, and a smaller screen no longer gets a window it cannot show.
+set "SCRW="
+set "SCRH="
+set "PS1=%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe"
+if exist "%PS1%" for /f "usebackq tokens=1,2" %%a in (`"%PS1%" -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.Windows.Forms; $a=[System.Windows.Forms.Screen]::PrimaryScreen.Bounds; $a.Width.ToString() + ' ' + $a.Height.ToString()" 2^>nul`) do (
+  set "SCRW=%%a"
+  set "SCRH=%%b"
+)
+rem Anything that is not a plain number - no PowerShell, a policy that blocks it,
+rem an error message instead of a size - leaves the window size alone.
+for /f "delims=0123456789" %%v in ("%SCRW%") do set "SCRW="
+for /f "delims=0123456789" %%v in ("%SCRH%") do set "SCRH="
+if not defined SCRW exit /b 0
+if not defined SCRH exit /b 0
+set "WW=1280"
+set "WH=720"
+if %SCRW% GEQ 1920 if %SCRH% GEQ 1080 (
+  set "WW=1920"
+  set "WH=1080"
+)
+if %SCRW% GEQ 2560 if %SCRH% GEQ 1440 (
+  set "WW=2560"
+  set "WH=1440"
+)
+if %SCRW% GEQ 3840 if %SCRH% GEQ 2160 (
+  set "WW=3840"
+  set "WH=2160"
+)
 exit /b 0
