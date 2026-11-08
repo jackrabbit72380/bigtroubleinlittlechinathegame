@@ -75,7 +75,8 @@ concept_art/ui/splash.png        (also picked up)
   at twice the frame and drawn back down with `scalestart = 0.5`, so a 4K render
   sampling the title screen uses the art's own pixels instead of an upscale.
   Anything smaller is packed at 1× and simply downsampled.
-- **RGB or RGBA.** It sits on black, so a flat poster JPEG works as well as a PNG.
+- **RGB or RGBA.** The card is drawn over the night sky, so a cut-out with
+  transparency blends into it and an opaque poster covers it completely.
 - **Full bleed.** Details at the frame edges may be cropped on other sizes.
 
 What the build does with it:

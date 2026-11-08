@@ -6,9 +6,10 @@ data/ikemen1/system.sff. Both ship with the engine data and are restored on
 every build, so the splash is generated here rather than committed by hand.
 
 If art_src/ui/splash.png (or concept_art/ui/splash.png) exists it becomes the
-splash, cover-cropped to 1280x720. With no plate, a card is painted from the
-game's own wordmark over a night sky, so the splash exists before painted art
-is supplied.
+splash, cover-cropped to 1280x720 over a night sky - the supplied art is a
+cut-out, and the sky keeps its clear areas from fading up on black. With no
+plate, a card is painted from the game's own wordmark over that same sky, so the
+splash exists before painted art is supplied.
 
 Run:  python3 tools/build_splash.py
 """
@@ -122,7 +123,11 @@ def poster():
             if abs(img.width / float(img.height) - 16 / 9.0) > 0.06:
                 print(f"  warning: {os.path.relpath(path, ROOT)} is "
                       f"{img.width}x{img.height}, not 16:9; it will be cropped")
-            return cover(img, CANVAS), path
+            # The plate is a cut-out, so it goes over the sky rather than on
+            # black: the card then reads as the same night the title opens in.
+            card = night_sky()
+            card.alpha_composite(cover(img, CANVAS))
+            return card, path
     return fallback_card(), None
 
 
