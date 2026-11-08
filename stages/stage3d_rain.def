@@ -1,9 +1,11 @@
 ;This stage's model and base preview are licensed under MIT (SuperFromND's
-;Third Heights pack); the reframing and the card's rain are painted here.
+;Third Heights pack); the reframing, the card and the weather are painted here.
 ;Three Storms, three stages: this is rain's terrace. The pack ships one island
 ;in two renders, so rather than invent a third scene the same model is framed
-;lower and wider under a rain-stained sky, and its card is graded cold with rain
-;streaked across it so the select screen tells the three apart at a glance.
+;lower and wider, and two painted rain sheets fall across it - one behind the
+;fighters, one in front - under a slate wash and driving mist. Its card is
+;graded cold with rain streaked over it, so the select screen tells the three
+;apart at a glance.
 ;--------------------------------------------------------
 [Info]
 name = "Third Heights Rainfall"
@@ -105,6 +107,46 @@ spr = stage3d_rain.sff
 
 offset = 0,-0.16,-0.62
 scale = 0.045, 0.045, 0.045
+
+;-------------------------------------
+; Storm weather: two painted rain sheets fall at different speeds, one behind the
+; fighters and one in front, under a slate wash, with mist driving across the
+; water. The sheets tile both ways, so the rain never runs out however long the
+; fight lasts or however far the camera travels.
+[BG rain behind]
+type = normal
+spriteno = 1,0
+layerno = 0
+start = 0, 0
+tile = 1,1
+velocity = 1.4, 16
+trans = none
+
+[BG storm wash]
+type = normal
+spriteno = 1,2
+layerno = 1
+start = 0, 0
+tile = 1,1
+trans = none
+
+[BG driving mist]
+type = normal
+spriteno = 1,3
+layerno = 1
+start = 0, 0
+tile = 1,0
+velocity = -3.4, 0
+trans = none
+
+[BG rain in front]
+type = normal
+spriteno = 1,1
+layerno = 1
+start = 0, 0
+tile = 1,1
+velocity = 3.2, 30
+trans = none
 
 ;-------------------------------------
 ; Stage portrait data

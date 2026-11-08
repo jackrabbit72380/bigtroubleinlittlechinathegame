@@ -11,8 +11,8 @@ author = "SuperFromND"; modifed by Eiton
 [Camera]
 startx = 0
 starty = 0
-boundleft = -700
-boundright = 700
+boundleft = -880
+boundright = 880
 boundhigh = -450
 boundlow = 0
 
@@ -25,10 +25,11 @@ overdrawlow = 120
 cuthigh = 0
 cutlow = 0
 
-zoomout = 0.75
+zoomout = 0.72
 
-;Field of view. 30 is good for photorealistic scenes, but feel free to tweak this to your preference.
-fov = 30
+;A longer lens than the day pass (fov 22 against 30) with a wider pan, so
+;the same island reads as somewhere far away and empty.
+fov = 22
 ;--------------------------------------------------------
 zoomin = 1
 [PlayerInfo]
@@ -72,8 +73,8 @@ portraitscale = 3.375
 
 ;--------------------------------------------------------
 [Shadow]
-intensity = 96
-color = 0,0,0
+intensity = 128
+color = 44,26,86
 yscale = .3
 fade.range = 0,0
 
@@ -109,6 +110,36 @@ offset = 0,-0.2,-0.9
 
 ; Scale of the model
 scale = 0.05, 0.05, 0.05
+
+;-------------------------------------
+; Night weather: a violet wash sits over the whole scene, cold motes climb through
+; it, and mist crawls along the water. The wash is a solid tile, the motes tile
+; both ways and the mist tiles sideways, so panning never finds an edge.
+[BG night wash]
+type = normal
+spriteno = 1,2
+layerno = 1
+start = 0, 0
+tile = 1,1
+trans = none
+
+[BG cold motes]
+type = normal
+spriteno = 1,0
+layerno = 1
+start = 0, 0
+tile = 1,1
+velocity = 0, -1.1
+trans = add
+
+[BG night mist]
+type = normal
+spriteno = 1,1
+layerno = 1
+start = 0, 0
+tile = 1,0
+velocity = -1.5, 0
+trans = none
 
 ;-------------------------------------
 ; Stage portrait data

@@ -112,6 +112,28 @@ offset = 0,-0.2,-0.9
 scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
+; Day weather: high cloud haze drifting across the top, spray lifting off the
+; water. Both bands are seamless sideways, so a layer can tile and scroll for as
+; long as the fight lasts without showing a repeat.
+[BG high haze]
+type = normal
+spriteno = 1,0
+layerno = 1
+start = 0, -40
+tile = 1,0
+velocity = -1.2, 0
+trans = none
+
+[BG water spray]
+type = normal
+spriteno = 1,1
+layerno = 1
+start = 0, 0
+tile = 1,0
+velocity = -2.6, 0
+trans = none
+
+;-------------------------------------
 ; Stage portrait data
 [Begin Action 9000]
 9000,1, 0,0,-1
