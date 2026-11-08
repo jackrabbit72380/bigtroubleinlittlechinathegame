@@ -48,8 +48,10 @@ TRAPS = [
     ("a literal ! with delayed expansion",
      ("setlocal EnableDelayedExpansion", "echo a!b!")),
     ("a path passed to call unquoted", ("call :log folder %~dp0  exe %EXE%",)),
+    # the exact shape updater v64 shipped: the sign is the last thing on the
+    # argument, so call's second read leaves it with nothing to pair with
     ("a per cent sign handed to call",
-     ('call :says "  2%%  Checking for updates"',)),
+     ('if not "%~2"=="" if /i not "%~2"=="%LASTPCT%" call :says "  %~1%%  %~2"',)),
 ]
 
 # the same things written the way cmd reads them: none may be reported
