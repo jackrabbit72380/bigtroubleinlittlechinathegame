@@ -151,16 +151,16 @@ jobs:
               printf 'If Defender already removed the file:\n'
               printf '  1. Windows Security > Virus and threat protection > Protection history\n'
               printf '  2. The Trojan:Win32/Tecabans.A!cl entry > Actions > Restore\n'
-              printf '  3. Double-click ALLOW-IN-DEFENDER.bat in this folder (it asks for\n'
+              printf '  3. Double-click ALLOW-THROUGH-DEFENDER.bat in this folder (it asks for\n'
               printf '     administrator rights once)\n'
               printf '  4. Start the game again\n\n'
-              printf 'ALLOW-IN-DEFENDER.bat adds this game folder to Defender exclusions and\n'
+              printf 'ALLOW-THROUGH-DEFENDER.bat adds this game folder to Defender exclusions and\n'
               printf 'prints whether each path really was added. It changes nothing else.\n\n'
               printf 'The same hash is published with every release as SHA256SUMS.txt.\n'
             } > "$out/READ-ME-FIRST.txt"
             test -s "$out/READ-ME-FIRST.txt" || { echo "READ-ME-FIRST.txt was not written"; exit 1; }
-            test -s ALLOW-IN-DEFENDER.bat || { echo "ALLOW-IN-DEFENDER.bat is missing from the repo"; exit 1; }
-            cp ALLOW-IN-DEFENDER.bat "$out/ALLOW-IN-DEFENDER.bat"
+            test -s ALLOW-THROUGH-DEFENDER.bat || { echo "ALLOW-THROUGH-DEFENDER.bat is missing from the repo"; exit 1; }
+            cp ALLOW-THROUGH-DEFENDER.bat "$out/ALLOW-THROUGH-DEFENDER.bat"
 
             # The README sends players to these for online play and for checking
             # which build they are on, so they travel with the game.
@@ -275,8 +275,8 @@ jobs:
             want_hash=$(sha256sum "$exe" | cut -d' ' -f1)
             grep -q "$want_hash" "$out/READ-ME-FIRST.txt" \
               || { echo "READ-ME-FIRST.txt does not carry the hash of the engine this bundle ships"; exit 1; }
-            test -s "$out/ALLOW-IN-DEFENDER.bat" \
-              || { echo "ALLOW-IN-DEFENDER.bat is missing from the Windows bundle"; exit 1; }
+            test -s "$out/ALLOW-THROUGH-DEFENDER.bat" \
+              || { echo "ALLOW-THROUGH-DEFENDER.bat is missing from the Windows bundle"; exit 1; }
             test -s "$out/Update and Play.bat" \
               || { echo "Update and Play.bat is missing from the Windows bundle"; exit 1; }
             echo "antivirus note carries $want_hash"
@@ -355,7 +355,7 @@ jobs:
             ([ikemen-engine/Ikemen-GO issue 2811](https://github.com/ikemen-engine/Ikemen-GO/issues/2811)),
             and it returns every time a new engine build appears. Inside the Windows zip:
             `READ-ME-FIRST.txt` carries the SHA-256 of the game file in that zip,
-            `ALLOW-IN-DEFENDER.bat` clears the warning in one double-click, and
+            `ALLOW-THROUGH-DEFENDER.bat` clears the warning in one double-click, and
             `SHA256SUMS.txt` on this page checks the download itself. If Defender already
             removed the file, restore it from Protection history first.
 

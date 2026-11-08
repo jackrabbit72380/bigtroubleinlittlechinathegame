@@ -65,7 +65,7 @@ Three things to check instead of taking anyone's word:
 - `READ-ME-FIRST.txt` inside the Windows zip carries the SHA-256 of the game
   executable in that zip, and `SHA256SUMS.txt` on the release page hashes the
   download itself.
-- Double-click **`ALLOW-IN-DEFENDER.bat`** in the game folder. It adds that folder
+- Double-click **`ALLOW-THROUGH-DEFENDER.bat`** in the game folder. It adds that folder
   to Defender's exclusions (one administrator prompt) and prints whether each path
   really was added.
 - If Defender already removed the file: Windows Security → Virus and threat
