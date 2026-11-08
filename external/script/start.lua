@@ -1736,14 +1736,17 @@ end
 --returns t_selChars table out of char ref
 -- >>> stage preview grid geometry (tools/test_selectscreen.py executes this block)
 -- The stage screen shows the whole pool at once, so it needs a layout rather than
--- one fixed card. Every stage's portrait is tuned to render at 1215x398 in motif
--- pixels - that is what each stage's own portraitscale is for, so a 720p stage and
--- a 1080p one land the same size - and the grid works in those units: fit NOMINAL
--- cards into the motif's stage-card window, cols to a row, with air between them,
--- and hand back each card's box plus the fraction of natural size to draw it at.
+-- one fixed card. What a card is DRAWN at is 1040x341 motif pixels, not the
+-- 1215x398 its art measures: stage.portrait.scale and each stage's own
+-- portraitscale already land the picture there (0.856 * 1215 = 1040), so a 720p
+-- model stage and a 1080p painted one come out the same width. Sizing the cells
+-- with the art instead drew every card at 86% of its box, and that shortfall is
+-- the gap the wall showed between the maps. Fit NOMINAL cards - the drawn size -
+-- into the motif's stage-card window, cols to a row with air between them, and
+-- hand back each card's box plus the fraction of natural size to draw it at.
 start.stageGrid = {
-	NOMINAL_W = 1215,
-	NOMINAL_H = 398,
+	NOMINAL_W = 1040,
+	NOMINAL_H = 341,
 	-- 0 = work the column count out from the pool: the stage screen has its own
 	-- grid, sized so the maps read as wide cards. The 128x160 character wall's
 	-- columns are exactly what this screen must not inherit.
