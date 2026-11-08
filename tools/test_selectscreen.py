@@ -240,8 +240,13 @@ def check_stage_wall(problems):
     if not re.search(r"if not stagePhase then\s*\n\s*main\.f_animPosDraw\(motif\.select_info\.stage\.portrait\.bg",
                      text):
         problems.append("the empty character grid is still drawn behind the maps")
-    if "start.stageSide" not in text or "cursor.done and cfg.cursor.done.AnimData" not in text:
+    if "start.stageSide" not in text or "start.f_stageFrame" not in text:
         problems.append("the picked map is not outlined in the player's colour")
+    grid_src = read(os.path.join(ROOT, "tools", "build_select_grid.py"))
+    if "STAGE_FRAME" not in grid_src or "def stage_frame(" not in grid_src:
+        problems.append("no 3:1 stage frame set is painted into system.sff")
+    if "cursor.done" in text.split("start.f_stageFrame")[0].split("f_stageGrid")[-1]:
+        problems.append("the wall still stretches the character cursor over the wide card")
     for tool in ("build_stages.py", "build_training.py", "build_hd_stage.py",
                  "build_stage3d_rain.py"):
         if "frame_card(" not in read(os.path.join(ROOT, "tools", tool)):

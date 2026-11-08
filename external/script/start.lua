@@ -1359,6 +1359,23 @@ end
 -- The text calls are the ones external/mods/devhelp.lua uses against this same
 -- engine: the font goes in as the table or as its index, whichever this build
 -- accepts, and the call that works is remembered.
+-- The picked map's frame: one hollow 3:1 frame per player colour, painted into
+-- system.sff as 230,0-3 by tools/build_select_grid.py at the stage card's own
+-- aspect. Built here the way the RANDOM word is built, so the wide card is
+-- outlined evenly instead of the character cell's 4:5 cursor art stretched
+-- across it, which gave the frame thick sides and hairline top and bottom rules.
+local stageFrameAnims = {}
+local STAGE_FRAME_W, STAGE_FRAME_H = 1215, 398
+
+function start.f_stageFrame(side)
+	local key = math.max(1, math.min(4, side or 1))
+	if stageFrameAnims[key] == nil then
+		local ok, a = pcall(animNew, nil, string.format('230,%d, 0,0, -1', key - 1))
+		stageFrameAnims[key] = (ok and a ~= nil) and a or false
+	end
+	return stageFrameAnims[key] or nil
+end
+
 local randomAnims = {}
 
 -- The RANDOM word, drawn from the sprites tools/build_select_grid.py paints into
@@ -3543,18 +3560,15 @@ function start.f_selectScreen()
 								main.f_animPosDraw(anim, cell.x, cell.y)
 								-- the picked map is outlined in the colour of the player who
 								-- moved the stage cursor: the card art carries the gold rule,
-								-- this is the lit one. The cursor sprite is 2x a 128x160 cell,
-								-- so it is stretched over the card and its transforms are put
-								-- back afterwards for the character wall.
+								-- this is the lit one, drawn at the card's own aspect and put
+								-- back afterwards.
 								if ref == stageRef then
-									local cfg = motif.select_info['p' .. (start.stageSide or 1)]
-									local cur = cfg and cfg.cursor and cfg.cursor.done and cfg.cursor.done.AnimData
-									if cur ~= nil then
-										animSetScale(cur, cell.w / 256, cell.h / 320)
-										animSetWindow(cur, cell.x, cell.y, cell.x + cell.w, cell.y + cell.h)
-										pcall(animSetAlpha, cur, 256)
-										main.f_animPosDraw(cur, cell.x, cell.y)
-										pcall(animReset, cur, { "scale", "window" })
+									local frame = start.f_stageFrame(start.stageSide or 1)
+									if frame ~= nil then
+										animSetScale(frame, cell.w / STAGE_FRAME_W, cell.h / STAGE_FRAME_H)
+										pcall(animSetAlpha, frame, 256)
+										main.f_animPosDraw(frame, cell.x, cell.y)
+										pcall(animReset, frame, { "scale" })
 									end
 								end
 							end

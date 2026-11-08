@@ -115,6 +115,16 @@ CURSOR_ACTIONS = ((160, (223, 0), (224, 0)), (170, (223, 1), (224, 1)),
                   (172, (223, 2), (224, 2)), (174, (223, 3), (224, 3)))
 CURSOR_FLASH = 6
 
+# The stage wall's lit card. The character cell's cursor art is 4:5, so stretching
+# it over a 3:1 stage card gave the frame 14px sides and 4px top and bottom rules.
+# These are painted at the card's own aspect instead - 1215x398, the size
+# tools/build_stages.py bakes the card art at - so every side carries the same
+# weight whatever the wall's cards are. start.lua builds them with animNew, the
+# way it builds the RANDOM word, and draws the picked card's one in that
+# player's colour.
+STAGE_FRAME = ((230, 0), (230, 1), (230, 2), (230, 3))
+STAGE_FRAME_SIZE = (1215, 398)
+
 
 def tracked(draw, xy, text, font, fill, tracking=2, anchor="la"):
     """Draw letter-spaced caps, the way an arcade caption is set."""
@@ -293,6 +303,30 @@ RANDOM_PORTRAIT = (151, 10)
 # 966,150-1266,670 on the right), so the random card is cut to fit that
 # exactly - the validator refuses anything that would show around the art.
 RANDOM_PANEL = (380, 500)
+
+
+def stage_frame(colour):
+    """The picked stage's frame: hollow, 3:1, in that player's colour."""
+    w, h = STAGE_FRAME_SIZE
+    ss = 2
+    img = Image.new("RGBA", (w * ss, h * ss), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    W, H = img.size
+    key = 10 * ss                     # dark keyline, so the frame holds on pale art
+    band = 10 * ss                    # the player's colour
+    d.rectangle([0, 0, W - 1, H - 1], outline=(10, 14, 22, 255), width=key)
+    d.rectangle([key, key, W - 1 - key, H - 1 - key], outline=colour + (255,), width=band)
+    light = tuple(min(255, c + 70) for c in colour)
+    d.rectangle([key + band, key + band, W - 1 - key - band, H - 1 - key - band],
+                outline=light + (200,), width=2 * ss)
+    # corner ticks, so the frame still reads where it crosses bright art
+    tick, inset = 54 * ss, key
+    for x, y, dx, dy in ((inset, inset, 1, 1), (W - 1 - inset, inset, -1, 1),
+                         (inset, H - 1 - inset, 1, -1),
+                         (W - 1 - inset, H - 1 - inset, -1, -1)):
+        d.line([(x, y + dy * tick), (x, y), (x + dx * tick, y)],
+               fill=colour + (255,), width=6 * ss)
+    return img.resize((w, h), Image.LANCZOS)
 
 
 def random_card(size):
@@ -729,6 +763,8 @@ def main():
         images[spr] = cursor_frame(colour)
     for spr in CURSOR_WHITE:
         images[spr] = cursor_frame((255, 255, 255))
+    for spr, colour in zip(STAGE_FRAME, PLAYER_COLOURS):
+        images[spr] = stage_frame(colour)
 
     rewrite_system_sff(images)
     marks = repaint_random_mark()

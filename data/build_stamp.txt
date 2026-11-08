@@ -1,7 +1,7 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-6c795af39d7825c1cd3af5d22dcc81686e6e84ba2116b97352d7e5de4980fcc0  data/ikemen1/system.def
+b85c8ea9493142f97ebf65eb740000d0958a347b65b3f6ddacd20aecf96d4142  data/ikemen1/system.def
 6f31afec2d2a07b039ad8d0edcc531911319ea45b71a28bfb5af3a29c03cfeff  data/system.base.def
 41ce8c12934321363c04a5bb688d7d9a09fc3bb22bbb35f9cf2396e2b1a68775  data/fight.def
 b1e3f0d2f5458d3fc4653fba38fd7bed859630b89b2b36b3774f52d2ea1e023a  data/system.snd
@@ -27,7 +27,7 @@ e11764f6caf3165048412c890f834832b42c4ed4b35f662ad31cf47170d0e3e9  external/mods/
 8a163bac07c74a3b074eb55379fe2bbacb238257547139fe525e5cb62c420c0e  external/script/main.lua
 53e09be24836ba1a0ae04b9508d88e06e9e9dfe51edd84957db8466f853c49a3  external/script/menu.lua
 adbed4d7a6f9d601d976a6a5119449c9ae7ac848a72aa4096bb68c560dc46afe  external/script/options.lua
-d4a5f223cd18dd25c53d9f94e9044a8e72cc11b833384545cade3b7f3bd28f2c  external/script/start.lua
+366d6a53ace1cd9e3939fb5c37bf15c93a3b87a6cd7794cdb56084aafee992fa  external/script/start.lua
 13b3d51de186c8e35c62651825270c72bcf2c46acbe154b0836980c485a5f1ad  external/shaders/HQ2x.frag
 657aec55a90fa2c363181c2873b4833c4a27d1fe82962848c250e429723a35fb  external/shaders/HQ2x.frag.spv
 3c542524fffd57a915f5f9c2e631f78a310dfc63a890704bf6c674befd90c6b9  external/shaders/HQ2x.vert
