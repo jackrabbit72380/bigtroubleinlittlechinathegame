@@ -467,8 +467,8 @@ def place_overlay(start):
     text = "\n".join(out) + "\n"
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
-    return placed
     swap_backdrop_layers()
+    return placed
 
 
 # -------------------------------------------------------------------- logo

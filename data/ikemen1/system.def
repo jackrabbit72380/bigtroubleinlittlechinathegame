@@ -278,13 +278,13 @@ bgclearcolor = 0, 0, 0
 
 [TitleBG Background Sky]
 type = normal
-spriteno = 100,0
+spriteno = 204,0
 layerno = 0
 start = -960, 0
 
 [TitleBG Background Clouds Top]
 type = normal
-spriteno = 100,2
+spriteno = 102,2
 layerno = 0
 start = -960, -75
 tile = 1,0
@@ -294,7 +294,7 @@ mask = 1
 
 [TitleBG Background Clouds Bottom]
 type = normal
-spriteno = 100,3
+spriteno = 102,3
 layerno = 0
 start = -960, 0
 tile = 1,0
