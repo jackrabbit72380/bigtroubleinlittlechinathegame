@@ -701,6 +701,10 @@ end
 --sprite beside the ring has no font or text of its own, so text put there would
 --not be guaranteed to show. The percentage leads, so even if the caption's end
 --is cut off the figure is still the thing the player sees.
+--The caption's scale, matching system.def's loading.scale, so the measured
+--width is the width the engine draws.
+local LOADING_SCALE = 0.75
+
 function main.f_loadingDraw()
 	local text = motif.title_info.loading.TextSpriteData
 	local done, total = main.f_loadingProgress()
@@ -709,18 +713,21 @@ function main.f_loadingDraw()
 		pct = math.floor(done * 100 / total)
 	end
 	if pct > 100 then pct = 100 end
-	--name first: if the caption runs out of room it is the figure that goes
-	local label = pct .. '%'
-	local current = main.f_loadingCurrent()
-	if current ~= nil then
-		label = current .. '  ' .. label
-	end
+	--The caption is one centred line with its dots running, so a slow load still
+	--looks like the game is working at it. The motif anchors it to a corner by
+	-- its offset, so the line is measured and placed by its own centre here
+	-- instead of being nudged by hand.
+	local dots = string.rep('.', math.floor(os.clock() * 2) % 4)
+	local caption = 'NOW LOADING' .. dots .. '   ' .. pct .. '%'
 	local ok = false
 	if text ~= nil then
-		--textImgSetText rewrites the sprite in place, so it keeps the position,
-		--alignment, font and shear the motif already gave it.
 		ok = pcall(function()
-			textImgSetText(text, label)
+			textImgSetText(text, caption)
+			pcall(textImgSetScale, text, LOADING_SCALE, LOADING_SCALE)
+			local gotWidth, width = pcall(textImgGetTextWidth, text)
+			if gotWidth and type(width) == 'number' and width > 0 then
+				pcall(textImgSetPos, text, 960 - width * LOADING_SCALE / 2, 540)
+			end
 			textImgDraw(text)
 		end)
 	end

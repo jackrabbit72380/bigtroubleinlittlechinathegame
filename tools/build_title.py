@@ -42,13 +42,17 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 # The logo sprite. Sized for this lockup rather than the engine's 699x257 slot:
 # the arch plus three stacked lines needs the height.
 CANVAS = (900, 420)
-# Where the lockup is drawn before it is fitted into CANVAS.
-SCRATCH = (900, 660)
+# Where the lockup is drawn before it is fitted into CANVAS. The lockup is
+# composed at SS times the sprite's size so the fit into the 900x420 slot is a
+# downscale: composed at sprite size it was stretched from the scratch canvas,
+# and the wordmark on screen carried that softness.
+SS = 2
+SCRATCH = (900 * SS, 660 * SS)
 WORK = CANVAS
 
 TOP_MARGIN = 30          # ink starts this far down the 720-line screen
 PAD = 8                  # clearance kept inside the sprite, for the glow
-ARC_RADIUS = 760         # bows the caps' ends well below the apex, as in the film
+ARC_RADIUS = 760 * SS    # bows the caps' ends well below the apex, as in the film
 
 GOLD = [(0.00, (255, 228, 140)), (0.34, (246, 200, 110)),
         (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
@@ -477,10 +481,10 @@ def lockup():
     cx = WORK[0] / 2.0
 
     caps_size = fit_size(0.84 * WORK[0],
-                         lambda s: arc_line("BIG TROUBLE", s, cx, 24, ARC_RADIUS,
-                                            seed=4, jitter=1.0),
-                         guess=110)
-    caps = arc_line("BIG TROUBLE", caps_size, cx, 24, ARC_RADIUS, seed=4,
+                         lambda s: arc_line("BIG TROUBLE", s, cx, 24 * SS,
+                                            ARC_RADIUS, seed=4, jitter=1.0),
+                         guess=110 * SS, hi=280 * SS)
+    caps = arc_line("BIG TROUBLE", caps_size, cx, 24 * SS, ARC_RADIUS, seed=4,
                     jitter=1.0)
     cbox = caps.getbbox()
 
@@ -504,8 +508,8 @@ def lockup():
     little_y = ibox[3] + little_size * 0.62
     little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
                        jitter=0.4, weight=0.05, tilt=0.5)
-    while little_y < WORK[1] - 60 and touches(caps, little, little.getbbox()):
-        little_y += 4
+    while little_y < WORK[1] - 60 * SS and touches(caps, little, little.getbbox()):
+        little_y += 4 * SS
         little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
                            jitter=0.4, weight=0.05, tilt=0.5)
     lbox = little.getbbox()
@@ -514,15 +518,15 @@ def lockup():
     china_y = lbox[3] + china_size * 0.60
     china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13, jitter=0.4,
                       weight=0.05, tilt=-0.5)
-    while china_y < WORK[1] - 50 and touches(caps, china, china.getbbox()):
-        china_y += 4
+    while china_y < WORK[1] - 50 * SS and touches(caps, china, china.getbbox()):
+        china_y += 4 * SS
         china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13,
                           jitter=0.4, weight=0.05, tilt=-0.5)
     hbox = china.getbbox()
 
     art_img = Image.new("RGBA", WORK, (0, 0, 0, 0))
-    art_img.alpha_composite(paint_line(caps, depth=(12, 13)))
-    art_img.alpha_composite(paint_line(in_mask, depth=(5, 6)))
+    art_img.alpha_composite(paint_line(caps, depth=(12 * SS, 13 * SS)))
+    art_img.alpha_composite(paint_line(in_mask, depth=(5 * SS, 6 * SS)))
     art_img.alpha_composite(paint_line(
         little, depth=(max(4, little_size // 10), max(5, little_size // 9))))
     art_img.alpha_composite(paint_line(

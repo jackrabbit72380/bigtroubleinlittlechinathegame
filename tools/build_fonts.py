@@ -94,7 +94,12 @@ REWRITES = (
     # painted sky and clouds did not reach - the bottom third of a 1080p
     # screen - was a white band with the menu floating above it.
     ("bgclearcolor", "0, 0, 0"),
-    ("loading.font", f"{B}, 0, -1, {DEEP}, 255, -1"),
+    # The boot caption was the 13px Body face, sheared for a "speed" slant, at
+    # the bottom-right corner: small, skewed and easy to miss. It is the Display
+    # face at the menus' own size now, upright, and main.f_loadingDraw centres
+    # it on the frame while its dots run.
+    ("loading.font", f"{D}, 0, 0, {GOLD}"),
+    ("loading.xshear", "0"),
     # The engine's own bottom bar ("I.K.E.M.E.N. GO" + version) is not rewritten
     # here but removed outright - see DROP_KEYS below.
     # infobox, game over text, story text
