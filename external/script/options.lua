@@ -79,14 +79,15 @@ end
 -- screen to open once it is up. Returns true only once the flag is really on
 -- disk, so a folder that cannot be written to keeps the warning instead of
 -- closing the game with nothing to bring it back.
-function options.f_requestRestart(screen)
+function options.f_requestRestart(screen, item, cursorPosY)
 	local flag = options.f_restartFlag()
 	if flag == nil then
 		return false
 	end
 	local note = options.f_restartPath("restart.screen")
 	if note ~= nil then
-		pcall(main.f_fileWrite, note, screen or "")
+		local text = (screen or "") .. "|" .. tostring(item or 1) .. "|" .. tostring(cursorPosY or 1)
+		pcall(main.f_fileWrite, note, text)
 	end
 	if not pcall(main.f_fileWrite, flag, "1") then
 		return false
@@ -105,15 +106,21 @@ function options.f_takeRestartScreen()
 	if os.remove ~= nil then
 		pcall(os.remove, path)
 	end
-	return (text:gsub('%s+$', ''))
+	text = text:gsub('%s+$', '')
+	local screen, item, cursorPosY = text:match('^([^|]*)|([^|]*)|([^|]*)$')
+	if screen == nil then
+		-- A note written by a build that recorded the screen only.
+		screen = text
+	end
+	return {screen = screen, item = tonumber(item), cursorPosY = tonumber(cursorPosY)}
 end
 
 -- Reopen the screen the player saved from, then the normal options menu, so a
 -- restart no longer dumps them on the title screen with their setting changed
 -- but their place lost.
 function options.f_resumeAfterRestart()
-	local screen = options.f_takeRestartScreen()
-	if screen == nil then
+	local note = options.f_takeRestartScreen()
+	if note == nil then
 		return false
 	end
 	-- The same entry the options menu performs for itself when opened from the
@@ -123,15 +130,31 @@ function options.f_resumeAfterRestart()
 	playBgm({source = "motif.option"})
 	main.close = false
 	local tbl = options.menu
-	if screen ~= "" then
-		for name in screen:gmatch("[^/]+") do
+	if note.screen ~= "" then
+		for name in note.screen:gmatch("[^/]+") do
 			tbl = (tbl ~= nil and tbl.submenu ~= nil) and tbl.submenu[name] or nil
 		end
 	end
-	if tbl ~= nil and tbl ~= options.menu and tbl.loop ~= nil then
-		tbl.loop()
-		main.f_menuSnap(motif.option_info)
-		main.f_menuItemBgAnimReset(motif.option_info)
+	if tbl ~= nil then
+		-- Restore the row and its place on screen. Those two are what place the
+		-- cursor and the scroll: the list slides to the offset they imply, and
+		-- the snap below applies it on the first frame instead of animating.
+		local count = #(tbl.items or {})
+		local menu = motif.option_info.menu
+		local visible = (menu and menu.window and menu.window.visibleitems) or 0
+		if visible <= 0 then
+			visible = count
+		end
+		if count > 0 and note.item ~= nil then
+			tbl.item = math.max(1, math.min(count, note.item))
+			tbl.cursorPosY = math.max(1, math.min(visible, note.cursorPosY or 1))
+		end
+		if tbl ~= options.menu and tbl.loop ~= nil then
+			main.f_menuSnap(motif.option_info)
+			tbl.loop()
+			main.f_menuSnap(motif.option_info)
+			main.f_menuItemBgAnimReset(motif.option_info)
+		end
 	end
 	options.menu.loop()
 	return true
@@ -139,7 +162,7 @@ end
 
 --- Save the current configuration to the config file and handle common file modifications
 local t_commonFilesOriginal = gameOption('Common')
-function options.f_saveCfg(reload, screen)
+function options.f_saveCfg(reload, screen, item, cursorPosY)
 	-- Restore the original content of the common files
 	local t_commonFiles = gameOption('Common')
 	for _, k in ipairs({'Air', 'Cmd', 'Const', 'States', 'Fx', 'Modules', 'Lua'}) do
@@ -155,7 +178,7 @@ function options.f_saveCfg(reload, screen)
 	-- Started without -config (the exe run on its own) nothing is watching, and
 	-- the warning is still the honest thing to show.
 	if reload then
-		if options.f_requestRestart(screen) then
+		if options.f_requestRestart(screen, item, cursorPosY) then
 			os.exit()
 		end
 		main.f_warning(motif.warning_info.text.text.reload, motif.option_info, motif.optionbgdef)
@@ -1472,7 +1495,7 @@ options.t_itemname = {
 		if getInput(-1, motif.option_info.menu.done.key) then
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
-				options.f_saveCfg(options.needReload, options.f_menuPath(t))
+				options.f_saveCfg(options.needReload, options.f_menuPath(t), item, cursorPosY)
 			end
 			fadeOutInit(motif.option_info.fadeout.FadeData)
 			main.close = true
@@ -1498,7 +1521,7 @@ options.t_itemname = {
 		if getInput(-1, motif.option_info.menu.done.key) then
 			sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
 			if options.modified then
-				options.f_saveCfg(options.needReload, options.f_menuPath(t))
+				options.f_saveCfg(options.needReload, options.f_menuPath(t), item, cursorPosY)
 			end
 		end
 		return true
@@ -1509,9 +1532,14 @@ options.t_itemname = {
 function options.f_createMenu(tbl, bool_main)
 	return function()
 		hook.run("options.menu.loop")
-		local cursorPosY = 1
+		-- A screen reopened after a restart starts on the row it was left on,
+		-- with the list scrolled to match. These fields are one-shot, so the
+		-- next ordinary visit still starts at the top.
+		local cursorPosY = tbl.cursorPosY or 1
 		local moveTxt = 0
-		local item = 1
+		local item = tbl.item or 1
+		tbl.item = nil
+		tbl.cursorPosY = nil
 		local t = tbl.items
 		main.f_menuSnap(motif.option_info)
 		main.f_menuItemBgAnimReset(motif.option_info)
