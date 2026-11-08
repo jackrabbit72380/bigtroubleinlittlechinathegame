@@ -711,8 +711,8 @@ rem The line under the drawing is remembered, so every percentage can write at
 rem the muzzle and come straight back here. The messages that follow print
 rem below the pistol, never over it.
 if defined VTOK set /p "=%ESC%[s" <nul
-rem The anchor sits on the rule under the drawing: :ui writes the status line
-rem one row below it and comes straight back, so the panel never scrolls.
+rem The anchor sits on the blank row under the drawing: :ui writes the status
+rem line one row below it and comes straight back, so the panel never scrolls.
 set "STIMEF=0:00"
 set "SPCTX=0%%"
 set "SSTEP=Starting up"
@@ -838,7 +838,7 @@ echo    ...//___//
 echo    ..//___//
 echo    .//___//
 rem The foot of the panel, drawn again with the art on a console that cannot
-rem write in place: the rule, the status line, and the last thing said.
+rem write in place: the status line, and the last thing said.
 call :panel_foot
 if defined SAY6 echo    %SAY6%
 call :log art %~1 drawn
@@ -869,20 +869,21 @@ rem Every line ends itself now, so there is nothing to flush.
 exit /b 0
 
 :panel_foot
-rem The rule under the drawing and the status line beneath it, in one place: :gun
+rem The status line under the drawing, in one place: :gun
 rem draws it once when the window opens, :gunredraw redraws it on a console that
 rem cannot write in place. It sits in a label of its own so the drawing above
 rem stays the only echo block in :gun - the checker measures the muzzle column,
 rem and the row the count comes back from, out of that block.
-echo    ----------------------------------------------------------------------
+echo.
 echo    %STEXT%
 exit /b 0
 
 :stext
-rem The panel's one line: clock, percentage, step, and the detail of the step.
+rem The panel's one line: clock, step, and the detail of the step. The count
+rem of percent is not repeated here - it is written at the muzzle, on the
+rem barrel, where it moves with the pipes instead of sitting in two places.
 set "STEXT="
 if defined STIMEF set "STEXT=%STIMEF%"
-if defined SPCTX set "STEXT=%STEXT%   %SPCTX%"
 if defined SSTEP set "STEXT=%STEXT%   %SSTEP%"
 if defined SDETAIL set "STEXT=%STEXT% - %SDETAIL%"
 if not defined STEXT set "STEXT=starting up"
