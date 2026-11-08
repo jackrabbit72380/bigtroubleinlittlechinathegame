@@ -1403,10 +1403,20 @@ function options.f_createMenu(tbl, bool_main)
 			if tbl.reset then
 				tbl.reset = false
 			else
-				-- Two measured columns: labels end on menu.pos.x and values start
-				-- one gutter past it, so every row straddles the frame's middle
-				-- without leaning on the alignment the motif baked in.
-				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif.option_info, motif.optionbgdef, false, {align = 0, columns = true})
+				-- A list that shows values keeps its two measured columns: labels
+				-- end on menu.pos.x and values start one gutter past it, so every
+				-- row straddles the frame's middle. A list of submenu names has no
+				-- value to align against, so its rows are centred as a block, box
+				-- included - a name on its own belongs in the middle.
+				local columns = false
+				for _, row in ipairs(t) do
+					if row.vardisplay ~= nil and tostring(row.vardisplay) ~= '' then
+						columns = true
+						break
+					end
+				end
+				main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, motif.option_info, motif.optionbgdef, false,
+					{align = 0, columns = columns, centerBox = not columns})
 			end
 			-- While fading, ignore normal option-menu inputs, but still allow ESC / menu-cancel to skip the fade.
 			if fadeActive() then

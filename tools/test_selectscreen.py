@@ -196,6 +196,58 @@ def check_metrics(problems):
         problems.append("start.lua indexes a motif metric straight: " + line[:90])
 
 
+def check_stage_wall(problems):
+    """The stage screen must show every map, and keep the fighters on it.
+
+    It used to draw one card at a time on a blank field, with the pickers wiped off
+    along with the wall. The layout is arithmetic in start.lua, so it is executed
+    the way the game executes it (lupa) and the boxes are measured, not eyeballed.
+    """
+    text = read(START)
+    if "function start.f_stageGrid" not in text:
+        problems.append("start.lua has no layout for a wall of stage cards")
+        return
+    if "local cards = start.f_stageGrid(stCount" not in text:
+        problems.append("the stage screen does not lay the maps out as a wall")
+    if not re.search(
+            r"if stagePhase then\s*\n\s*for side = 1, 2 do\s*\n\s*if #start\.p\[side\]\.t_selTemp > 0 then"
+            r"\s*\n\s*start\.f_drawPortraits", text):
+        problems.append("the picked fighters are not drawn once the wall is gone")
+
+    try:
+        from lupa import LuaRuntime
+    except ImportError:
+        return                                  # geometry checked only with lupa
+    start = text.index("-- >>> stage preview grid geometry")
+    end = text.index("-- <<< stage preview grid geometry")
+    lua = LuaRuntime(unpack_returned_tuples=True)
+    lua.execute("start = {}")
+    lua.execute(text[start:end])
+    cards = lua.eval("start.f_stageGrid(12)")
+    boxes = []
+    for i in range(1, 13):
+        cell = cards[i]
+        if cell is None:
+            problems.append("the stage wall has a hole at position %d" % i)
+            return
+        boxes.append((float(cell["x"]), float(cell["y"]), float(cell["w"]), float(cell["h"])))
+    x1, y1, x2, y2 = 443.0, 373.0, 1477.0, 708.0
+    for i, (x, y, w, h) in enumerate(boxes, 1):
+        if x < x1 - 0.5 or y < y1 - 0.5 or x + w > x2 + 0.5 or y + h > y2 + 0.5:
+            problems.append("stage card %d falls outside the stage window" % i)
+            break
+        if w < 100 or h < 30:
+            problems.append("stage card %d is too small to read" % i)
+            break
+    for i in range(len(boxes)):
+        for j in range(i + 1, len(boxes)):
+            ax, ay, aw, ah = boxes[i]
+            bx, by, bw, bh = boxes[j]
+            if ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
+                problems.append("stage cards %d and %d overlap" % (i + 1, j + 1))
+                return
+
+
 def main():
     problems = []
     text = check_motif(problems)
@@ -220,6 +272,10 @@ def main():
     before = len(problems)
     check_metrics(problems)
     print("  %s the grid metrics are read through the flattener"
+          % ("ok " if len(problems) == before else "FAIL"))
+    before = len(problems)
+    check_stage_wall(problems)
+    print("  %s the stage screen wall shows every map and keeps the fighters"
           % ("ok " if len(problems) == before else "FAIL"))
     if problems:
         print("\nthe select screen regressed in %d place(s)" % len(problems))

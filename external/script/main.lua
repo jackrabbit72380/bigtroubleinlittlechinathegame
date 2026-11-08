@@ -4100,6 +4100,29 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 		local w  = m.boxcursor.coords[3] - m.boxcursor.coords[1] + 1
 		local h  = m.boxcursor.coords[4] - m.boxcursor.coords[2] + 1
 			+ (math.min(#t, visible) - 1) * m.item.spacing[2]
+		-- A list of centred rows carries its highlight with it. The motif's box is
+		-- measured from a fixed left offset, as if the rows ended on the axis, so on
+		-- a centred list it would sit off to one side of the words it marks.
+		if opts.centerBox then
+			local pad = 30
+			local widest = 0
+			local last = math.min(#t, item + (visible or 0) - 1)
+			for k = item, math.max(item, last) do
+				local row = t[k]
+				local name = main.f_itemnameUpper(row.displayname, m.item.uppercase)
+				local spr = (row.selected and m.item.selected and m.item.selected.TextSpriteData)
+					or m.item.TextSpriteData
+				local scale = ((m.item.active.scale or m.item.scale) or { 1, 1 })[1] or 1
+				local measured = main.f_menuTextWidth(spr, name, scale)
+				if measured ~= nil and measured > widest then
+					widest = measured
+				end
+			end
+			if widest > 0 then
+				w = widest + pad * 2
+				x1 = offx + m.pos[1] - w * 0.5
+			end
+		end
 		rectSetWindow(m.boxbg.RectData, x1, y1, x1 + w, y1 + h)
 		rectUpdate(m.boxbg.RectData)
 		rectDraw(m.boxbg.RectData)
@@ -4164,8 +4187,13 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 		-- A row that shows a setting draws its value as part of the row: the two
 		-- are measured, put one gap apart and the pair is centred on the row's
 		-- axis. A build that cannot measure keeps the motif's own placement.
+		-- An empty value is no value. A submenu row carries vardisplay = '' so a
+		-- setting can fill it in later, and reading that emptiness as a value is
+		-- what put the options list's labels on the centre line, right-aligned
+		-- against a column of nothing.
+		local hasValue = itemData.vardisplay ~= nil and tostring(itemData.vardisplay) ~= ''
 		local valueSprite, valueX, valueY
-		if itemData.vardisplay ~= nil and opts.align == 0 then
+		if hasValue and opts.align == 0 then
 			if itemData.conflict and m.item.value.conflict and m.item.value.conflict.TextSpriteData then
 				valueSprite = m.item.value.conflict.TextSpriteData
 			else
@@ -4212,7 +4240,7 @@ function main.f_menuCommonDraw(t, item, cursorPosY, moveTxt, sec, bg, skipClear,
 			pcall(textImgSetAlign, valueSprite, 1)
 			main.f_menuItemPlace(valueSprite, valueX, valueY)
 			textImgDraw(valueSprite)
-		elseif itemData.vardisplay ~= nil then
+		elseif hasValue then
 			if itemData.conflict and m.item.value.conflict and m.item.value.conflict.TextSpriteData then
 				local spr = m.item.value.conflict.TextSpriteData
 				textImgReset(spr)

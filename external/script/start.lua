@@ -1611,6 +1611,58 @@ function start.f_selGrid(cell, slot)
 end
 
 --returns t_selChars table out of char ref
+-- >>> stage preview grid geometry (tools/test_selectscreen.py executes this block)
+-- The stage screen shows the whole pool at once, so it needs a layout rather than
+-- one fixed card. Every stage's portrait is tuned to render at 1215x398 in motif
+-- pixels - that is what each stage's own portraitscale is for, so a 720p stage and
+-- a 1080p one land the same size - and the grid works in those units: fit NOMINAL
+-- cards into the motif's stage-card window, cols to a row, with air between them,
+-- and hand back each card's box plus the fraction of natural size to draw it at.
+start.stageGrid = {
+	NOMINAL_W = 1215,
+	NOMINAL_H = 398,
+	cols = 4,
+	pad = 14,
+	window = { 443, 373, 1477, 708 },
+}
+
+function start.f_stageGrid(count, cols, pad, window)
+	local grid = start.stageGrid
+	count = count or 0
+	cols = cols or grid.cols
+	pad = pad or grid.pad
+	window = window or grid.window
+	local cards = {}
+	if count <= 0 or cols <= 0 then
+		return cards
+	end
+	local rows = math.ceil(count / cols)
+	local x1, y1, x2, y2 = window[1], window[2], window[3], window[4]
+	local cellW = ((x2 - x1) - pad * (cols + 1)) / cols
+	local cellH = ((y2 - y1) - pad * (rows + 1)) / rows
+	local scale = math.min(cellW / grid.NOMINAL_W, cellH / grid.NOMINAL_H)
+	if scale <= 0 then
+		scale = 0.01
+	end
+	local w = grid.NOMINAL_W * scale
+	local h = grid.NOMINAL_H * scale
+	for i = 1, count do
+		local col = (i - 1) % cols
+		local row = math.floor((i - 1) / cols)
+		cards[i] = {
+			x = x1 + pad + col * (cellW + pad) + (cellW - w) * 0.5,
+			y = y1 + pad + row * (cellH + pad) + (cellH - h) * 0.5,
+			w = w,
+			h = h,
+			scale = scale,
+			col = col,
+			row = row,
+		}
+	end
+	return cards
+end
+-- <<< stage preview grid geometry
+
 function start.f_getCharData(ref)
 	return main.t_selChars[ref + 1]
 end
@@ -3420,30 +3472,58 @@ function start.f_selectScreen()
 			if main.stageMenu then
 				--draw stage portrait background
 				main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
+				-- The fighters stay on the stage screen. The wall is gone, but who was
+				-- picked is still the point of the screen: the stage is chosen for them.
+				if stagePhase then
+					for side = 1, 2 do
+						if #start.p[side].t_selTemp > 0 then
+							start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
+						end
+					end
+				end
 				--draw stage portrait (random)
 				if stageListNo == 0 then
 					-- this build rejects stage.portrait.random.* at load, so the table can be
 					-- absent; reading .AnimData off it unguarded crashed the stage screen
 					local rndPortrait = motif.select_info.stage.portrait.random
 					if rndPortrait then main.f_animPosDraw(rndPortrait.AnimData) end
-				--draw stage portrait loaded from stage SFF
+				--draw the stage wall: every stage in the pool, its own card in the grid
+				--f_stageGrid lays out, the picked one at full strength and the rest dimmed, so
+				--the screen shows the maps themselves instead of one card at a time
 				else
 					stageRef = start.f_stageMenuRef()
 					local portrait = motif.select_info.stage.portrait
-					local anim = main.t_selStages[stageRef].anim_data
-					local loadingPortrait = false
-					if getStagePreloadStatus(stageRef) ~= 'ready' and hasPortraitAnim(portrait.loading) then
-						portrait = portrait.loading
-						anim = portrait.AnimData
-						loadingPortrait = true
+					local stCount = #main.t_selectableStages
+					local win = portrait.window
+					if type(win) ~= 'table' or #win < 4 then
+						win = nil
 					end
-					local x = metricW(motif.select_info.stage.pos)
-					local y = metricH(motif.select_info.stage.pos)
-					if not loadingPortrait then
-						x = x + metricW(portrait.offset)
-						y = y + metricH(portrait.offset)
+					local cards = start.f_stageGrid(stCount, nil, nil, win)
+					for i = 1, stCount do
+						local cell = cards[i]
+						local ref = main.t_selectableStages[i]
+						if cell ~= nil and ref ~= nil then
+							main.f_materializeStagePortrait(ref)
+							local st = main.t_selStages[ref]
+							local anim = st and st.anim_data
+							if anim == nil and hasPortraitAnim(portrait.loading) then
+								anim = portrait.loading.AnimData
+							end
+							if anim ~= nil then
+								-- drawn at the stage's own natural scale: portraitscale is what
+								-- makes every card 1215x398, so one fraction works for all of them
+								local factor = (portrait.scale[1] or 1) * ((st and st.portraitscale) or 1)
+								if st ~= nil and st.localcoord and st.localcoord > 0 then
+									factor = factor * motif.info.localcoord[1] / st.localcoord
+								end
+								local scale = factor * cell.scale
+								animSetScale(anim, scale, scale)
+								animSetWindow(anim, cell.x, cell.y, cell.x + cell.w, cell.y + cell.h)
+								pcall(animSetAlpha, anim, ref == stageRef and 256 or 120)
+								main.f_animPosDraw(anim, cell.x, cell.y)
+							end
+						end
 					end
-					main.f_animPosDraw(anim, x, y)
 				end
 				if not stageEnd then
 					local confirmPressed = slotSelected or (not slotHandled and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)

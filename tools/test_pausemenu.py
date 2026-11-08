@@ -332,7 +332,9 @@ def check_call_sites():
     if title not in main_text:
         problems.append("title menu: the list is drawn without asking for centred rows")
     options_text = read(os.path.join(ROOT, "external", "script", "options.lua"))
-    if "motif.optionbgdef, false, {align = 0, columns = true}" not in options_text:
+    # The options list now decides per screen: a value list keeps its columns, a
+    # list of submenu names is centred, box included.
+    if "columns = columns" not in options_text or "centerBox = not columns" not in options_text:
         problems.append("options menu: the list does not ask for its measured columns")
     block = main_text[main_text.find("local function drawItem"):]
     if "opts.columns" not in block:
