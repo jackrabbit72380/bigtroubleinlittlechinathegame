@@ -377,8 +377,12 @@ def load_rig(char_id, view=None):
         if tb:
             line = int(round(float(tpart["pivot"][1])
                              - metrics.get("torso_len", M["torso_len"])))
-            band = ta.crop((0, max(0, line - 3), ta.width,
-                            min(ta.height, line + 4))).getbbox()
+            # Clamped: a torso piece that runs below its pivot can put the
+            # shoulder line above the piece, and an inverted crop raised instead
+            # of measuring.
+            lo = max(0, min(ta.height - 1, line - 3))
+            hi = max(lo + 1, min(ta.height, line + 4))
+            band = ta.crop((0, lo, ta.width, hi)).getbbox()
             if band and band[2] - band[0] > 20:
                 drawn = (band[2] - band[0]) * 0.5 * 0.86
                 metrics["shoulder_half"] = round(

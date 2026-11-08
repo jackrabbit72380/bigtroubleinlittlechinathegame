@@ -1,5 +1,5 @@
 {
-  "scale": 0.377,
+  "scale": 0.371,
   "canvas": [
     640,
     780
@@ -9,53 +9,53 @@
     700
   ],
   "metrics": {
-    "torso_len": 179.5,
+    "torso_len": 200.3,
     "neck_len": 0.0,
-    "uarm": 80.1,
-    "farm": 41.0,
+    "uarm": 78.1,
+    "farm": 79.2,
     "hand": 34.0,
-    "thigh": 104.2,
-    "shin": 142.8,
-    "ankle_y": -39.6,
-    "hip_half": 33.6,
-    "shoulder_half": 66.7,
-    "knee_y": -182.4,
-    "hip_y": -286.6,
-    "shoulder_y": -466.1,
-    "neck_y": -466.1
+    "thigh": 101.3,
+    "shin": 163.4,
+    "ankle_y": -37.8,
+    "hip_half": 29.3,
+    "shoulder_half": 64.9,
+    "knee_y": -201.2,
+    "hip_y": -302.5,
+    "shoulder_y": -502.8,
+    "neck_y": -502.8
   },
   "pivots": {
     "head": [
-      162,
-      281
+      146,
+      328
     ],
     "torso": [
-      301,
-      475
+      333,
+      540
     ],
     "arm_n": [
-      60,
-      52
+      66,
+      62
     ],
     "pelvis": [
-      187,
+      175,
       0
     ],
     "thigh_n": [
-      108,
-      40
+      80,
+      20
     ],
     "shin_n": [
-      112,
-      0
+      86,
+      20
     ],
     "thigh_f": [
-      180,
-      40
+      212,
+      20
     ],
     "shin_f": [
-      195,
-      38
+      223,
+      20
     ],
     "prop_knife": [
       39.6,
@@ -76,10 +76,10 @@
     "pelvis": 0.0,
     "arm_f": 0.0,
     "arm_n": 0.0,
-    "thigh_n": 31.39,
-    "shin_n": 3.63,
-    "thigh_f": -20.11,
-    "shin_f": -24.19,
+    "thigh_n": 42.92,
+    "shin_n": 2.86,
+    "thigh_f": -26.05,
+    "shin_f": -23.11,
     "prop": 0.0,
     "holster_gun": -28.0,
     "holster_knife": 172.0

@@ -6,8 +6,10 @@ fighters are built from the new renders now, and the render that faces right
 (``jack faceing right_cut.png``) arrives as RGBA with the alpha already painted,
 so nothing has to be keyed - the cut is taken straight from the alpha channel.
 
-Boxes and joints below are measured on that file in its own pixels (927x1536
-after the empty margin is trimmed), read off a 100px grid laid over the cut.
+Boxes and joints below are measured on this file in its own pixels (1021x1526
+after the empty margin is trimmed), read off a 100px grid laid over the cut and
+checked against the mask: the boot tops, the crotch, the arm's elbow and the
+sole are all where the art puts them.
 Every pivot is a joint of the drawn body, so the rig rotates the art around the
 same point the artist drew it around.
 
@@ -33,20 +35,23 @@ ART = os.path.join(ROOT, "concept_art", "fighters", "jack_burton",
                    "jack faceing right_cut.png")
 OUT = os.path.join(ROOT, "art_src", "chars", "jackburton", "parts_side")
 
-# Joints in the cut's own pixels, read off the grid over the cut. The rig draws
+# Joints in the cut's own pixels, read off the grid over the cut. The ankles
+# sit inside the boots near the heel, not at the boot tops: stated at the tops
+# the ankle offset came out at -119 rig units and the bake could not lay out the
+# shin sprite at all. The rig draws
 # the near limb on the RIGHT of centre and the far one on the left, so "near"
 # here is the figure's image-right leg. Assigning them the other way round drew
 # each leg on its neighbour's hip, and the two crossed.
-NECK = (462, 292)
-SHOULDER_N = (596, 322)          # raised arm, image right, drawn right of centre
-HIP_N = (508, 776)
-KNEE_N = (652, 1012)
-ANKLE_N = (676, 1390)
-HIP_F = (330, 776)
-KNEE_F = (215, 1090)
-ANKLE_F = (78, 1395)
-SOLE = 1495
-HIP_MID = (419, 776)
+NECK = (566, 336)
+SHOULDER_N = (716, 352)          # raised arm, image right, drawn right of centre
+HIP_N = (620, 780)
+KNEE_N = (806, 980)
+ANKLE_N = (828, 1420)
+HIP_F = (462, 780)
+KNEE_F = (330, 1050)
+ANKLE_F = (170, 1425)
+SOLE = 1522
+HIP_MID = (541, 780)
 
 # A part box clips one limb out of the cut; the joint is where it hangs from.
 # Boxes overlap on purpose - the tank sits under both arms, and the arm is
@@ -54,28 +59,28 @@ HIP_MID = (419, 776)
 BOXES = {
     # stops under the chin: the tank strap starts around y=286 and a head part
     # that clips it pastes a vest shoulder under his jaw when the head turns
-    "head": (300, 4, 566, 286),
+    "head": (420, 0, 690, 336),
     # the box reaches left past the chest so the far forearm, which is drawn
     # across the body in this guard, stays painted on the torso: cutting it out
     # would leave a forearm-shaped hole in the chest once the arm swings away
-    "torso": (118, 260, 606, 736),
-    "arm_n": (536, 270, 790, 592),
-    "pelvis": (246, 700, 620, 850),
+    "torso": (200, 240, 700, 800),
+    "arm_n": (650, 290, 910, 600),
+    "pelvis": (380, 730, 700, 880),
     # Leg boxes lap upwards past their joint. The two drawn legs are not the same
     # length (the stance is three-quarter, so the far one is foreshortened) and
     # the skeleton carries one thigh and one shin for both, so the piece that
     # ends short has to be covered by the piece below it, not left with a gap.
-    "thigh_n": (400, 736, 690, 1090),
-    "shin_n": (540, 1042, 860, 1496),
-    "thigh_f": (150, 736, 400, 1140),
-    "shin_f": (20, 1052, 330, 1496),
+    "thigh_n": (540, 760, 860, 1010),
+    "shin_n": (720, 960, 1015, 1526),
+    "thigh_f": (250, 760, 560, 1080),
+    "shin_f": (95, 1030, 400, 1526),
 }
 
 JOINTS = {
     "head": NECK,
-    "torso": (HIP_MID[0], 736),
+    "torso": (HIP_MID[0], 780),
     "arm_n": SHOULDER_N,
-    "pelvis": (433, 700),
+    "pelvis": (555, 704),
     "thigh_n": HIP_N,
     "shin_n": KNEE_N,
     "thigh_f": HIP_F,
@@ -85,7 +90,7 @@ JOINTS = {
 # Rig units per art pixel. The old side set drew the figure about 550 rig units
 # tall on a 640x780 canvas from a 648px crop; this art is 1485px tall, so the
 # same size on screen needs about this much per pixel.
-SCALE = 0.377
+SCALE = 0.371
 
 
 def _trim_white_collar(part):
@@ -98,8 +103,8 @@ def _trim_white_collar(part):
     """
     px = part.load()
     w, h = part.size
-    for y in range(int(h * 0.78), h):
-        for x in range(0, int(w * 0.62)):
+    for y in range(int(h * 0.70), h):
+        for x in range(0, int(w * 0.66)):
             r, g, b, a = px[x, y]
             if a and min(r, g, b) > 168 and max(r, g, b) - min(r, g, b) < 34:
                 px[x, y] = (0, 0, 0, 0)
@@ -127,8 +132,15 @@ def _clean_alpha(img):
 def _part(cut, name):
     box = BOXES[name]
     joint = JOINTS[name]
-    piece = _clean_alpha(cut.crop(box))
-    bb = piece.getchannel("A").getbbox() or (0, 0, 1, 1)
+    raw = cut.crop(box)
+    # The trim offset has to be measured BEFORE _clean_alpha crops the piece to
+    # its own content. Reading the bbox afterwards always gives (0, 0, ...), so
+    # every part whose content did not start at the box corner was pasted that
+    # many pixels off its joint - an 8px bite out of the torso's back and a 12px
+    # step on the far boot.
+    bb = raw.getchannel("A").point(
+        lambda v: 255 if v > 40 else 0).getbbox() or (0, 0, 1, 1)
+    piece = _clean_alpha(raw)
     # pivot relative to the part, i.e. the joint in part-local pixels
     px = joint[0] - box[0] - bb[0]
     py = joint[1] - box[1] - bb[1]
@@ -180,10 +192,13 @@ def build():
     pivots["prop"] = [1, 1]
 
     metrics = {
-        "torso_len": round(parts["torso"].height * SCALE, 1),
+        # pivot to the top of the piece: that is the torso bone. Taking the whole
+        # piece height instead put the bone past the pivot once the box ran below
+        # the hip line, and the rig's shoulder-line probe went off the top.
+        "torso_len": round((JOINTS["torso"][1] - BOXES["torso"][1]) * SCALE, 1),
         "neck_len": 0.0,
-        "uarm": round(_dist(SHOULDER_N, (712, 500)) * SCALE, 1),
-        "farm": round(_dist((712, 500), (700, 392)) * SCALE, 1),
+        "uarm": round(_dist(SHOULDER_N, (800, 545)) * SCALE, 1),
+        "farm": round(_dist((800, 545), (860, 340)) * SCALE, 1),
         "hand": 34.0,
         # The skeleton carries ONE thigh and ONE shin, and the near leg is the
         # one the rig actually animates in every pose, so its drawn lengths win:
