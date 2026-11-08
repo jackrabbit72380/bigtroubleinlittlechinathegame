@@ -80,7 +80,7 @@ concept_art/ui/splash.png        (also picked up)
 
 What the build does with it:
 
-- packs it into `data/ikemen1/system.sff` as sprite `225, 0` (a group the
+- packs it into `data/ikemen1/system.sff` as sprite `206, 0` (a group the
   engine does not use), axis at the frame centre;
 - rewrites `data/ikemen1/logo.def` as one scene: fade up from black, hold, fade
   out into the title. The timing lives in `tools/build_splash.py`

@@ -33,12 +33,12 @@ LOGO_DEF = os.path.join(ROOT, "data", "ikemen1", "logo.def")
 # The splash is a full 1280x720 frame, drawn with the axis at its centre.
 CANVAS = (1280, 720)
 AXIS = (640, 360)
-# The poster needs a group of its own. It used to be 220,0 - the same slot
-# tools/build_select_grid.py paints the char-select backdrop into - and build_all
-# runs the splash before that, so the poster was overwritten every build and the
-# splash played behind the select art. 225 is unused by the screenpack (200-204,
-# 220-224, 400-403, 500, 600, 610, 700, 800, 810, 921-923, 1000 are taken).
-SPRITE = (225, 0)
+# The poster needs a slot of its own. 220,0 and 225,0 both belong to the
+# char-select screen (the portrait wall and the painted backdrop, painted by
+# tools/build_select_grid.py), so a poster written to either is overwritten by
+# it or overwrites it. 206 is free: 200-205, 220-225, 400-403, 500, 600, 610,
+# 700, 800, 810, 921-923 and 1000 are taken.
+SPRITE = (206, 0)
 
 SECONDS = 4.0
 FADE_IN = 30

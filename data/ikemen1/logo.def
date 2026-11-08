@@ -11,6 +11,6 @@ end.time = 240
 
 [Splash Poster]
 type = normal
-spriteno = 225, 0
+spriteno = 206, 0
 start = 0, 0
 mask = 0
