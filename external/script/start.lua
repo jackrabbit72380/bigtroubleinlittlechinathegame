@@ -1,3 +1,45 @@
+-- Grid metrics from the motif, flattened. Older builds hand back a plain pair
+-- (cell.size = 128,160); newer ones nest it per side (cell.size = {{128,160}}),
+-- and multiplying a table is what crashed the select screen.
+local function flatNums(v, out)
+	out = out or {}
+	if type(v) == 'number' then
+		out[#out + 1] = v
+	elseif type(v) == 'table' then
+		for i = 1, #v do
+			flatNums(v[i], out)
+		end
+	end
+	return out
+end
+
+local function dims(v, dflt)
+	local w, h
+	if type(v) == 'number' then
+		w = v
+	elseif type(v) == 'table' then
+		local n = flatNums(v)
+		w, h = n[1], n[2]
+	end
+	if w == nil then
+		w = dflt or 0
+	end
+	if h == nil then
+		h = w
+	end
+	return w, h
+end
+
+local function metricW(v)
+	local w = dims(v, 0)
+	return w
+end
+
+local function metricH(v)
+	local _, h = dims(v, 0)
+	return h
+end
+
 local start = {}
 
 --team side specific data storage
@@ -813,18 +855,18 @@ end
 
 --calculate portraits x pos
 local function f_portraitsXCalc(side, member, paramsSide, params, skipOffset, offsetKey)
-	local x = paramsSide.pos[1]
+	local x = metricW(paramsSide.pos)
 	if not skipOffset then
 		-- offset is another field a motif can leave out
-		x = x + (type(params.offset) == "table" and params.offset[1] or 0)
+		x = x + (type(params.offset) == "table" and metricW(params.offset) or 0)
 	end
 	if paramsSide.padding then
-		return x + (2 * member - 1) * paramsSide.spacing[1] * paramsSide.num / (2 * math.min(paramsSide.num, math.max(start.p[side].numChars, #start.p[side].t_selected)))
+		return x + (2 * member - 1) * metricW(paramsSide.spacing) * paramsSide.num / (2 * math.min(paramsSide.num, math.max(start.p[side].numChars, #start.p[side].t_selected)))
 	end
 	if offsetKey and not motifIsInherited(offsetKey) then
 		return x
 	end
-	return x + (member - 1) * paramsSide.spacing[1]
+	return x + (member - 1) * metricW(paramsSide.spacing)
 end
 
 local function getParams(side, member, t, subname)
@@ -845,7 +887,7 @@ local function drawPortraitRandom(randomCfg, side, member, paramsSide, offsetKey
 	local spr = randomCfg.spr
 	if randomCfg.anim >= 0 or (spr and spr[1] >= 0 and spr[2] >= 0) then
 		local x = f_portraitsXCalc(side, member, paramsSide, randomCfg, false, offsetKey)
-		local y = paramsSide.pos[2] + randomCfg.offset[2] + (member - 1) * paramsSide.spacing[2]
+		local y = metricH(paramsSide.pos) + metricH(randomCfg.offset) + (member - 1) * metricH(paramsSide.spacing)
 		animSetPos(randomCfg.AnimData, x, y)
 		animDraw(randomCfg.AnimData)
 		animUpdate(randomCfg.AnimData)
@@ -861,7 +903,7 @@ local function drawPortraitSlot(slotCfg, side, member, paramsSide, offsetKey)
 	local spr = slotCfg.spr
 	if slotCfg.anim >= 0 or (spr and spr[1] >= 0 and spr[2] >= 0) then
 		local x = f_portraitsXCalc(side, member, paramsSide, slotCfg, false, offsetKey)
-		local y = paramsSide.pos[2] + slotCfg.offset[2] + (member - 1) * paramsSide.spacing[2]
+		local y = metricH(paramsSide.pos) + metricH(slotCfg.offset) + (member - 1) * metricH(paramsSide.spacing)
 		animSetPos(slotCfg.AnimData, x, y)
 		animDraw(slotCfg.AnimData)
 		animUpdate(slotCfg.AnimData)
@@ -911,7 +953,7 @@ local function drawPortraitLayer(t_portraits, side, t, subname, last, dataField)
 			main.f_animPosDraw(
 				data,
 				f_portraitsXCalc(side, 1, paramsSide, drawParams, skipOffset, offsetKey),
-				paramsSide.pos[2] + (skipOffset and 0 or drawParams.offset[2])
+				metricH(paramsSide.pos) + (skipOffset and 0 or metricH(drawParams.offset))
 			)
 		end
 		-- we're done for this layer in this mode
@@ -940,7 +982,7 @@ local function drawPortraitLayer(t_portraits, side, t, subname, last, dataField)
 			main.f_animPosDraw(
 				data,
 				f_portraitsXCalc(side, member, paramsSide, drawParams, skipOffset, offsetKey),
-				paramsSide.pos[2] + (skipOffset and 0 or drawParams.offset[2]) + (member - 1) * paramsSide.spacing[2]
+				metricH(paramsSide.pos) + (skipOffset and 0 or metricH(drawParams.offset)) + (member - 1) * metricH(paramsSide.spacing)
 			)
 		end
 	end
@@ -1021,7 +1063,7 @@ function start.f_drawPortraits(t_portraits, side, t, subname, last, iconDone)
 		main.f_animPosDraw(
 			animData,
 			f_portraitsXCalc(side, member, paramsSide, params),
-			paramsSide.pos[2] + (type(params.offset) == "table" and params.offset[2] or 0) + (member - 1) * paramsSide.spacing[2]
+			metricH(paramsSide.pos) + (type(params.offset) == "table" and metricH(params.offset) or 0) + (member - 1) * metricH(paramsSide.spacing)
 		)
 	end
 end
@@ -1199,7 +1241,8 @@ end
 function getCellOffset(col, row)
 	local override = getCellOverride(col, row)
 	if override ~= nil and override.offset ~= nil then
-		return override.offset
+		local ox, oy = dims(override.offset, 0)
+		return {ox, oy}
 	end
 	return {0, 0}
 end
@@ -1207,17 +1250,13 @@ end
 function getCellSpacing(col, row)
 	local override = getCellOverride(col, row)
 	if override ~= nil and override.spacing ~= nil then
-		if override.spacing[1] ~= 0 then
-			if override.spacing[2] == 0 then
-				return {override.spacing[1], override.spacing[1]}
-			end
-			return override.spacing
-		end
-		if override.spacing[2] ~= 0 then
-			return override.spacing
+		local ow, oh = dims(override.spacing, 0)
+		if ow ~= 0 or oh ~= 0 then
+			return {ow, oh == 0 and ow or oh}
 		end
 	end
-	return motif.select_info.cell.spacing
+	local sw, sh = dims(motif.select_info.cell.spacing, 2)
+	return {sw, sh}
 end
 
 function getCellSkip(col, row)
@@ -1318,14 +1357,15 @@ function start.f_drawRandomStop()
 	end
 	local cols = si.columns or 8
 	local rows = math.max(1, (si.rows or 7) - 1)   -- the last row is this stop
-	local cellW, cellH = si.cell.size[1], si.cell.size[2]
-	local gap = si.cell.spacing or 2
+	local cellW, cellH = dims(si.cell.size)
+	local px, py = dims(pos, 0)
+	local gap = dims(si.cell.spacing, 2)
 	local wallW = cols * cellW + (cols - 1) * gap
 	local wallH = rows * cellH + (rows - 1) * gap
-	local x = pos[1] + math.floor(wallW / 2) - 64
+	local x = px + math.floor(wallW / 2) - 64
 	-- the frame's own padding (15) plus a little air, so the word sits
 	-- under the wall rather than on its bottom rule
-	local y = pos[2] + wallH + 19
+	local y = py + wallH + 19
 	local base = randomStopAnim(false)
 	if base ~= nil then
 		main.f_animPosDraw(base, x, y)
@@ -1392,13 +1432,11 @@ function start.f_drawPlayerLabels()
 	if title == nil or pos == nil then
 		return
 	end
-	local y = 2
-	if type(title.offset) == 'table' and title.offset[2] ~= nil then
-		y = title.offset[2]
-	end
+	local oy = type(title.offset) == 'table' and flatNums(title.offset)[2] or nil
+	local y = oy or 2
 	local scale = title.scale
 	local col = title.font
-	local cx1 = math.floor(pos[1] / 2)
+	local cx1 = math.floor(metricW(pos) / 2)
 	for pn = 1, 2 do
 		local t = labelSprite(pn)
 		if t ~= nil then
@@ -1438,8 +1476,8 @@ function start.f_drawCursor(pn, x, y, param, done)
 	local baseX, baseY
 	if cellData then
 		-- cellData already includes all spacing and offsets
-		baseX = motif.select_info.pos[1] + cellData.x
-		baseY = motif.select_info.pos[2] + cellData.y
+		baseX = metricW(motif.select_info.pos) + cellData.x
+		baseY = metricH(motif.select_info.pos) + cellData.y
 	end
 	-- initialization or snap: set cursor directly
 	if not cd.init or done or cd.snap then
@@ -1470,7 +1508,7 @@ function start.f_drawCursor(pn, x, y, param, done)
 	if pData.cursor.tween.wrap.snap then
 		local dx = cd.targetPos[1] - cd.startPos[1]
 		local dy = cd.targetPos[2] - cd.startPos[2]
-		if math.abs(dx) > motif.select_info.cell.size[1] * (motif.select_info.columns - 1) or math.abs(dy) > motif.select_info.cell.size[2] * (motif.select_info.rows - 1) then
+		if math.abs(dx) > metricW(motif.select_info.cell.size) * (motif.select_info.columns - 1) or math.abs(dy) > metricH(motif.select_info.cell.size) * (motif.select_info.rows - 1) then
 		cd.slideOffset[1], cd.slideOffset[2] = 0, 0	
 		end
 	end
@@ -1776,8 +1814,8 @@ for i = 1, motif.select_info.rows * motif.select_info.columns do
 	local cell_spacing = getCellSpacing(col - 1, row - 1)
 	local cell_offset = getCellOffset(col - 1, row - 1)
 	start.t_grid[row][col] = {
-		x = (col - 1) * (motif.select_info.cell.size[1] + cell_spacing[1]) + cell_offset[1],
-		y = (row - 1) * (motif.select_info.cell.size[2] + cell_spacing[2]) + cell_offset[2]
+		x = (col - 1) * (metricW(motif.select_info.cell.size) + cell_spacing[1]) + cell_offset[1],
+		y = (row - 1) * (metricH(motif.select_info.cell.size) + cell_spacing[2]) + cell_offset[2]
 	}
 	if start.f_selGrid(i).char ~= nil then
 		start.t_grid[row][col].char = start.f_selGrid(i).char
@@ -2719,16 +2757,16 @@ function start.f_updateDrawList()
 				if (charData and charData.char ~= nil and (charData.hidden == 0 or charData.hidden == 3)) or motif.select_info.showemptyboxes then
 					local item = getTransforms(motif.select_info.cell.bg)
 					item.anim = motif.select_info.cell.bg.AnimData
-					item.x = motif.select_info.pos[1] + t.x
-					item.y = motif.select_info.pos[2] + t.y
+					item.x = metricW(motif.select_info.pos) + t.x
+					item.y = metricH(motif.select_info.pos) + t.y
 					table.insert(drawList, item)
 				end
 
 				if charData and (charData.char == 'randomselect' or charData.hidden == 3) then
 					local item = getTransforms(motif.select_info.cell.random)
 					item.anim = motif.select_info.cell.random.AnimData
-					item.x = motif.select_info.pos[1] + t.x + motif.select_info.portrait.offset[1]
-					item.y = motif.select_info.pos[2] + t.y + motif.select_info.portrait.offset[2]
+					item.x = metricW(motif.select_info.pos) + t.x + metricW(motif.select_info.portrait.offset)
+					item.y = metricH(motif.select_info.pos) + t.y + metricH(motif.select_info.portrait.offset)
 					table.insert(drawList, item)
 				end
 
@@ -2741,11 +2779,11 @@ function start.f_updateDrawList()
 					end
 					local item = getTransforms(portrait)
 					item.anim = loadingPortrait and portrait.AnimData or charData.cell_data
-					item.x = motif.select_info.pos[1] + t.x
-					item.y = motif.select_info.pos[2] + t.y
+					item.x = metricW(motif.select_info.pos) + t.x
+					item.y = metricH(motif.select_info.pos) + t.y
 					if not loadingPortrait then
-						item.x = item.x + portrait.offset[1]
-						item.y = item.y + portrait.offset[2]
+						item.x = item.x + metricW(portrait.offset)
+						item.y = item.y + metricH(portrait.offset)
 					end
 					-- apply cell scale override while preserving portrait resolution factor
 					-- loading portrait comes from system.sff, so don't apply character localcoord scaling to it
@@ -2769,8 +2807,8 @@ function start.f_updateDrawList()
 					if hasMultipleChars and hasPortraitAnim(motif.select_info.cell.slot) then
 						local icon = getTransforms(motif.select_info.cell.slot)
 						icon.anim = motif.select_info.cell.slot.AnimData
-						icon.x = motif.select_info.pos[1] + t.x
-						icon.y = motif.select_info.pos[2] + t.y
+						icon.x = metricW(motif.select_info.pos) + t.x
+						icon.y = metricH(motif.select_info.pos) + t.y
 						table.insert(drawList, icon)
 					end
 				end
@@ -3276,8 +3314,8 @@ function start.f_selectScreen()
 						textImgReset(nameData.TextSpriteData)
 						textImgAddPos(
 							nameData.TextSpriteData,
-							(i - 1) * nameData.spacing[1],
-							(i - 1) * nameData.spacing[2]
+							(i - 1) * metricW(nameData.spacing),
+							(i - 1) * metricH(nameData.spacing)
 						)
 						textImgSetText(nameData.TextSpriteData, name)
 						-- RANDOM has no portrait art any more: the word under the wall
@@ -3347,11 +3385,11 @@ function start.f_selectScreen()
 						anim = portrait.AnimData
 						loadingPortrait = true
 					end
-					local x = motif.select_info.stage.pos[1]
-					local y = motif.select_info.stage.pos[2]
+					local x = metricW(motif.select_info.stage.pos)
+					local y = metricH(motif.select_info.stage.pos)
 					if not loadingPortrait then
-						x = x + portrait.offset[1]
-						y = y + portrait.offset[2]
+						x = x + metricW(portrait.offset)
+						y = y + metricH(portrait.offset)
 					end
 					main.f_animPosDraw(anim, x, y)
 				end
@@ -3564,13 +3602,13 @@ function start.f_teamMenu(side, t)
 		--Draw team cursor
 		main.f_animPosDraw(
 			motif.select_info['p' .. side].teammenu.item.cursor.AnimData,
-			(start.p[side].teamMenu - 1) * motif.select_info['p' .. side].teammenu.item.spacing[1],
-			(start.p[side].teamMenu - 1) * motif.select_info['p' .. side].teammenu.item.spacing[2]
+			(start.p[side].teamMenu - 1) * metricW(motif.select_info['p' .. side].teammenu.item.spacing),
+			(start.p[side].teamMenu - 1) * metricH(motif.select_info['p' .. side].teammenu.item.spacing)
 		)
 		local teammenu = motif.select_info['p' .. side].teammenu
 		local itemCfg = teammenu.item
 		local valueCfg = teammenu.value
-		local spacingX, spacingY = itemCfg.spacing[1], itemCfg.spacing[2]
+		local spacingX, spacingY = metricW(itemCfg.spacing), metricH(itemCfg.spacing)
 		local uppercase = itemCfg.uppercase
 		local gm = gameMode()
 		--Slot markers start just past the longest mode word instead of a fixed
@@ -3578,7 +3616,7 @@ function start.f_teamMenu(side, t)
 		--starts at x=441 here). Measuring the word keeps the markers beside
 		--"Single"/"Simul"/"Tag"/"Turns" at any motif font, and every row starts on
 		--the same edge so the rows line up down the screen.
-		local iconDir = (valueCfg.spacing[1] < 0) and -1 or 1
+		local iconDir = (metricW(valueCfg.spacing) < 0) and -1 or 1
 		local wordW = 0
 		for i = 1, #t do
 			local ok, w = pcall(textImgGetTextWidth, itemCfg.TextSpriteData,
@@ -3642,7 +3680,7 @@ function start.f_teamMenu(side, t)
 			if itemname == 'simul' then
 				for j = 1, main.numSimul[2] do
 					local vx = iconX0 + (j - 1) * iconSpacingX
-					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
+					local vy = y + iconY0 + (j - 1) * metricH(valueCfg.spacing)
 					if j <= start.p[side].numSimul then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
@@ -3652,7 +3690,7 @@ function start.f_teamMenu(side, t)
 			elseif itemname == 'turns' then
 				for j = 1, main.numTurns[2] do
 					local vx = iconX0 + (j - 1) * iconSpacingX
-					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
+					local vy = y + iconY0 + (j - 1) * metricH(valueCfg.spacing)
 					if j <= start.p[side].numTurns then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
@@ -3662,7 +3700,7 @@ function start.f_teamMenu(side, t)
 			elseif itemname == 'tag' then
 				for j = 1, main.numTag[2] do
 					local vx = iconX0 + (j - 1) * iconSpacingX
-					local vy = y + iconY0 + (j - 1) * valueCfg.spacing[2]
+					local vy = y + iconY0 + (j - 1) * metricH(valueCfg.spacing)
 					if j <= start.p[side].numTag then
 						main.f_animPosDraw(valueCfg.icon.AnimData, vx, vy)
 					else
@@ -4735,14 +4773,14 @@ function start.f_selectVersus(active, t_orderSelect, loadStartArg)
 					if i > #t_order[side] and #start.p[side].t_selected > #t_order[side] then
 						main.f_animPosDraw(
 							pCfg.value.empty.icon.AnimData,
-							(i - 1) * motif.vs_screen['p' .. side].value.icon.spacing[1],
-							(i - 1) * motif.vs_screen['p' .. side].value.icon.spacing[2]
+							(i - 1) * metricW(motif.vs_screen['p' .. side].value.icon.spacing),
+							(i - 1) * metricH(motif.vs_screen['p' .. side].value.icon.spacing)
 						)
 					else
 						main.f_animPosDraw(
 							pCfg.value.icon.AnimData,
-							(i - 1) * motif.vs_screen['p' .. side].value.icon.spacing[1],
-							(i - 1) * motif.vs_screen['p' .. side].value.icon.spacing[2]
+							(i - 1) * metricW(motif.vs_screen['p' .. side].value.icon.spacing),
+							(i - 1) * metricH(motif.vs_screen['p' .. side].value.icon.spacing)
 						)
 					end
 				end
@@ -4755,8 +4793,8 @@ function start.f_selectVersus(active, t_orderSelect, loadStartArg)
 					textImgReset(motif.vs_screen['p' .. side].name.TextSpriteData)
 					textImgAddPos(
 						motif.vs_screen['p' .. side].name.TextSpriteData,
-						(k - 1) * motif.vs_screen['p' .. side].name.spacing[1],
-						(k - 1) * motif.vs_screen['p' .. side].name.spacing[2]
+						(k - 1) * metricW(motif.vs_screen['p' .. side].name.spacing),
+						(k - 1) * metricH(motif.vs_screen['p' .. side].name.spacing)
 					)
 					textImgSetText(motif.vs_screen['p' .. side].name.TextSpriteData, start.f_getName(v.ref, side))
 					textImgDraw(motif.vs_screen['p' .. side].name.TextSpriteData)
@@ -4777,11 +4815,11 @@ function start.f_selectVersus(active, t_orderSelect, loadStartArg)
 				loadingPortrait = true
 			end
 			if anim then
-				local x = motif.vs_screen.stage.pos[1]
-				local y = motif.vs_screen.stage.pos[2]
+				local x = metricW(motif.vs_screen.stage.pos)
+				local y = metricH(motif.vs_screen.stage.pos)
 				if not loadingPortrait then
-					x = x + portrait.offset[1]
-					y = y + portrait.offset[2]
+					x = x + metricW(portrait.offset)
+					y = y + metricH(portrait.offset)
 				end
 				main.f_animPosDraw(anim, x, y)
 			end
