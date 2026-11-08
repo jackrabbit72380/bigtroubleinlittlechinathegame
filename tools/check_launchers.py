@@ -398,8 +398,14 @@ def _progress_problems(name, raw):
                    "wraps over the drawing or cannot fill to 100%%" % name)
     if "set /a GPOS=%~1*%BARMAX%/100" not in text:
         out.append("%s: the barrel no longer fills one pipe per percent" % name)
-    if not re.search(r"(?m)^echo\s+BIG TROUBLE IN LITTLE CHINA.*$", text):
-        out.append("%s: the game's title is not drawn above the pistol" % name)
+    # The panel is the title, the pistol and the count at the muzzle. The step and
+    # the file count ride on the title line, beside the version: they are the one
+    # thing on the panel a player reads, and a row of their own under the art cost
+    # a line of the window for a string that fits next to the title.
+    if 'set "TITLE=   BIG TROUBLE IN LITTLE CHINA' not in text:
+        out.append("%s: the game's title is no longer built above the pistol" % name)
+    elif "echo %TITLE%   %STEXT%" not in text:
+        out.append("%s: the title is drawn without the status beside it" % name)
     if "GMAXPCT" not in text:
         out.append("%s: the gauge can report a lower percentage than it just showed, "
                    "so one run reads as a rewind" % name)
@@ -422,8 +428,9 @@ def _progress_problems(name, raw):
     if not re.search(r"(?m)^:ui\r?$", text) or not re.search(r"(?m)^:stext\r?$", text):
         out.append("%s: the panel has no status line, so a step that takes a while "
                    "shows a number and nothing about what it is doing" % name)
-    elif "echo %STEXT%" not in text:
-        out.append("%s: the status line is never drawn under the drawing" % name)
+    elif "%STEXT%" not in text or "%ESC%[1G%TITLE%" not in text:
+        out.append("%s: the status is never written back onto the title line, so a "
+                   "step that takes a while shows nothing until it ends" % name)
     return out
 
 

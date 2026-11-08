@@ -688,7 +688,16 @@ if %BARMAX% LSS 10 set "BARMAX=10"
 echo.
 rem The title sits on the drawing's own left edge - four spaces in, where the
 rem top line of the pistol starts - and carries the version the log records.
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
+rem The status rides on the title line, to the right of the version: it is the
+rem one thing on the panel the player actually reads, and a line of its own
+rem under the art costs a row of the window for a string that fits beside the
+rem title. :ui rewrites that tail in place, nine rows up from the anchor below
+rem the art.
+set "TITLE=   BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%"
+set "SSTEP=Starting up"
+set "SDETAIL="
+call :stext
+echo %TITLE%   %STEXT%
 echo    ..._...^|..____________________, ,
 echo    ....../ '---___________----_____^|##########^|]=
 echo    ...../_=^(O^)^(O^)^(O^);;;_______.:/^|##########^|
@@ -829,7 +838,9 @@ if %RNUM% GEQ 10 if %RNUM% LSS 100 set "RNUM= %RNUM%"
 set "RPCT=%RNUM%%PCT%"
 cls
 echo.
-echo    BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%
+call :stext
+set "TITLE=   BIG TROUBLE IN LITTLE CHINA  -  THE GAME  -  UPDATER v%UPDVER%"
+echo %TITLE%   %STEXT%
 echo    ..._...^|..____________________, ,
 echo    ....../ '---___________----_____^|##########^|]=  %RBAR% %RPCT%
 echo    ...../_=^(O^)^(O^)^(O^);;;_______.:/^|##########^|
@@ -883,7 +894,6 @@ rem cannot write in place. It sits in a label of its own so the drawing above
 rem stays the only echo block in :gun - the checker measures the muzzle column,
 rem and the row the count comes back from, out of that block.
 echo.
-echo %STEXT%
 exit /b 0
 
 :stext
@@ -904,7 +914,11 @@ rem the old run stacked a line under the art for every step and every five
 rem seconds of every wait, and that pile is what read as noise.
 if not defined VTOK goto ui_plain
 call :stext
-set "UISEQ=%ESC%[u%ESC%[B%ESC%[1G%STEXT%%ESC%[K%ESC%[u"
+rem Nine rows up from the anchor is the title line: the drawing is the title
+rem and eight rows of pistol. The tail is rewritten whole - title, then the
+rem status - and the cleared rest of the row keeps a longer step from before
+rem leaving letters past the new one.
+set "UISEQ=%ESC%[u%ESC%[9A%ESC%[1G%TITLE%   %STEXT%%ESC%[K%ESC%[u"
 set /p "=%UISEQ%" <nul
 exit /b 0
 :ui_plain
