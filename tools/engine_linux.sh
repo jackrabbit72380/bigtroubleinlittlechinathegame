@@ -106,10 +106,22 @@ build_engine() {
   say "fetching Ikemen GO $ENGINE_TAG"
   mkdir -p "$ENGINE"
   curl -sSL -o "$STACK/engine.zip" "$ENGINE_URL"
-  unzip -q -o "$STACK/engine.zip" -d "$ENGINE"
-  # -print -quit, not "| head -1": head closes the pipe, find dies on SIGPIPE and
-  # pipefail turns that into a silent exit before anything is even printed.
-  ENGINE_BIN="$(find "$ENGINE" -maxdepth 1 -type f -name 'Ikemen_GO*' -perm -u+x -print -quit)"
+  # Extract into a scratch directory, never into $ENGINE: $ENGINE/data and the
+  # other mod directories are symlinks to this repo, and unzip writes through
+  # symlinks. Unzipping straight into $ENGINE once replaced this game's data,
+  # chars, stages, font and sound with the stock screenpack.
+  rm -rf "$STACK/extract"
+  mkdir -p "$STACK/extract"
+  unzip -q -o "$STACK/engine.zip" -d "$STACK/extract"
+  for entry in "$STACK/extract"/*; do
+    case "$(basename "$entry")" in
+      data|chars|stages|font|sound|external|save) continue ;;
+    esac
+    cp -a "$entry" "$ENGINE"/
+  done
+  # unzip drops the executable bit on the Linux build.
+  chmod +x "$ENGINE"/Ikemen_GO* 2>/dev/null || true
+  ENGINE_BIN="$(find -L "$ENGINE" -maxdepth 1 -type f -name 'Ikemen_GO*' -perm -u+x -print -quit)"
   [ -n "$ENGINE_BIN" ] || { say "engine binary missing from the release"; exit 1; }
 }
 
