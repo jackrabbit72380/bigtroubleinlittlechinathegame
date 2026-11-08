@@ -41,10 +41,11 @@ if exist "%~dp0save\.wtest" (
 rem Where the picture is drawn. Video.GameWidth/GameHeight is the size the game
 rem is actually rendered at - the art is painted at 1920x1080, so this is the
 rem honest one - and Video.WindowWidth/WindowHeight is the window it is drawn
-rem into. Options > Video > Resolution sets the window, and the render follows it:
-rem the game is drawn at the window's own pixels, so 2K and 4K are not a 1080p
-rem picture stretched over a bigger window. A size chosen in the game's own menu
-rem is kept and used on the next launch.
+rem into. Options > Video > Window sets the window and Options > Video > Resolution
+rem sets the render, so a card that cannot fill a 4K window can still draw the game
+rem at 1080p and let the picture stretch to the window's edges - that is the
+rem quality dial. A size chosen in the game's own menu is kept and used on the
+rem next launch.
 rem
 rem KeepAspect off fills the window whatever shape it is; on, a window that is not
 rem 16:9 (a maximised one on a widescreen desktop, say) leaves black bars beside the
@@ -58,8 +59,8 @@ rem 1920x1080, 2560x1440 (2K), 3840x2160 (4K) - so a small laptop gets a 720p
 rem window it can show whole instead of a 1080p one running off the screen, and
 rem a 4K desktop is not handed a quarter-size window. The render size then follows
 rem the window, so each of those sizes is drawn at its own pixels.
-set "GW=1920"
-set "GH=1080"
+set "GW="
+set "GH="
 set "WW="
 set "WH="
 set "FS=false"
@@ -84,8 +85,20 @@ rem render is capped at 2160 lines: the art is painted at 1080p, and past 4K a
 rem bigger render only costs frame time. Two arguments still override it:
 rem
 rem   "Play Big Trouble.bat" 2560 1440
-set "GW=%WW%"
-set "GH=%WH%"
+rem A render the player picked in Options > Video > Resolution is kept, so a 4K
+rem window can draw at 1080p; with none saved the window's own pixels are used.
+rem It is never bigger than the window it is shown in, and never smaller than a
+rem usable picture, so a stale size from an old install cannot shrink the game.
+if defined GW set /a "GW=GW" 2>nul
+if errorlevel 1 set "GW="
+if defined GH set /a "GH=GH" 2>nul
+if errorlevel 1 set "GH="
+if not defined GW set "GW=%WW%"
+if not defined GH set "GH=%WH%"
+if %GW% GTR %WW% set "GW=%WW%"
+if %GH% GTR %WH% set "GH=%WH%"
+if %GW% LSS 640 set "GW=%WW%"
+if %GH% LSS 480 set "GH=%WH%"
 if %GW% GTR 3840 set "GW=3840"
 if %GH% GTR 2160 set "GH=2160"
 if not "%~1"=="" set "GW=%~1"

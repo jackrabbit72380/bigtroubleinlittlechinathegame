@@ -1760,8 +1760,17 @@ function options.f_start()
 			options.t_itemname[width .. 'x' .. height .. 'w'] = function(t, item, cursorPosY, moveTxt)
 				if getInput(-1, motif.option_info.menu.done.key) then
 					sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1], motif.option_info.cursor.done.snd[2])
+					-- A window that was still following the render moves with the render; a render
+					-- the player set smaller than the window - 1080p in a 4K window - stays put.
+					local following = (gameOption('Video.WindowWidth') == 0) or
+						(gameOption('Video.GameWidth') == gameOption('Video.WindowWidth') and
+						gameOption('Video.GameHeight') == gameOption('Video.WindowHeight'))
 					modifyGameOption('Video.WindowWidth', tonumber(width))
 					modifyGameOption('Video.WindowHeight', tonumber(height))
+					if following then
+						modifyGameOption('Video.GameWidth', tonumber(width))
+						modifyGameOption('Video.GameHeight', tonumber(height))
+					end
 					options.modified = true
 					options.needReload = true
 					return false

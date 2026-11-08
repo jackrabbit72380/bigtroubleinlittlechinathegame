@@ -2118,7 +2118,7 @@ suffix, so this block IS the list.
 ; The art in this game is painted at 1920x1080 (localcoord), so 1920x1080 is
 ; the one window where every sprite lands on whole pixels; 2560x1440 and
 ; 3840x2160 are clean 1.33x and 2x scales of that same art.
-menu.itemname.menuvideo.resolution = RESOLUTION
+menu.itemname.menuvideo.resolution = RENDER SIZE
 menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)
 menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)
 menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)

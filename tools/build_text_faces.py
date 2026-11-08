@@ -337,9 +337,18 @@ def main():
 FIGHT = os.path.join(ROOT, "data", "fight.def")
 DOUBLED_FACES = ("Display.def", "Body.def", "DisplayActive.def")
 DOUBLED_PREFIXES = ("round.", "mode.")
-HALVES = (("2, 2", "1, 1"), ("2,2", "1, 1"),
-          ("1.5, 1.5", "0.75, 0.75"), ("1.5,1.5", "0.75, 0.75"),
-          ("1, 1", "0.5, 0.5"), ("1,1", "0.5, 0.5"))
+HALVES = {"1.5,1.5": "0.75, 0.75", "1,1": "0.5, 0.5", "2,2": "1, 1"}
+# The round banner is the one text whose design size is 2, so it is halved to 1
+# and left there: a second pass that saw 1 and halved again would shrink it.
+BANNER = ("round.",)
+
+
+def halved(key, value):
+    """The scale this text needs once its face is baked at double pixels."""
+    plain = value.replace(" ", "")
+    if key.startswith(BANNER):
+        return "1, 1" if plain == "2,2" else value
+    return HALVES.get(plain, value)
 FACE_LINE = re.compile(r"^\s*font(\d+)\s*=\s*(\S+)", re.M)
 KEY_LINE = re.compile(r"^(\s*)([A-Za-z0-9_.]+)(\s*=\s*)(.*)$")
 
@@ -367,12 +376,11 @@ def patch_fight():
             if key.endswith(".scale") and (key[:-len(".scale")] in prefixes
                                            or key.startswith(DOUBLED_PREFIXES)):
                 value = m.group(4).strip()
-                for old, new in HALVES:
-                    if value == old:
-                        line = (m.group(1) + m.group(2) + m.group(3) + new +
-                                ("\r\n" if line.endswith("\r\n") else "\n"))
-                        changed += 1
-                        break
+                new = halved(key, value)
+                if new != value:
+                    line = (m.group(1) + m.group(2) + m.group(3) + new +
+                            ("\r\n" if line.endswith("\r\n") else "\n"))
+                    changed += 1
         out.append(line)
     text = "".join(out)
     if text != original:

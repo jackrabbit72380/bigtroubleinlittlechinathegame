@@ -911,7 +911,7 @@ suffix, so this block IS the list.
 ; the one window where every sprite lands on whole pixels; 2560x1440 and
 ; 3840x2160 are clean 1.33x and 2x scales of that same art.
 """
-    "menu.itemname.menuvideo.resolution = RESOLUTION\n"
+    "menu.itemname.menuvideo.resolution = RENDER SIZE\n"
     "menu.itemname.menuvideo.resolution.1280x720 = 1280x720   (720p)\n"
     "menu.itemname.menuvideo.resolution.1366x768 = 1366x768   (768p)\n"
     "menu.itemname.menuvideo.resolution.1600x900 = 1600x900   (900p)\n"
