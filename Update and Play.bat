@@ -447,8 +447,6 @@ call :log %NCH% file(s) differ from main
 if "%NCH%"=="0" goto gitnone
 set /a NDONE=0
 set /a BCOUNT=0
-set /a BSTEP=NCH/10
-if %BSTEP% LSS 1 set "BSTEP=1"
 set "BATCH="
 set "WRITEFAIL="
 del /q "%CACHE%\todo.txt" >nul 2>&1
@@ -566,8 +564,10 @@ set "BATCH=%BATCH% "%~1""
 >>"%CACHE%\todo.txt" echo %~1
 set /a BCOUNT+=1
 if %BCOUNT% GEQ 12 call :gitflush
-set /a BMOD=NDONE %% BSTEP
-if %BMOD%==0 call :bar %NDONE% %NCH%
+rem Every file moves the counter. Stepping it in tens is what made a run
+rem that had stopped look like the rest of the noise; one file at a time,
+rem the line under the drawing is either moving or it is not.
+call :bar %NDONE% %NCH%
 exit /b 0
 :gitflush
 rem %BATCH% = the files waiting to be written, at most twelve. One git call for
@@ -734,7 +734,6 @@ rem
 rem A step that jumps from 12 to 25 fills in 13 to 24 as well, so no number is
 rem skipped, and a step that re-reports the number it just showed prints nothing.
 if "%~1"=="" exit /b 0
-call :log pct %~1 vt=%VTOK%
 set "GPCT=%~1"
 if %GPCT% LSS 0 set "GPCT=0"
 if %GPCT% GTR 100 set "GPCT=100"
@@ -747,6 +746,10 @@ set /a GADV=GPCT-GLASTPCT
 if %GADV% GEQ 1 goto gauge_print
 exit /b 0
 :gauge_print
+rem Logged where the number is about to be drawn, not on entry: the counter
+rem now reports a file at a time, and a line per file that moves no percentage
+rem is a log nobody can read.
+call :log pct %GPCT% vt=%VTOK%
 if not defined GLASTPCT set "GLASTPCT=0"
 set /a GFROM=GLASTPCT+1
 set /a GTO=GPCT
@@ -851,6 +854,12 @@ set "SPCTX=%GOPCT%%PCT%"
 set "SSTEP=Writing files %~1 - %~2"
 set "SDETAIL="
 call :gauge %GOPCT% "Writing files"
+rem The barrel only takes a pipe a whole percent at a time, so :gauge has
+rem nothing to draw for most files while the counter has changed on every
+rem one. Only a console that can write in place is asked for that write;
+rem one without cursor control redraws the whole panel, so it keeps the
+rem per-percent cadence it always had.
+if defined VTOK call :ui
 exit /b 0
 
 :pct
@@ -993,8 +1002,6 @@ copy /Y "%CACHE%\bad.txt" "%CACHE%\changed.txt" >nul
 set "NCH=%NBAD%"
 set /a NDONE=0
 set /a BCOUNT=0
-set /a BSTEP=NBAD/10
-if %BSTEP% LSS 1 set "BSTEP=1"
 set "BATCH="
 set "WRITEFAIL="
 del /q "%CACHE%\todo.txt" >nul 2>&1
@@ -1222,8 +1229,6 @@ if not "%WHICH%"=="git" call :say "Fetching %NMISS% files"
 set "NCH=%NMISS%"
 set /a NDONE=0
 set /a BCOUNT=0
-set /a BSTEP=NMISS/10
-if %BSTEP% LSS 1 set "BSTEP=1"
 set "BATCH="
 set "WRITEFAIL="
 if "%WHICH%"=="git" goto verify_git
