@@ -9,6 +9,7 @@ cd /d "%~dp0"
 set "OUT=%~dp0online-check.txt"
 set "SYS=%SystemRoot%\System32"
 set "FINDSTR=%SYS%\findstr.exe"
+set "PS=%SYS%\WindowsPowerShell\v1.0\powershell.exe"
 >"%OUT%" echo Online check   %DATE% %TIME%
 >>"%OUT%" echo.
 call :one "This folder" "%~dp0"
@@ -39,6 +40,8 @@ goto :eof
 :one_exists
 if exist "%F%Ikemen_GO.exe" >>"%OUT%" echo    engine: Ikemen_GO.exe
 if exist "%F%BigTroubleInLittleChinaTheGame.exe" >>"%OUT%" echo    engine: BigTroubleInLittleChinaTheGame.exe
+if exist "%F%Ikemen_GO.exe" call :sha "%F%Ikemen_GO.exe"
+if exist "%F%BigTroubleInLittleChinaTheGame.exe" call :sha "%F%BigTroubleInLittleChinaTheGame.exe"
 if exist "%F%external\script\lobby.lua" >>"%OUT%" echo    lobby script: external\script\lobby.lua
 for /f "delims=" %%F in ('dir /b /a-d "%~2external\script\lobby*.lua" "%~2external\script\online*.lua" "%~2external\mods\*lobby*.lua" 2^>nul') do >>"%OUT%" echo    pack file: %%F
 if exist "%~2data\online\servers.json" >>"%OUT%" echo    server profile: data\online\servers.json
@@ -51,6 +54,14 @@ goto one_cfg
 >>"%OUT%" echo    newest engine log: none in save\logs
 :one_cfg
 if exist "%~2save\config.ini" "%FINDSTR%" /i /c:"ListenPort" /c:"Rollback" "%~2save\config.ini" >>"%OUT%" 2>nul
+goto :eof
+
+:sha
+rem %1 = an engine exe. One line, so the same build can be recognised on
+rem both PCs, and a file Defender names can be checked against the table in
+rem ONLINE-SETUP.md.
+if not exist "%PS%" goto :eof
+for /f "usebackq delims=" %%H in (`"%PS%" -NoProfile -Command "(Get-FileHash -LiteralPath '%~1' -Algorithm SHA256).Hash" 2^>nul`) do >>"%OUT%" echo    sha256: %%H
 goto :eof
 
 :net

@@ -89,6 +89,35 @@ available in this build`. That is why a match in this folder cannot be relied on
 and why the online build is a whole v1.0.0 - engine and scripts from the same
 release - rather than a patched binary.
 
+## "Trojan:Win32/Tecabans.A!cl" when the game starts
+
+Windows Defender flags the engine like that on a freshly downloaded copy. It is a
+false alarm, and the engine's own authors have answered it as one - Ikemen GO
+issue 2811, "IKEMEN nightly is trojan?", tagged *not an issue*: the binary is
+unsigned and rebuilt for every release, which is what Defender's cloud detector
+reacts to. Expect it to come back now and then after a new engine build.
+
+What a genuine copy is, by SHA-256:
+
+| File | SHA-256 |
+|---|---|
+| `Ikemen_GO.exe` from Ikemen GO v1.0.0 (what `Big Trouble Online` uses) | `c869a7fb0112257a6a581fa2d66ca76a9860b5b6ec500be38f8e480f6bf79cf7` |
+| `Ikemen_GO-v1.0.0-windows.zip` itself | `9338eaeb68599ceb13b0867819a091ea3f92eba58077e800b4540b7a1f9c3731` |
+
+The exe has no digital signature - right-click it, Properties, Digital
+signatures, and you will see none. Ikemen GO ships unsigned, and that is the whole
+reason for the warning.
+
+To stop it happening: double-click **ALLOW-IN-DEFENDER.bat**. It asks Windows for
+administrator rights, puts this game folder and `Big Trouble Online` on
+Defender's exclusion list, and tells you whether each path really was added. Then
+put a removed engine back - Windows Security, Virus and threat protection,
+Protection history, the Trojan entry, Actions, Restore - or just run **Update and
+Play.bat** again, which fetches it once more.
+
+**CHECK-ONLINE.bat** now prints each engine's SHA-256, so the two machines can be
+compared exactly, and so a file Defender names can be checked against the table.
+
 ## Checking which build you are in
 
 Double-click **CHECK-ONLINE.bat**. It opens `online-check.txt` and changes

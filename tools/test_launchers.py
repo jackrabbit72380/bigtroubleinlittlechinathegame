@@ -173,7 +173,7 @@ WINDOW = [
      b'>>"%SWAP%" echo exit\r\n', b'',
      "left sitting at a prompt"),
     ("the game is left inside a batch window",
-     b'start "" /d "%~dp0" "%EXE%" -config "save\\config.ini"',
+     b'if not defined POWERSHELL start "" /d "%GAMEDIR%" "%GAMEDIR%\\%EXE%" -config "save\\config.ini"',
      b'start "" /min "%RUN%"',
      "closing that window ends the game"),
 ]

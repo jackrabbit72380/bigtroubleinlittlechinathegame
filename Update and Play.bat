@@ -2168,17 +2168,19 @@ for %%I in ("%~dp0..\Big Trouble Online") do set "ONLINE=%%~fI"
 if not defined ONLINE exit /b 0
 set "OURL=https://github.com/ikemen-engine/Ikemen-GO/releases/download/v1.0.0/Ikemen_GO-v1.0.0-windows.zip"
 set "OVZIP=%CACHE%\ikemen-v100.zip"
+set "OURLQ=%OURL:'=''%"
+set "OVZIPQ=%OVZIP:'=''%"
 set "OENG="
 if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
 for /d %%D in ("%ONLINE%\*") do if exist "%%D\Ikemen_GO.exe" set "OENG=%%D"
 if defined OENG goto online_copy
-if not defined CURL if not defined POWERSHELL goto online_fail
+if not defined POWERSHELL if not defined CURL goto online_fail
 if not defined TAR goto online_fail
 call :say "Online: fetching Ikemen GO v1.0.0 (once, about 40 MB)"
 if exist "%OVZIP%" del /q "%OVZIP%" >nul 2>&1
 if not exist "%ONLINE%" mkdir "%ONLINE%" 2>nul
 if defined CURL "%CURL%" -L --fail --retry 2 -o "%OVZIP%" "%OURL%" >>"%LOG%" 2>&1
-if not defined CURL "%POWERSHELL%" -NoProfile -Command "try { Invoke-WebRequest -Uri '%OURL%' -OutFile '%OVZIP%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+if not defined CURL "%POWERSHELL%" -NoProfile -Command "try { Invoke-WebRequest -Uri '%OURLQ%' -OutFile '%OVZIPQ%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
 if not exist "%OVZIP%" goto online_fail
 "%TAR%" -xf "%OVZIP%" -C "%ONLINE%" >>"%LOG%" 2>&1
 if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
@@ -2214,6 +2216,7 @@ rem Anything that stopped the online folder from being ready leaves the game
 rem exactly as it was: it starts from this folder, as every run before this one.
 call :log online build not ready - starting the game in this folder
 call :say "Online build not ready - starting the game here instead."
+if not defined OENG if exist "%OVZIP%" call :say "The engine zip downloaded but Ikemen_GO.exe is not in it any more - antivirus may have removed it. Run ALLOW-IN-DEFENDER.bat, then this file again."
 set "GAMEDIR="
 for %%I in ("%~dp0.") do set "GAMEDIR=%%~fI"
 set "EXE="

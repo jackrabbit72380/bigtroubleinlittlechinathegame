@@ -53,6 +53,7 @@ TCP 7500.
 | Connects, then instantly drops | Builds do not match - compare the `Version:` lines |
 | Connects, then the game freezes or panics | A fight is starting on an old binary; both must be on v1.0.0 |
 | Host's screen never changes | Guest joined a different port, or the host's window lost focus and stopped listening |
+| The game will not start, or the exe has vanished | Antivirus took it: `Trojan:Win32/Tecabans.A!cl` is a known false alarm on Ikemen GO's unsigned engine. Run **ALLOW-IN-DEFENDER.bat** on that PC, then **Update and Play.bat** to fetch the engine again |
 
 ## Later: the room list
 
