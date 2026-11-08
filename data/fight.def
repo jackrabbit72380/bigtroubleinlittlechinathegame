@@ -2769,7 +2769,7 @@ bg.offset = 0,0
 bg.palfx.sinmul = 26, 26, 26, 24
 ; Time count display
 counter.offset = 0,22
-counter.font = 10,0, 0, 255, 228, 140
+counter.font = 8,0, 0, 255, 228, 140
 counter.scale = 1.00, 1.00
 counter.palfx.mul = 256, 0, 0
 ; Ticks for each count
@@ -2777,12 +2777,12 @@ framespercount = 60
 
 counter1.scale = 1.00, 1.00
 counter1.offset = 0,22
-counter1.font = 10, 0, 0, 255, 228, 140
+counter1.font = 8, 0, 0, 255, 228, 140
 counter1.palfx.mul = 256, 128, 128
 counter1.palfx.sinmul = 0, 128, 128, 20
 counter1.layerno = 0
 
-counter10.font = 10, 0, 0, 255, 228, 140
+counter10.font = 8, 0, 0, 255, 228, 140
 counter10.offset = 0,22
 counter10.scale = 1.00, 1.00
 counter10.palfx.mul = 256, 128, 128
@@ -2790,7 +2790,7 @@ counter10.palfx.sinmul = 0, 128, 128, 20
 counter10.layerno = 0
 
 counter11.offset = 0,22
-counter11.font = 10, 0, 0, 255, 255, 255
+counter11.font = 8, 0, 0, 255, 255, 255
 counter11.scale = 1.00, 1.00
 ;counter11.palfx.mul = 256, 128, 128
 counter11.layerno = 0
@@ -3809,12 +3809,12 @@ useiconupto = 4
 [WinCount]
 p1.pos = 20, 6
 ;p1.bg.spr = 
-p1.text.font = 10, 0, 1, 255, 228, 140
+p1.text.font = 3, 0, 1, 255, 228, 140
 p1.text.text = WINS %s
 
 p2.pos = 1260, 6
 ;p2.bg.spr = 
-p2.text.font = 10, 0, -1, 255, 228, 140
+p2.text.font = 3, 0, -1, 255, 228, 140
 p2.text.text = WINS %s
 
 p1.enabled.netplayversus = 1
