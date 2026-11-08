@@ -624,7 +624,7 @@ p2.name.spacing = -22, 74
 p2.name.layerno = 2
 
 ;Stage select
-stage.pos = 960, 1005
+stage.pos = 960, 120
 stage.font = 10, 0, 0, 176, 126, 44
 stage.active.font = 10, 0, 0, 255, 228, 140
 stage.active.scale = 0.75, 0.75

@@ -3578,7 +3578,8 @@ function start.f_selectScreen()
 			end
 		--draw names
 		for side = 1, 2 do
-			if #start.p[side].t_selTemp > 0 then
+			-- not on the stage screen: the wall and the map's name are the subject
+			if not stagePhase and #start.p[side].t_selTemp > 0 then
 				for i = 1, #start.p[side].t_selTemp do
 					if i <= motif.select_info['p' .. side].name.num then
 						local name = ''
@@ -3654,50 +3655,41 @@ function start.f_selectScreen()
 					-- absent; reading .AnimData off it unguarded crashed the stage screen
 					local rndPortrait = motif.select_info.stage.portrait.random
 					if rndPortrait then main.f_animPosDraw(rndPortrait.AnimData) end
-				--draw the stage wall: every stage in the pool, its own card in the grid
-				--f_stageGrid lays out, the picked one at full strength and the rest dimmed, so
-				--the screen shows the maps themselves instead of one card at a time
-				else
-					stageRef = start.f_stageMenuRef()
-					local portrait = motif.select_info.stage.portrait
-					local stCount = #main.t_selectableStages
-					-- the stage screen's own window: stage.portrait.window is the
-					-- character select's stage-hint thumbnail, and reusing it put the
-					-- whole wall of maps in a 1034x335 strip
-					local cards = start.f_stageGrid(stCount)
-					local pick = nil
+				end
+				-- The wall draws whatever the cursor is on, RANDOM included: this screen
+				-- opens on RANDOM, and drawing the cards only in the other case is why it
+				-- opened as an empty green field.
+				stageRef = start.f_stageMenuRef()
+				local stCount = #main.t_selectableStages
+				local cards = start.f_stageGrid(stCount)
+				local pick = nil
+				if stageListNo > 0 then
 					for i = 1, stCount do
 						if main.t_selectableStages[i] == stageRef then
 							pick = i
 							break
 						end
 					end
-					for i = 1, stCount do
-						local cell = cards[i]
-						local card = start.f_stageCard(i)
-						if cell ~= nil and card ~= nil then
-							spriteDraw(card, cell.x, cell.y)
-						end
-					end
-					-- the picked map is outlined in the colour of the player who moved
-					-- the stage cursor; the frame is the card's own size, so it sits on
-					-- the card instead of being stretched over it
-					local frame = pick ~= nil and start.f_stageFrameSprite(start.stageSide or 1) or nil
-					local picked = pick ~= nil and cards[pick] or nil
-					if frame ~= nil and picked ~= nil then
-						spriteDraw(frame, picked.x, picked.y)
+				end
+				for i = 1, stCount do
+					local cell = cards[i]
+					local card = start.f_stageCard(i)
+					if cell ~= nil and card ~= nil then
+						spriteDraw(card, cell.x, cell.y)
 					end
 				end
-				-- The fighters stay on the stage screen, drawn after the wall so the
-				-- cards do not cover them: who was picked is still the point of the
-				-- screen, the stage is chosen for them.
-				if stagePhase then
-					for side = 1, 2 do
-						if #start.p[side].t_selTemp > 0 then
-							start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
-						end
-					end
+				-- the picked map is outlined in the colour of the player who moved the
+				-- stage cursor; the frame is the card's own size, so it sits on the card
+				-- instead of being stretched over it
+				local frame = pick ~= nil and start.f_stageFrameSprite(start.stageSide or 1) or nil
+				local picked = pick ~= nil and cards[pick] or nil
+				if frame ~= nil and picked ~= nil then
+					spriteDraw(frame, picked.x, picked.y)
 				end
+				-- The fighters are not drawn here. This screen is the map wall and the
+				-- map's name: two full-body portraits over the cards, with both fighter
+				-- names under them, took the wall's room and put a caption on the same
+				-- row as the stage's own name.
 				if not stageEnd then
 					local confirmPressed = slotSelected or (not slotHandled and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)
 					or { "a", "b", "c", "x", "y", "z" })))
@@ -3747,13 +3739,6 @@ function start.f_selectScreen()
 				if stageListNo ~= 0 then
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
 				end
-				-- The wall prints each stage's name under its card, so the caption
-				-- line stops talking while the wall is up: it shared y=1005 with the
-				-- two fighter names and a long stage name ran straight into the
-				-- second player's. On the confirm frame it still speaks ("FIGHT!").
-				if not stageEnd and stageListNo ~= 0 and start.f_stageCard(1) ~= nil then
-					stage_text = ''
-				end
 				textImgReset(stageTextData)
 				textImgSetText(stageTextData, stage_text)
 				textImgDraw(stageTextData)
@@ -3769,7 +3754,7 @@ function start.f_selectScreen()
 		-- hands the script nil for it: reading timer.count here took the select
 		-- screen down on the first frame it drew. No group means no countdown.
 		local selTimer = motif.select_info.timer
-		if selTimer ~= nil and selTimer.count ~= nil and selTimer.count > 0 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd or (main.stageMenu and not stageEnd)) and counter >= 0 then
+		if selTimer ~= nil and selTimer.count ~= nil and selTimer.count > 0 and (not start.p[1].teamEnd or not start.p[2].teamEnd or not start.p[1].selEnd or not start.p[2].selEnd) and counter >= 0 then
 			timerSelect = main.f_drawTimer(timerSelect, selTimer)
 		end
 		-- hook
@@ -4719,7 +4704,7 @@ function start.f_stageMenu()
 	local previousRef = start.f_stageMenuRef()
 	local randomMode = {
 		[0] = { init = 1, min = 1 }, -- disabled
-		[1] = { init = 0, min = 0 }, -- default
+		[1] = { init = 1, min = 0 }, -- default: first map, RANDOM behind it
 		[2] = { init = 1, min = 0 }, -- random at the 'end'
 	}
 

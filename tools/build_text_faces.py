@@ -186,7 +186,7 @@ def place_names(text):
 # letter was being cut. Lifted by the growth in the cell height.
 BOTTOM = (("p1.name.offset", "75, 1005"),
           ("p2.name.offset", "1845, 1005"),
-          ("stage.pos", "960, 1005"))
+          ("stage.pos", "960, 120"))
 
 
 def place_bottom_row(text):

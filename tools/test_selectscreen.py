@@ -127,7 +127,7 @@ def check_motif(problems):
     win = key(si, "stage.portrait.window") or ""
     if win.replace(" ", "") in ("", "0,0,0,0"):
         problems.append("the stage card's window is empty")
-    if (key(si, "stage.pos") or "").split(",")[-1].strip() != "1005":
+    if (key(si, "stage.pos") or "").split(",")[-1].strip() != "120":
         problems.append("the stage name is not on the caption row")
     return text
 
@@ -239,7 +239,7 @@ def check_metrics(problems):
 
 
 def check_stage_wall(problems):
-    """The stage screen must show every map, and keep the fighters on it.
+    """The stage screen must show every map, and nothing else on it.
 
     It used to draw one card at a time on a blank field, with the pickers wiped off
     along with the wall. The layout is arithmetic in start.lua, so it is executed
@@ -257,7 +257,7 @@ def check_stage_wall(problems):
     if "spriteDraw(card, cell.x, cell.y)" not in text:
         problems.append("the stage cards are not drawn at the layout's own boxes")
     wall_at = text.find("local cards = start.f_stageGrid(stCount)")
-    wall_end = text.find("-- The fighters stay on the stage screen", wall_at)
+    wall_end = text.find("-- The fighters are not drawn here", wall_at)
     wall_region = text[wall_at:wall_end] if wall_at >= 0 and wall_end > wall_at else ""
     if not wall_region:
         problems.append("the wall draw is not where the stage screen expects it")
@@ -304,10 +304,13 @@ def check_stage_wall(problems):
             problems.append("%s does not put the gold rule on the stage cards" % tool)
     if text.count("bgDraw(motif.selectbgdef.BGDef, 0)") < 2:
         problems.append("the stage screen has no backdrop of its own")
-    if not re.search(
-            r"if stagePhase then\s*\n\s*for side = 1, 2 do\s*\n\s*if #start\.p\[side\]\.t_selTemp > 0 then"
-            r"\s*\n\s*start\.f_drawPortraits", text):
-        problems.append("the picked fighters are not drawn once the wall is gone")
+    # The fighters and their names are not on this screen any more: the wall and
+    # the map's name are. What the test guards is that they were not left behind,
+    # and that the name row keeps the guard that takes them off it.
+    if wall_region and ("if stagePhase then" in wall_region or "f_drawPortraits" in wall_region):
+        problems.append("the picked fighters are still drawn on the stage screen")
+    if "if not stagePhase and #start.p[side].t_selTemp > 0 then" not in text:
+        problems.append("the fighter names are still drawn on the stage screen")
 
     try:
         from lupa import LuaRuntime
@@ -377,7 +380,7 @@ def main():
           % ("ok " if len(problems) == before else "FAIL"))
     before = len(problems)
     check_stage_wall(problems)
-    print("  %s the stage screen wall shows every map and keeps the fighters"
+    print("  %s the stage screen shows the map wall and the map's name"
           % ("ok " if len(problems) == before else "FAIL"))
     if problems:
         print("\nthe select screen regressed in %d place(s)" % len(problems))
