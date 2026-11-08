@@ -264,13 +264,20 @@ def check_stage_wall(problems):
             problems.append("the stage wall has a hole at position %d" % i)
             return
         boxes.append((float(cell["x"]), float(cell["y"]), float(cell["w"]), float(cell["h"])))
-    x1, y1, x2, y2 = 443.0, 373.0, 1477.0, 708.0
+    # the stage screen's own window (start.stageGrid.window), not the character
+    # select's stage-hint strip at 443,373,1477,708 that the wall used to be
+    # squeezed into
+    x1, y1, x2, y2 = 80.0, 300.0, 1840.0, 970.0
     for i, (x, y, w, h) in enumerate(boxes, 1):
         if x < x1 - 0.5 or y < y1 - 0.5 or x + w > x2 + 0.5 or y + h > y2 + 0.5:
             problems.append("stage card %d falls outside the stage window" % i)
             break
-        if w < 100 or h < 30:
+        if w < 200 or h < 60:
             problems.append("stage card %d is too small to read" % i)
+            break
+        # a map's card is a wide 3:1 picture, not a 128x160 character cell
+        if not 2.4 < w / h < 3.6:
+            problems.append("stage card %d is not a wide card (%.0fx%.0f)" % (i, w, h))
             break
     for i in range(len(boxes)):
         for j in range(i + 1, len(boxes)):

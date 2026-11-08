@@ -1621,26 +1621,47 @@ end
 start.stageGrid = {
 	NOMINAL_W = 1215,
 	NOMINAL_H = 398,
-	cols = 4,
+	-- 0 = work the column count out from the pool: the stage screen has its own
+	-- grid, sized so the maps read as wide cards. The 128x160 character wall's
+	-- columns are exactly what this screen must not inherit.
+	cols = 0,
 	pad = 14,
-	window = { 443, 373, 1477, 708 },
+	-- its own window, not the character select's stage-hint box (443,373,1477,708):
+	-- that box is a 1034x335 thumbnail strip and put four columns of 240x79 cards on
+	-- a screen whose whole job is showing the maps. This is the frame under the
+	-- stage name, clear of the caption on y=1005.
+	window = { 80, 300, 1840, 970 },
 }
 
 function start.f_stageGrid(count, cols, pad, window)
 	local grid = start.stageGrid
 	count = count or 0
-	cols = cols or grid.cols
 	pad = pad or grid.pad
 	window = window or grid.window
 	local cards = {}
-	if count <= 0 or cols <= 0 then
+	if count <= 0 then
 		return cards
 	end
-	local rows = math.ceil(count / cols)
 	local x1, y1, x2, y2 = window[1], window[2], window[3], window[4]
-	local cellW = ((x2 - x1) - pad * (cols + 1)) / cols
-	local cellH = ((y2 - y1) - pad * (rows + 1)) / rows
-	local scale = math.min(cellW / grid.NOMINAL_W, cellH / grid.NOMINAL_H)
+	local rows, cellW, cellH, scale
+	local function fit(c)
+		if c > count then c = count end
+		local r = math.ceil(count / c)
+		local cw = ((x2 - x1) - pad * (c + 1)) / c
+		local ch = ((y2 - y1) - pad * (r + 1)) / r
+		return math.min(cw / grid.NOMINAL_W, ch / grid.NOMINAL_H), r, cw, ch
+	end
+	-- the column count that makes the cards biggest, not the roster's
+	if cols == nil or cols <= 0 then
+		cols = 1
+		local best = 0
+		for c = 1, count do
+			local sc = fit(c)
+			if sc > best + 1e-9 then best, cols = sc, c end
+		end
+	end
+	scale, rows, cellW, cellH = fit(cols)
+	cols = math.ceil(count / rows)
 	if scale <= 0 then
 		scale = 0.01
 	end
@@ -3480,15 +3501,6 @@ function start.f_selectScreen()
 				if not stagePhase then
 					main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
 				end
-				-- The fighters stay on the stage screen. The wall is gone, but who was
-				-- picked is still the point of the screen: the stage is chosen for them.
-				if stagePhase then
-					for side = 1, 2 do
-						if #start.p[side].t_selTemp > 0 then
-							start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
-						end
-					end
-				end
 				--draw stage portrait (random)
 				if stageListNo == 0 then
 					-- this build rejects stage.portrait.random.* at load, so the table can be
@@ -3502,11 +3514,10 @@ function start.f_selectScreen()
 					stageRef = start.f_stageMenuRef()
 					local portrait = motif.select_info.stage.portrait
 					local stCount = #main.t_selectableStages
-					local win = portrait.window
-					if type(win) ~= 'table' or #win < 4 then
-						win = nil
-					end
-					local cards = start.f_stageGrid(stCount, nil, nil, win)
+					-- the stage screen's own window: stage.portrait.window is the
+					-- character select's stage-hint thumbnail, and reusing it put the
+					-- whole wall of maps in a 1034x335 strip
+					local cards = start.f_stageGrid(stCount)
 					for i = 1, stCount do
 						local cell = cards[i]
 						local ref = main.t_selectableStages[i]
@@ -3530,6 +3541,16 @@ function start.f_selectScreen()
 								pcall(animSetAlpha, anim, ref == stageRef and 256 or 120)
 								main.f_animPosDraw(anim, cell.x, cell.y)
 							end
+						end
+					end
+				end
+				-- The fighters stay on the stage screen, drawn after the wall so the
+				-- cards do not cover them: who was picked is still the point of the
+				-- screen, the stage is chosen for them.
+				if stagePhase then
+					for side = 1, 2 do
+						if #start.p[side].t_selTemp > 0 then
+							start.f_drawPortraits(start.p[side].t_selTemp, side, motif.select_info, 'face', true)
 						end
 					end
 				end
