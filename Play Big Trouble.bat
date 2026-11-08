@@ -48,6 +48,12 @@ rem arguments override the render size:
 rem
 rem   "Play Big Trouble.bat" 2560 1440
 rem
+rem KeepAspect off fills the window whatever shape it is; on, a window that is not
+rem 16:9 (a maximised one on a widescreen desktop, say) leaves black bars beside the
+rem picture. It is forced off here rather than kept from the last launch, because
+rem every build until now wrote true: a true on disk is that old forcing, not a
+rem choice the player made. Options > Video > Keep Aspect Ratio turns the bars
+rem back on for that session.
 set "GW=1920"
 set "GH=1080"
 set "WW=1920"
@@ -79,7 +85,7 @@ if "%FS%"=="" set "FS=false"
 >> "%CFG%" echo GameHeight = %GH%
 >> "%CFG%" echo WindowWidth = %WW%
 >> "%CFG%" echo WindowHeight = %WH%
->> "%CFG%" echo KeepAspect = true
+>> "%CFG%" echo KeepAspect = false
 >> "%CFG%" echo Fullscreen = %FS%
 >> "%CFG%" echo.
 >> "%CFG%" echo [Config]
