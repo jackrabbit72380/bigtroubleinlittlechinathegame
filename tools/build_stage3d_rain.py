@@ -82,13 +82,18 @@ def rain_card(pic):
     g = g.point(lambda v: int(v * 0.82))
     b = b.point(lambda v: min(255, int(v * 1.18)))
     graded = ImageEnhance.Brightness(Image.merge("RGBA", (r, g, b, a))).enhance(0.82)
-    return draw_rain(graded, 150, (16, 44), (5, 11), (205, 226, 244), (40, 110)).resize(
+    return draw_rain(graded, 150, (16, 44), (-11, -5), (205, 226, 244), (40, 110)).resize(
         SIZE, Image.LANCZOS)
 
 
 # ------------------------------------------------------------------ weather --
 def draw_rain(img, count, length, slant, colour, alpha, seed=20261107):
-    """Streaks over a picture, wrapped so the sheet tiles without a seam."""
+    """Streaks over a picture, wrapped so the sheet tiles without a seam.
+
+    A negative slant leans a streak's foot to the left of its head, which is the way
+    weather crosses this stage: the wind runs left along the terrace, so the drops
+    and the sheets that carry them have to lean and travel the same way.
+    """
     draw = ImageDraw.Draw(img)
     rng = random.Random(seed)
     w, h = img.size
@@ -212,12 +217,12 @@ def sprites_for(name):
         ]
     return [
         {"group": 1, "number": 0,
-         "image": rain_sheet(420, (26, 60), (2, 5), (176, 202, 232), (28, 70), 4401),
+         "image": rain_sheet(420, (26, 60), (-5, -2), (176, 202, 232), (28, 70), 4401),
          "axis": (0, 0)},
         {"group": 1, "number": 1,
-         "image": rain_sheet(180, (44, 96), (4, 9), (214, 232, 250), (60, 130), 4402),
+         "image": rain_sheet(180, (44, 96), (-9, -4), (214, 232, 250), (60, 130), 4402),
          "axis": (0, 0)},
-        {"group": 1, "number": 2, "image": wash((24, 32, 52), 88), "axis": (0, 0)},
+        {"group": 1, "number": 2, "image": wash((24, 32, 52), 64), "axis": (0, 0)},
         {"group": 1, "number": 3, "image": band(420, 700, (172, 196, 220), 66),
          "axis": (0, 0)},
         # the lightning sheet: a clear frame, the strike, and its afterglow

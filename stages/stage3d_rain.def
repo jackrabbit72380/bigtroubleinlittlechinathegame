@@ -41,8 +41,8 @@ overdrawlow = 120
 cuthigh = 0
 cutlow = 0
 
-;Wider and further back than the other two passes (fov 38 against their 30,
-;zoomout 0.72 against 0.75), so the same island reads as a different place.
+;Wider than the other two passes (fov 38 against their 30, zoomout 0.72 against
+;0.75), so the same island reads as a different place.
 fov = 38
 zoomout = 0.72
 zoomin = 1
@@ -104,31 +104,35 @@ bgmvolume = 100
 ;========================================================
 [BGdef]
 
-;The same island as stage3d.def, framed lower and further back.
+;The same island as stage3d.def. The wider, further-back framing comes from the
+;camera below (fov, zoomout) and not from moving the model: pushed forward it left
+;the island outside the view, and the stage drew as a black field under the rain.
 model = stage3d.glb
 
 ;Its own card, so the select screen shows the rainy pass.
 spr = stage3d_rain.sff
 
 ;-------------------------------------
-; Model element definition
+; Model element definition - the offsets and scale stage3d.def is known to frame
+; correctly, so the island is in view however wide the camera goes.
 [Model]
 
-offset = 0,-0.16,-0.62
-scale = 0.045, 0.045, 0.045
+offset = 0,-0.2,-0.9
+scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
 ; Storm weather: two painted rain sheets fall at different speeds, one behind the
 ; fighters and one in front, under a slate wash, with mist driving across the
-; water. The sheets tile both ways, so the rain never runs out however long the
-; fight lasts or however far the camera travels.
+; water. The wind runs left along the terrace, so every sheet leans left and
+; travels left - streaks and motion agree. The sheets tile both ways, so the rain
+; never runs out however long the fight lasts or however far the camera travels.
 [BG rain behind]
 type = normal
 spriteno = 1,0
 layerno = 0
 start = 0, 0
 tile = 1,1
-velocity = 1.4, 16
+velocity = -1.4, 16
 trans = none
 
 [BG storm wash]
@@ -154,7 +158,7 @@ spriteno = 1,1
 layerno = 1
 start = 0, 0
 tile = 1,1
-velocity = 3.2, 30
+velocity = -3.2, 30
 trans = none
 
 ;-------------------------------------
