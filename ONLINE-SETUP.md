@@ -20,12 +20,11 @@ it takes the engine and the scripts from the same release, so they match.
 
 ## What is in this folder
 
-- **UPGRADE-AND-GO-ONLINE.bat** — the one-click step. It downloads Ikemen GO
-  v1.0.0, unpacks it into a folder called `Big Trouble Online` next to your game,
-  copies your characters, stages, sounds, fonts, screenpack, settings and mods
-  into it, and — if the lobby pack zip is sitting in this folder — unpacks that
-  over the top, which is exactly how the pack is meant to be installed.
-  Your own game folder is only read.
+- **Update and Play.bat** — unchanged in what it does for the game, with one step
+  added at the end: it prepares `Big Trouble Online` (Ikemen GO v1.0.0 plus your
+  content plus the lobby pack) and launches that. Your own game folder is only
+  read.
+- **UPGRADE-AND-GO-ONLINE.bat** — the same online step as a standalone script.
 - `data/ikemen1/system.def` carries an **ONLINE** submenu entry under NETWORK
   (`menu.itemname.menunetwork.onlinelobby`), written by `tools/build_fonts.py`.
   The engine this game ships today has no handler for it and prunes it, so the
@@ -37,9 +36,18 @@ it takes the engine and the scripts from the same release, so they match.
 
 1. Download `IkemenGO-OnlineLobbyPack-v0.10.0.zip` and put it in this game
    folder, next to the .bat files (do not unzip it).
-2. Double-click **UPGRADE-AND-GO-ONLINE.bat**.
-3. When `Big Trouble Online` opens, the title menu's NETWORK submenu should offer
-   ONLINE LOBBY.
+2. Double-click **Update and Play.bat**, the one you already use. It updates the
+   game as before, then keeps a folder called `Big Trouble Online` beside your
+   game holding Ikemen GO v1.0.0 with your characters, stages, sounds, fonts,
+   screenpack, settings and mods copied into it, unpacks the lobby pack over that,
+   and starts the game **from there**. One double-click, every time; the online
+   folder is refreshed on each run, so an update reaches it too.
+3. In the title menu's NETWORK submenu you should now find ONLINE LOBBY.
+
+If v1.0.0 cannot be fetched, or tar/curl are missing, the updater says so in its
+own words and starts the game from your normal folder instead - the run never
+ends with no game. `UPGRADE-AND-GO-ONLINE.bat` is still here and does the same
+online step on its own, for a folder that does not use the updater.
 4. Everyone you play with needs the same lobby pack version — the pack's own
    notes say 0.10.0 sees only 0.10.0.
 

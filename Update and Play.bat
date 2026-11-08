@@ -1513,7 +1513,10 @@ if not defined VER call :say "main @ local archive"
 
 call :datareport
 
+call :online
+
 :launch
+if not defined GAMEDIR for %%I in ("%~dp0.") do set "GAMEDIR=%%~fI"
 call :retired
 call :pct 100 "Starting the game"
 call :barflush
@@ -1530,10 +1533,10 @@ set "GCODE=%CACHE%\game.code"
 if exist "%GLOG%" del /q "%GLOG%" >nul 2>&1
 if exist "%GCODE%" del /q "%GCODE%" >nul 2>&1
 >"%RUN%" echo @echo off
->>"%RUN%" echo cd /d "%~dp0."
+>>"%RUN%" echo cd /d "%GAMEDIR%"
 >>"%RUN%" echo del "save\restart.flag" ^>nul 2^>^&1
 >>"%RUN%" echo :btilc_again
->>"%RUN%" echo "%~dp0%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
+>>"%RUN%" echo "%GAMEDIR%\%EXE%" -config "save\config.ini" ^>"%GLOG%" 2^>^&1
 >>"%RUN%" echo set "RC=%%errorlevel%%"
 >>"%RUN%" echo if not exist "save\restart.flag" goto btilc_done
 >>"%RUN%" echo del "save\restart.flag" ^>nul 2^>^&1
@@ -1547,7 +1550,7 @@ rem batch started here would keep a window open for the whole session with
 rem the game attached to it: closing that window ends the game. The engine
 rem is started on its own instead - it owns its window, so nothing left
 rem over can take it down.
-if not defined POWERSHELL start "" /d "%~dp0" "%EXE%" -config "save\config.ini"
+if not defined POWERSHELL start "" /d "%GAMEDIR%" "%GAMEDIR%\%EXE%" -config "save\config.ini"
 rem Without tasklist there is no way to tell whether the game came up, so
 rem the window closes as it did before rather than reporting a false failure.
 call :exehead
@@ -2149,6 +2152,74 @@ if %CANDSZ% LSS 20971520 exit /b 0
 if "%CAND%"=="%PREVCAND%" if "%CANDSZ%"=="%PREVSZ%" set "FOUNDZIP=%CAND%"
 set "PREVCAND=%CAND%"
 set "PREVSZ=%CANDSZ%"
+exit /b 0
+
+:online
+rem ---- online play: the v1.0.0 engine and the Online Lobby Pack ------------
+rem After the files above are current, this keeps a second folder ready -
+rem ....\Big Trouble Online - holding Ikemen GO v1.0.0 (the release the lobby
+rem pack asks for) with this game's content copied into it, and the pack
+rem unpacked over it when the pack zip is sitting in this folder. The game is
+rem started from there, so one double-click of this file updates the game and
+rem opens it with online play. This folder is only ever read.
+call :pct 96 "Preparing online play"
+set "ONLINE="
+for %%I in ("%~dp0..\Big Trouble Online") do set "ONLINE=%%~fI"
+if not defined ONLINE exit /b 0
+set "OURL=https://github.com/ikemen-engine/Ikemen-GO/releases/download/v1.0.0/Ikemen_GO-v1.0.0-windows.zip"
+set "OVZIP=%CACHE%\ikemen-v100.zip"
+set "OENG="
+if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
+for /d %%D in ("%ONLINE%\*") do if exist "%%D\Ikemen_GO.exe" set "OENG=%%D"
+if defined OENG goto online_copy
+if not defined CURL if not defined POWERSHELL goto online_fail
+if not defined TAR goto online_fail
+call :say "Online: fetching Ikemen GO v1.0.0 (once, about 40 MB)"
+if exist "%OVZIP%" del /q "%OVZIP%" >nul 2>&1
+if not exist "%ONLINE%" mkdir "%ONLINE%" 2>nul
+if defined CURL "%CURL%" -L --fail --retry 2 -o "%OVZIP%" "%OURL%" >>"%LOG%" 2>&1
+if not defined CURL "%POWERSHELL%" -NoProfile -Command "try { Invoke-WebRequest -Uri '%OURL%' -OutFile '%OVZIP%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+if not exist "%OVZIP%" goto online_fail
+"%TAR%" -xf "%OVZIP%" -C "%ONLINE%" >>"%LOG%" 2>&1
+if exist "%ONLINE%\Ikemen_GO.exe" set "OENG=%ONLINE%"
+for /d %%D in ("%ONLINE%\*") do if exist "%%D\Ikemen_GO.exe" set "OENG=%%D"
+if not defined OENG goto online_fail
+
+:online_copy
+call :pct 97 "Copying the game into the online build"
+rem Content only: the engine's own *.zss state files stay v1.0.0's, and
+rem external\script stays the pack's and v1.0.0's, never this folder's.
+if not exist "%OENG%\chars" mkdir "%OENG%\chars" 2>nul
+robocopy "%~dp0chars" "%OENG%\chars" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0stages" "%OENG%\stages" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0sound" "%OENG%\sound" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0font" "%OENG%\font" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0save" "%OENG%\save" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0external\mods" "%OENG%\external\mods" /E /NFL /NDL /NJH /NJS /NP >nul
+robocopy "%~dp0data" "%OENG%\data" /E /XF *.zss /NFL /NDL /NJH /NJS /NP >nul
+rem The lobby pack, if it has been put in this folder. Unpacking it again is
+rem how the pack is installed, so this is safe on every run.
+for %%F in ("%~dp0IkemenGO-OnlineLobbyPack*.zip") do if exist "%%~fF" if defined TAR "%TAR%" -xf "%%~fF" -C "%OENG%" >>"%LOG%" 2>&1
+for %%I in ("%OENG%") do set "ONLINE=%%~fI"
+set "GAMEDIR=%ONLINE%"
+set "EXE="
+if exist "%GAMEDIR%\BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
+if not defined EXE if exist "%GAMEDIR%\Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
+if not defined EXE goto online_fail
+call :log online build ready: %GAMEDIR%  exe %EXE%
+exit /b 0
+
+:online_fail
+rem Anything that stopped the online folder from being ready leaves the game
+rem exactly as it was: it starts from this folder, as every run before this one.
+call :log online build not ready - starting the game in this folder
+call :say "Online build not ready - starting the game here instead."
+set "GAMEDIR="
+for %%I in ("%~dp0.") do set "GAMEDIR=%%~fI"
+set "EXE="
+if exist "%GAMEDIR%\BigTroubleInLittleChinaTheGame.exe" set "EXE=BigTroubleInLittleChinaTheGame.exe"
+if not defined EXE if exist "%GAMEDIR%\Ikemen_GO.exe" set "EXE=Ikemen_GO.exe"
+if not defined EXE goto wrongfolder
 exit /b 0
 
 :quit
