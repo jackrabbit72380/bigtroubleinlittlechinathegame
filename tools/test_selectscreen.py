@@ -240,6 +240,8 @@ def check_stage_wall(problems):
     if not re.search(r"if not stagePhase then\s*\n\s*main\.f_animPosDraw\(motif\.select_info\.stage\.portrait\.bg",
                      text):
         problems.append("the empty character grid is still drawn behind the maps")
+    if "pcall(animPrepare, a, ref)" not in text:
+        problems.append("the palette load does not pass the character index to animPrepare")
     if "start.stageSide" not in text or "start.f_stageFrame" not in text:
         problems.append("the picked map is not outlined in the player's colour")
     grid_src = read(os.path.join(ROOT, "tools", "build_select_grid.py"))

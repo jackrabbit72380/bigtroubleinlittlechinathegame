@@ -3977,22 +3977,26 @@ function start.f_loadPalettes(a, ref, pal)
 		pcall(animLoadPalettes, a, ref)
 	end
 	local srcAnim = a
-	local num = tonumber(pal) or 1
-	-- animPrepare takes the palette to prepare the animation in. This engine's
-	-- binding wants that second argument and fails with "Argument 2 is not a
-	-- number: nil" when it is missing, which took the whole game down the moment
-	-- a character was chosen. Both call shapes are tried and neither is fatal:
-	-- an anim that cannot take the palette loses its tint, not the session.
-	local ok, prepared = pcall(animPrepare, a, num)
-	if not ok or prepared == nil then
+	-- animPrepare(anim, charRef): the second argument is the character's
+	-- 0-based index in the select list, which is exactly what `ref` is here
+	-- (start.f_getCharData reads main.t_selChars[ref + 1]). This engine's
+	-- binding requires it and fails with "Argument 2 is not a number: nil"
+	-- when only the animation is passed, which took the game down the moment a
+	-- character was chosen. The old single-argument shape is still tried, and
+	-- nothing here is fatal: an anim that cannot take the palette loses its
+	-- tint instead of the session.
+	local prepared
+	if type(ref) == "number" then
+		local ok
+		ok, prepared = pcall(animPrepare, a, ref)
+	end
+	if prepared == nil then
+		local ok
 		ok, prepared = pcall(animPrepare, a)
 	end
-	if ok and prepared ~= nil then
-		a = prepared
-	else
-		a = srcAnim
-	end
+	a = prepared ~= nil and prepared or srcAnim
 	pcall(animApplyVel, a, srcAnim)
+	local num = tonumber(pal) or 1
 	local okPal, coloured = pcall(animSetColorPalette, a, num)
 	if okPal and coloured ~= nil then
 		a = coloured
