@@ -159,10 +159,31 @@ local function sync()
 	end
 end
 
+-- In a match or not. game() is not that test: the engine's game() runs a
+-- whole match with the current settings, so asking it from a frame hook
+-- started a new match from inside the running one, over and over, until
+-- the engine stopped on a stack of "Error executing Lua code: loop".
+-- gameRunning() only answers the question; pcall keeps an older build
+-- that lacks it from stopping the module.
+local function inMatch()
+	if type(gameRunning) ~= 'function' then
+		return false
+	end
+	local ok, running = pcall(gameRunning)
+	return ok and running == true
+end
+
 if type(hook) == 'table' and type(hook.add) == 'function' then
 	hook.add('loop', 'auraopts', function()
-		if type(game) == 'function' and game() then
-			sync()
+		if failed or not inMatch() then
+			return
+		end
+		-- A map write that a build refuses must not take the window down with
+		-- it: the first refusal turns the push off and says so once.
+		local ok, err = pcall(sync)
+		if not ok then
+			failed = true
+			print('auraopts: the aura settings could not be pushed - ' .. tostring(err))
 		end
 	end)
 end
