@@ -263,7 +263,17 @@ def check_stage_wall(problems):
         problems.append("the wall draw is not where the stage screen expects it")
     elif "animSetScale" in wall_region:
         problems.append("the wall still scales stage art at runtime")
+    # the baked card size and the size the layout spaces cards at are the same
+    # number in two files; if they drift the wall overlaps or opens gaps
+    card = re.search(r"card = \{\s*(\d+),\s*(\d+)\s*\}", text)
     wall_tool = os.path.join(ROOT, "tools", "build_stage_wall.py")
+    if card and os.path.isfile(wall_tool):
+        baked = re.search(r"CARD = \((\d+), (\d+)\)", read(wall_tool))
+        if baked is None:
+            problems.append("build_stage_wall.py does not declare the card size")
+        elif (int(card.group(1)), int(card.group(2))) != (int(baked.group(1)), int(baked.group(2))):
+            problems.append("the layout and the baked cards disagree on the card size")
+
     if not os.path.isfile(wall_tool):
         problems.append("nothing bakes the stage cards into the screenpack")
     else:

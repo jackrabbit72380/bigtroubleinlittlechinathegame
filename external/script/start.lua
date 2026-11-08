@@ -1809,8 +1809,10 @@ function start.f_stageGrid(count, cols, pad, window)
 	-- still lays the cards out in order, just past the edge
 	local blockW = cols * cardW + (cols - 1) * pad
 	local blockH = rows * cardH + (rows - 1) * pad
-	local ox = x1 + (availW - blockW) / 2
-	local oy = y1 + (availH - blockH) / 2
+	-- centred while the block fits; a pool too big for the window starts at its
+	-- top-left corner instead of riding up over the PLAYER captions
+	local ox = math.max(x1, x1 + (availW - blockW) / 2)
+	local oy = math.max(y1, y1 + (availH - blockH) / 2)
 	for i = 1, count do
 		local col = (i - 1) % cols
 		local row = math.floor((i - 1) / cols)
