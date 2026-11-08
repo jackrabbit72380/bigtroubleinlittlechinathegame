@@ -209,6 +209,14 @@ def check_stage_wall(problems):
         return
     if "local cards = start.f_stageGrid(stCount" not in text:
         problems.append("the stage screen does not lay the maps out as a wall")
+    # that backdrop sprite is the character wall's frame: a grid of empty cells is
+    # exactly what the stage screen must not show, and the select backdrop is
+    # everything it should show instead
+    if not re.search(r"if not stagePhase then\s*\n\s*main\.f_animPosDraw\(motif\.select_info\.stage\.portrait\.bg",
+                     text):
+        problems.append("the empty character grid is still drawn behind the maps")
+    if text.count("bgDraw(motif.selectbgdef.BGDef, 0)") < 2:
+        problems.append("the stage screen has no backdrop of its own")
     if not re.search(
             r"if stagePhase then\s*\n\s*for side = 1, 2 do\s*\n\s*if #start\.p\[side\]\.t_selTemp > 0 then"
             r"\s*\n\s*start\.f_drawPortraits", text):

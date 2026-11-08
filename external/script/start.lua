@@ -3143,8 +3143,8 @@ function start.f_selectScreen()
 		clearColor(motif.selectbgdef.bgclearcolor[1], motif.selectbgdef.bgclearcolor[2], motif.selectbgdef.bgclearcolor[3])
 		--draw layerno = 0 backgrounds
 		-- Once both fighters are picked the wall is off the frame: the grid, its
-		-- title and the two side portraits stop being drawn, and the stage card
-		-- is what is left, so the two screens are never on top of each other.
+		-- title and the two side portraits stop being drawn, and the maps are what
+		-- is left, so the two screens are never on top of each other.
 		if not stagePhase then
 			bgDraw(motif.selectbgdef.BGDef, 0)
 			--draw title
@@ -3164,6 +3164,11 @@ function start.f_selectScreen()
 				animUpdate(item.anim)
 			end
 			batchDraw(staticDrawList)
+		else
+			-- The stage screen keeps the select backdrop. Its own wall frame is a
+			-- grid of character cells, exactly the grid this screen must not show,
+			-- so the wall of maps stands on the backdrop the picks were made on.
+			bgDraw(motif.selectbgdef.BGDef, 0)
 		end
 		--team and select menu
 		if blinkCount < motif.select_info.p2.cursor.switchtime then
@@ -3470,8 +3475,11 @@ function start.f_selectScreen()
 			end
 			--draw stage portrait
 			if main.stageMenu then
-				--draw stage portrait background
-				main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
+				--that sprite is the character wall's empty frame, which this screen
+				--must not show, so it stands down once the stage phase begins
+				if not stagePhase then
+					main.f_animPosDraw(motif.select_info.stage.portrait.bg.AnimData)
+				end
 				-- The fighters stay on the stage screen. The wall is gone, but who was
 				-- picked is still the point of the screen: the stage is chosen for them.
 				if stagePhase then
