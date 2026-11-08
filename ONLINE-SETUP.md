@@ -88,3 +88,19 @@ know, and `external/mods/auraopts.lua` reports `commonStatesInsert is not
 available in this build`. That is why a match in this folder cannot be relied on,
 and why the online build is a whole v1.0.0 - engine and scripts from the same
 release - rather than a patched binary.
+
+## Checking which build you are in
+
+Double-click **CHECK-ONLINE.bat**. It opens `online-check.txt` and changes
+nothing. It reports, for this folder and for `Big Trouble Online`:
+
+- which engine executables are there,
+- the newest engine log's `Version:` and `Build Time:` - the quickest proof of
+  whether that folder is v1.0.0 or one of the old nightlies,
+- any lobby pack files and the server profile,
+- the NETWORK submenu rows its screenpack defines,
+- the netplay port and rollback settings in `save\config.ini`.
+
+On a stock v1.0.0 build with no pack, NETWORK offers **HOST GAME**, **JOIN GAME**
+and **BACK** only: host opens the port and waits, join needs the other machine's
+address, and there is no room list until the Online Lobby Pack is installed.
