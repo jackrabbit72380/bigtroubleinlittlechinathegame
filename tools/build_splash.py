@@ -59,8 +59,13 @@ def cover(img, size):
     return img.crop((left, top, left + size[0], top + size[1]))
 
 
-def night_sky():
-    """Deep navy to violet, with a scatter of stars and a soft vignette."""
+def night_sky(halo=True):
+    """Deep navy to violet, with a scatter of stars and a soft vignette.
+
+    ``halo`` is the violet pool the fallback card puts behind its painted
+    wordmark. Painted art brings its own composition, so it is left out there -
+    it landed as a purple blob in the one clear part of the art.
+    """
     sky = art.vgrad(CANVAS, [(0, (10, 14, 40)), (0.45, (26, 24, 78)),
                              (1, (48, 18, 62))])
     rnd = random.Random(7)
@@ -73,12 +78,13 @@ def night_sky():
         d.ellipse([x - r, y - r, x + r, y + r], fill=(255, 250, 235, a))
     sky.alpha_composite(stars.filter(ImageFilter.GaussianBlur(0.4)))
 
-    # a warm pool of light where the logo will sit
-    halo = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-    ImageDraw.Draw(halo).ellipse([CANVAS[0] * 0.18, CANVAS[1] * 0.10,
-                                  CANVAS[0] * 0.82, CANVAS[1] * 0.86],
-                                 fill=(120, 90, 255, 46))
-    sky.alpha_composite(halo.filter(ImageFilter.GaussianBlur(90)))
+    if halo:
+        # a warm pool of light where the fallback card's wordmark sits
+        pool = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+        ImageDraw.Draw(pool).ellipse([CANVAS[0] * 0.18, CANVAS[1] * 0.10,
+                                      CANVAS[0] * 0.82, CANVAS[1] * 0.86],
+                                     fill=(120, 90, 255, 46))
+        sky.alpha_composite(pool.filter(ImageFilter.GaussianBlur(90)))
 
     # darken the corners so the poster-sized frame does not look flat
     vign = Image.new("L", CANVAS, 0)
@@ -115,6 +121,29 @@ def fallback_card():
     return card
 
 
+def card_wordmark():
+    """The title's wordmark, placed where the title screen will draw it.
+
+    The card is 1280x720 and the title is 1920x1080, and both are stretched to
+    the window, so holding the same fraction of each frame is what makes the
+    logo stay put when the card fades into the title.
+    """
+    try:
+        import build_title
+    except Exception as exc:                      # pragma: no cover - defensive
+        print(f"  (no wordmark for the splash card: {exc})")
+        return None
+    logo, box = build_title.wordmark()
+    k = CANVAS[1] / float(build_title.FRAME[1])
+    logo = logo.resize((max(1, int(round(logo.width * k))),
+                        max(1, int(round(logo.height * k)))), Image.LANCZOS)
+    left, right = int(round(box[0] * k)), int(round(box[2] * k))
+    top = int(round(box[1] * k))
+    x = (CANVAS[0] - (right - left)) // 2 - left
+    y = int(round(build_title.TOP_MARGIN * k)) - top
+    return logo, (x, y)
+
+
 def poster():
     """The splash artwork: a painted plate if supplied, else the fallback."""
     for path in PLATES:
@@ -125,8 +154,11 @@ def poster():
                       f"{img.width}x{img.height}, not 16:9; it will be cropped")
             # The plate is a cut-out, so it goes over the sky rather than on
             # black: the card then reads as the same night the title opens in.
-            card = night_sky()
+            card = night_sky(halo=False)
             card.alpha_composite(cover(img, CANVAS))
+            mark = card_wordmark()
+            if mark is not None:
+                card.alpha_composite(mark[0], mark[1])
             return card, path
     return fallback_card(), None
 

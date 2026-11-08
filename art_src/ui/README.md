@@ -86,6 +86,8 @@ What the build does with it:
 - rewrites `data/ikemen1/logo.def` as one scene: fade up from black, hold, fade
   out into the title. The timing lives in `tools/build_splash.py`
   (`SECONDS`, `FADE_IN`, `FADE_OUT`).
+- paints the game's wordmark onto the card at the fraction of the frame the
+  title screen draws it, so the logo does not jump when the card hands over.
 
 With no file present, the build paints a fallback card — the game's wordmark on
 a starfield — so the splash always exists. The console says which it used:
