@@ -82,17 +82,20 @@ On Windows, `Dump Stage Art.bat` does the same from a double-click.
 `artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to save
 4:3 and 16:9 crops of each arena for eyeballing.
 
-## The map wall is baked
+## The map cards are baked
 
-The stage screen's wall of maps is not assembled at runtime. `tools/build_stage_wall.py`
-reads the pool from `data/select.def`, decodes each stage's `9000,1` preview, frames
-it, prints its name under it and composites all twelve at the boxes
-`start.f_stageGrid` lays out, then writes the finished 1920x1080 wall into
-`data/ikemen1/system.sff` as `240,0` - with `241,<n>` and `242,<n>` as the picked
-card's frame for player 1 and player 2. The screen draws those at `0,0`, 1:1.
+The stage screen's cards are pictures, not runtime assemblies. `tools/build_stage_wall.py`
+reads the pool from `data/select.def` and paints each stage's preview, gold rule and
+name into `data/ikemen1/system.sff` as one sprite (`240,<n>` for pool entry n+1), plus
+the picked card's frame for player 1 and player 2 (`241,0` and `242,0`).
 
-Before that it scaled each preview anim through the motif's `stage.portrait.scale`,
-the stage's own `portraitscale`, the stage/motif localcoord ratio and the grid fit,
-inside a clip window. Those factors did not agree: cards landed at half the box the
-grid reserved for them, and the picked card's frame was drawn out in the gap beside
-it. Painting the wall settles the layout once, in Python, where it can be looked at.
+The screen places them: `start.stageGrid` in `external/script/start.lua` holds the card
+size, the padding, the column count and the window, and `start.f_stageGrid` hands back a
+box per card. Nothing is scaled at runtime, so a layout tweak is a number in that table
+and takes effect on the next frame - no rebuild. A rebuild is only needed when a stage is
+added, removed or renamed, because its card has to be painted.
+
+Before this the cards were one animation each, scaled through the motif's
+`stage.portrait.scale`, the stage's own `portraitscale`, the stage/motif localcoord ratio,
+the grid fit and a clip window. Those factors did not agree: cards landed at half the box
+the grid reserved for them, and the picked card's frame was drawn out in the gap beside it.

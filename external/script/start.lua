@@ -1482,36 +1482,34 @@ function start.f_stageFrame(side)
 	return stageFrameAnims[key] or nil
 end
 
--- The stage wall is baked, not assembled. tools/build_stage_wall.py paints every
--- card, its gold frame and its name into system.sff at the size it is drawn at,
--- and this screen draws that one sprite at 0,0. The runtime version scaled each
--- stage's preview through the motif's stage.portrait.scale, the stage's own
--- portraitscale, the stage/motif localcoord ratio, the grid's fit and a clip
--- window, and landed the cards at half their box with the picked card's frame
--- out in the gap beside them. 240,0 is the wall; 241,<n> and 242,<n> are the
--- picked card's frame for player 1 and player 2, one per pool position, each
--- carrying its card's corner in its own axis.
-local stageWallAnim, stageWallTried = nil, false
+-- The stage cards are baked, not scaled: tools/build_stage_wall.py paints each
+-- stage's preview, gold rule and name into system.sff as one sprite at its drawn
+-- size (240,<n> for pool entry n+1), plus the picked card's frame for player 1
+-- and player 2 (241,0 and 242,0). All three are drawn at 1:1 through spriteDraw,
+-- the same call the PLAYER captions use, so no stage art is scaled at runtime.
+local stageCardAnims = {}
 
-function start.f_stageWall()
-	if not stageWallTried then
-		stageWallTried = true
-		stageWallAnim = motifSprite('240,0, 0,0, -1', 240, 0) or false
+function start.f_stageCard(index)
+	if index == nil or index < 1 then
+		return nil
 	end
-	return stageWallAnim or nil
+	local number = index - 1
+	if stageCardAnims[number] == nil then
+		stageCardAnims[number] = motifSprite(
+			string.format('%d,%d, 0,0, -1', 240, number), 240, number) or false
+	end
+	return stageCardAnims[number] or nil
 end
 
-local stageWallFrames = {}
+local stageFrameSprites = {}
 
-function start.f_stageWallFrame(side, index)
+function start.f_stageFrameSprite(side)
 	local group = (side == 2) and 242 or 241
-	local number = math.max(0, (index or 1) - 1)
-	local key = group .. ':' .. number
-	if stageWallFrames[key] == nil then
-		stageWallFrames[key] = motifSprite(
-			string.format('%d,%d, 0,0, -1', group, number), group, number) or false
+	if stageFrameSprites[group] == nil then
+		stageFrameSprites[group] = motifSprite(
+			string.format('%d,0, 0,0, -1', group), group, 0) or false
 	end
-	return stageWallFrames[key] or nil
+	return stageFrameSprites[group] or nil
 end
 
 local randomAnims = {}
@@ -1767,27 +1765,25 @@ end
 
 --returns t_selChars table out of char ref
 -- >>> stage preview grid geometry (tools/test_selectscreen.py executes this block)
--- The stage screen shows the whole pool at once, so it needs a layout rather than
--- one fixed card. What a card is DRAWN at is 1040x341 motif pixels, not the
--- 1215x398 its art measures: stage.portrait.scale and each stage's own
--- portraitscale already land the picture there (0.856 * 1215 = 1040), so a 720p
--- model stage and a 1080p painted one come out the same width. Sizing the cells
--- with the art instead drew every card at 86% of its box, and that shortfall is
--- the gap the wall showed between the maps. Fit NOMINAL cards - the drawn size -
--- into the motif's stage-card window, cols to a row with air between them, and
--- hand back each card's box plus the fraction of natural size to draw it at.
+-- The stage screen shows the whole pool at once. What each map looks like - its
+-- preview, a gold rule and the stage's name - is a sprite the screenpack already
+-- holds at its drawn size (tools/build_stage_wall.py paints them, one per stage).
+-- This block only decides WHERE those cards go, and it does no scaling at all, so
+-- moving the wall around is a number here and nothing else: no rebuild, no art.
+--
+-- That is also why the cards can be a fixed size: the runtime version scaled each
+-- stage's preview anim through the motif's stage.portrait.scale, the stage's own
+-- portraitscale, the stage/motif localcoord ratio, the grid fit and a clip window,
+-- and those factors did not agree - the cards came out at half the box the grid
+-- reserved for them, with the picked card's frame out in the gap beside the card.
 start.stageGrid = {
-	NOMINAL_W = 1040,
-	NOMINAL_H = 341,
-	-- 0 = work the column count out from the pool: the stage screen has its own
-	-- grid, sized so the maps read as wide cards. The 128x160 character wall's
-	-- columns are exactly what this screen must not inherit.
+	-- the size of a baked card sprite, in motif pixels
+	card = { 457, 150 },
+	-- 0 = as many whole cards as the window fits across; a number pins the count
 	cols = 0,
 	pad = 14,
-	-- its own window, not the character select's stage-hint box (443,373,1477,708):
-	-- that box is a 1034x335 thumbnail strip and put four columns of 240x79 cards on
-	-- a screen whose whole job is showing the maps. This is the frame under the
-	-- stage name, clear of the caption on y=1005.
+	-- the wall's own window: clear of the PLAYER captions above it, and of the two
+	-- fighter names on y=1005 below it
 	window = { 80, 300, 1840, 970 },
 }
 
@@ -1796,44 +1792,34 @@ function start.f_stageGrid(count, cols, pad, window)
 	count = count or 0
 	pad = pad or grid.pad
 	window = window or grid.window
+	local cardW, cardH = grid.card[1], grid.card[2]
 	local cards = {}
 	if count <= 0 then
 		return cards
 	end
 	local x1, y1, x2, y2 = window[1], window[2], window[3], window[4]
-	local rows, cellW, cellH, scale
-	local function fit(c)
-		if c > count then c = count end
-		local r = math.ceil(count / c)
-		local cw = ((x2 - x1) - pad * (c + 1)) / c
-		local ch = ((y2 - y1) - pad * (r + 1)) / r
-		return math.min(cw / grid.NOMINAL_W, ch / grid.NOMINAL_H), r, cw, ch
-	end
-	-- the column count that makes the cards biggest, not the roster's
+	local availW, availH = x2 - x1, y2 - y1
+	local maxCols = math.max(1, math.floor((availW + pad) / (cardW + pad)))
 	if cols == nil or cols <= 0 then
-		cols = 1
-		local best = 0
-		for c = 1, count do
-			local sc = fit(c)
-			if sc > best + 1e-9 then best, cols = sc, c end
-		end
+		cols = math.min(count, maxCols)
 	end
-	scale, rows, cellW, cellH = fit(cols)
-	cols = math.ceil(count / rows)
-	if scale <= 0 then
-		scale = 0.01
-	end
-	local w = grid.NOMINAL_W * scale
-	local h = grid.NOMINAL_H * scale
+	cols = math.max(1, math.min(cols, count))
+	local rows = math.ceil(count / cols)
+	-- the block is centred in the window; a pinned column count that overflows it
+	-- still lays the cards out in order, just past the edge
+	local blockW = cols * cardW + (cols - 1) * pad
+	local blockH = rows * cardH + (rows - 1) * pad
+	local ox = x1 + (availW - blockW) / 2
+	local oy = y1 + (availH - blockH) / 2
 	for i = 1, count do
 		local col = (i - 1) % cols
 		local row = math.floor((i - 1) / cols)
 		cards[i] = {
-			x = x1 + pad + col * (cellW + pad) + (cellW - w) * 0.5,
-			y = y1 + pad + row * (cellH + pad) + (cellH - h) * 0.5,
-			w = w,
-			h = h,
-			scale = scale,
+			-- centres: a card sprite's axis is the middle of its picture
+			x = math.floor(ox + col * (cardW + pad) + cardW / 2 + 0.5),
+			y = math.floor(oy + row * (cardH + pad) + cardH / 2 + 0.5),
+			w = cardW,
+			h = cardH,
 			col = col,
 			row = row,
 		}
@@ -3676,20 +3662,28 @@ function start.f_selectScreen()
 					-- the stage screen's own window: stage.portrait.window is the
 					-- character select's stage-hint thumbnail, and reusing it put the
 					-- whole wall of maps in a 1034x335 strip
-					local wall = start.f_stageWall()
-					if wall ~= nil then
-						spriteDraw(wall, 0, 0)
-						local pick = nil
-						for i = 1, stCount do
-							if main.t_selectableStages[i] == stageRef then
-								pick = i
-								break
-							end
+					local cards = start.f_stageGrid(stCount)
+					local pick = nil
+					for i = 1, stCount do
+						if main.t_selectableStages[i] == stageRef then
+							pick = i
+							break
 						end
-						local frame = pick ~= nil and start.f_stageWallFrame(start.stageSide or 1, pick) or nil
-						if frame ~= nil then
-							spriteDraw(frame, 0, 0)
+					end
+					for i = 1, stCount do
+						local cell = cards[i]
+						local card = start.f_stageCard(i)
+						if cell ~= nil and card ~= nil then
+							spriteDraw(card, cell.x, cell.y)
 						end
+					end
+					-- the picked map is outlined in the colour of the player who moved
+					-- the stage cursor; the frame is the card's own size, so it sits on
+					-- the card instead of being stretched over it
+					local frame = pick ~= nil and start.f_stageFrameSprite(start.stageSide or 1) or nil
+					local picked = pick ~= nil and cards[pick] or nil
+					if frame ~= nil and picked ~= nil then
+						spriteDraw(frame, picked.x, picked.y)
 					end
 				end
 				-- The fighters stay on the stage screen, drawn after the wall so the
@@ -3755,7 +3749,7 @@ function start.f_selectScreen()
 				-- line stops talking while the wall is up: it shared y=1005 with the
 				-- two fighter names and a long stage name ran straight into the
 				-- second player's. On the confirm frame it still speaks ("FIGHT!").
-				if not stageEnd and stageListNo ~= 0 and start.f_stageWall() ~= nil then
+				if not stageEnd and stageListNo ~= 0 and start.f_stageCard(1) ~= nil then
 					stage_text = ''
 				end
 				textImgReset(stageTextData)

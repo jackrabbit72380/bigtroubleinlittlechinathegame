@@ -249,27 +249,28 @@ def check_stage_wall(problems):
     if "function start.f_stageGrid" not in text:
         problems.append("start.lua has no layout for a wall of stage cards")
         return
-    # The wall is baked now: tools/build_stage_wall.py paints every card, its
-    # frame and its name into system.sff at the size they are drawn at, and the
-    # screen draws that one sprite at 0,0. Scaling the stage art at runtime is
-    # exactly what landed the cards at half their box, so the draw path may not
-    # scale anything at all.
-    if "local wall = start.f_stageWall()" not in text or "spriteDraw(wall, 0, 0)" not in text:
-        problems.append("the stage screen does not draw the baked wall")
-    wall_at = text.find("local wall = start.f_stageWall()")
+    # The pictures are baked - tools/build_stage_wall.py paints each stage's
+    # card into system.sff at its drawn size - and the screen places them, so a
+    # layout tweak needs no rebuild and no stage art is scaled at runtime.
+    if "local cards = start.f_stageGrid(stCount)" not in text:
+        problems.append("the stage screen does not lay the maps out as a wall")
+    if "spriteDraw(card, cell.x, cell.y)" not in text:
+        problems.append("the stage cards are not drawn at the layout's own boxes")
+    wall_at = text.find("local cards = start.f_stageGrid(stCount)")
     wall_end = text.find("-- The fighters stay on the stage screen", wall_at)
-    if wall_at < 0 or wall_end <= wall_at:
+    wall_region = text[wall_at:wall_end] if wall_at >= 0 and wall_end > wall_at else ""
+    if not wall_region:
         problems.append("the wall draw is not where the stage screen expects it")
-    elif "animSetScale" in text[wall_at:wall_end]:
+    elif "animSetScale" in wall_region:
         problems.append("the wall still scales stage art at runtime")
     wall_tool = os.path.join(ROOT, "tools", "build_stage_wall.py")
     if not os.path.isfile(wall_tool):
-        problems.append("nothing bakes the stage wall into the screenpack")
+        problems.append("nothing bakes the stage cards into the screenpack")
     else:
         bake = read(wall_tool)
-        for needle, why in (("WALL_SPRITE = (240, 0)", "the wall has no sprite number"),
+        for needle, why in (("CARD = (457, 150)", "the card size is not fixed"),
                             ("def frame_sprite(", "the pick has no baked frame"),
-                            ("[ExtraStages]", "the wall is not baked from the stage pool")):
+                            ("[ExtraStages]", "the cards are not baked from the stage pool")):
             if needle not in bake:
                 problems.append("build_stage_wall.py: " + why)
     # that backdrop sprite is the character wall's frame: a grid of empty cells is
@@ -280,12 +281,12 @@ def check_stage_wall(problems):
         problems.append("the empty character grid is still drawn behind the maps")
     if "pcall(animPrepare, a, ref)" not in text:
         problems.append("the palette load does not pass the character index to animPrepare")
-    if "start.stageSide" not in text or "start.f_stageWallFrame" not in text:
+    if "start.stageSide" not in text or "start.f_stageFrameSprite" not in text:
         problems.append("the picked map is not outlined in the player's colour")
     grid_src = read(os.path.join(ROOT, "tools", "build_select_grid.py"))
     if "STAGE_FRAME" not in grid_src or "def stage_frame(" not in grid_src:
         problems.append("no 3:1 stage frame set is painted into system.sff")
-    if wall_at >= 0 and wall_end > wall_at and "cursor" in text[wall_at:wall_end]:
+    if wall_region and "cursor.done" in wall_region:
         problems.append("the wall still stretches the character cursor over the wide card")
     for tool in ("build_stages.py", "build_training.py", "build_hd_stage.py",
                  "build_stage3d_rain.py"):

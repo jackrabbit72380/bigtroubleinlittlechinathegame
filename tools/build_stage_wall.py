@@ -1,27 +1,22 @@
-"""Paint the stage-select wall into the screenpack, at the size it is drawn.
+"""Paint the stage-screen cards: preview, gold frame and stage name, one sprite each.
 
-The wall used to be assembled at runtime: one animation per stage, scaled by the
-motif's stage.portrait.scale, the stage's portraitscale and the space between
-the motif's localcoord and the stage's, then re-scaled again into the card's box
-and clipped by a window. Every one of those factors is a chance for the picture
-to land at the wrong size, and they did: the cards came out at half the box the
-grid reserved for them, in a wall of gaps, with the picked card's frame drawn
-somewhere else entirely.
+The cards used to be assembled at runtime from each stage's own preview animation,
+scaled through the motif's stage.portrait.scale, the stage's portraitscale, the
+stage/motif localcoord ratio, the grid fit and a clip window. Those factors did not
+agree: cards landed at half the box the grid reserved for them, and the picked
+card's frame was drawn out in the gap beside the card.
 
-This paints the finished wall instead. Each card is decoded from its stage's own
-preview sprite (9000,1), scaled once, framed, given a name strip, and composited
-at the position the grid gives it - all in Python, where the result can be looked
-at. The screen then draws one sprite at 0,0, the same 1:1 draw the PLAYER captions
-and the character wall use.
+So the picture is settled here, once, at a fixed size - and only the picture. The
+screen still decides where the cards go, from start.stageGrid, and draws them 1:1.
+That split is deliberate: a layout change is a number in start.lua and shows up on
+the next frame, while adding a stage needs this tool run again only because the new
+stage's picture has to be sized into a card.
 
-Sprites written into data/ikemen1/system.sff:
+Sprites written into data/ikemen1/system.sff (groups 240-242 are this tool's own):
 
-    240,0        the whole wall, 1920x1080, axis 0,0 - draw at 0,0
-    241,0-11     the picked card's frame, player 1's green, one per card
-    242,0-11     the same frame in player 2's blue
-
-The frames carry their own position in their axis, so the screen draws them at
-0,0 as well and needs no layout of its own.
+    240,0 .. 240,<n-1>   one card per stage, in [ExtraStages] order, axis centred
+    241,0                the picked card's frame, player 1's green, axis centred
+    242,0                the same frame in player 2's blue
 
 Run: python3 tools/build_stage_wall.py
 """
@@ -43,37 +38,35 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 SELECT_DEF = os.path.join(ROOT, "data", "select.def")
 
-WALL_SPRITE = (240, 0)
-FRAME_GROUPS = {1: 241, 2: 242}
+# The card's own size in motif pixels, and the number the screen draws it at. A
+# different size here means a rebuild; where the cards sit does not.
+CARD = (457, 150)
+CARD_SPRITE = 240
+FRAME_SPRITES = {1: 241, 2: 242}
 
-# The layout, mirroring start.stageGrid in external/script/start.lua. NOMINAL is
-# what a card is DRAWN at: stage.portrait.scale 0.856 (and each stage's own
-# portraitscale, and the stage's localcoord) already land every stage's preview
-# at 1040x341 motif pixels, so one pair of numbers frames all twelve.
-SCREEN = (1920, 1080)
+# Only used to composite the preview image below with the same numbers
+# start.stageGrid uses, so the preview shows the wall as the screen lays it out.
 WINDOW = (80, 300, 1840, 970)
 PAD = 14
-NOMINAL_W, NOMINAL_H = 1040.0, 341.0
+COLS = 0
 
 GOLD = (236, 200, 120)
 GOLD_DIM = (150, 118, 62)
 INK = (10, 12, 16)
 P1_GREEN = (116, 255, 128)
 P2_BLUE = (122, 200, 255)
-
 NAME_STRIP = 30
+
 PREVIEW = os.path.join(ROOT, "artifacts", "stage_wall.png")
 
 
 def pool():
     """The stage pool, in the order [ExtraStages] lists it.
 
-    The screen indexes this list, so the bake has to walk it in the same order:
-    card i is sprite 241/242,<i-1>.
+    The screen indexes main.t_selectableStages, so card i belongs to entry i.
     """
     text = open(SELECT_DEF, encoding="utf-8", errors="replace").read()
-    block = text.split("[ExtraStages]", 1)[1]
-    block = block.split("[", 1)[0]
+    block = text.split("[ExtraStages]", 1)[1].split("[", 1)[0]
     refs = []
     for line in block.splitlines():
         line = line.split(";", 1)[0].strip()
@@ -82,67 +75,56 @@ def pool():
     return refs
 
 
-def grid(count):
-    """The card boxes, worked out the way start.f_stageGrid does.
+def layout(count, window=WINDOW, pad=PAD, cols=COLS):
+    """Where the screen will put the cards, for the preview only.
 
-    Same fit: pick the column count that makes the cards biggest, then hand back
-    each card's box. Kept in step with the Lua by tools/test_selectscreen.py,
-    which runs the Lua block and compares the two.
+    Mirrors start.f_stageGrid: fixed-size cards, as many across as the window
+    holds, the block centred in it. Returns card centres.
     """
-    def fit(cols):
-        cols = min(cols, count)
-        rows = -(-count // cols)
-        cw = ((WINDOW[2] - WINDOW[0]) - PAD * (cols + 1)) / float(cols)
-        ch = ((WINDOW[3] - WINDOW[1]) - PAD * (rows + 1)) / float(rows)
-        return min(cw / NOMINAL_W, ch / NOMINAL_H), rows, cw, ch
-
-    best, cols = 0.0, 1
-    for c in range(1, count + 1):
-        sc = fit(c)[0]
-        if sc > best + 1e-9:
-            best, cols = sc, c
-    scale, rows, cell_w, cell_h = fit(cols)
-    cols = -(-count // rows)
-    w, h = NOMINAL_W * scale, NOMINAL_H * scale
+    cw, ch = CARD
+    x1, y1, x2, y2 = window
+    avail_w, avail_h = x2 - x1, y2 - y1
+    max_cols = max(1, (avail_w + pad) // (cw + pad))
+    if cols <= 0:
+        cols = min(count, max_cols)
+    cols = max(1, min(cols, count))
+    rows = -(-count // cols)
+    block_w = cols * cw + (cols - 1) * pad
+    block_h = rows * ch + (rows - 1) * pad
+    ox = x1 + (avail_w - block_w) / 2.0
+    oy = y1 + (avail_h - block_h) / 2.0
     cards = []
-    for i in range(1, count + 1):
-        col = (i - 1) % cols
-        row = (i - 1) // cols
-        cards.append({
-            "x": WINDOW[0] + PAD + col * (cell_w + PAD) + (cell_w - w) * 0.5,
-            "y": WINDOW[1] + PAD + row * (cell_h + PAD) + (cell_h - h) * 0.5,
-            "w": w,
-            "h": h,
-        })
-    return cards
+    for i in range(count):
+        col, row = i % cols, i // cols
+        cards.append({"cx": ox + col * (cw + pad) + cw / 2.0,
+                      "cy": oy + row * (ch + pad) + ch / 2.0,
+                      "col": col, "row": row})
+    return cards, cols, rows
 
 
 def stage_name(def_path, fallback):
-    """The name the stage screen shows for this stage."""
     try:
         text = open(os.path.join(ROOT, def_path), encoding="utf-8", errors="replace").read()
     except OSError:
         return fallback
     hit = re.search(r'^\s*name\s*=\s*"?([^"\r\n]+)"?\s*$', text, re.M)
-    if hit:
-        return hit.group(1).strip()
-    return fallback
+    return hit.group(1).strip() if hit else fallback
 
 
-def preview_art(def_path, size):
-    """The stage's preview sprite, scaled to cover `size` and centred.
+def preview_art(def_path):
+    """The stage's own preview sprite, scaled once to cover the card and centred.
 
     Cover rather than fit: a 1215x398 card and a 240x100 one are meant to read at
-    the same size, and the 720p stages' previews are a different aspect. Filling
-    the box keeps the wall even; the crop is taken from the middle, where the
-    arena is.
+    the same size, and the 720p stages' previews are a different aspect. The crop
+    comes from the middle, where the arena is.
     """
+    w, h = CARD
     sff_path = os.path.join(ROOT, def_path[:-4] + ".sff")
-    w, h = int(round(size[0])), int(round(size[1]))
+    blank = Image.new("RGBA", CARD, (18, 20, 24, 255))
     try:
         data, sprites, pals = sff.read_sff(sff_path)
     except Exception:
-        return Image.new("RGBA", (w, h), (18, 20, 24, 255))
+        return blank
     chosen = None
     for want in ((9000, 1), (9000, 0)):
         for sp in sprites:
@@ -152,19 +134,17 @@ def preview_art(def_path, size):
         if chosen is not None:
             break
     if chosen is None:
-        return Image.new("RGBA", (w, h), (18, 20, 24, 255))
-    art_img = sff.decode_sprite(data, chosen, pals).convert("RGBA")
-    scale = max(w / float(art_img.width), h / float(art_img.height))
-    nw = max(w, int(round(art_img.width * scale)))
-    nh = max(h, int(round(art_img.height * scale)))
-    art_img = art_img.resize((nw, nh), Image.LANCZOS)
-    left = (nw - w) // 2
-    top = (nh - h) // 2
-    return art_img.crop((left, top, left + w, top + h))
+        return blank
+    img = sff.decode_sprite(data, chosen, pals).convert("RGBA")
+    scale = max(w / float(img.width), h / float(img.height))
+    nw = max(w, int(round(img.width * scale)))
+    nh = max(h, int(round(img.height * scale)))
+    img = img.resize((nw, nh), Image.LANCZOS)
+    left, top = (nw - w) // 2, (nh - h) // 2
+    return img.crop((left, top, left + w, top + h))
 
 
 def fit_text(draw, text, max_width, size=21, floor=13):
-    """The display face at the largest size that fits the strip."""
     while size > floor:
         f = art.font(size)
         if draw.textlength(text, font=f) <= max_width:
@@ -173,119 +153,100 @@ def fit_text(draw, text, max_width, size=21, floor=13):
     return art.font(floor)
 
 
-def paint_card(def_path, box, index):
-    """One finished card: the preview, its gold frame and its name."""
-    w, h = int(round(box["w"])), int(round(box["h"]))
-    card = preview_art(def_path, (w, h))
-    draw = ImageDraw.Draw(card)
-
-    # the name strip: the wall has no room for a caption row under it, and the
-    # shared one collided with the two fighter names
-    name = stage_name(def_path, os.path.basename(def_path)[:-4].replace("_", " ").title())
-    strip_h = NAME_STRIP
-    strip = Image.new("RGBA", (w, strip_h), INK + (216,))
-    card.paste(strip, (0, h - strip_h), strip)
+def paint_card(def_path):
+    """One finished card: the map, a gold rule, and the stage's name under it."""
+    w, h = CARD
+    card = preview_art(def_path)
+    name = stage_name(def_path,
+                      os.path.basename(def_path)[:-4].replace("_", " ").title())
+    strip = Image.new("RGBA", (w, NAME_STRIP), INK + (216,))
+    card.paste(strip, (0, h - NAME_STRIP), strip)
     draw = ImageDraw.Draw(card)
     font = fit_text(draw, name, w - 24)
     tw = draw.textlength(name, font=font)
-    box_t = draw.textbbox((0, 0), name, font=font)
-    draw.text(((w - tw) / 2.0, h - strip_h + (strip_h - (box_t[3] - box_t[1])) / 2.0 - box_t[1]),
+    bbox = draw.textbbox((0, 0), name, font=font)
+    draw.text(((w - tw) / 2.0,
+               h - NAME_STRIP + (NAME_STRIP - (bbox[3] - bbox[1])) / 2.0 - bbox[1]),
               name, font=font, fill=GOLD + (255,))
-
-    # the frame every card wears, and the shade that separates it from its
-    # neighbour when two cards meet
     draw.rectangle([0, 0, w - 1, h - 1], outline=GOLD + (255,), width=2)
     draw.rectangle([2, 2, w - 3, h - 3], outline=GOLD_DIM + (150,), width=1)
     return card
 
 
-def frame_sprite(box, colour, reach=6, width=4):
-    """The picked card's frame, with its position in the axis.
-
-    Axis = -(corner), so drawing the sprite at 0,0 puts it on the card it marks.
-    """
-    w = int(round(box["w"])) + reach * 2
-    h = int(round(box["h"])) + reach * 2
+def frame_sprite(colour, reach=5, width=4):
+    """The picked card's frame, centred on its card like the card itself."""
+    w, h = CARD[0] + reach * 2, CARD[1] + reach * 2
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     draw.rectangle([0, 0, w - 1, h - 1], outline=colour + (255,), width=width)
     draw.rectangle([width, width, w - 1 - width, h - 1 - width],
                    outline=colour + (90,), width=1)
-    # corner ticks, so the frame still reads over a bright card
     for cx, cy, dx, dy in ((0, 0, 1, 1), (w - 1, 0, -1, 1),
                            (0, h - 1, 1, -1), (w - 1, h - 1, -1, -1)):
         draw.line([(cx, cy), (cx + dx * 18, cy)], fill=colour + (255,), width=width + 2)
         draw.line([(cx, cy), (cx, cy + dy * 18)], fill=colour + (255,), width=width + 2)
-    axis = (int(round(-(box["x"] - reach))), int(round(-(box["y"] - reach))))
-    return img, axis
+    return img
 
 
-def rewrite_system_sff(images, axes, blank_groups=(240, 241, 242)):
-    """Replace or append sprites in system.sff, leaving the rest byte-exact.
+def rewrite_system_sff(images):
+    """Replace groups 240-242 in system.sff, leaving everything else byte-exact.
 
-    Groups 240-242 are this tool's own: whatever an older bake left there is
-    dropped first, so the pool can shrink without orphans staying in the file.
+    Dropping the old members of those groups first means a shorter pool cannot
+    leave a stale card behind at the end of the wall.
     """
     _data, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    out, done = [], set()
+    mine = {CARD_SPRITE} | set(FRAME_SPRITES.values())
+    out = []
     for sp in sprites:
-        key = (sp["group"], sp["number"])
-        if sp["group"] in blank_groups:
-            continue
-        if key in images:
+        if sp["group"] in mine:
             continue
         out.append({"group": sp["group"], "number": sp["number"],
                     "raw": sp["raw"], "format": sp["format"],
                     "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
                     "axis": sp["axis"], "pal": sp["pal"], "link": sp["link"]})
     for key in sorted(images):
-        out.append({"group": key[0], "number": key[1],
-                    "image": images[key], "axis": axes.get(key, (0, 0))})
-        done.add(key)
+        out.append({"group": key[0], "number": key[1], "image": images[key],
+                    "axis": (images[key].width // 2, images[key].height // 2)})
     blob = sff.write_sff(out, [p["rgba"] for p in palettes])
     if blob[:12] != sff.SIG:
         raise SystemExit("refusing to write: built system.sff has no signature")
     with open(SYSTEM_SFF + ".tmp", "wb") as f:
         f.write(blob)
     os.replace(SYSTEM_SFF + ".tmp", SYSTEM_SFF)
-    return len(out), len(done)
+    return len(out)
 
 
 def main():
     refs = pool()
     if not refs:
         raise SystemExit("stage wall: [ExtraStages] is empty")
-    cards = grid(len(refs))
 
-    wall = Image.new("RGBA", SCREEN, (0, 0, 0, 0))
-    images, axes = {}, {}
-    for i, (ref, box) in enumerate(zip(refs, cards), start=1):
-        card = paint_card(ref, box, i)
-        wall.alpha_composite(card, (int(round(box["x"])), int(round(box["y"]))))
-        for side, group in FRAME_GROUPS.items():
-            colour = P1_GREEN if side == 1 else P2_BLUE
-            img, axis = frame_sprite(box, colour)
-            images[(group, i - 1)] = img
-            axes[(group, i - 1)] = axis
+    images = {}
+    wall = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
+    cards, cols, rows = layout(len(refs))
+    for i, (ref, cell) in enumerate(zip(refs, cards)):
+        card = paint_card(ref)
+        images[(CARD_SPRITE, i)] = card
+        wall.alpha_composite(card, (int(round(cell["cx"] - CARD[0] / 2.0)),
+                                    int(round(cell["cy"] - CARD[1] / 2.0))))
+    for side, group in FRAME_GROUPS_ITEMS():
+        images[(group, 0)] = frame_sprite(P1_GREEN if side == 1 else P2_BLUE)
 
-    images[WALL_SPRITE] = wall
-    axes[WALL_SPRITE] = (0, 0)
-    total, written = rewrite_system_sff(images, axes)
-
+    total = rewrite_system_sff(images)
     os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
-    flat = Image.new("RGB", SCREEN, (0, 0, 0))
+    flat = Image.new("RGB", wall.size, (0, 0, 0))
     flat.paste(wall, (0, 0), wall)
     flat.save(PREVIEW)
 
-    print("  stage wall: %d cards, %d sprites (wall + %d frames), system.sff now %d sprites"
-          % (len(refs), written, written - 1, total))
-    cols = len({round(c["x"], 3) for c in cards})
-    rows = len({round(c["y"], 3) for c in cards})
-    card = cards[0]
-    print("  %d cards in %d columns x %d rows, card %dx%d at %.0f,%.0f"
-          % (len(refs), cols, rows, round(card["w"]), round(card["h"]),
-             card["x"], card["y"]))
+    print("  stage cards: %d painted, %d card + %d frame sprites, system.sff now %d sprites"
+          % (len(refs), len(refs), len(FRAME_SPRITES), total))
+    print("  card %dx%d, layout preview at %dx%d cards (%d across)"
+          % (CARD[0], CARD[1], cols, rows, cols))
     print("  preview: %s" % os.path.relpath(PREVIEW, ROOT))
+
+
+def FRAME_GROUPS_ITEMS():
+    return sorted(FRAME_SPRITES.items())
 
 
 if __name__ == "__main__":
