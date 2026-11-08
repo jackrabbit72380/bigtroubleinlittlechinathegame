@@ -192,14 +192,14 @@ cancel.snd = 100,2
 ;Full documentation of this feature is available on Ikemen GO features wiki
 
 ; Submenu: Arcade
-menu.itemname.menuarcade = ARCADE
+menu.itemname.menuarcade = Arcade
 menu.itemname.menuarcade.arcade = SINGLE MODE
 menu.itemname.menuarcade.teamarcade = TEAM ARCADE
 menu.itemname.menuarcade.teamcoop = TEAM CO-OP
 menu.itemname.menuarcade.back = BACK
 
 ; Submenu: Versus
-menu.itemname.menuversus = VS MODE
+menu.itemname.menuversus = Versus Mode
 menu.itemname.menuversus.versus = 1P VS 2P
 menu.itemname.menuversus.teamversus = TEAM VERSUS
 menu.itemname.menuversus.versuscoop = VERSUS CO-OP
@@ -212,7 +212,7 @@ menu.itemname.storymode = STORY MODE
 menu.itemname.storymode.back = BACK
 
 ; Submenu: Network
-menu.itemname.menunetwork = NETWORK
+menu.itemname.menunetwork = Network
 menu.itemname.menunetwork.serverhost = HOST GAME
 menu.itemname.menunetwork.serverjoin = JOIN GAME
 menu.itemname.menunetwork.back = BACK
@@ -229,12 +229,12 @@ menu.itemname.server.netplaysurvivalcoop = SURVIVAL CO-OP
 menu.itemname.server.back = EXIT
 
 ; Submenu: Practice
-menu.itemname.menupractice = PRACTICE
+menu.itemname.menupractice = Practice
 menu.itemname.menupractice.training = TRAINING
 menu.itemname.menupractice.back = BACK
 
 ; Submenu: Mission
-menu.itemname.menumission = MISSION
+menu.itemname.menumission = Mission
 menu.itemname.menumission.survival = SURVIVAL
 menu.itemname.menumission.survivalcoop = SURVIVAL CO-OP
 menu.itemname.menumission.timeattack = TIME ATTACK
@@ -246,14 +246,14 @@ menu.itemname.menumission.back = BACK
 menu.itemname.menumission.bonusgames.back = BACK
 
 ; Submenu: Watch Mode
-menu.itemname.menuwatch = WATCH MODE
+menu.itemname.menuwatch = Watch Mode
 menu.itemname.menuwatch.watch = CPU MATCH
 menu.itemname.menuwatch.randomtest = RANDOMTEST
 menu.itemname.menuwatch.replay = REPLAY
 menu.itemname.menuwatch.back = BACK
 
 ; Options
-menu.itemname.options = OPTIONS
+menu.itemname.options = Options
 
 ; Options > Video > Resolution. The engine takes the size straight from the
 suffix, so this block IS the list.
@@ -270,7 +270,7 @@ suffix, so this block IS the list.
 
 
 ; Exit Game
-menu.itemname.exit = EXIT
+menu.itemname.exit = Exit
 
 ;----------------------------
 ;Title background definition
