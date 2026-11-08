@@ -717,10 +717,43 @@ function ms.open()
 	end
 end
 
--- Title menu entry. Appended before EXIT so it reads with the other modes, and
--- the handler opens the browser in place, exactly like OPTIONS.
-if type(motif) == 'table' and type(motif.title_info) == 'table' and type(motif.title_info.menu) == 'table' then
-	pcall(main.f_appendItemname, motif.title_info.menu, '', 'music', 'Music', 'exit')
+-- Options menu entry. The browser is a setting, not a game mode, so its row
+-- lives on the options menu now instead of beside Arcade and Versus. Appended
+-- before the options menu's Back row, and the behaviour registered on the
+-- options module itself - the same two halves the pause menu's row uses.
+if type(motif) == 'table' and type(motif.option_info) == 'table'
+	and type(motif.option_info.menu) == 'table' then
+	pcall(main.f_appendItemname, motif.option_info.menu, '', 'music', 'Music', 'back')
+end
+
+-- The options menu calls every item's function each frame and keeps the item
+-- when it returns true, so this waits for the done key and opens the browser
+-- over the options screen, leaving it standing when the browser closes.
+-- main.lua sets the global `options` before the mods are loaded, so that is the
+-- table to extend; require is only the fallback for a build that has not set it.
+local optionsMod = options
+if type(optionsMod) ~= 'table' then
+	local ok, mod = pcall(require, 'external.script.options')
+	optionsMod = ok and mod or nil
+end
+if type(optionsMod) == 'table' and type(optionsMod.t_itemname) == 'table' then
+	optionsMod.t_itemname['music'] = function(t, item, cursorPosY, moveTxt)
+		local keys = nil
+		pcall(function() keys = motif.option_info.menu.done.key end)
+		if keys ~= nil and getInput(-1, keys) then
+			pcall(function()
+				sndPlay(motif.Snd, motif.option_info.cursor.done.snd[1],
+					motif.option_info.cursor.done.snd[2])
+			end)
+			local opened, err = pcall(ms.open)
+			if not opened then
+				report('musicselect: the browser could not open from the options menu: '
+					.. tostring(err), 'Music list: ' .. shortError(err))
+			end
+			resetKey()
+		end
+		return true
+	end
 end
 
 -- Returns nothing on purpose: the title menu assigns the return value to

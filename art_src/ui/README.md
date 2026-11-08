@@ -82,7 +82,8 @@ concept_art/ui/splash.png        (also picked up)
 What the build does with it:
 
 - packs it into `data/ikemen1/system.sff` as sprite `206, 0` (a group the
-  engine does not use), axis at the frame centre;
+  engine does not use), axis at the frame centre, with every pixel of its
+  transparency intact: the night sky behind it is sprite `207, 0`, drawn first;
 - rewrites `data/ikemen1/logo.def` as one scene: fade up from black, hold, fade
   out into the title. The timing lives in `tools/build_splash.py`
   (`SECONDS`, `FADE_IN`, `FADE_OUT`).

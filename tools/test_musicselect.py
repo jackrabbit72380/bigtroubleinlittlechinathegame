@@ -178,7 +178,13 @@ main = {
     f_fileRead = function(path) return FILE_TEXT end,
     f_itemnameUpper = function(text) return text end,
     f_animPosDraw = function() end,
-    f_appendItemname = function() end,
+    appendCalls = {},
+    f_appendItemname = function(menuTbl, parent, name)
+        local target = 'other'
+        if menuTbl == motif.option_info.menu then target = 'options' end
+        if menuTbl == motif.title_info.menu then target = 'title' end
+        table.insert(main.appendCalls, {parent = parent, name = name, target = target})
+    end,
 }
 menu = { t_itemname = {}, itemname = '', f_run = function() return true end }
 if MODE == 'nofile' then
@@ -269,7 +275,10 @@ def check(mode: str) -> list[str]:
     if not lua.eval("type(menu.t_itemname['music']) == 'function'"):
         problems.append("the pause menu entry was not registered")
     if not lua.eval("type(main.t_itemname.music) == 'function'"):
-        problems.append("the title menu entry was not registered")
+        problems.append("the music handler is gone from main.t_itemname")
+    row_target = lua.eval("(function() for _, c in ipairs(main.appendCalls or {}) do if c.name == 'music' then return c.target end end return 'none' end)()")
+    if row_target != "options":
+        problems.append("the Music row is not added to the options menu")
     if problems:
         return problems
 

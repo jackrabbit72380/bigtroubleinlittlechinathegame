@@ -40,6 +40,9 @@ AXIS = (640, 360)
 # it or overwrites it. 206 is free: 200-205, 220-225, 400-403, 500, 600, 610,
 # 700, 800, 810, 921-923 and 1000 are taken.
 SPRITE = (206, 0)
+# The night sky is a sprite of its own and the storyboard draws it behind the
+# poster, so the poster keeps every pixel of transparency the art came with.
+SKY_SPRITE = (207, 0)
 
 SECONDS = 4.0
 FADE_IN = 30
@@ -152,9 +155,9 @@ def poster():
             if abs(img.width / float(img.height) - 16 / 9.0) > 0.06:
                 print(f"  warning: {os.path.relpath(path, ROOT)} is "
                       f"{img.width}x{img.height}, not 16:9; it will be cropped")
-            # The plate is a cut-out, so it goes over the sky rather than on
-            # black: the card then reads as the same night the title opens in.
-            card = night_sky(halo=False)
+            # Nothing is baked behind the plate: the sky is drawn under it by
+            # the storyboard, so the poster stays a cut-out.
+            card = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
             card.alpha_composite(cover(img, CANVAS))
             mark = card_wordmark()
             if mark is not None:
@@ -178,6 +181,12 @@ def storyboard():
         f"fadeout.time = {FADE_OUT}\n"
         f"end.time = {end}\n"
         "\n"
+        "[Splash Sky]\n"
+        "type = normal\n"
+        f"spriteno = {SKY_SPRITE[0]}, {SKY_SPRITE[1]}\n"
+        "start = 0, 0\n"
+        "mask = 0\n"
+        "\n"
         "[Splash Poster]\n"
         "type = normal\n"
         f"spriteno = {SPRITE[0]}, {SPRITE[1]}\n"
@@ -186,28 +195,29 @@ def storyboard():
     )
 
 
-def write_system_sprite(image, axis=AXIS):
-    """Put ``image`` into system.sff at SPRITE, replacing it if it is there."""
+def write_system_sprites(images, axis=AXIS):
+    """Put each ``images`` slot into system.sff, replacing what is there."""
     if not os.path.isfile(SYSTEM_SFF):
         raise SystemExit("data/ikemen1/system.sff is missing - fetch the engine "
                          "data first")
     _d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
 
-    out, replaced = [], False
+    out, replaced = [], set()
     for sp in sprites:
-        if (sp["group"], sp["number"]) == SPRITE:
-            out.append({"group": SPRITE[0], "number": SPRITE[1],
-                        "image": image, "axis": axis})
-            replaced = True
+        key = (sp["group"], sp["number"])
+        if key in images:
+            out.append({"group": key[0], "number": key[1],
+                        "image": images[key], "axis": axis})
+            replaced.add(key)
         else:
             out.append({"group": sp["group"], "number": sp["number"],
                         "raw": sp["raw"], "format": sp["format"],
                         "depth": sp["depth"], "w": sp["w"], "h": sp["h"],
                         "axis": sp["axis"], "pal": sp["pal"],
                         "link": sp["link"]})
-    if not replaced:
-        out.append({"group": SPRITE[0], "number": SPRITE[1],
-                    "image": image, "axis": axis})
+    for key in sorted(set(images) - replaced):
+        out.append({"group": key[0], "number": key[1],
+                    "image": images[key], "axis": axis})
 
     # Build in memory and swap in: opening the real path first would truncate a
     # 9 MB engine asset if anything below raised.
@@ -231,7 +241,8 @@ def build():
     else:
         print("no art_src/ui/splash.png - painting the fallback splash card")
 
-    total, replaced = write_system_sprite(art_img)
+    sky_img = night_sky(halo=False)
+    total, replaced = write_system_sprites({SKY_SPRITE: sky_img, SPRITE: art_img})
 
     with open(LOGO_DEF + ".tmp", "w", encoding="utf-8") as f:
         f.write(storyboard())
@@ -241,19 +252,24 @@ def build():
     # startup, and the engine cannot be asked about it here.
     _d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
     have = {(sp["group"], sp["number"]) for sp in sprites}
-    if SPRITE not in have:
-        raise SystemExit(f"splash sprite {SPRITE} did not make it into system.sff")
+    for slot in (SPRITE, SKY_SPRITE):
+        if slot not in have:
+            raise SystemExit(f"splash sprite {slot} did not make it into system.sff")
     with open(LOGO_DEF, encoding="utf-8") as f:
         text = f.read()
-    if f"spriteno = {SPRITE[0]}, {SPRITE[1]}" not in text:
-        raise SystemExit("logo.def does not reference the splash sprite")
+    for slot in (SKY_SPRITE, SPRITE):
+        if f"spriteno = {slot[0]}, {slot[1]}" not in text:
+            raise SystemExit(f"logo.def does not draw sprite {slot}")
+    if text.index("spriteno = %d" % SKY_SPRITE[0]) > text.index("spriteno = %d" % SPRITE[0]):
+        raise SystemExit("logo.def draws the sky after the poster")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
-    art_img.save(os.path.join(ROOT, "artifacts", "splash.png"))
-    print(f"wrote the splash into data/ikemen1/system.sff "
-          f"({total} sprites, {SPRITE[0]},{SPRITE[1]} "
-          f"{'replaced' if replaced else 'added'}) and data/ikemen1/logo.def "
-          f"({SECONDS:.0f}s)")
+    preview = sky_img.copy()
+    preview.alpha_composite(art_img)
+    preview.save(os.path.join(ROOT, "artifacts", "splash.png"))
+    print(f"wrote the splash into data/ikemen1/system.sff ({total} sprites, sky "
+          f"{SKY_SPRITE[0]},{SKY_SPRITE[1]}, poster {SPRITE[0]},{SPRITE[1]}, "
+          f"{replaced} replaced) and data/ikemen1/logo.def ({SECONDS:.0f}s)")
 
 
 if __name__ == "__main__":
