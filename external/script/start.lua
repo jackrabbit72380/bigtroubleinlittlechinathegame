@@ -1452,7 +1452,7 @@ end
 -- external/mods/musicselect.lua sets a scale on its album covers for the same
 -- reason.
 
-local function spriteDraw(a, x, y)
+local function spriteDraw(a, x, y, scale)
 	if a == nil then
 		return
 	end
@@ -1460,8 +1460,11 @@ local function spriteDraw(a, x, y)
 	if motif ~= nil and motif.info ~= nil and motif.info.localcoord ~= nil then
 		w, h = motif.info.localcoord[1], motif.info.localcoord[2]
 	end
+	-- 1,1 is the art's own size; the captions pass their own factor (see
+	-- LABEL_SCALE) because they were painted smaller than the screen's text.
+	local k = scale or 1
 	pcall(animSetLocalcoord, a, w, h)
-	pcall(animSetScale, a, 1, 1)
+	pcall(animSetScale, a, k, k)
 	pcall(animSetPos, a, x, y)
 	pcall(animDraw, a)
 	pcall(animUpdate, a)
@@ -1555,18 +1558,28 @@ function start.f_drawRandomStop()
 	local gap = dims(si.cell.spacing, 2)
 	local wallW = cols * cellW + (cols - 1) * gap
 	local wallH = rows * cellH + (rows - 1) * gap
-	local x = px + math.floor(wallW / 2) - 64
-	-- the frame's own padding (15) plus a little air, so the word sits
-	-- under the wall rather than on its bottom rule
-	local y = py + wallH + 19
+	local sh = 1080
+	pcall(function()
+		local lc = motif.info.localcoord
+		if lc ~= nil and lc[2] ~= nil and lc[2] > 0 then
+			sh = lc[2]
+		end
+	end)
+	local s = RANDOM_SCALE
+	-- The word is centred on its own ink, not the canvas it was packed in.
+	local x = px + math.floor(wallW / 2) - math.floor((RANDOM_INK[1] + RANDOM_INK[3]) * s / 2)
+	-- Hung under the frame's bottom rail, which is the only gap on this screen
+	-- deep enough for the larger word: between the last row of cells (y 1016)
+	-- and that rail (y 1045) there is no room for it.
+	local y = sh - 2 - RANDOM_INK[4] * s
 	local base = randomStopAnim(false)
 	if base ~= nil then
-		spriteDraw(base, x, y)
+		spriteDraw(base, x, y, s)
 	end
 	if randomStopLit() then
 		local lit = randomStopAnim(true)
 		if lit ~= nil then
-			spriteDraw(lit, x, y)
+			spriteDraw(lit, x, y, s)
 		end
 	end
 end
@@ -1584,7 +1597,22 @@ end
 -- mode title; this build refuses the textImg* font call, which is why they are
 -- art. LABEL_POS is the centre the word is drawn on, in 1920x1080 pixels.
 local labelAnims = {}
-local LABEL_POS = {{232, 17}, {1688, 17}}
+-- The captions and the RANDOM word are painted art, so they have to be sized
+-- against the screen's own text instead of being left at the size they were
+-- packed: the mode title between the captions is the engine's Display face at
+-- 0.75, about 45px of capital on this screenpack, while PLAYER carries 25px of
+-- ink in its 320x48 canvas and RANDOM 15px in its 128x30 one. PLAYER is taken to
+-- the title's own height, and each caption is centred on its own canvas so the
+-- growth is symmetric; the row moves down a little (17 -> 30) so the taller
+-- capitals still clear the top edge. RANDOM cannot go that high - the frame
+-- leaves only the rail under it - so it is taken to the 30px that gap holds,
+-- twice the size it was packed at.
+local LABEL_SCALE = 1.8
+local RANDOM_SCALE = 2.0
+-- The word's ink inside its 128x30 canvas, so it can be centred and hung by the
+-- ink rather than by the packing.
+local RANDOM_INK = {7, 7, 120, 22}
+local LABEL_POS = {{232, 30}, {1688, 30}}
 -- The word sits centred in its canvas, so the anim is placed at the canvas's
 -- top-left corner and the canvas is 320x48.
 local LABEL_HALF = {160, 24}
@@ -1602,7 +1630,8 @@ function start.f_drawPlayerLabels()
 		local a = labelAnim(pn)
 		if a ~= nil then
 			local pos = LABEL_POS[pn]
-			spriteDraw(a, pos[1] - LABEL_HALF[1], pos[2] - LABEL_HALF[2])
+			spriteDraw(a, pos[1] - LABEL_HALF[1] * LABEL_SCALE,
+				pos[2] - LABEL_HALF[2] * LABEL_SCALE, LABEL_SCALE)
 		end
 	end
 end
