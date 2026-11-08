@@ -41,18 +41,25 @@ SYSTEM_SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 
 # The logo sprite. Sized for this lockup rather than the engine's 699x257 slot:
 # the arch plus three stacked lines needs the height.
-CANVAS = (900, 420)
+# The engine draws this layer 1:1 - it ignores the "scale" line background
+# layers can carry - so the sprite's own size is the wordmark's size and its
+# resolution on screen. The stock 900x420 slot put 884 px of ink across a 1920
+# frame and read soft, so the slot is 1.3x that: about 1154x371 of ink, which
+# still leaves clear air above the title menu's first row (menu.pos = 960,470).
+GROW = 1.3
+CANVAS = (int(round(900 * GROW)), int(round(420 * GROW)))
 # Where the lockup is drawn before it is fitted into CANVAS. The lockup is
-# composed at SS times the sprite's size so the fit into the 900x420 slot is a
+# composed at SS times the sprite's size so the fit into the slot is a
 # downscale: composed at sprite size it was stretched from the scratch canvas,
 # and the wordmark on screen carried that softness.
 SS = 2
-SCRATCH = (900 * SS, 660 * SS)
+SUP = SS * GROW          # composition size relative to the stock 900-wide design
+SCRATCH = (CANVAS[0] * SS, int(round(CANVAS[1] * 11 / 7)) * SS)
 WORK = CANVAS
 
-TOP_MARGIN = 30          # ink starts this far down the 720-line screen
+TOP_MARGIN = 30          # ink starts this far down the 1080-line screen
 PAD = 8                  # clearance kept inside the sprite, for the glow
-ARC_RADIUS = 760 * SS    # bows the caps' ends well below the apex, as in the film
+ARC_RADIUS = 760 * SUP   # bows the caps' ends well below the apex, as in the film
 
 GOLD = [(0.00, (255, 228, 140)), (0.34, (246, 200, 110)),
         (0.68, (255, 197, 60)), (1.00, (236, 139, 24))]
@@ -481,10 +488,10 @@ def lockup():
     cx = WORK[0] / 2.0
 
     caps_size = fit_size(0.84 * WORK[0],
-                         lambda s: arc_line("BIG TROUBLE", s, cx, 24 * SS,
+                         lambda s: arc_line("BIG TROUBLE", s, cx, int(round(24 * SUP)),
                                             ARC_RADIUS, seed=4, jitter=1.0),
-                         guess=110 * SS, hi=280 * SS)
-    caps = arc_line("BIG TROUBLE", caps_size, cx, 24 * SS, ARC_RADIUS, seed=4,
+                         guess=int(110 * SUP), hi=int(280 * SUP))
+    caps = arc_line("BIG TROUBLE", caps_size, cx, int(round(24 * SUP)), ARC_RADIUS, seed=4,
                     jitter=1.0)
     cbox = caps.getbbox()
 
@@ -508,8 +515,8 @@ def lockup():
     little_y = ibox[3] + little_size * 0.62
     little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
                        jitter=0.4, weight=0.05, tilt=0.5)
-    while little_y < WORK[1] - 60 * SS and touches(caps, little, little.getbbox()):
-        little_y += 4 * SS
+    while little_y < WORK[1] - int(60 * SUP) and touches(caps, little, little.getbbox()):
+        little_y += int(4 * SUP)
         little = flat_line("LITTLE", little_size, cx - 30, little_y, seed=11,
                            jitter=0.4, weight=0.05, tilt=0.5)
     lbox = little.getbbox()
@@ -518,15 +525,15 @@ def lockup():
     china_y = lbox[3] + china_size * 0.60
     china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13, jitter=0.4,
                       weight=0.05, tilt=-0.5)
-    while china_y < WORK[1] - 50 * SS and touches(caps, china, china.getbbox()):
-        china_y += 4 * SS
+    while china_y < WORK[1] - int(50 * SUP) and touches(caps, china, china.getbbox()):
+        china_y += int(4 * SUP)
         china = flat_line("CHINA", china_size, cx + 30, china_y, seed=13,
                           jitter=0.4, weight=0.05, tilt=-0.5)
     hbox = china.getbbox()
 
     art_img = Image.new("RGBA", WORK, (0, 0, 0, 0))
-    art_img.alpha_composite(paint_line(caps, depth=(12 * SS, 13 * SS)))
-    art_img.alpha_composite(paint_line(in_mask, depth=(5 * SS, 6 * SS)))
+    art_img.alpha_composite(paint_line(caps, depth=(int(12 * SUP), int(13 * SUP))))
+    art_img.alpha_composite(paint_line(in_mask, depth=(int(5 * SUP), int(6 * SUP))))
     art_img.alpha_composite(paint_line(
         little, depth=(max(4, little_size // 10), max(5, little_size // 9))))
     art_img.alpha_composite(paint_line(
@@ -698,7 +705,7 @@ def build():
         logo, box = painted, painted.getbbox()
         print(f"using painted title plate {os.path.relpath(source, ROOT)}")
 
-    glow = logo.filter(ImageFilter.GaussianBlur(3.2))
+    glow = logo.filter(ImageFilter.GaussianBlur(3.2 * GROW))
     blank = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
 
     # 0,0 + 0,2 were a bright layer and its additive shadow; 0,1 + 0,3 were a
