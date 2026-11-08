@@ -36,11 +36,15 @@ local HEAD = {x = 960, y = 105}
 local HINT = {x = 960, y = 990}
 local CHOICE = {x = 960, y = 1030}
 
--- The shared sprite carries the motif's own face, so the rows sit at 1.0, and
--- the album title is drawn at the same size as the list under it.
-local ROWSCALE = 1.0
-local SMALLSCALE = 0.8
-local HEADSCALE = 1.0
+-- One size for the whole game. Every text row in the title, pause and options
+-- menus is the Display face at 0.75 (system.def, menu.item.scale), so this
+-- screen draws at 0.75 too: it was the only place in the game at 1.0, a third
+-- larger than the menus around it. The album title is the same size as the
+-- list under it, and the two lines that can outgrow the frame - the title and
+-- the key hints - scale further down to fit instead of clipping.
+local ROWSCALE = 0.75
+local SMALLSCALE = 0.6
+local HEADSCALE = 0.75
 -- The two lines that can outgrow the frame: an album name (the longest in
 -- sound/ is 44 characters) and a track title at the end of a row, plus the
 -- now-playing line, which carries an album name and a track name at once. All
