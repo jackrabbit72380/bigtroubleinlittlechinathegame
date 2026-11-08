@@ -809,6 +809,42 @@ def patch_def():
     return added
 
 
+# The VS screen and the main menu draw each other's backdrop: the VS layers here
+# point at the title set (100,0 sky with the 100,2 and 100,3 clouds) and
+# tools/build_title.py points the title layers at the VS set, so the two screens
+# have swapped backgrounds. Only the sprite numbers change - each layer keeps its
+# own seat, window, tile, velocity and trans, and every sprite involved is baked
+# at the frame's size, so nothing has to be reseated or rescaled.
+BACKDROP_SWAP = (("versusbg background sky", 100, 0),
+                 ("versusbg background clouds top", 100, 2),
+                 ("versusbg background clouds bottom", 100, 3))
+
+
+def swap_backdrop_layers():
+    """Point the VS backdrop layers at the main menu's art."""
+    path = os.path.join(ROOT, "data", "ikemen1", "system.def")
+    if not os.path.isfile(path):
+        return 0
+    with open(path, encoding="utf-8", errors="replace") as f:
+        lines = f.read().splitlines()
+    wanted = {name: (group, number) for name, group, number in BACKDROP_SWAP}
+    out, section, changed = [], "", 0
+    for line in lines:
+        s = line.strip().lower()
+        if s.startswith("["):
+            section = s.strip("[]").strip()
+        elif s.startswith("spriteno") and section in wanted:
+            group, number = wanted[section]
+            line = "spriteno = " + str(group) + "," + str(number)
+            changed += 1
+        out.append(line)
+    if changed:
+        with open(path + ".tmp", "w", encoding="utf-8") as f:
+            f.write("\n".join(out) + "\n")
+        os.replace(path + ".tmp", path)
+    return changed
+
+
 def build():
     if not os.path.isfile(SYSTEM_SFF) or not os.path.isfile(SYSTEM_DEF):
         raise SystemExit("data/ikemen1 is missing - fetch the engine data first")
@@ -841,6 +877,7 @@ def build():
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     strip.save(os.path.join(ROOT, "artifacts", "select_hint.png"))
+    swap_backdrop_layers()
     print(f"stage-select hint: sprite {SPRITE[0]},{SPRITE[1]} "
           f"({'added' if total else 'kept'}), frame repaints {frames}, "
           f"stage previews centred {centred}, "

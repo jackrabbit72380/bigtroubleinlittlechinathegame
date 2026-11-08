@@ -1467,13 +1467,13 @@ p2.face2.done.applypal = 0
 
 [VersusBG Background Sky]
 type = normal
-spriteno = 204,0
+spriteno = 100,0
 layerno = 0
 start = -960, 0
 
 [VersusBG Background Clouds Top]
 type = normal
-spriteno = 102,2
+spriteno = 100,2
 layerno = 0
 start = -960, -75
 tile = 1,0
@@ -1484,7 +1484,7 @@ mask = 1
 
 [VersusBG Background Clouds Bottom]
 type = normal
-spriteno = 102,3
+spriteno = 100,3
 layerno = 0
 start = -960, 0
 tile = 1,0
