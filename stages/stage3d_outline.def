@@ -1,7 +1,7 @@
 ;This stage and its assets are licensed under MIT.
 ;--------------------------------------------------------
 [Info]
-name = "Third Heights: Outline"
+name = "Third Heights"
 displayname = "Third Heights Outline"
 versiondate = 11,25,2023
 mugenversion = 1.1
@@ -11,8 +11,8 @@ author = "SuperFromND"; modifed by Eiton
 [Camera]
 startx = 0
 starty = 0
-boundleft = -880
-boundright = 880
+boundleft = -700
+boundright = 700
 boundhigh = -450
 boundlow = 0
 
@@ -25,11 +25,10 @@ overdrawlow = 120
 cuthigh = 0
 cutlow = 0
 
-zoomout = 0.72
+zoomout = 0.75
 
-;A longer lens than the day pass (fov 22 against 30) with a wider pan, so
-;the same island reads as somewhere far away and empty.
-fov = 22
+;Field of view. 30 is good for photorealistic scenes, but feel free to tweak this to your preference.
+fov = 30
 ;--------------------------------------------------------
 zoomin = 1
 [PlayerInfo]
@@ -73,8 +72,8 @@ portraitscale = 3.375
 
 ;--------------------------------------------------------
 [Shadow]
-intensity = 128
-color = 44,26,86
+intensity = 96
+color = 0,0,0
 yscale = .3
 fade.range = 0,0
 
@@ -94,7 +93,7 @@ bgmvolume = 100
 ;Supported file types are gltf and glb; supported by most modern 3D model programs.
 ;It is recommended to use PNG/JPEG/embedded image format for textures. Compressed DDS textures are not supported.
 ;Make sure the world origin of the model is at the camera's starting point.
-;model = stage3d_outline.glb   ; the island is painted instead - see [BG island]
+model = stage3d_outline.glb
 
 ;Filename of .sff file, required by spec (and for stage portraits)
 spr = stage3d_outline.sff
@@ -103,66 +102,13 @@ spr = stage3d_outline.sff
 
 ;-------------------------------------
 ; Model element definition
-; No [Model] block here on purpose. This stage draws a painted island (see
-; [BGdef]) and its 3D model is switched off; a [Model] section left behind with
-; no model to describe makes the engine dereference the missing model while the
-; stage loads, and the game dies with a nil pointer panic. Removed 2026-11-08.
+[Model]
 
 ; X, Y, and Z coordinates of the model
+offset = 0,-0.2,-0.9
 
 ; Scale of the model
-
-;-------------------------------------
-; Night weather: a violet wash sits over the whole scene, cold motes climb through
-; it, and mist crawls along the water. The wash is a solid tile, the motes tile
-; both ways and the mist tiles sideways, so panning never finds an edge.
-;-------------------------------------
-; The island itself, painted. The 3D model is off: the engine has a model path and
-; the .glb is sound, but on the machine these stages are played on the model was
-; never drawn and the screen was a black field with only the weather over it. This
-; sprite is the stage's own localcoord, 1280x720, so it draws 1:1, and it tiles
-; sideways for as long as the camera travels.
-[BG sky]
-type = normal
-spriteno = 3,1
-layerno = 0
-start = 0, 0
-tile = 1,0
-trans = none
-
-[BG lip]
-type = normal
-spriteno = 3,3
-layerno = 1
-start = 0, 0
-tile = 1,0
-trans = none
-
-[BG night wash]
-type = normal
-spriteno = 1,2
-layerno = 1
-start = 0, 0
-tile = 1,1
-trans = none
-
-[BG cold motes]
-type = normal
-spriteno = 1,0
-layerno = 1
-start = 0, 0
-tile = 1,1
-velocity = 0, -1.1
-trans = add
-
-[BG night mist]
-type = normal
-spriteno = 1,1
-layerno = 1
-start = 0, 0
-tile = 1,0
-velocity = -1.5, 0
-trans = none
+scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
 ; Stage portrait data

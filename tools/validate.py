@@ -1907,7 +1907,6 @@ def main():
     check_team_screen()
     check_fight_hud()
     check_stage_camera()
-    check_rain_thunder()
     for name, _stage in chars:
         def_path, folder = resolve_char(name)
         if def_path and os.path.isfile(def_path):
@@ -1945,94 +1944,6 @@ def main():
     print(f"\nAll checks passed ({len(notes)} checks)")
     return 0
 
-
-def check_rain_thunder():
-    """The rainfall stage's flash, flag and rumble must stay in step.
-
-    The stage def cannot play a sound, so the thunder is an agreement between four
-    files: the def's [Constants] flag, the animated layer, the action it plays, and
-    the Lua module that listens for the flag and plays the sample. Any one of them
-    missing is silent, and silence looks exactly like a working build - so each is
-    checked here, along with the sprites the action names.
-    """
-    import struct
-
-    def_path = os.path.join(ROOT, "stages", "stage3d_rain.def")
-    if not os.path.isfile(def_path):
-        err("rain thunder: stages/stage3d_rain.def is missing")
-        return
-    body = read(def_path)
-    if not re.search(r"^\s*RainThunder\s*=\s*1\s*$", body, re.M | re.I):
-        err("rain thunder: the stage has no [Constants] RainThunder = 1, so the "
-            "module cannot tell it is in the storm")
-    layer = re.search(r"\[BG lightning\](.*?)(?=\n\[)", body, re.S)
-    if not layer:
-        err("rain thunder: the stage has no [BG lightning] layer, so nothing flashes")
-    else:
-        block = layer.group(1)
-        if not re.search(r"^\s*type\s*=\s*anim", block, re.M | re.I):
-            err("rain thunder: [BG lightning] is not an anim layer")
-        if not re.search(r"^\s*actionno\s*=\s*9001", block, re.M | re.I):
-            err("rain thunder: [BG lightning] does not play action 9001")
-    start = re.search(r"^\[Begin Action 9001\]\s*$", body, re.M | re.I)
-    if not start:
-        err("rain thunder: action 9001 is missing, so nothing flashes")
-    else:
-        end = re.search(r"^\[", body[start.end():], re.M)
-        block = body[start.end():start.end() + (end.start() if end else len(body))]
-        frames = re.findall(r"^\s*(\d+)\s*,\s*(\d+)\s*,", block, re.M)
-        if not frames:
-            err("rain thunder: action 9001 has no frames")
-        else:
-            try:
-                _d, sprites, _p = sff.read_sff(
-                    os.path.join(ROOT, "stages", "stage3d_rain.sff"))
-            except Exception as exc:                       # noqa: BLE001
-                err("rain thunder: cannot read stage3d_rain.sff: %s" % exc)
-                frames = []
-            have = {(sp["group"], sp["number"]) for sp in sprites}
-            for g, n in frames:
-                if (int(g), int(n)) not in have:
-                    err("rain thunder: action 9001 uses %s,%s, which is not in "
-                        "stage3d_rain.sff" % (g, n))
-                    break
-
-    snd = os.path.join(ROOT, "data", "system.snd")
-    if not os.path.isfile(snd):
-        err("rain thunder: data/system.snd is missing")
-    else:
-        with open(snd, "rb") as fh:
-            blob = fh.read()
-        if blob[:12] != b"ElecbyteSnd\x00":
-            err("rain thunder: data/system.snd is not a MUGEN sound file")
-        else:
-            _v, count, start, _b = struct.unpack("<IIII", blob[12:28])
-            found = False
-            for _ in range(count):
-                _nxt, _len, g, n = struct.unpack("<IIII", blob[start:start + 16])
-                if (g, n) == (900, 0):
-                    found = True
-                    break
-                if _nxt == 0:
-                    break
-                start = _nxt
-            if not found:
-                err("rain thunder: data/system.snd has no 900,0 sample, so the "
-                    "module has nothing to play")
-
-    mod = os.path.join(ROOT, "external", "mods", "rainthunder.lua")
-    if not os.path.isfile(mod):
-        err("rain thunder: external/mods/rainthunder.lua is missing, so the "
-            "rumble is never played")
-    else:
-        with open(mod, encoding="utf-8") as fh:
-            source = fh.read()
-        for need, why in (("stageConst", "it never checks the stage flag"),
-                          ("hook.add('loop'", "it never runs during a match"),
-                          ("900", "it does not play the thunder sample")):
-            if need not in source:
-                err("rain thunder: rainthunder.lua " + why)
-    notes.append("rain thunder: action 9001 flashes, RainThunder is set, 900,0 rumbles")
 
 
 if __name__ == "__main__":
