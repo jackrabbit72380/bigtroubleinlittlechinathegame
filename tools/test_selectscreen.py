@@ -19,6 +19,29 @@ import sff
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
+
+
+def caption_scale():
+    """The text scale that draws the caption face 67.5 units tall.
+
+    The face is baked at twice the pixels so 4K samples real detail, and every
+    text that draws it carries half the scale to stay the same size on screen.
+    Read it off the shipped face instead of hard-coding the number, so the check
+    still means "one size" after the next re-bake.
+    """
+    cell = 45.0
+    face = os.path.join(os.path.dirname(DEF), "fonts", "Display.def")
+    if os.path.isfile(face):
+        with open(face, encoding="utf-8-sig", errors="surrogateescape") as fh:
+            for line in fh:
+                if line.strip().lower().startswith("size"):
+                    try:
+                        cell = float(line.split("=", 1)[1].split(",")[1]) or 45.0
+                    except (IndexError, ValueError):
+                        pass
+                    break
+    scale = 67.5 / cell
+    return "%g,%g" % (scale, scale)
 SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 START = os.path.join(ROOT, "external", "script", "start.lua")
 
@@ -43,21 +66,21 @@ def check_motif(problems):
     si = block(text, "Select Info")
 
     # one size for every word on the header row and the caption row: the fight
-    # captions' own face (Display, font 10) at 1.5, the size the WINS caption
+    # captions' own face (Display, font 10) at the WINS caption's size,
     # gave the rest of the game
     if (key(si, "title.font") or "").split(",")[0] != "10":
         problems.append("VERSUS is not drawn in the caption face")
-    if (key(si, "title.scale") or "").replace(" ", "") != "1.5,1.5":
+    if (key(si, "title.scale") or "").replace(" ", "") != caption_scale():
         problems.append("VERSUS is not at the captions' scale")
     for side in ("p1", "p2"):
         if (key(si, side + ".name.font") or "").split(",")[0] != "10":
             problems.append(side + " name is not drawn in the caption face")
-        if (key(si, side + ".name.scale") or "").replace(" ", "") != "1.5,1.5":
+        if (key(si, side + ".name.scale") or "").replace(" ", "") != caption_scale():
             problems.append(side + " name is not at the captions' scale")
     for k in ("stage.font", "stage.active.font"):
         if (key(si, k) or "").split(",")[0] not in ("10", "12"):
             problems.append(k + " is not the caption face")
-    if (key(si, "stage.scale") or "").replace(" ", "") != "1.5,1.5":
+    if (key(si, "stage.scale") or "").replace(" ", "") != caption_scale():
         problems.append("the stage name is not the caption size")
 
     # VERSUS clears the wall: the face is a 20px cell at 1.5, the frame is 15px
