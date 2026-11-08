@@ -36,13 +36,36 @@ FIGHT_DEF = os.path.join(ROOT, "data", "fight.def")
 CELL = (222, 0)                 # the gold cell frame on the select screen
 CELL_SIZE = (128, 160)          # as authored, in select-screen pixels
 SCALE = 1280.0 / 1920.0         # fight.def's coordinate space
-# The select screen draws a portrait at 0.5 in its 1920-wide space. The HUD used
-# 0.667 - the cell's scale - for the picture as well as for the frame, so the art
-# was drawn half again larger than the screen it was clipped against and the
-# fighters hung out of their boxes. Matching the select screen's 0.5, converted
-# into fight units, is what makes the picture the same size in both places.
-SELECT_PORTRAIT = 0.5
-PORTRAIT = SELECT_PORTRAIT * SCALE
+# The portrait is drawn as large as the frame's opening allows. It used to take
+# the frame's own 0.667 - the scale of the 128x160 cell against the 1280-wide
+# fight space - which is fine for the ring but too big for the picture drawn
+# inside it, so art the size of a cell hung out of every corner. Nor is the
+# select screen's 0.5 the answer: that is 0.5 of a 1920-wide space, larger in
+# fight units than the opening, which is why the same art fitted there and not
+# here. Sizing to the opening is the only figure that holds for both.
+_CELL_IMAGE = None
+
+
+def cell_image():
+    global _CELL_IMAGE
+    if _CELL_IMAGE is None:
+        sd, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+        src = next(s for s in sprites if (s["group"], s["number"]) == CELL)
+        _CELL_IMAGE = sff.decode_sprite(sd, src, palettes, src["pal"]).convert("RGBA")
+    return _CELL_IMAGE
+
+
+def portrait_scale():
+    """The largest scale at which a cell-sized art stays inside the opening.
+
+    The opening is measured in the cell art's own pixels, so the fit comes out in
+    those pixels; face.scale is in fight units, which are SCALE of them, so that
+    is applied last. Without it the picture is drawn 1/SCALE too large - which is
+    exactly the bug this replaces, one layer down.
+    """
+    ox1, oy1, ox2, oy2 = cell_opening(cell_image())
+    return min((ox2 - ox1) / float(CELL_SIZE[0]),
+               (oy2 - oy1) / float(CELL_SIZE[1])) * SCALE
 POS = {"p1": (20, 20), "p2": (1260, 20)}
 
 SECTIONS = ("Face", "Simul Face", "Tag Face", "Turns Face")
@@ -86,9 +109,7 @@ def cell_window(side, image=None):
     is the same 128x160 cell the select screen uses, scaled for the fight space.
     """
     if image is None:
-        sd, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-        src = next(s for s in sprites if (s["group"], s["number"]) == CELL)
-        image = sff.decode_sprite(sd, src, palettes, src["pal"]).convert("RGBA")
+        image = cell_image()
     ox1, oy1, ox2, oy2 = cell_opening(image)
     x, y = POS[side]
     if side == "p1":
@@ -134,11 +155,9 @@ def copy_cell_sprite():
 
 def cell_offset():
     """Where the portrait starts, so the art sits centred in the opening."""
-    sd, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    src = next(s for s in sprites if (s["group"], s["number"]) == CELL)
-    image = sff.decode_sprite(sd, src, palettes, src["pal"]).convert("RGBA")
-    ox1, oy1, ox2, oy2 = cell_opening(image)
-    drawn = (CELL_SIZE[0] * PORTRAIT, CELL_SIZE[1] * PORTRAIT)
+    ox1, oy1, ox2, oy2 = cell_opening(cell_image())
+    scale = portrait_scale()
+    drawn = (CELL_SIZE[0] * scale, CELL_SIZE[1] * scale)
     return (int(round(ox1 * SCALE + ((ox2 - ox1) * SCALE - drawn[0]) / 2.0)),
             int(round(oy1 * SCALE + ((oy2 - oy1) * SCALE - drawn[1]) / 2.0)))
 
@@ -156,7 +175,7 @@ def cell_keys(side):
         ("%s.bg1.layerno" % side, "2"),
         ("%s.face.spr" % side, "9000,0"),
         ("%s.face.offset" % side, "%d, %d" % cell_offset()),
-        ("%s.face.scale" % side, "%.3f, %.3f" % (PORTRAIT, PORTRAIT)),
+        ("%s.face.scale" % side, "%.3f, %.3f" % (portrait_scale(), portrait_scale())),
         ("%s.face.facing" % side, facing),
         ("%s.face.layerno" % side, "1"),
         # The corner art is the fighter's own 9000,0, and its size varies by

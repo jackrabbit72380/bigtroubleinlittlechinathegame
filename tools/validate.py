@@ -1174,7 +1174,7 @@ def check_fight_hud():
                 err("fight HUD: [%s] %s.face.spr is %r, not the character cell art"
                     % (name, side, keys.get("%s.face.spr" % side)))
             import build_face_boxes as fb
-            want_scale = "%.3f, %.3f" % (fb.PORTRAIT, fb.PORTRAIT)
+            want_scale = "%.3f, %.3f" % (fb.portrait_scale(), fb.portrait_scale())
             scale = keys.get("%s.face.scale" % side, "")
             if ", ".join(p.strip() for p in scale.split(",")) != want_scale:
                 err("fight HUD: [%s] %s.face.scale is %r, not the select screen's "
