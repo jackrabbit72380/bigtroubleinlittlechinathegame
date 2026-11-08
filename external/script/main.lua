@@ -727,17 +727,17 @@ local function loadingScreen()
 	return w, h
 end
 
---A runtime animation is positioned in the motif's space but drawn at the
---engine's own 240-unit one, so it is scaled into it here as well. The select
---screen's sprites needed the same correction (external/script/start.lua).
+--A runtime animation is positioned in the motif's space but, left alone, drawn
+--at the engine's own 240-unit one - 4.5x too big on this screenpack. An
+--explicit scale replaces that factor, so 1,1 draws the spinner at the size it
+--was painted. external/script/start.lua records the same finding.
 local function loadingDrawAnim(a, x, y)
 	if a == nil then
 		return
 	end
 	local w, h = loadingScreen()
-	local k = 240 / h
 	pcall(animSetLocalcoord, a, w, h)
-	pcall(animSetScale, a, k, k)
+	pcall(animSetScale, a, 1, 1)
 	pcall(animSetPos, a, x, y)
 	pcall(animDraw, a)
 	pcall(animUpdate, a)
