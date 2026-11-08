@@ -67,12 +67,14 @@ art_src/ui/splash.png            (preferred)
 concept_art/ui/splash.png        (also picked up)
 ```
 
-- **1920×1080 is what the game draws.** The title layer is 1920×1080, the motif's
-  localcoord, and the card that plays before the title is 1280×720. Any other
-  size is scaled to fill and centre-cropped, so an 8K export keeps no more detail
-  than a 1920×1080 one - the screens are 1920×1080 art, and the 4K and 8K window
-  sizes in the options menu are clean 2x and 4x scales of it, like every other
-  title asset.
+- **1920×1080 is the frame, and 16:9 art is never cropped.** The title layer
+  covers a 1920×1080 box, and an image already that shape is only ever resized,
+  so an 8192×4608 export arrives whole. The card that plays before the title is
+  1280×720.
+- **Big art keeps its detail.** A source with the pixels for 3840×2160 is packed
+  at twice the frame and drawn back down with `scalestart = 0.5`, so a 4K render
+  sampling the title screen uses the art's own pixels instead of an upscale.
+  Anything smaller is packed at 1× and simply downsampled.
 - **RGB or RGBA.** It sits on black, so a flat poster JPEG works as well as a PNG.
 - **Full bleed.** Details at the frame edges may be cropped on other sizes.
 

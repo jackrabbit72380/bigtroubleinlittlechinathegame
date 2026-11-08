@@ -347,6 +347,10 @@ SKY_SLOT = (100, 0)
 # height here; the layer tiles horizontally, so its width is left alone.
 CLOUD_BOTTOM = (100, 3)
 OVERLAY = (205, 0)
+# Twice the title frame. A backdrop packed this size and drawn at scale 0.5
+# lands on exactly the same pixels as a 1x one, but keeps the art's own detail
+# for a render resolution above localcoord.
+DOUBLE = (FRAME[0] * 2, FRAME[1] * 2)
 SPLASHES = (os.path.join(ROOT, "art_src", "ui", "splash.png"),
             os.path.join(ROOT, "concept_art", "ui", "splash.png"))
 
@@ -424,12 +428,20 @@ def overlay():
     # FRAME, not SCREEN: this layer is drawn in the title's 1920x1080 localcoord
     # (every [TitleBG] sprite in the screenpack is 1920x1080 with a zero axis),
     # so a 1280x720 plate would cover only two thirds of the title screen.
-    k = max(FRAME[0] / float(img.width), FRAME[1] / float(img.height))
+    #
+    # A 16:9 source is only ever resized here, never cropped: cover-fitting an
+    # image that is already the frame's shape scales both sides by the same
+    # amount and crops nothing. Art with the pixels for 2x the frame is packed at
+    # 2x and drawn at half scale (see place_overlay), so a 4K render samples real
+    # pixels instead of an upscale, and anything smaller is downsampled cleanly.
+    wide = img.width >= DOUBLE[0] and img.height >= DOUBLE[1]
+    tw, th = DOUBLE if wide else FRAME
+    k = max(tw / float(img.width), th / float(img.height))
     img = img.resize((max(1, int(round(img.width * k))),
                       max(1, int(round(img.height * k)))), Image.LANCZOS)
-    left = (img.width - FRAME[0]) // 2
-    top = (img.height - FRAME[1]) // 2
-    img = img.crop((left, top, left + FRAME[0], top + FRAME[1]))
+    left = (img.width - tw) // 2
+    top = (img.height - th) // 2
+    img = img.crop((left, top, left + tw, top + th))
     return img.convert("RGBA"), path
 
 
@@ -453,8 +465,12 @@ def bg_start(section):
     return None
 
 
-def place_overlay(start):
+def place_overlay(start, scale=1):
     """Add the backdrop layer after the clouds and before the logo.
+
+    ``scale`` is the size multiplier the sprite was packed at: 2 for a 2x
+    backdrop, which is drawn back down with ``scalestart`` so the layer still
+    covers exactly the frame.
 
     Definition order is drawing order inside a layerno, so putting this section
     between the sky/cloud layers and [TitleBG Title Logo] is what makes the art
@@ -477,13 +493,15 @@ def place_overlay(start):
         if start is not None and s.startswith("[titlebg title logo") and not placed:
             if out and out[-1].strip():
                 out.append("")
-            out.extend(["[TitleBG Title Overlay]",
-                        "type = normal",
-                        "spriteno = %d, %d" % OVERLAY,
-                        "layerno = 0",
-                        "start = %d,%d" % start,
-                        "mask = 0",
-                        ""])
+            block = ["[TitleBG Title Overlay]",
+                     "type = normal",
+                     "spriteno = %d, %d" % OVERLAY,
+                     "layerno = 0",
+                     "start = %d,%d" % start]
+            if scale != 1:
+                block.append("scalestart = %g, %g" % (1.0 / scale, 1.0 / scale))
+            block += ["mask = 0", ""]
+            out.extend(block)
             placed = True
         out.append(line)
 
@@ -796,8 +814,12 @@ def build():
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
     where = bg_start("titlebg background sky") or (-640, 0)
-    if place_overlay(where if over_img is not None else None):
-        print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)}")
+    factor = 1
+    if over_img is not None:
+        factor = max(1, int(round(over_img.width / float(FRAME[0]))))
+    if place_overlay(where if over_img is not None else None, factor):
+        print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)} "
+              f"at {over_img.width}x{over_img.height}, drawn at 1/{factor}")
     elif over_img is None:
         print("no art_src/ui/splash.png - the title keeps its painted clouds")
 
