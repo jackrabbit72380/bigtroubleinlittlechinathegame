@@ -38,10 +38,32 @@ MOTIF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 FACE = "10"          # Display
 FACE_LIT = "12"      # DisplayActive: the same face, in its lit bank
 # The caption size, in the motif's own 1920x1080 space. The fight screen's
-# captions are the Display cell (45) in a 1280x720 space, which is 67.5 on a
-# 1080p screen; the same 67.5 here is 1.5 of the cell. One size on paper, one
-# size on the glass.
-SIZE = "1.5, 1.5"
+# captions are 67.5 units tall on a 1080p screen, which used to be 1.5 of the
+# Display cell (45px). tools/build_fonts.py bakes that cell at twice the pixels
+# now so 4K gets real detail instead of stretched art, so the scale is measured
+# off the shipped face rather than written down: 67.5 / cell. One size on paper,
+# one size on the glass, whatever the face is baked at.
+CAPTION_UNITS = 67.5
+
+
+def caption_size():
+    """The text scale that draws the caption face CAPTION_UNITS tall."""
+    path = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.def")
+    cell = 45.0
+    if os.path.isfile(path):
+        with open(path, encoding="utf-8-sig", errors="surrogateescape") as fh:
+            for line in fh:
+                if line.strip().lower().startswith("size"):
+                    try:
+                        cell = float(line.split("=", 1)[1].split(",")[1]) or 45.0
+                    except (IndexError, ValueError):
+                        pass
+                    break
+    scale = CAPTION_UNITS / cell
+    return "%g, %g" % (scale, scale)
+
+
+SIZE = caption_size()
 ROW = "0, 74"        # row pitch: the 67.5 cell plus air, or the rows collide
 
 # namespace.font = face, bank, alignment, r, g, b[, extra...]
@@ -306,5 +328,62 @@ def main():
     return 0
 
 
+# tools/build_fonts.py now bakes the Display and Body faces at twice their pixels
+# so a 4K render samples real detail instead of stretched art. A bitmap glyph is
+# drawn at its own pixel size times the text scale, so every text in the fight HUD
+# that draws one of those faces needs half the scale to keep its old size on
+# screen. The paired .font key says which texts those are; the round banner and the
+# demo caption are named outright because their scale sits on a parent key.
+FIGHT = os.path.join(ROOT, "data", "fight.def")
+DOUBLED_FACES = ("Display.def", "Body.def", "DisplayActive.def")
+DOUBLED_PREFIXES = ("round.", "mode.")
+HALVES = (("2, 2", "1, 1"), ("2,2", "1, 1"),
+          ("1.5, 1.5", "0.75, 0.75"), ("1.5,1.5", "0.75, 0.75"),
+          ("1, 1", "0.5, 0.5"), ("1,1", "0.5, 0.5"))
+FACE_LINE = re.compile(r"^\s*font(\d+)\s*=\s*(\S+)", re.M)
+KEY_LINE = re.compile(r"^(\s*)([A-Za-z0-9_.]+)(\s*=\s*)(.*)$")
+
+
+def patch_fight():
+    """Halve the fight HUD's text scales for the doubled faces."""
+    if not os.path.isfile(FIGHT):
+        print("fight.def missing: %s" % FIGHT)
+        return 1
+    with open(FIGHT, encoding="utf-8-sig", errors="surrogateescape", newline="") as handle:
+        original = handle.read()
+    indices = {n for n, face in FACE_LINE.findall(original)
+               if os.path.basename(face) in DOUBLED_FACES}
+    prefixes = set()
+    for line in original.splitlines():
+        m = KEY_LINE.match(line)
+        if m and m.group(2).lower().endswith(".font"):
+            if m.group(4).split(",")[0].strip() in indices:
+                prefixes.add(m.group(2).lower()[:-len(".font")])
+    out, changed = [], 0
+    for line in original.splitlines(True):
+        m = KEY_LINE.match(line.rstrip("\r\n"))
+        if m:
+            key = m.group(2).lower()
+            if key.endswith(".scale") and (key[:-len(".scale")] in prefixes
+                                           or key.startswith(DOUBLED_PREFIXES)):
+                value = m.group(4).strip()
+                for old, new in HALVES:
+                    if value == old:
+                        line = (m.group(1) + m.group(2) + m.group(3) + new +
+                                ("\r\n" if line.endswith("\r\n") else "\n"))
+                        changed += 1
+                        break
+        out.append(line)
+    text = "".join(out)
+    if text != original:
+        with open(FIGHT + ".tmp", "w", encoding="utf-8", newline="") as handle:
+            handle.write(text)
+        os.replace(FIGHT + ".tmp", FIGHT)
+        print("fight HUD: halved %d text scale(s) for the doubled faces" % changed)
+    else:
+        print("fight HUD scales already suit the doubled faces")
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main() or patch_fight())

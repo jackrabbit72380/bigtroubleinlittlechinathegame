@@ -10,10 +10,10 @@ name = "DisplayActive"
 Type = bitmap
 BankType = palette
 ; width is the space advance, height is the cell height
-Size = 15,45
+Size = 30,90
 Spacing = 0,0
 ; the engine shifts glyphs by offset.y - Size.y + 1, and the TrueType
 ; defs this replaces had no Size at all, so this cancels the shift and
 ; puts the top of each glyph on the y the menu asks for
-Offset = 0,44
+Offset = 0,89
 File = DisplayActive.sff

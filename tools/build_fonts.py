@@ -61,6 +61,13 @@ B = "11"   # Body.def
 # Where the logo's face lives on a normal Linux box, best first. The matplotlib
 # wheel ships the same DejaVu build, which covers machines with no system fonts.
 TTF_NAMES = ("DejaVuSans-Bold.ttf",)
+
+# The faces are baked at this multiple of their on-screen size and drawn at the
+# reciprocal text scale, so the glyphs carry twice the pixels they show at 1080p
+# and stand up to a 4K render instead of being stretched into it. Baked art,
+# .def Size and .def Offset all double together; the motif's text scales halve
+# to match, which leaves every row, pitch and wrap exactly where it was.
+SUPERSAMPLE = 2
 TTF_DIRS = (
     "/usr/share/fonts/truetype/dejavu",
     "/usr/share/fonts/TTF",
@@ -606,8 +613,15 @@ def write_font(name, px, depth, ttf, face_stops=FACE):
     """Bake Display/Body into bitmap fonts and write their .def."""
     font = ImageFont.truetype(ttf, px)
     ascent, descent = font.getmetrics()
-    cell_h = ascent + descent + depth + 1
-    space_w = max(2, int(round(font.getlength(" "))) + depth)
+    # The cell has to come out at exactly SUPERSAMPLE times the size the face
+    # used to declare, or the halved text scale would not land on the old pixels:
+    # the +depth+1 in the height is a constant, not something that scales, so it
+    # is measured on a face of the original size and the whole cell multiplied.
+    ref = ImageFont.truetype(ttf, max(1, px // SUPERSAMPLE))
+    ref_asc, ref_desc = ref.getmetrics()
+    ref_depth = max(1, depth // SUPERSAMPLE)
+    cell_h = (ref_asc + ref_desc + ref_depth + 1) * SUPERSAMPLE
+    space_w = max(2, int(round(ref.getlength(" "))) + ref_depth) * SUPERSAMPLE
 
     sprites = []
     for code in range(33, 127):
@@ -738,7 +752,7 @@ def install_ttf():
     else:
         print(f"  {os.path.relpath(dst, ROOT)} already current")
     for name, px, depth, face_stops in FONTS:
-        write_font(name, px, depth, dst, face_stops)
+        write_font(name, px * SUPERSAMPLE, depth * SUPERSAMPLE, dst, face_stops)
     for name, cell_h, depth in STOCK_FONTS:
         write_stock(name, cell_h, depth, dst)
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
@@ -1209,6 +1223,82 @@ def ensure_window_menu(text):
     return text, changed
 
 
+
+# The scales a doubled face has to be drawn at to keep its old size on screen.
+# Only these two forms are rewritten: anything else is reported, because a scale
+# left alone would draw that one label twice as large as it used to be.
+SCALE_HALVES = (("1.5, 1.5", "0.75, 0.75"),
+                ("1.5,1.5", "0.75, 0.75"),
+                ("1, 1", "0.5, 0.5"),
+                ("1,1", "0.5, 0.5"))
+
+KEY_LINE = re.compile(r"^(\s*)([A-Za-z0-9_.]+)(\s*=\s*)(.*)$")
+
+
+def halve_paired_scales(text):
+    """Halve the .scale of every text that draws one of the doubled faces.
+
+    A bitmap glyph is drawn at its own pixel width times the text scale, so art
+    baked at twice the size needs half the scale to land on the same pixels. The
+    .def Size and Offset doubled with the art, which keeps the line pitch and the
+    engine's glyph shift where they were.
+    """
+    ours = {"10", "11", "12"}      # Display, Body, DisplayActive
+    prefixes = set()
+    for line in text.splitlines():
+        m = KEY_LINE.match(line)
+        if not m:
+            continue
+        key = m.group(2).lower()
+        if key.endswith(".font") and m.group(4).split(",")[0].strip() in ours:
+            prefixes.add(key[:-len(".font")])
+
+    out, changed, skipped = [], 0, []
+    for line in text.splitlines(True):
+        m = KEY_LINE.match(line.rstrip("\r\n"))
+        if m:
+            key = m.group(2).lower()
+            for prefix in prefixes:
+                if key == prefix + ".scale":
+                    value = m.group(4).strip()
+                    for old, new in SCALE_HALVES:
+                        if value == old:
+                            line = (m.group(1) + m.group(2) + m.group(3) + new +
+                                    ("\r\n" if line.endswith("\r\n") else "\n"))
+                            changed += 1
+                            break
+                    else:
+                        skipped.append((m.group(2), value))
+                    break
+        out.append(line)
+    have = set()
+    for line in text.splitlines():
+        m = KEY_LINE.match(line)
+        if m and m.group(2).lower().endswith(".scale"):
+            have.add(m.group(2).lower()[:-len(".scale")])
+    added, out2 = 0, []
+    for line in out:
+        out2.append(line)
+        m = KEY_LINE.match(line.rstrip("\r\n"))
+        if m:
+            key = m.group(2).lower()
+            if (key.endswith(".font")
+                    and m.group(4).split(",")[0].strip() in ours
+                    and key[:-len(".font")] not in have):
+                out2.append(f"{m.group(1)}{m.group(2)[:-len('.font')]}.scale = "
+                            f"0.5, 0.5\n")
+                added += 1
+    if added:
+        print(f"  added {added} missing text scale(s) for the doubled faces")
+    out = out2
+    for key, value in skipped:
+        print(f"  kept {key} = {value} (not a known half; check it draws at the "
+              f"size it used to)")
+    if changed:
+        print(f"  halved {changed} text scale(s) to suit the doubled faces")
+    return "".join(out)
+
+
 def main():
     if not os.path.isfile(MOTIF):
         print(f"missing motif: {MOTIF}", file=sys.stderr)
@@ -1277,6 +1367,8 @@ def main():
                       f"{os.path.basename(MOTIF)}")
 
     if text != original:
+        text = halve_paired_scales(text)
+
         with open(MOTIF, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
             fh.write(text)
         print(f"  retinted {touched} menu keys and {added} font registrations")
