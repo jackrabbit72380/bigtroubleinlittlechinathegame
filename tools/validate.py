@@ -422,16 +422,27 @@ def check_select_screen(chars):
                     % ((key,) + tuple(int(v) for v in rect)
                        + tuple(int(v) for v in box)))
 
-    for group, number in ((220, 0), (222, 0), (223, 0), (223, 1), (223, 2), (223, 3)):
+    for group, number in ((220, 0), (225, 0), (222, 0), (223, 0), (223, 1), (223, 2), (223, 3)):
         if (group, number) not in have:
             err("select screen: system.sff has no sprite %d,%d" % (group, number))
-    bg = have.get((220, 0))
+    bg = have.get((225, 0))
     want_bg = (MOTIF_WIDTH, MOTIF_WIDTH * 9 // 16)
     if bg and (bg["w"], bg["h"]) != want_bg:
         err("select screen: background is %dx%d, expected %dx%d"
             % (bg["w"], bg["h"], want_bg[0], want_bg[1]))
-    if "spriteno = 220, 0" not in def_text:
+    if "spriteno = 225, 0" not in def_text:
         err("select screen: [SelectBGdef] does not draw the painted background")
+    grid_spr = have.get((220, 0))
+    if grid_spr and (grid_spr["w"], grid_spr["h"]) != want_bg:
+        err("select screen: the portrait wall is %dx%d, expected %dx%d"
+            % (grid_spr["w"], grid_spr["h"], want_bg[0], want_bg[1]))
+    try:
+        start_lua = read(os.path.join(ROOT, "external", "script", "start.lua"))
+    except OSError:
+        start_lua = ""
+    if "220,0, 0,0, -1" not in start_lua:
+        err("select screen: start.lua never draws the portrait wall (220,0), so "
+            "the stage screen would show it or the select screen would not")
 
     for name, _stage in chars:
         def_path, folder = resolve_char(name)

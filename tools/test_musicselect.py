@@ -356,7 +356,7 @@ def check(mode: str) -> list[str]:
     # this run is about what the browser itself accepts
     lua.execute("main.t_musicSelect.open()")
     params = g.main.t_musicSelect.params
-    if not (isinstance(params, str) and params.startswith("bgmusic = ")):
+    if not (isinstance(params, str) and params.startswith("bgmusic=")):
         problems.append("Z does not pick a track: no bgmusic param was left behind")
     if not (g.BG_STOPPED or 0):
         problems.append("switching album does not stop the music that was playing")

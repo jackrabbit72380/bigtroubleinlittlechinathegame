@@ -53,7 +53,8 @@ GRID = ((SCREEN[0] - (COLS * CELL + (COLS - 1) * GAP)) // 2, 46)
 GRID_W = COLS * CELL + (COLS - 1) * GAP
 GRID_H = FIGHTER_ROWS * CELL_H + (FIGHTER_ROWS - 1) * GAP
 
-BG_SPR = (220, 0)
+BG_SPR = (220, 0)          # the wall of cells, drawn by start.lua
+BASE_SPR = (225, 0)        # the same backdrop without the wall
 CELL_SPR = (222, 0)
 CURSOR = ((223, 0), (223, 1), (223, 2), (223, 3))
 AXIS = (0, 0)
@@ -143,8 +144,12 @@ def rule(draw, x0, x1, y, fill, width=1):
     draw.rectangle([min(x0, x1), y, max(x0, x1), y + width - 1], fill=fill)
 
 
-def background():
-    """1280x720 select backdrop: stone, jade haze, gold frame, captions."""
+def background(grid=True):
+    """1920x1080 select backdrop: stone, jade haze, gold frame.
+
+    ``grid=False`` leaves the wall of portrait cells out, so the stage screen can
+    stand on the same backdrop without a character grid showing behind its cards.
+    """
     img = art.vgrad(SCREEN, [(0, (5, 9, 10)), (390, (11, 20, 18)),
                              (750, (7, 12, 12)), (1080, (3, 6, 7))]).convert("RGBA")
     img = Image.alpha_composite(img, art.radial_light(SCREEN, (960, 375), 840,
@@ -162,6 +167,12 @@ def background():
             ImageFilter.GaussianBlur(rng.randrange(51, 111))))
 
     d = ImageDraw.Draw(img)
+    if not grid:
+        d.rectangle([0, 0, SCREEN[0] - 1, SCREEN[1] - 1], outline=INK + (255,), width=1)
+        d.rectangle([1, 1, SCREEN[0] - 2, SCREEN[1] - 2], outline=GOLD + (255,), width=4)
+        d.rectangle([5, 5, SCREEN[0] - 6, SCREEN[1] - 6], outline=GOLD_DIM + (230,), width=2)
+        img = art.vignette(img, strength=0.55)
+        return art.grain(img, amount=5, seed=5)
 
     # The frame the grid sits in: a plate, a double gold rule, corner diamonds.
     pad = 15
@@ -211,14 +222,57 @@ def background():
     d2.rectangle([1, 1, SCREEN[0] - 2, SCREEN[1] - 2], outline=GOLD + (255,), width=4)
     d2.rectangle([5, 5, SCREEN[0] - 6, SCREEN[1] - 6], outline=GOLD_DIM + (230,), width=2)
 
-    # PLAYER 1 and PLAYER 2, painted at the title row's own height. start.lua
-    # used to draw them with textImgSetFont, which needs a font object this
-    # script cannot hand it, so they came out as nothing at all.
-    face = art.font(30)
-    for text, cx in (("PLAYER 1", 232), ("PLAYER 2", SCREEN[0] - 232)):
-        tracked(d2, (cx, 0), text, face, GOLD_LIT + (255,), tracking=4, anchor="ma")
-
     return art.grain(img, amount=5, seed=5)
+
+
+LABEL_SPR = ((151, 20), (151, 21))
+LABEL_SIZE = (320, 48)
+LABEL_FONT = 34
+
+
+def grid_overlay():
+    """The wall of portrait cells on its own, for start.lua to draw."""
+    img = Image.new("RGBA", SCREEN, (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    pad = 15
+    box = [GRID[0] - pad, GRID[1] - pad,
+           GRID[0] + GRID_W + pad, GRID[1] + GRID_H + pad]
+    d.rectangle(box, outline=GOLD_DIM + (255,), width=5)
+    d.rectangle([box[0] + 4, box[1] + 4, box[2] - 4, box[3] - 4],
+                outline=GOLD + (255,), width=5)
+    d.rectangle([box[0] + 8, box[1] + 8, box[2] - 8, box[3] - 8],
+                outline=GOLD_DIM + (235,), width=3)
+    for cx, cy in ((box[0], box[1]), (box[2], box[1]),
+                   (box[0], box[3]), (box[2], box[3])):
+        d.polygon([(cx, cy - 13), (cx + 13, cy), (cx, cy + 13), (cx - 13, cy)],
+                  fill=GOLD + (255,), outline=(40, 32, 14, 255))
+    frame = cell_frame()
+    for row in range(FIGHTER_ROWS):
+        for col in range(COLS):
+            img.alpha_composite(frame, (GRID[0] + col * (CELL + GAP),
+                                        GRID[1] + row * (CELL_H + GAP)))
+    return img
+
+
+def label_word(text):
+    """PLAYER 1 / PLAYER 2 as their own sprite, centred in a 320x48 canvas.
+
+    The select screen used to carry these two captions in the backdrop picture
+    itself: they sat through the stage screen and could not be sized against the
+    mode title drawn between them. start.lua draws them now.
+    """
+    img = Image.new("RGBA", LABEL_SIZE, (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    size = LABEL_FONT
+    face = art.font(size)
+    while size > 8 and (face.getlength(text) + 2 * (len(text) - 1)) > LABEL_SIZE[0] - 8:
+        size -= 1
+        face = art.font(size)
+    box = face.getbbox(text)
+    tw = face.getlength(text) + 2 * (len(text) - 1)
+    tracked(d, ((LABEL_SIZE[0] - tw) / 2.0, (LABEL_SIZE[1] - (box[3] - box[1])) / 2.0 - box[1]),
+            text, face, GOLD_LIT + (255,), tracking=2)
+    return img
 
 
 def _plate(accent, dim):
@@ -599,6 +653,7 @@ KEYS = (
     # machine-gun tone while the "?" was highlighted. Half a second per roll,
     # and the cancel flag so a new roll stops the previous sound.
     ("cell.random.switchtime", "48"),
+    ("stage.portrait.bg.spr", "%d, %d" % BASE_SPR),
     ("random.move.snd.cancel", "1"),
     # The confirm portrait. start.lua confirms a pick through pCfg.face2.done
     # (start.lua:3663) and f_animGet indexes params.scale as a table, so a group
@@ -732,7 +787,7 @@ def layer_block():
         "; Select-screen background, painted by tools/build_select_grid.py\n"
         "[SelectBG Portrait Grid]\n"
         "type = normal\n"
-        "spriteno = %d, %d\n" % BG_SPR +
+        "spriteno = %d, %d\n" % BASE_SPR +
         "start = -640, 0\n"
         "layerno = 0\n"
         "mask = 1\n"
@@ -740,9 +795,21 @@ def layer_block():
 
 
 def patch_bg_layer():
+    """Point the backdrop layer at the version without the character wall.
+
+    The layer is rewritten in place: appending a second one left the old grid
+    layer drawn on top, which is how the wall of cells followed the stage screen.
+    """
     with open(SYSTEM_DEF, encoding="utf-8", errors="replace") as f:
         text = f.read()
-    if "spriteno = %d, %d" % BG_SPR in text:
+    pattern = re.compile(r"(\[SelectBG Portrait Grid\]\n(?:[^\[\n][^\n]*\n)*?spriteno = )\d+, \d+")
+    if pattern.search(text):
+        text = pattern.sub(lambda m: m.group(1) + "%d, %d" % BASE_SPR, text, count=1)
+        with open(SYSTEM_DEF + ".tmp", "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(SYSTEM_DEF + ".tmp", SYSTEM_DEF)
+        return True
+    if "spriteno = %d, %d" % BASE_SPR in text:
         return False
     marker = "\n[VS Screen]"
     if marker not in text:
@@ -758,7 +825,10 @@ def main():
     if not os.path.isfile(SYSTEM_SFF) or not os.path.isfile(SYSTEM_DEF):
         raise SystemExit("data/ikemen1 is missing - fetch the engine data first")
 
-    images = {BG_SPR: background(), CELL_SPR: cell_frame()}
+    images = {BG_SPR: grid_overlay(), BASE_SPR: background(grid=False),
+              CELL_SPR: cell_frame()}
+    for spr, word in zip(LABEL_SPR, ("PLAYER 1", "PLAYER 2")):
+        images[spr] = label_word(word)
     for spr, colour in zip(CURSOR, PLAYER_COLOURS):
         images[spr] = cursor_frame(colour)
     for spr in CURSOR_WHITE:
@@ -779,7 +849,7 @@ def main():
         if key not in have:
             raise SystemExit(f"select-screen sprite {key} did not make it into system.sff")
         sp = have[key]
-        if sp["group"] == BG_SPR[0] and (sp["w"], sp["h"]) != SCREEN:
+        if sp["group"] in (BG_SPR[0], BASE_SPR[0]) and (sp["w"], sp["h"]) != SCREEN:
             raise SystemExit(f"select background is {sp['w']}x{sp['h']}, expected {SCREEN}")
     with open(SYSTEM_DEF, encoding="utf-8", errors="replace") as f:
         text = f.read()

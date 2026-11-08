@@ -109,6 +109,27 @@ REWRITES = (
     ("record.font", f"{B}, 0, 0, {DEEP}"),
     ("p1.teammenu.selftitle.font", f"{B}, 0, 1, {BRIGHT}"),
     ("p1.teammenu.enemytitle.font", f"{B}, 0, 1, {BRIGHT}"),
+    # The stage-select row is caption type like every other label on that screen;
+    # it had drifted onto the 13px Body face, so the stage name was the one line
+    # under the wall set in another size.
+    ("stage.font", f"{D}, 0, 0, {DEEP}"),
+    ("stage.active.font", f"{D}, 0, 0, {BRIGHT}"),
+    ("stage.active2.font", f"{D}, 0, 0, {DEEP}"),
+    ("stage.done.font", f"{D}, 0, 0, {DEEP}"),
+    ("stage.scale", "0.75, 0.75"),
+    ("stage.active.scale", "0.75, 0.75"),
+    ("stage.active2.scale", "0.75, 0.75"),
+    ("stage.done.scale", "0.75, 0.75"),
+    # Every active/selected variant draws the same doubled face as its base row,
+    # so it carries the base row's scale rather than falling back to 1.0 and
+    # drawing twice the size of the row above it.
+    ("menu.item.active.scale", "0.75, 0.75"),
+    ("menu.item.selected.scale", "0.75, 0.75"),
+    ("menu.item.selected.active.scale", "0.75, 0.75"),
+    ("menu.item.value.scale", "0.75, 0.75"),
+    ("menu.item.value.active.scale", "0.75, 0.75"),
+    ("menu.item.info.scale", "0.75, 0.75"),
+    ("menu.item.info.active.scale", "0.75, 0.75"),
     ("p1.teammenu.item.font", f"{D}, 0, 1, {GOLD}"),
     ("p1.teammenu.item.active.font", f"{D}, 0, 1, {BRIGHT}"),
     ("p1.teammenu.item.active2.font", f"{D}, 0, 1, {BRIGHT}"),
@@ -1285,8 +1306,13 @@ def halve_paired_scales(text):
             if (key.endswith(".font")
                     and m.group(4).split(",")[0].strip() in ours
                     and key[:-len(".font")] not in have):
+                # 0.75 is the scale every paired row already carries: the face
+                # is baked at twice its design size, and a label with no scale
+                # drawn the glyphs at their full cell (90px) instead of the 34px
+                # row the rest of the screen uses - which read as text that was
+                # too big and clipped by whatever box it sat in.
                 out2.append(f"{m.group(1)}{m.group(2)[:-len('.font')]}.scale = "
-                            f"0.5, 0.5\n")
+                            f"0.75, 0.75\n")
                 added += 1
     if added:
         print(f"  added {added} missing text scale(s) for the doubled faces")

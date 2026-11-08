@@ -683,7 +683,8 @@ function ms.open()
 		elseif acceptNow and not acceptHeld then
 			doneSnd()
 			if song ~= nil and song.file ~= nil then
-				ms.params = 'bgmusic = ' .. song.file
+				-- the engine's own param form: key=value, no spaces around the =
+				ms.params = 'bgmusic=' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
 				-- The pick is already playing from the preview; this keeps it
 				-- playing when Z lands on the row the cursor is on.

@@ -1364,6 +1364,19 @@ end
 -- aspect. Built here the way the RANDOM word is built, so the wide card is
 -- outlined evenly instead of the character cell's 4:5 cursor art stretched
 -- across it, which gave the frame thick sides and hairline top and bottom rules.
+-- Runtime animations are built in the engine's default coordinate space, not in
+-- the motif's 1920x1080 one. Without this the RANDOM word at 896,1035 was drawn
+-- at roughly 2.8x that - off the bottom of the screen - and every lit stage card
+-- went with it. external/mods/musicselect.lua records the same finding for its
+-- cover art.
+local function motifSpace(a)
+	if a == nil or motif == nil or motif.info == nil or motif.info.localcoord == nil then
+		return a
+	end
+	pcall(animSetLocalcoord, a, motif.info.localcoord[1], motif.info.localcoord[2])
+	return a
+end
+
 local stageFrameAnims = {}
 local STAGE_FRAME_W, STAGE_FRAME_H = 1215, 398
 
@@ -1371,7 +1384,7 @@ function start.f_stageFrame(side)
 	local key = math.max(1, math.min(4, side or 1))
 	if stageFrameAnims[key] == nil then
 		local ok, a = pcall(animNew, nil, string.format('230,%d, 0,0, -1', key - 1))
-		stageFrameAnims[key] = (ok and a ~= nil) and a or false
+		stageFrameAnims[key] = (ok and a ~= nil) and motifSpace(a) or false
 	end
 	return stageFrameAnims[key] or nil
 end
@@ -1388,12 +1401,34 @@ local function randomStopAnim(lit)
 	if randomAnims[key] == nil then
 		local ok, a = pcall(animNew, nil, key == 'lit' and '151,11, 0,0, -1' or '151,0, 0,0, -1')
 		if ok and a ~= nil then
-			randomAnims[key] = a
+			randomAnims[key] = motifSpace(a)
 		else
 			randomAnims[key] = false
 		end
 	end
 	return randomAnims[key] or nil
+end
+
+-- The wall of portrait cells is its own sprite (220,0), drawn here instead of
+-- being a layer of the select background: the stage screen stands on that same
+-- background, and with the cells painted into it the character grid showed
+-- behind the map cards. tools/build_select_grid.py paints 220,0 as the cells
+-- alone and 225,0 as the backdrop under them.
+local gridAnim = nil
+
+local function selectGridAnim()
+	if gridAnim == nil then
+		local ok, a = pcall(animNew, nil, '220,0, 0,0, -1')
+		gridAnim = (ok and a ~= nil) and motifSpace(a) or false
+	end
+	return gridAnim or nil
+end
+
+function start.f_drawSelectGrid()
+	local a = selectGridAnim()
+	if a ~= nil then
+		main.f_animPosDraw(a, 0, 0)
+	end
 end
 
 -- Is this player's cursor on the RANDOM stop?
@@ -1455,74 +1490,31 @@ end
 -- cannot drift apart. Positioned where the painted ones were - a quarter and
 -- three quarters of the way across the frame, centred - so the row reads as
 -- PLAYER 1 / mode / PLAYER 2.
-local playerLabels = {[1] = nil, [2] = nil}
+-- PLAYER 1 and PLAYER 2 are sprites of their own (151,20 / 151,21, painted by
+-- tools/build_select_grid.py), not part of the backdrop. Painted into the
+-- picture they sat through the stage screen and could not be sized against the
+-- mode title; this build refuses the textImg* font call, which is why they are
+-- art. LABEL_POS is the centre the word is drawn on, in 1920x1080 pixels.
+local labelAnims = {}
+local LABEL_POS = {{232, 17}, {1688, 17}}
+-- The word sits centred in its canvas, so the anim is placed at the canvas's
+-- top-left corner and the canvas is 320x48.
+local LABEL_HALF = {160, 24}
 
-local function labelSprite(pn)
-	if playerLabels[pn] == nil then
-		local ok, made = pcall(textImgNew)
-		if not ok or made == nil then
-			return nil
-		end
-		local title = motif.select_info and motif.select_info.title
-		local font = title and title.font
-		if font == nil then
-			return nil
-		end
-		local idx = type(font) == 'table' and font[1] or font
-		local tries = {{'object', font}}
-		if idx ~= nil then
-			tries[#tries + 1] = {'index', idx}
-			if motif.files and motif.files.font and motif.files.font['font' .. tostring(idx)] then
-				tries[#tries + 1] = {'object', motif.files.font['font' .. tostring(idx)]}
-			end
-		end
-		local set = false
-		for _, try in ipairs(tries) do
-			if pcall(textImgSetFont, made, try[2]) then
-				set = true
-				break
-			end
-		end
-		if not set then
-			playerLabels[pn] = false
-			return nil
-		end
-		playerLabels[pn] = made
+local function labelAnim(pn)
+	if labelAnims[pn] == nil then
+		local ok, a = pcall(animNew, nil, string.format('151,%d, 0,0, -1', 19 + pn))
+		labelAnims[pn] = (ok and a ~= nil) and motifSpace(a) or false
 	end
-	if playerLabels[pn] == false then
-		return nil
-	end
-	return playerLabels[pn]
+	return labelAnims[pn] or nil
 end
 
 function start.f_drawPlayerLabels()
-	local si = motif.select_info
-	local title = si and si.title
-	local pos = si and si.pos
-	if title == nil or pos == nil then
-		return
-	end
-	local oy = select(2, peek(title.offset))
-	local y = oy or 2
-	local scale = title.scale
-	local col = title.font
-	local cx1 = math.floor(metricW(pos) / 2)
 	for pn = 1, 2 do
-		local t = labelSprite(pn)
-		if t ~= nil then
-			pcall(textImgReset, t)
-			pcall(textImgSetText, t, pn == 1 and 'PLAYER 1' or 'PLAYER 2')
-			-- centred like the title itself, set every frame: the reset above
-			-- may drop the alignment set when the sprite was made
-			pcall(textImgSetAlign, t, 0)
-			if scale ~= nil then
-				pcall(textImgSetScale, t, scale[1] or 1, scale[2] or 1)
-			end
-			if type(col) == 'table' and col[4] ~= nil then
-				pcall(textImgSetColor, t, col[4], col[5] or col[4], col[6] or col[4])
-			end
-			pcall(textImgSetPos, t, pn == 1 and cx1 or (1920 - cx1), y)
-			pcall(textImgDraw, t)
+		local a = labelAnim(pn)
+		if a ~= nil then
+			local pos = LABEL_POS[pn]
+			main.f_animPosDraw(a, pos[1] - LABEL_HALF[1], pos[2] - LABEL_HALF[2])
 		end
 	end
 end
@@ -3186,6 +3178,7 @@ function start.f_selectScreen()
 		-- is left, so the two screens are never on top of each other.
 		if not stagePhase then
 			bgDraw(motif.selectbgdef.BGDef, 0)
+			start.f_drawSelectGrid()
 			--draw title
 			textImgDraw(motif.select_info.title.TextSpriteData)
 			--draw portraits
@@ -3304,7 +3297,7 @@ function start.f_selectScreen()
 				if not stagePhase then
 					start.f_drawRandomStop()
 				end
-				-- PLAYER 1 / PLAYER 2 are painted into the select backdrop
+				start.f_drawPlayerLabels()
 			end
 			--draw done cursors
 			local persist = motif.select_info['p' .. side].cursor.persist
