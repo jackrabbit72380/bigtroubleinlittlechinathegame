@@ -8,6 +8,7 @@ Checks, without launching the engine:
   * optional: roster palettes differ from the base character
   * the Windows launchers parse, and the rules that read them still fire
   * every Lua file parses, so a script error is caught before a playtest
+  * no script reads a constant above the line that declares it
 
 The Lua check needs lupa (python3 -m pip install lupa) or luac; with neither
 it says so and the rest of the run carries on.
@@ -1506,6 +1507,112 @@ def check_retired():
     notes.append("retired: %d dropped root file(s) are removed on update" % len(listed))
 
 
+def _lua_files():
+    """Every Lua file in the tree, in a stable order."""
+    files = []
+    for base, dirs, names in os.walk(ROOT):
+        dirs[:] = sorted(d for d in dirs if d != ".git")
+        for name in sorted(names):
+            if name.endswith(".lua"):
+                files.append(os.path.join(base, name))
+    return files
+
+
+def _lua_code(src):
+    """The source with comments and string bodies blanked out.
+
+    Newlines stay, so a line number is still the line number the engine names.
+    A name inside a comment or a string is not a reference, and without this the
+    check would read the file's own notes as code and fail on its own prose.
+    """
+    out = list(src)
+    i, n = 0, len(src)
+
+    def blank(start, end):
+        for k in range(start, min(end, n)):
+            if out[k] != "\n":
+                out[k] = " "
+
+    while i < n:
+        c = src[i]
+        if c == "-" and src.startswith("--", i):
+            long_comment = re.match(r"--\[(=*)\[", src[i:])
+            if long_comment:
+                close = "]" + long_comment.group(1) + "]"
+                end = src.find(close, i + 2)
+                end = n if end < 0 else end + len(close)
+            else:
+                end = src.find("\n", i)
+                end = n if end < 0 else end
+            blank(i, end)
+            i = end
+            continue
+        if c in "\"'":
+            end = i + 1
+            while end < n and src[end] != c:
+                end += 2 if src[end] == "\\" else 1
+            end = min(end + 1, n)
+            blank(i, end)
+            i = end
+            continue
+        if c == "[" and src.startswith("[[", i):
+            end = src.find("]]", i)
+            end = n if end < 0 else end + 2
+            blank(i, end)
+            i = end
+            continue
+        i += 1
+    return "".join(out)
+
+
+_LUA_FILE_CONST = re.compile(r"^local\s+([A-Z][A-Z0-9_]*)\s*=")
+
+
+def check_lua_declaration_order():
+    """No script may read a file-scope constant above the line that declares it.
+
+    Lua resolves a name inside a function from what is declared above that
+    function. A constant written further down the file is not that constant
+    there - it is a global, and it is nil - so the function reads nothing and
+    the screen it draws stops. The select screen died exactly this way, on the
+    frame it first drew the RANDOM word: "attempt to index a non-table object
+    (nil) with key '1'". Only constants are checked; a local written later in a
+    smaller scope is shadowing, which is legal. Comments and string bodies are
+    blanked first, so a file's own notes about a name are not a reference.
+    """
+    files = _lua_files()
+    if not files:
+        return
+    found = 0
+    for path in files:
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                code = _lua_code(fh.read())
+        except OSError as exc:                           # noqa: BLE001
+            err("lua order: %s cannot be read: %s" % (rel, exc))
+            continue
+        lines = code.split("\n")
+        consts = {}
+        for number, line in enumerate(lines, 1):
+            match = _LUA_FILE_CONST.match(line)
+            if match:
+                consts.setdefault(match.group(1), number)
+        for name, declared in sorted(consts.items(), key=lambda kv: kv[1]):
+            use = re.compile(r"(?<![\w.:])%s\b(?!\s*=)" % re.escape(name))
+            for number, line in enumerate(lines[:declared - 1], 1):
+                if use.search(line):
+                    found += 1
+                    err("lua order: %s reads %s on line %d, but the constant is "
+                        "only declared on line %d - a function above the "
+                        "declaration sees a nil global there"
+                        % (rel, name, number, declared))
+                    break
+    if not found:
+        notes.append("lua order: no script reads a file-scope constant before "
+                     "declaring it")
+
+
 def _lupa_parser(runtime_class):
     """A parser backed by one lupa runtime, whatever Lua version it carries."""
     # Lua 5.1 loads a string with loadstring and only a reader function with
@@ -1609,6 +1716,7 @@ def check_lua_syntax():
 
 def main():
     check_lua_syntax()
+    check_lua_declaration_order()
     check_media_refs()
     check_retired()
     chars = check_select()
