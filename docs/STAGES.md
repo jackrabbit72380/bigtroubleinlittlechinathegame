@@ -52,6 +52,17 @@ hazards or per-stage match script, so a wall at each end of the bed is what the
 format can honestly give. A fighter stops at the cab's back, 72 px of coupling
 before it, and at the trailer's tail board with the end of the stage behind it.
 
+## The floating terrace
+
+The three Storms stages (`stage3d.def`, `stage3d_outline.def`, `stage3d_rain.def`)
+carry the Third Heights pack's island. Its `.glb` models are still in the tree, but
+the stages no longer draw them: on a renderer without model support the island
+never appeared, and the stage was a black field with only its weather over it.
+`tools/build_stage3d_rain.py` paints the terrace, the sea and the sky at the
+stages' own 1280x720 localcoord instead - day, night and storm - so each one shows
+its arena on every machine. The ground line is painted at `zoffset` 660, which is
+where these stages put the play plane.
+
 ## Using your own art
 
 Drop `backdrop.png` (and optionally `foreground.png`) into `art_src/<stage id>/`

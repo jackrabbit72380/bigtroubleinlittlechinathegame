@@ -107,7 +107,7 @@ bgmvolume = 100
 ;The same island as stage3d.def. The wider, further-back framing comes from the
 ;camera below (fov, zoomout) and not from moving the model: pushed forward it left
 ;the island outside the view, and the stage drew as a black field under the rain.
-model = stage3d.glb
+;model = stage3d_rain.glb   ; the island is painted instead - see [BG island]
 
 ;Its own card, so the select screen shows the rainy pass.
 spr = stage3d_rain.sff
@@ -127,21 +127,28 @@ scale = 0.05, 0.05, 0.05
 ; draws as a black field with weather on top of it. This sky is drawn with
 ; trans = add: on a black frame it paints a slate storm sky, and where the model
 ; does render it only brightens the island instead of hiding it.
-[BG storm sky]
+;-------------------------------------
+; The island itself, painted. The 3D model is off: the engine has a model path and
+; the .glb is sound, but on the machine these stages are played on the model was
+; never drawn and the screen was a black field with only the weather over it. This
+; sprite is the stage's own localcoord, 1280x720, so it draws 1:1, and it tiles
+; sideways for as long as the camera travels.
+[BG sky]
 type = normal
-spriteno = 1,4
+spriteno = 3,2
 layerno = 0
 start = 0, 0
 tile = 1,0
-delta = 0.05, 0.05
-trans = add
+trans = none
 
-;-------------------------------------
-; Storm weather: two painted rain sheets fall at different speeds, one behind the
-; fighters and one in front, under a slate wash, with mist driving across the
-; water. The wind runs left along the terrace, so every sheet leans left and
-; travels left - streaks and motion agree. The sheets tile both ways, so the rain
-; never runs out however long the fight lasts or however far the camera travels.
+[BG lip]
+type = normal
+spriteno = 3,3
+layerno = 1
+start = 0, 0
+tile = 1,0
+trans = none
+
 [BG rain behind]
 type = normal
 spriteno = 1,0
