@@ -1256,6 +1256,47 @@ SCALE_HALVES = (("1.5, 1.5", "0.75, 0.75"),
 KEY_LINE = re.compile(r"^(\s*)([A-Za-z0-9_.]+)(\s*=\s*)(.*)$")
 
 
+def ensure_variant_scales(text, scale="0.75, 0.75"):
+    """Give every row that draws one of the doubled faces a scale of its own.
+
+    ``active``, ``selected`` and ``active2`` variants were the rows left out: a
+    row without a scale draws at 1.0, i.e. twice the size of the row it sits
+    under, which is what made the pause list and the title menu mix two sizes.
+    The insert is per block, so the same key name in another screen is untouched.
+    """
+    lines = text.splitlines(True)
+    ours = {"10", "11", "12"}
+    cur, rows, seen = "", {}, {}
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            cur = stripped.lower()
+            continue
+        m = KEY_LINE.match(stripped)
+        if not m or m.lastindex is None or m.lastindex < 4:
+            continue
+        key = m.group(2).lower()
+        if key.endswith(".font") and m.group(4).split(",")[0].strip() in ours:
+            rows.setdefault(cur, []).append((i, key[:-len(".font")]))
+        elif key.endswith(".scale"):
+            seen.setdefault(cur, set()).add(key[:-len(".scale")])
+    missing = {}
+    for sec, items in rows.items():
+        for i, prefix in items:
+            if prefix not in seen.get(sec, set()):
+                missing[i] = prefix
+    if not missing:
+        return text, 0
+    out = []
+    for i, line in enumerate(lines):
+        out.append(line)
+        if i in missing:
+            if not line.endswith("\n"):
+                out[-1] = line + "\n"
+            indent = line[:len(line) - len(line.lstrip())]
+            out.append("%s%s.scale = %s\n" % (indent, missing[i], scale))
+    return "".join(out), len(missing)
+
 def halve_paired_scales(text):
     """Halve the .scale of every text that draws one of the doubled faces.
 
@@ -1392,6 +1433,9 @@ def main():
                 print(f"  warning: [{section}] {key} not found in "
                       f"{os.path.basename(MOTIF)}")
 
+    text, filled = ensure_variant_scales(text)
+    if filled:
+        print(f"  gave {filled} unpaired text row(s) the caption scale")
     if text != original:
         text = halve_paired_scales(text)
 
