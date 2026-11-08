@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "default": "local",
+  "servers": [
+    {
+      "id": "local",
+      "name": "This PC (test)",
+      "host": "127.0.0.1",
+      "port": 7350,
+      "server_key": "defaultkey",
+      "ssl": false,
+      "status": true,
+      "game": "btilc",
+      "build": "1.0.0",
+      "region": "local",
+      "stun_servers": ["stun.l.google.com:19302", "stun.cloudflare.com:3478"]
+    },
+    {
+      "id": "community",
+      "name": "Community server - edit the host",
+      "host": "CHANGE-ME.example.com",
+      "port": 7350,
+      "server_key": "defaultkey",
+      "ssl": true,
+      "status": false,
+      "game": "btilc",
+      "build": "1.0.0",
+      "region": "us-west",
+      "stun_servers": ["stun.l.google.com:19302", "stun.cloudflare.com:3478"]
+    }
+  ]
+}
