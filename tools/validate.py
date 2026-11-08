@@ -1240,36 +1240,178 @@ def check_stage_camera():
     notes.append("stage camera: every stage can zoom out")
 
 
-def check_stage_music():
-    """Every stage that names music must name a file that is there.
+VIDEO_EXTS = {".webm", ".mp4", ".avi", ".mkv", ".mov", ".m4v", ".y4m", ".ogv"}
+AUDIO_EXTS = {".ogg", ".wav", ".mp3", ".flac", ".opus", ".m4a", ".mid",
+              ".midi", ".mod", ".xm", ".s3m", ".it", ".669"}
+MEDIA_EXTS = VIDEO_EXTS | AUDIO_EXTS
+MEDIA_DIRS = ("sound/", "video/", "music/")
 
-    Six synthesised mono 22050 Hz WAV loops used to be written into sound/ as
-    stand-ins and one stage was pointed at one of them, which is how the game came
-    to play a degraded version of a stage's cue. The loops are gone and the stages
-    name real soundtrack tracks; this stops a stage quietly going silent, or a
-    placeholder creeping back, without anyone noticing.
+
+def _media_kind(value):
+    """'video' or 'sound' for a value that names one, else None."""
+    ext = os.path.splitext(value.replace("\\", "/"))[1].lower()
+    if ext in VIDEO_EXTS:
+        return "video"
+    if ext in AUDIO_EXTS:
+        return "sound"
+    return None
+
+
+def _media_file(value, *bases):
+    """The file a def reference points at, or None.
+
+    Screens and stages name their media from the game root - system.def sits in
+    data/ikemen1/ and names sound/Title.ogg, which is sound/Title.ogg in the
+    folder - but a stage may also name a track beside itself, so both are tried
+    rather than guessing which one the engine picks.
+    """
+    rel = value.replace("\\", "/").strip()
+    while rel.startswith("./"):
+        rel = rel[2:]
+    for base in bases:
+        candidate = os.path.normpath(os.path.join(base, rel))
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def _def_media_refs(text):
+    """(key, value) for every INI value that names a video or a sound file."""
+    for raw in text.splitlines():
+        line = raw.split(";", 1)[0].strip()
+        if not line or line.startswith("[") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        value = value.strip().strip('"').strip()
+        if _media_kind(value):
+            yield key.strip(), value
+
+
+def _lua_media_refs(text):
+    """Sound and video paths a screen script names in full."""
+    for raw in text.splitlines():
+        line = raw.split("--", 1)[0]
+        for m in re.finditer(r"""["']([^"'\n]+)["']""", line):
+            value = m.group(1)
+            if _media_kind(value) and value.replace("\\", "/").lower().startswith(MEDIA_DIRS):
+                yield value
+
+
+def _json_media_refs(node, out):
+    """Every media path anywhere in a JSON value, whatever its shape."""
+    if isinstance(node, str):
+        if _media_kind(node):
+            out.append(node)
+    elif isinstance(node, dict):
+        for value in node.values():
+            _json_media_refs(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            _json_media_refs(value, out)
+
+
+def _media_problem(value, bases, tracked):
+    """What is wrong with a media reference, or None when it is fine."""
+    full = _media_file(value, *bases)
+    if full is None:
+        return "there is no such file in the folder"
+    if tracked is not None:
+        rel = os.path.relpath(full, ROOT).replace(os.sep, "/")
+        if rel not in tracked:
+            return ("it is on this machine but not in the repo, so it never "
+                    "reaches anyone who updates")
+    if os.path.getsize(full) == 0:
+        return "it is an empty file"
+    return None
+
+
+def _tracked():
+    """Every path git tracks here, or None when this is not a checkout.
+
+    A file sitting in the folder is not a file that ships: the updater copies
+    what main has. The credits clip was in video/ here and in no commit at all,
+    which is exactly the reference this has to catch.
+    """
+    try:
+        out = subprocess.run(["git", "-C", ROOT, "ls-files", "-z"],
+                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                             check=True).stdout
+    except Exception:
+        return None
+    return {p.decode("utf-8", "replace").replace("\\", "/")
+            for p in out.split(b"\0") if p}
+
+
+def check_media_refs():
+    """Every video and sound a stage or a screen names has to ship with the game.
+
+    A def that names a file nobody shipped says nothing about it: the engine drops
+    the layer or plays nothing, and the screen is just quietly wrong. Lo Pan's
+    throne named video/fog.webm and the credits named ik_credits.webm; neither was
+    ever in the repo, so the mouth was black and the credits had no clip. Only a
+    stage's bgmusic was checked before; this covers video layers, sounds, the
+    screens' own music and the album list the music browser shows.
     """
     import glob as _glob
-    named = 0
+    import json as _json
+
+    tracked = _tracked()
+    found = 0
     missing = 0
-    for path in sorted(_glob.glob(os.path.join(ROOT, "stages", "*.def"))):
-        text = read(path)
-        for m in re.finditer(r"^[ \t]*bgmusic[ \t]*=[ \t]*([^;\r\n]*)", text, re.M):
-            value = m.group(1).strip()
-            if not value:
+
+    for pattern in ("stages/*.def", "stages/*/*.def", "data/*.def", "data/*/*.def"):
+        for path in sorted(_glob.glob(os.path.join(ROOT, pattern))):
+            if not os.path.isfile(path):
                 continue
-            named += 1
-            full = os.path.join(ROOT, value.replace("/", os.sep))
-            if not os.path.isfile(full):
-                err("stage music: %s names %s, which is not there"
-                    % (os.path.basename(path), value))
+            where = os.path.relpath(path, ROOT).replace(os.sep, "/")
+            seen = set()
+            for key, value in _def_media_refs(read(path)):
+                if (key, value) in seen:
+                    continue
+                seen.add((key, value))
+                found += 1
+                problem = _media_problem(value, (ROOT, os.path.dirname(path)), tracked)
+                if problem:
+                    missing += 1
+                    err("media: %s names %s = %s, and %s - the engine just leaves "
+                        "that layer or sound out" % (where, key, value, problem))
+
+    for path in sorted(_glob.glob(os.path.join(ROOT, "external", "**", "*.lua"),
+                                 recursive=True)):
+        where = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        seen = set()
+        for value in _lua_media_refs(read(path)):
+            if value in seen:
+                continue
+            seen.add(value)
+            found += 1
+            problem = _media_problem(value, (ROOT,), tracked)
+            if problem:
                 missing += 1
-    notes.append("stage music: %d stage(s) name a track on disk" % (named - missing))
+                err("media: %s plays %s, and %s" % (where, value, problem))
+
+    music_json = os.path.join(ROOT, "data", "music.json")
+    if os.path.isfile(music_json):
+        try:
+            refs = []
+            _json_media_refs(_json.loads(read(music_json)), refs)
+        except ValueError as exc:
+            err("media: data/music.json does not parse: %s" % exc)
+        else:
+            for value in sorted(set(refs)):
+                found += 1
+                problem = _media_problem(value, (ROOT,), tracked)
+                if problem:
+                    missing += 1
+                    err("media: data/music.json lists %s, and %s, so the list shows "
+                        "a track that cannot play" % (value, problem))
+
+    notes.append("media: %d video/sound reference(s) ship and resolve" % (found - missing))
 
 
 
 def main():
-    check_stage_music()
+    check_media_refs()
     chars = check_select()
     check_menu_theme()
     check_commands()

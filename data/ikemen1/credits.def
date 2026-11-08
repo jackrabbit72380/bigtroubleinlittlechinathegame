@@ -10,10 +10,7 @@ font1 = ikemen1/fonts/Menu2.def
 [Scene 0]
 end.time = 100
 bgm = sound/Title.ogg
-[BG0]
-type = video
-path = ik_credits.webm
-
+; the clip this scene drew is not part of the game, so the layer is gone
 [Scene 1]
 end.time = 300
 layerall.pos = 640,720
@@ -370,9 +367,6 @@ layer1.text = "Thank you for playing and testing!\n\nSee you next version!"
 layer1.font = 1
 layer1.offset = 0,-400
 
-[BG0]
-type = video
-path = ik_credits.webm
-
+; the clip this scene drew is not part of the game, so the layer is gone
 [Scene 4]
 end.time = 100
