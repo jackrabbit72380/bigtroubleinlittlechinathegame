@@ -10,11 +10,13 @@ runs on stock Ikemen GO and needs no server of your own to start.
 | Gives you | rooms, lobby list, train-while-you-wait, fighter preview, per-player online controls, replays with watch tools, training input display and playback | ranked sets with Elo, levels, leaderboards, tournaments, spectating |
 | Install | unzip over a v1.0.0 folder | replace the engine and wire a server profile |
 
-This game is on an **older engine than v1.0.0**: its `main.lua` differs from
-v1.0.0's by 736 lines, the engine rejects a config key it does not know
-(`Netplay.Rollback.LogsEnabled`), and a mod reports `commonStatesInsert is not
-available in this build`. The pack will not run on it. So the first step is the
-upgrade, and that is what the script below does.
+This game's scripts are not v1.0.0's — they are close to it and, in places,
+ahead of it (they handle `-tcpport` / `-udpport`, which v1.0.0 does not) — while
+the engine binary is behind them: it rejects the config key
+`Netplay.Rollback.LogsEnabled` and a mod reports `commonStatesInsert is not
+available in this build`. The pack asks for v1.0.0, so the safe move is the
+upgrade rather than guessing which half is which. That is what the script does;
+it takes the engine and the scripts from the same release, so they match.
 
 ## What is in this folder
 

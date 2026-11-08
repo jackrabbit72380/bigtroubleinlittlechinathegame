@@ -50,7 +50,7 @@ robocopy "%SRC%\data" "%ENGINE%\data" /E /XF *.zss /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto copyfail
 
 set "PACK="
-for %%F in ("%SRC%\IkemenGO-OnlineLobbyPack*.zip") do set "PACK=%%~fF"
+for %%F in ("%SRC%\IkemenGO-OnlineLobbyPack*.zip") do if exist "%%~fF" set "PACK=%%~fF"
 if not defined PACK goto nopack
 echo Installing the Online Lobby Pack ...
 tar -xf "%PACK%" -C "%ENGINE%"
