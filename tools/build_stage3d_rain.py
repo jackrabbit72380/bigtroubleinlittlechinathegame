@@ -28,6 +28,7 @@ Run:  python3 tools/build_stage3d_rain.py
 """
 import os
 import random
+import sys
 
 from PIL import Image, ImageDraw, ImageEnhance
 
@@ -197,6 +198,65 @@ def wash(colour, alpha):
     return Image.new("RGBA", FRAME, tuple(colour) + (alpha,))
 
 
+def storm_sky(seed=4403):
+    """A storm sky that is drawn *over* the 3D model with trans = add.
+
+    On a machine where the engine cannot render the model - the model path is
+    skipped outright when the renderer has no model support, which is what some
+    older and AMD drivers do - a 3D stage draws as a black field under its
+    painted weather. This sprite is the answer to that: additive, so a black
+    frame is lifted to a slate storm sky with cloud banks and a hazy moon, while
+    an island that *does* render is brightened by the same amount instead of
+    being covered up. Nothing opaque can be used here, because a zero-layer BG
+    is drawn after the model and would hide it.
+    """
+    img = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    px = img.load()
+    h = FRAME[1]
+    # what the sky adds to a black frame at each height: brighter overhead,
+    # dimmer at the waterline so the island keeps its contrast
+    stops = ((0, (78, 104, 148), 150), (300, (64, 86, 126), 132),
+             (520, (48, 64, 96), 104), (h - 1, (30, 40, 62), 70))
+    for y in range(h):
+        for i in range(len(stops) - 1):
+            y0, c0, a0 = stops[i]
+            y1, c1, a1 = stops[i + 1]
+            if y0 <= y <= y1:
+                t = (y - y0) / float(max(1, y1 - y0))
+                col = tuple(int(c0[k] + (c1[k] - c0[k]) * t) for k in range(3))
+                alpha = int(a0 + (a1 - a0) * t)
+                for x in range(FRAME[0]):
+                    px[x, y] = col + (alpha,)
+                break
+
+    rng = random.Random(seed)
+    w, hh = FRAME
+    # moon glow, high and behind the cloud line
+    glow = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    gd = ImageDraw.Draw(glow)
+    mx, my = 940, 132
+    for rad, a in ((190, 10), (120, 14), (70, 20), (34, 34), (16, 60)):
+        for dx in (-w, 0, w):
+            gd.ellipse([mx + dx - rad, my - rad, mx + dx + rad, my + rad],
+                       fill=(176, 190, 222, a))
+    # cloud banks: flat, soft, wrapped sideways so the layer tiles without a seam
+    clouds = Image.new("RGBA", FRAME, (0, 0, 0, 0))
+    cd = ImageDraw.Draw(clouds)
+    for band in ((40, 150, 70), (120, 240, 54), (210, 330, 40)):
+        y0, y1, peak = band
+        for _ in range(9):
+            cx = rng.uniform(0, w)
+            cy = rng.uniform(y0, y1)
+            rw = rng.uniform(120, 320)
+            rh = rng.uniform(18, 46)
+            for dx in (-w, 0, w):
+                cd.ellipse([cx + dx - rw, cy - rh, cx + dx + rw, cy + rh],
+                           fill=(126, 146, 178, rng.randint(peak // 2, peak)))
+    img = Image.alpha_composite(img, clouds)
+    img = Image.alpha_composite(img, glow)
+    return img
+
+
 # --------------------------------------------------------------------- build --
 def sprites_for(name):
     """The weather layers a stage's def asks for, by sprite number."""
@@ -225,6 +285,8 @@ def sprites_for(name):
         {"group": 1, "number": 2, "image": wash((24, 32, 52), 64), "axis": (0, 0)},
         {"group": 1, "number": 3, "image": band(420, 700, (172, 196, 220), 66),
          "axis": (0, 0)},
+        # the sky under the storm, drawn additively over the 3D model
+        {"group": 1, "number": 4, "image": storm_sky(), "axis": (0, 0)},
         # the lightning sheet: a clear frame, the strike, and its afterglow
         {"group": 2, "number": 0, "image": blank(), "axis": (0, 0)},
         {"group": 2, "number": 1, "image": flash(88, 8801), "axis": (0, 0)},
@@ -240,17 +302,28 @@ def write_sheet(path, picture, axis, weather=()):
         handle.write(sff.write_sff(out))
 
 
-def main():
+def main(argv=()):
     base_pic, _base_sp = preview(BASE)
+    # optional filter, so one stage's sheet can be repainted without re-grading
+    # the other two cards (grading is applied to the card already in the file)
+    only = set(argv)
     for name in CARDS:
+        if only and name not in only:
+            continue
         path = os.path.join(STAGES, name + ".sff")
-        picture, sp = preview(path)
-        if name == "stage3d":
-            picture = grade(picture, warm=True)
-        elif name == "stage3d_outline":
-            picture = grade(picture, night=True)
+        # The card already in the sheet is the approved one: re-grading it on
+        # every run would drift the colour a little each time. Grading only
+        # happens when the sheet is new, or when REGRADE=1 asks for it.
+        if os.path.isfile(path) and not os.environ.get("REGRADE"):
+            picture, sp = preview(path)
         else:
-            picture = rain_card(base_pic)
+            picture, sp = preview(BASE)
+            if name == "stage3d":
+                picture = grade(picture, warm=True)
+            elif name == "stage3d_outline":
+                picture = grade(picture, night=True)
+            else:
+                picture = rain_card(picture)
         axis = center_axis(sp)
         weather = sprites_for(name)
         write_sheet(path, picture, axis, weather)
@@ -259,4 +332,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

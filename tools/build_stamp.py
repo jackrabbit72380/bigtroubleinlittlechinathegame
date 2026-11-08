@@ -53,6 +53,17 @@ DATA_FILES = (
     "data/ikemen1/logo.def",
     "data/ikemen1/credits.def",
     "external/gamecontrollerdb.txt",
+    # the three 3D stages: their defs decide how the floating island is framed and
+    # what weather falls over it, and their sheets carry that weather. They were
+    # absent from this list, so a repainted stage shipped without moving the stamp
+    # and a folder that had played it before compared equal to main - the update
+    # that carried the fix never ran.
+    "stages/stage3d.def",
+    "stages/stage3d.sff",
+    "stages/stage3d_outline.def",
+    "stages/stage3d_outline.sff",
+    "stages/stage3d_rain.def",
+    "stages/stage3d_rain.sff",
 )
 
 

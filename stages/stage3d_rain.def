@@ -121,6 +121,22 @@ offset = 0,-0.2,-0.9
 scale = 0.05, 0.05, 0.05
 
 ;-------------------------------------
+; The storm sky. The engine draws the model first and every zero-layer BG over it,
+; and it skips the model entirely when the renderer has no 3D model support - which
+; some AMD cards and older drivers do - so a stage whose only backdrop is the model
+; draws as a black field with weather on top of it. This sky is drawn with
+; trans = add: on a black frame it paints a slate storm sky, and where the model
+; does render it only brightens the island instead of hiding it.
+[BG storm sky]
+type = normal
+spriteno = 1,4
+layerno = 0
+start = 0, 0
+tile = 1,0
+delta = 0.05, 0.05
+trans = add
+
+;-------------------------------------
 ; Storm weather: two painted rain sheets fall at different speeds, one behind the
 ; fighters and one in front, under a slate wash, with mist driving across the
 ; water. The wind runs left along the terrace, so every sheet leans left and
