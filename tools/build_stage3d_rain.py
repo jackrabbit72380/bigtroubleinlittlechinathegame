@@ -4,6 +4,23 @@
 The upstream Third Heights pack (SuperFromND, MIT) ships one island in two
 renders, so the three stages are told apart by what happens around the island
 rather than by the mesh: this tool paints each stage's card and the weather its
+
+# The stage card's own gold rule: the stage wall's boxes are plain pictures, and
+# without a rule they read as loose screenshots. Baked into every 9000,1 card so
+# the wall, the select screen's hint and the VS card all get it, no runtime frame.
+CARD_GOLD = (240, 196, 88, 255)
+CARD_DARK = (10, 14, 22, 255)
+
+
+def frame_card(img):
+    """A gold rule around a stage card, with a dark line outside it."""
+    out = img.convert("RGBA").copy()
+    draw = ImageDraw.Draw(out)
+    w, h = out.size
+    draw.rectangle([0, 0, w - 1, h - 1], outline=CARD_DARK, width=2)
+    draw.rectangle([2, 2, w - 3, h - 3], outline=CARD_GOLD, width=4)
+    return out
+
 def then draws over the model.
 
   Third Heights        bright day, cloud haze drifting across the top, spray
@@ -295,8 +312,8 @@ def sprites_for(name):
 
 
 def write_sheet(path, picture, axis, weather=()):
-    out = [{"group": 9000, "number": 1, "image": picture, "axis": axis},
-           {"group": 9000, "number": 0, "image": picture, "axis": axis}]
+    out = [{"group": 9000, "number": 1, "image": frame_card(picture), "axis": axis},
+           {"group": 9000, "number": 0, "image": frame_card(picture), "axis": axis}]
     out.extend(weather)
     with open(path, "wb") as handle:
         handle.write(sff.write_sff(out))

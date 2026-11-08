@@ -240,6 +240,11 @@ def check_stage_wall(problems):
     if not re.search(r"if not stagePhase then\s*\n\s*main\.f_animPosDraw\(motif\.select_info\.stage\.portrait\.bg",
                      text):
         problems.append("the empty character grid is still drawn behind the maps")
+    if "start.stageSide" not in text or "cursor.done and cfg.cursor.done.AnimData" not in text:
+        problems.append("the picked map is not outlined in the player's colour")
+    for tool in ("build_stages.py", "build_hd_stage.py", "build_stage3d_rain.py"):
+        if "frame_card(" not in read(os.path.join(ROOT, "tools", tool)):
+            problems.append("%s does not put the gold rule on the stage cards" % tool)
     if text.count("bgDraw(motif.selectbgdef.BGDef, 0)") < 2:
         problems.append("the stage screen has no backdrop of its own")
     if not re.search(

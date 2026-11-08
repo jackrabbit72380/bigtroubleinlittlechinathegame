@@ -55,7 +55,7 @@ from __future__ import annotations
 import os
 import sys
 
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageDraw, ImageChops, ImageFilter
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -97,6 +97,23 @@ LIP_FADE = 8                                    # soft edge, so no hard cut
 # floor beyond it was drawn bare - the hard black step seen on every map.
 HALF = 1
 
+
+
+# The stage card's own gold rule: the stage wall's boxes are plain pictures, and
+# without a rule they read as loose screenshots. Baked into every 9000,1 card so
+# the wall, the select screen's hint and the VS card all get it, no runtime frame.
+CARD_GOLD = (240, 196, 88, 255)
+CARD_DARK = (10, 14, 22, 255)
+
+
+def frame_card(img):
+    """A gold rule around a stage card, with a dark line outside it."""
+    out = img.convert("RGBA").copy()
+    draw = ImageDraw.Draw(out)
+    w, h = out.size
+    draw.rectangle([0, 0, w - 1, h - 1], outline=CARD_DARK, width=2)
+    draw.rectangle([2, 2, w - 3, h - 3], outline=CARD_GOLD, width=4)
+    return out
 
 def sky_layer(bg):
     """Far parallax plate: softened, dimmed centre crop of the backdrop.
@@ -300,7 +317,7 @@ def build_stage(sid):
     fg_offsets = columns(sprites, 3, fg)
     sky_offsets = columns(sprites, 10, sky_layer(bg))
     lip_offsets = columns(sprites, 11, lip_layer(bg))
-    sprites.append({"group": 9000, "number": 1, "image": preview,
+    sprites.append({"group": 9000, "number": 1, "image": frame_card(preview),
                     "axis": (PREVIEW_W // 2, PREVIEW_H // 2)})
 
     data = sff.write_sff(sprites)

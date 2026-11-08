@@ -109,6 +109,7 @@ local selScreenEnd = false
 local stageEnd = false
 local stageRandom = false
 local stageListNo = 0
+start.stageSide = 1
 local t_aiRamp = {}
 local t_reservedChars = {{}, {}}
 local t_portraitPriority = {1, 1}
@@ -3540,6 +3541,22 @@ function start.f_selectScreen()
 								animSetWindow(anim, cell.x, cell.y, cell.x + cell.w, cell.y + cell.h)
 								pcall(animSetAlpha, anim, ref == stageRef and 256 or 120)
 								main.f_animPosDraw(anim, cell.x, cell.y)
+								-- the picked map is outlined in the colour of the player who
+								-- moved the stage cursor: the card art carries the gold rule,
+								-- this is the lit one. The cursor sprite is 2x a 128x160 cell,
+								-- so it is stretched over the card and its transforms are put
+								-- back afterwards for the character wall.
+								if ref == stageRef then
+									local cfg = motif.select_info['p' .. (start.stageSide or 1)]
+									local cur = cfg and cfg.cursor and cfg.cursor.done and cfg.cursor.done.AnimData
+									if cur ~= nil then
+										animSetScale(cur, cell.w / 256, cell.h / 320)
+										animSetWindow(cur, cell.x, cell.y, cell.x + cell.w, cell.y + cell.h)
+										pcall(animSetAlpha, cur, 256)
+										main.f_animPosDraw(cur, cell.x, cell.y)
+										pcall(animReset, cur, { "scale", "window" })
+									end
+								end
 							end
 						end
 					end
@@ -4559,6 +4576,15 @@ function start.f_stageMenu()
 		stageListNo = r.init
 	end
 
+	-- Which player is on the stage cursor: the picked map is outlined in their
+	-- colour, so a two-player pick shows whose choice it is
+	for side = 1, 2 do
+		local st = motif.select_info.stage
+		if getInput(side, st.next.key) or getInput(side, st.previous.key)
+			or getInput(side, st.skip.next.key) or getInput(side, st.skip.previous.key) then
+			start.stageSide = side
+		end
+	end
 	if getInput(-1, motif.select_info.stage.previous.key) then
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 		stageListNo = stageListNo - 1
