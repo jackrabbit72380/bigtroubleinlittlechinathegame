@@ -1377,14 +1377,70 @@ local function motifSpace(a)
 	return a
 end
 
+-- Runtime art has to be built against the screenpack's own sprite file, and
+-- animNew wants a handle on that file: animNew(nil, ...) does NOT fall back to
+-- the motif. The engine creates an empty sprite file for it, the animation
+-- still parses, and every frame comes out as a missing sprite - the drawing is
+-- simply blank. That is what happened to the wall of cells, the two PLAYER
+-- captions, the RANDOM word and the lit stage card all at once: each was built
+-- with a nil sprite file, so each drew nothing. sffNew opens the file the motif
+-- itself was built from (the .sff beside its .def), and the default below is
+-- this screenpack's own system.sff, used when the motif does not report its
+-- def. The handle is opened once and kept.
+local motifSff, motifSffTried = nil, false
+
+local function motifSpriteFile()
+	if not motifSffTried then
+		motifSffTried = true
+		local paths = {}
+		local defPath = motif ~= nil and motif.info ~= nil and motif.info.def or nil
+		if type(defPath) == 'string' and defPath:sub(-4) == '.def' then
+			table.insert(paths, defPath:sub(1, -5) .. '.sff')
+		end
+		table.insert(paths, 'data/ikemen1/system.sff')
+		for _, path in ipairs(paths) do
+			local ok, sff = pcall(sffNew, path)
+			if ok and sff ~= nil then
+				motifSff = sff
+				break
+			end
+		end
+	end
+	return motifSff
+end
+
+-- An animation built on an empty sprite file parses and draws nothing, so the
+-- sprite is checked before the animation is accepted: animGetSpriteInfo returns
+-- nil when the file has no such sprite.
+local function animHasSprite(a, group, number)
+	if type(animGetSpriteInfo) ~= 'function' then
+		return true      -- an engine without the check: nothing more to verify
+	end
+	local ok, info = pcall(animGetSpriteInfo, a, group, number)
+	return ok and info ~= nil
+end
+
+-- One sprite of the screenpack's art, in the motif's own coordinate space.
+local function motifSprite(def, group, number)
+	local sff = motifSpriteFile()
+	if sff == nil then
+		return nil
+	end
+	local ok, a = pcall(animNew, sff, def)
+	if not ok or a == nil or not animHasSprite(a, group, number) then
+		return nil
+	end
+	return motifSpace(a)
+end
+
 local stageFrameAnims = {}
 local STAGE_FRAME_W, STAGE_FRAME_H = 1215, 398
 
 function start.f_stageFrame(side)
 	local key = math.max(1, math.min(4, side or 1))
 	if stageFrameAnims[key] == nil then
-		local ok, a = pcall(animNew, nil, string.format('230,%d, 0,0, -1', key - 1))
-		stageFrameAnims[key] = (ok and a ~= nil) and motifSpace(a) or false
+		local number = key - 1
+		stageFrameAnims[key] = motifSprite(string.format('230,%d, 0,0, -1', number), 230, number) or false
 	end
 	return stageFrameAnims[key] or nil
 end
@@ -1399,12 +1455,11 @@ local randomAnims = {}
 local function randomStopAnim(lit)
 	local key = lit and 'lit' or 'base'
 	if randomAnims[key] == nil then
-		local ok, a = pcall(animNew, nil, key == 'lit' and '151,11, 0,0, -1' or '151,0, 0,0, -1')
-		if ok and a ~= nil then
-			randomAnims[key] = motifSpace(a)
-		else
-			randomAnims[key] = false
-		end
+		-- Each state names its own sprite in full, so the sprite the screen
+		-- shows is readable where it is written; motifSprite only decides
+		-- whether that sprite can be drawn at all.
+		local def = key == 'lit' and '151,11, 0,0, -1' or '151,0, 0,0, -1'
+		randomAnims[key] = motifSprite(def, 151, key == 'lit' and 11 or 0) or false
 	end
 	return randomAnims[key] or nil
 end
@@ -1418,8 +1473,7 @@ local gridAnim = nil
 
 local function selectGridAnim()
 	if gridAnim == nil then
-		local ok, a = pcall(animNew, nil, '220,0, 0,0, -1')
-		gridAnim = (ok and a ~= nil) and motifSpace(a) or false
+		gridAnim = motifSprite('220,0, 0,0, -1', 220, 0) or false
 	end
 	return gridAnim or nil
 end
@@ -1503,8 +1557,8 @@ local LABEL_HALF = {160, 24}
 
 local function labelAnim(pn)
 	if labelAnims[pn] == nil then
-		local ok, a = pcall(animNew, nil, string.format('151,%d, 0,0, -1', 19 + pn))
-		labelAnims[pn] = (ok and a ~= nil) and motifSpace(a) or false
+		local def = pn == 1 and '151,20, 0,0, -1' or '151,21, 0,0, -1'
+		labelAnims[pn] = motifSprite(def, 151, 19 + pn) or false
 	end
 	return labelAnims[pn] or nil
 end

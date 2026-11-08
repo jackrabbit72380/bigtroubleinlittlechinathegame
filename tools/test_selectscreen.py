@@ -193,6 +193,9 @@ def check_script(problems):
     text = read(START)
     if "'151,0, 0,0, -1'" not in text or "'151,11, 0,0, -1'" not in text:
         problems.append("start.lua does not draw the RANDOM word from its sprites")
+    if "animNew, nil" in text:
+        problems.append("start.lua builds runtime art with a nil sprite file, "
+                        "so every frame is a missing sprite and nothing draws")
     if "not sideOnRandomStop(v.player)" not in text:
         problems.append("start.lua still draws a box cursor on the RANDOM stop")
     if "local stagePhase = false" not in text:

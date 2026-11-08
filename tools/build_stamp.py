@@ -41,6 +41,11 @@ OUT = os.path.join(ROOT, "data", "build_stamp.txt")
 # mapped before a change and not after is an update that never arrived.
 DATA_FILES = (
     "data/ikemen1/system.def",
+    # the screenpack's own sprite sheet: external/script/start.lua opens it at
+    # run time to draw the wall of cells, the two PLAYER captions and the
+    # RANDOM stop, so a repainted select screen has to count as an update even
+    # when no Lua changed
+    "data/ikemen1/system.sff",
     "data/system.base.def",
     "data/fight.def",
     # the motif's own sound bank: external/mods/rainthunder.lua plays the rain
