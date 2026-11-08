@@ -65,8 +65,10 @@ DATA_FILES = (
     # that carried the fix never ran.
     "stages/stage3d.def",
     "stages/stage3d.sff",
+    "stages/stage3d.glb",
     "stages/stage3d_outline.def",
     "stages/stage3d_outline.sff",
+    "stages/stage3d_outline.glb",
     "stages/stage3d_rain.def",
     "stages/stage3d_rain.sff",
 )
