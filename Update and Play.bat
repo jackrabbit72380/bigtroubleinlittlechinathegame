@@ -109,11 +109,11 @@ rem a cache that cannot be written breaks every redirect after it - which is wha
 rem left the download sitting at zero with no curl running behind it.
 set "CACHE=%TEMP%\btilc-updater"
 rem What an update writes. The launchers and tools are in here because they
-rem ARE the delivery: a fix to Play Big Trouble.bat, Test Big Trouble.bat or
+rem ARE the delivery: a fix to Play Big Trouble.bat or
 rem tools\test_local.py could never reach a folder that only refreshed the
 rem game folders, which is how the launcher kept a console open over the game
 rem long after the fix for it was on main.
-set "GAMEPATHS=data chars stages font external sound tools "Update and Play.bat" "Play Big Trouble.bat" "Test Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat""
+set "GAMEPATHS=data chars stages font external sound tools "Update and Play.bat" "Play Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat""
 rem The helpers below take their paths inside PowerShell single quotes, where
 rem an apostrophe ends the string. Doubling it is how PowerShell writes the
 rem character itself, so this is the copy they are given.
@@ -1777,7 +1777,7 @@ for %%F in (data chars stages font external sound tools) do (
 )
 rem The launchers sit at the root, so they are copied by name: a launcher
 rem fix that never arrived is what kept a console open over the game.
-for %%F in ("Update and Play.bat" "Play Big Trouble.bat" "Test Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat") do (
+for %%F in ("Update and Play.bat" "Play Big Trouble.bat" "Apply main.zip.bat" "Dump Stage Art.bat") do (
   if exist "%SRC%\%%~F" if not "%%~F"=="%~nx0" copy /Y "%SRC%\%%~F" "%~dp0%%~F" >nul 2>&1
 )
 exit /b 0
@@ -1799,7 +1799,6 @@ if /i "%TOP%"=="sound" goto syncfile_go
 if /i "%TOP%"=="tools" goto syncfile_go
 if /i "%TOP%"=="Update and Play.bat" goto syncfile_go
 if /i "%TOP%"=="Play Big Trouble.bat" goto syncfile_go
-if /i "%TOP%"=="Test Big Trouble.bat" goto syncfile_go
 if /i "%TOP%"=="Apply main.zip.bat" goto syncfile_go
 if /i "%TOP%"=="Dump Stage Art.bat" goto syncfile_go
 exit /b 0

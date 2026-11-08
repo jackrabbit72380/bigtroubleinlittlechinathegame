@@ -12,7 +12,7 @@ and there is no way to end up playing a stale data/fight.def.
     python tools/test_local.py --engine-dir DIR  reuse an engine you already have
     python tools/test_local.py -- 2560 1440      extra arguments go to the engine
 
-On Windows just double-click "Test Big Trouble.bat".
+On Windows run it from a command prompt in this folder: python tools\\test_local.py
 """
 from __future__ import annotations
 
