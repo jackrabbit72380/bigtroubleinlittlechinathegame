@@ -2,7 +2,7 @@
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
 27d4837c947bac8d1b445e8bca7c2953879ae8dab57f3a21f1dbd8a0fbc30256  data/ikemen1/system.def
-561507fd32c4b3f0e9b1c07dcafad68c4d74996b9e86c2df517d06fba3a88f37  data/ikemen1/system.sff
+903be9517c456cddc5e5ed1b6043487e63d2b13a76721d71d03b95af3bbddd80  data/ikemen1/system.sff
 ad0660810bd839fdac27855e031e57e69ee47fa1442fcef40f7c926599870999  data/system.base.def
 d0a1ddc60bb82f1ac4920d4075fccebae5618547c109022a5d93cb4c61284a80  data/fight.def
 b1e3f0d2f5458d3fc4653fba38fd7bed859630b89b2b36b3774f52d2ea1e023a  data/system.snd
