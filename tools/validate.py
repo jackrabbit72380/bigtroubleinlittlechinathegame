@@ -9,6 +9,7 @@ Checks, without launching the engine:
   * the Windows launchers parse, and the rules that read them still fire
   * every Lua file parses, so a script error is caught before a playtest
   * no script reads a constant above the line that declares it
+  * no per-frame hook calls a function that runs the game
 
 The Lua check needs lupa (python3 -m pip install lupa) or luac; with neither
 it says so and the rest of the run carries on.
@@ -1518,12 +1519,15 @@ def _lua_files():
     return files
 
 
-def _lua_code(src):
+def _lua_code(src, keep_strings=False):
     """The source with comments and string bodies blanked out.
 
     Newlines stay, so a line number is still the line number the engine names.
     A name inside a comment or a string is not a reference, and without this the
     check would read the file's own notes as code and fail on its own prose.
+    keep_strings leaves the text between quotes alone, which is only needed
+    to read the hook name out of a hook.add call; the blanking is 1:1, so an
+    offset means the same thing in either copy.
     """
     out = list(src)
     i, n = 0, len(src)
@@ -1552,13 +1556,15 @@ def _lua_code(src):
             while end < n and src[end] != c:
                 end += 2 if src[end] == "\\" else 1
             end = min(end + 1, n)
-            blank(i, end)
+            if not keep_strings:
+                blank(i, end)
             i = end
             continue
         if c == "[" and src.startswith("[[", i):
             end = src.find("]]", i)
             end = n if end < 0 else end + 2
-            blank(i, end)
+            if not keep_strings:
+                blank(i, end)
             i = end
             continue
         i += 1
@@ -1611,6 +1617,144 @@ def check_lua_declaration_order():
     if not found:
         notes.append("lua order: no script reads a file-scope constant before "
                      "declaring it")
+
+
+_FRAME_HOOKS = (
+    "loop", "main.menu.loop", "menu.menu.loop", "options.menu.loop",
+    "start.f_selectScreen", "start.f_selectVersus",
+    "game.result", "game.result_init", "game.victory", "game.victory_init",
+    "game.continue", "game.continue_init", "game.challenger",
+    "game.challenger_init", "game.hiscore", "game.hiscore_init",
+)
+
+_HOOK_UNSAFE = {
+    "game": "the engine's game() runs a whole match",
+    "refresh": "refresh() runs the engine's own frame",
+    "launchFight": "launchFight() runs a match",
+    "runStoryboard": "runStoryboard() runs a storyboard loop",
+    "runHiscore": "runHiscore() runs the high-score loop",
+    "selectStart": "selectStart() starts loading and running a match",
+    "exitNetPlay": "exitNetPlay() tears down the session the hook runs in",
+    "exitReplay": "exitReplay() tears down the session the hook runs in",
+}
+
+
+def _lua_call_args(code, open_paren):
+    """The arguments of the call whose '(' is at open_paren, with offsets.
+
+    None when the call is never closed. Strings and nested brackets are walked
+    rather than counted, so a comma inside either is not a separator.
+    """
+    depth, args, start = 0, [], open_paren + 1
+    i = open_paren
+    while i < len(code):
+        c = code[i]
+        if c in "\"'":
+            end = i + 1
+            while end < len(code) and code[end] != c:
+                end += 2 if code[end] == "\\" else 1
+            i = end + 1
+            continue
+        if c in "([{":
+            depth += 1
+        elif c in ")]}":
+            depth -= 1
+            if depth == 0:
+                args.append((code[start:i], start))
+                return args
+        elif c == "," and depth == 1:
+            args.append((code[start:i], start))
+            start = i + 1
+        i += 1
+    return None
+
+
+def _lua_block_end(code, start):
+    """Index just past the 'end' that closes the block opening at start."""
+    depth = 0
+    for match in re.finditer(r"\b(function|if|do|repeat|end|until)\b", code[start:]):
+        if match.group(1) in ("function", "if", "do", "repeat"):
+            depth += 1
+        else:
+            depth -= 1
+            if depth == 0:
+                return start + match.end()
+    return len(code)
+
+
+def _lua_functions(code):
+    """name -> (start, end) for every function the file defines."""
+    spans = {}
+    for match in re.finditer(
+            r"(?m)^[ \t]*(?:local[ \t]+)?function[ \t]+([A-Za-z_][\w.:]*)[ \t]*\(", code):
+        spans[match.group(1)] = (match.start(), _lua_block_end(code, match.start()))
+    for match in re.finditer(
+            r"(?m)^[ \t]*([A-Za-z_]\w*)[ \t]*=[ \t]*function[ \t]*\(", code):
+        spans.setdefault(match.group(1),
+                         (match.start(), _lua_block_end(code, match.start())))
+    return spans
+
+
+def check_lua_hooks():
+    """No per-frame hook may call a function that runs the game.
+
+    game() does not answer "is a match running?", it runs one. A module that
+    called it from the loop hook started a match inside the running match on
+    every frame, and the engine stopped on a stack of "Error executing Lua code:
+    loop" - which named neither the module nor the call. The functions above run
+    a match, a storyboard or the engine's own frames, so calling one from a hook
+    that is already inside a frame does the same thing. Only hooks that run
+    every frame are checked, and only the hook's own body: a named function
+    registered as the hook is followed to where it is defined.
+    """
+    files = _lua_files()
+    if not files:
+        return
+    found = 0
+    for path in files:
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                src = fh.read()
+        except OSError as exc:                           # noqa: BLE001
+            err("lua hooks: %s cannot be read: %s" % (rel, exc))
+            continue
+        code = _lua_code(src, keep_strings=True)
+        plain = _lua_code(src)
+        functions = _lua_functions(plain)
+        for add in re.finditer(r"\bhook\.add\s*\(", plain):
+            args = _lua_call_args(code, add.end() - 1)
+            if args is None or len(args) < 3:
+                continue
+            quoted = args[0][0].strip()
+            if len(quoted) < 2 or quoted[0] not in "\"'":
+                continue
+            hook_name = quoted[1:-1]
+            if hook_name not in _FRAME_HOOKS and not hook_name.startswith("loop#"):
+                continue
+            body = args[2][0].strip()
+            if body.startswith("function"):
+                start = args[2][1] + args[2][0].index("function")
+                end = _lua_block_end(plain, start)
+            else:
+                span = functions.get(body.split("(")[0].strip())
+                if span is None:
+                    continue
+                start, end = span
+            inner = plain[start:end]
+            for name in sorted(_HOOK_UNSAFE):
+                hit = re.search(r"(?<![\w.:])%s\b\s*\(" % re.escape(name), inner)
+                if hit is None:
+                    continue
+                found += 1
+                err("lua hooks: %s calls %s() on line %d inside the '%s' hook, "
+                    "which runs every frame - %s, so the hook runs the whole "
+                    "thing again from inside a frame"
+                    % (rel, name, plain.count("\n", 0, start + hit.start()) + 1,
+                       hook_name, _HOOK_UNSAFE[name]))
+                break
+    if not found:
+        notes.append("lua hooks: no frame hook calls a function that runs the game")
 
 
 def _lupa_parser(runtime_class):
@@ -1717,6 +1861,7 @@ def check_lua_syntax():
 def main():
     check_lua_syntax()
     check_lua_declaration_order()
+    check_lua_hooks()
     check_media_refs()
     check_retired()
     chars = check_select()
