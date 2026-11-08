@@ -632,12 +632,24 @@ function main.f_formatBySpec(fmt, specMap)
 	return out
 end
 
+--The caption every loading screen shares, so the dots advance the same way
+--wherever it is drawn: Loading, Loading., Loading.., Loading... and round
+--again, one step every half second. The word itself never changes, so a
+--slow load still looks like the game is working at it.
+function main.f_loadingCaption(now)
+	return 'Loading' .. string.rep('.', math.floor((now or os.clock()) * 2) % 4)
+end
+
 --refresh screen every 0.02 during initial loading
 main.nextRefresh = os.clock() + 0.02
 function main.f_loadingRefresh()
 	if os.clock() >= main.nextRefresh then
+		local text = motif.title_info.loading.TextSpriteData
 		refresh()
-		textImgDraw(motif.title_info.loading.TextSpriteData)
+		if text ~= nil then
+			pcall(textImgSetText, text, main.f_loadingCaption())
+			textImgDraw(text)
+		end
 		main.nextRefresh = os.clock() + 0.02
 	end
 end
@@ -694,13 +706,10 @@ function main.f_loadingCurrent()
 	return nil
 end
 
---The boot screen used to draw anim 600, a ring that only ever looped, so it
---looked like a progress bar while telling the player nothing. Write the live
---figure into the loading caption instead. That caption is the one text sprite
---the motif actually configures (loading.font/offset/scale/text); the wait
---sprite beside the ring has no font or text of its own, so text put there would
---not be guaranteed to show. The percentage leads, so even if the caption's end
---is cut off the figure is still the thing the player sees.
+--The boot screen draws one caption and a spinner. The caption is written from
+--main.f_loadingCaption rather than left to the motif's static "NOW LOADING..."
+--line, so the dots after the word advance while the queue works: Loading,
+--Loading., Loading.., Loading... and round again.
 --The boot screen: a spinner and one line, both centred on the frame. The
 --caption used to sit in the bottom-right corner on the motif's own offset, in
 --the small Body face, skewed by an xshear, and the shell then overwrote it with
@@ -750,16 +759,7 @@ function main.f_loadingDraw()
 	loadingDrawAnim(spinner, w / 2, h * LOADING_SPINNER_Y)
 
 	local text = motif.title_info.loading.TextSpriteData
-	local done, total = main.f_loadingProgress()
-	local pct = 0
-	if total > 0 then
-		pct = math.floor(done * 100 / total)
-	end
-	if pct > 100 then pct = 100 end
-	--The dots run while the line sits still, so a slow load still looks like the
-	--game is working at it.
-	local dots = string.rep('.', math.floor(os.clock() * 2) % 4)
-	local caption = 'NOW LOADING' .. dots .. '   ' .. pct .. '%'
+	local caption = main.f_loadingCaption()
 	local drawn = false
 	if text ~= nil then
 		drawn = pcall(function()
