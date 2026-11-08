@@ -49,8 +49,39 @@ stages and screenpack in place. Nothing to install.
 | macOS | `BigTroubleInLittleChina-macOS.zip` | unzip, right-click the app → **Open** the first time |
 
 Grab them from the [latest release](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest).
-SmartScreen or Gatekeeper warnings are just the usual unsigned-download prompt;
-a renderer crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
+
+### Windows will probably call the game a trojan
+
+It is not one. The engine is a free open-source build with **no code-signing
+certificate**, so Windows has no publisher to check and no reputation for the file,
+and Defender's cloud checker labels a fresh copy `Trojan:Win32/Tecabans.A!cl`. The
+`!cl` suffix means that verdict came from the cloud model, not from a virus
+signature. The engine's own maintainers answered this exact report as a false alarm
+([ikemen-engine/Ikemen-GO#2811](https://github.com/ikemen-engine/Ikemen-GO/issues/2811)),
+and it comes back each time a new engine build is published.
+
+Three things to check instead of taking anyone's word:
+
+- `READ-ME-FIRST.txt` inside the Windows zip carries the SHA-256 of the game
+  executable in that zip, and `SHA256SUMS.txt` on the release page hashes the
+  download itself.
+- Double-click **`ALLOW-IN-DEFENDER.bat`** in the game folder. It adds that folder
+  to Defender's exclusions (one administrator prompt) and prints whether each path
+  really was added.
+- If Defender already removed the file: Windows Security → Virus and threat
+  protection → Protection history → the `Trojan:Win32/Tecabans.A!cl` entry →
+  Actions → **Restore**, then run the game again.
+
+SmartScreen or Gatekeeper prompts are the same unsigned-download story; a renderer
+crash on boot is covered in [docs/INSTALL.md](docs/INSTALL.md).
+
+### Play online
+
+Online play uses the same download: **Update and Play.bat** in the game folder
+prepares an `Ikemen GO v1.0.0` build beside it and starts the game from there.
+[ONLINE-SETUP.md](ONLINE-SETUP.md) covers it, and
+[TEST-ONLINE-WITH-A-FRIEND.md](TEST-ONLINE-WITH-A-FRIEND.md) covers testing -
+including how to test both sides on one PC.
 
 ## What is in the build
 

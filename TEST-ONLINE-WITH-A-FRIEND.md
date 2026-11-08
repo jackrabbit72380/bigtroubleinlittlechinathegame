@@ -22,6 +22,19 @@ Run `CHECK-ONLINE.bat` on both machines and compare the two text files: the
 `Version:` and `Build Time:` lines must be identical, and both must list the same
 engine executable.
 
+## Testing on your own, no second person
+
+One PC can do both sides: start the game twice from the same folder.
+
+1. First window: NETWORK > HOST GAME. Leave it on "Waiting for player 2... (7500)".
+2. Start the same game again (double-click the same exe a second time).
+3. Second window: NETWORK > JOIN GAME, address `127.0.0.1`, port 7500.
+
+If a match starts, then hosting, joining, the port and the build all work, and a
+friend only adds distance. If the second window cannot connect, the firewall is
+blocking 7500 - allow it. If they connect and drop at once, the two builds differ,
+which is what `CHECK-ONLINE.bat` is for.
+
 ## Same house / same network
 
 1. **Host:** open NETWORK > HOST GAME. It shows "Waiting for player 2... (7500)"

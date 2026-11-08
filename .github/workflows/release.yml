@@ -123,6 +123,58 @@ jobs:
           mkdir -p "$out/docs"
           cp README.md "$out/README.md"
           cp docs/DESIGN.md "$out/docs/DESIGN.md"
+
+          # Windows Defender labels the engine Trojan:Win32/Tecabans.A!cl on a
+          # fresh download. It is a false alarm on an unsigned binary, and the
+          # engine's own maintainers say so (ikemen-engine/Ikemen-GO issue 2811).
+          # A player who meets that warning before any explanation concludes the
+          # download is malware, so the explanation travels inside the zip, beside
+          # the hash of the exact binary in this build, and beside the one-click
+          # exclusion script.
+          if [ "${{ matrix.platform }}" = "Windows" ]; then
+            bundled=$(find "$out" -maxdepth 1 -type f -name 'BigTroubleInLittleChinaTheGame.exe' | head -1)
+            bundled_hash=$(sha256sum "$bundled" | cut -d' ' -f1)
+            {
+              printf 'Big Trouble in Little China: The Game\n'
+              printf '=====================================\n\n'
+              printf 'READ THIS BEFORE YOU DOUBLE-CLICK ANYTHING\n\n'
+              printf 'Windows Defender may report the game file\n\n'
+              printf '    BigTroubleInLittleChinaTheGame.exe\n\n'
+              printf 'as "Trojan:Win32/Tecabans.A!cl". That is a false alarm, not a virus.\n\n'
+              printf 'Why it happens: the engine is a free open-source build with no code\n'
+              printf 'signing certificate, so Windows has no publisher to check and no\n'
+              printf 'history for the file. Its cloud checker reacts to that, and the "!cl"\n'
+              printf 'at the end of the name means "cloud verdict", not "known virus".\n'
+              printf 'The people who make the engine answered this exact report:\n'
+              printf 'https://github.com/ikemen-engine/Ikemen-GO/issues/2811\n\n'
+              printf 'Check it instead of trusting it. The SHA-256 of the game file in\n'
+              printf 'this zip is:\n\n'
+              printf '    %s\n\n' "$bundled_hash"
+              printf 'In Windows Explorer, right-click the exe, Properties, Digital\n'
+              printf 'signatures: it has none, because the engine ships unsigned. That is\n'
+              printf 'the whole reason for the warning.\n\n'
+              printf 'If Defender already removed the file:\n'
+              printf '  1. Windows Security > Virus and threat protection > Protection history\n'
+              printf '  2. The Trojan:Win32/Tecabans.A!cl entry > Actions > Restore\n'
+              printf '  3. Double-click ALLOW-IN-DEFENDER.bat in this folder (it asks for\n'
+              printf '     administrator rights once)\n'
+              printf '  4. Start the game again\n\n'
+              printf 'ALLOW-IN-DEFENDER.bat adds this game folder to Defender exclusions and\n'
+              printf 'prints whether each path really was added. It changes nothing else.\n\n'
+              printf 'The same hash is published with every release as SHA256SUMS.txt.\n'
+            } > "$out/READ-ME-FIRST.txt"
+            test -s "$out/READ-ME-FIRST.txt" || { echo "READ-ME-FIRST.txt was not written"; exit 1; }
+            test -s ALLOW-IN-DEFENDER.bat || { echo "ALLOW-IN-DEFENDER.bat is missing from the repo"; exit 1; }
+            cp ALLOW-IN-DEFENDER.bat "$out/ALLOW-IN-DEFENDER.bat"
+
+            # The README sends players to these for online play and for checking
+            # which build they are on, so they travel with the game.
+            for f in "Update and Play.bat" CHECK-ONLINE.bat ONLINE-SETUP.md \
+                     TEST-ONLINE-WITH-A-FRIEND.md; do
+              test -s "$f" || { echo "$f is missing from the repo"; exit 1; }
+              cp "$f" "$out/$f"
+            done
+          fi
           if [ ! -f "$out/LICENCE.txt" ]; then cp dl/LICENCE.txt "$out/LICENCE.txt"; fi
           # Render resolution is a CONFIG value, not an option-menu item: Ikemen
           # draws at Video.GameWidth x GameHeight and shows that in a window of
@@ -226,6 +278,20 @@ jobs:
           done
           test -f "$out/LICENCE.txt" || { echo "engine licence is missing from the bundle"; exit 1; }
           grep -qi 'MIT License' "$out/LICENCE.txt" || { echo "LICENCE.txt is not the engine MIT licence"; exit 1; }
+          if [ "${{ matrix.platform }}" = "Windows" ]; then
+            test -s "$out/READ-ME-FIRST.txt" \
+              || { echo "READ-ME-FIRST.txt is missing from the Windows bundle"; exit 1; }
+            want_hash=$(sha256sum "$exe" | cut -d' ' -f1)
+            grep -q "$want_hash" "$out/READ-ME-FIRST.txt" \
+              || { echo "READ-ME-FIRST.txt does not carry the hash of the engine this bundle ships"; exit 1; }
+            test -s "$out/ALLOW-IN-DEFENDER.bat" \
+              || { echo "ALLOW-IN-DEFENDER.bat is missing from the Windows bundle"; exit 1; }
+            for f in "Update and Play.bat" CHECK-ONLINE.bat ONLINE-SETUP.md \
+                     TEST-ONLINE-WITH-A-FRIEND.md; do
+              test -s "$out/$f" || { echo "$f is missing from the Windows bundle"; exit 1; }
+            done
+            echo "antivirus note carries $want_hash"
+          fi
           test -f "$out/VERSION.txt" || { echo "VERSION.txt is missing from the bundle"; exit 1; }
           echo "--- build stamp ---"; cat "$out/VERSION.txt"
           # Every BGM this game names must be inside the zip, or that screen or
@@ -256,12 +322,15 @@ jobs:
           cd out
           zip -qr "../dist/${{ matrix.folder }}.zip" "${{ matrix.folder }}"
           cd ..
+          ( cd dist && sha256sum "${{ matrix.folder }}.zip" > "${{ matrix.folder }}.zip.sha256" )
           ls -lh dist
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
           if-no-files-found: error
 
   release:
@@ -277,11 +346,30 @@ jobs:
       - name: List bundled zips
         run: ls -lh dist
 
+      - name: Collect the checksums
+        run: |
+          set -euo pipefail
+          cat dist/*.zip.sha256 > SHA256SUMS.txt
+          test -s SHA256SUMS.txt || { echo "no checksums were produced"; exit 1; }
+          cat SHA256SUMS.txt
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Big Trouble in Little China ${{ github.event.inputs.tag || github.ref_name }}
           body: |
+            **Before you run it: Windows Defender may call the game a trojan. It is not one.**
+            The engine is unsigned - no paid code-signing certificate - so Defender's cloud
+            checker labels a fresh copy `Trojan:Win32/Tecabans.A!cl`, and the `!cl` suffix means
+            a cloud verdict rather than a virus signature. The engine's own maintainers answered
+            this exact report as a false alarm
+            ([ikemen-engine/Ikemen-GO issue 2811](https://github.com/ikemen-engine/Ikemen-GO/issues/2811)),
+            and it returns every time a new engine build appears. Inside the Windows zip:
+            `READ-ME-FIRST.txt` carries the SHA-256 of the game file in that zip,
+            `ALLOW-IN-DEFENDER.bat` clears the warning in one double-click, and
+            `SHA256SUMS.txt` on this page checks the download itself. If Defender already
+            removed the file, restore it from Protection history first.
+
             Ready-to-run builds. Download the zip for your platform, unzip it, and launch —
             the Ikemen GO engine is already inside, so there is nothing else to install.
             `VERSION.txt` in the game folder names the build you are running.
@@ -308,7 +396,9 @@ jobs:
             Kung Fu Man sprites (see `docs/DESIGN.md`). The stages are original to this project. Fan project, not affiliated with the film's rights
             holders. The Ikemen GO engine is MIT licensed and redistributed unmodified — its
             `LICENCE.txt` is inside each zip.
-          files: dist/*.zip
+          files: |
+            dist/*.zip
+            SHA256SUMS.txt
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
