@@ -193,64 +193,64 @@ cancel.snd = 100,2
 
 ; Submenu: Arcade
 menu.itemname.menuarcade = Arcade
-menu.itemname.menuarcade.arcade = SINGLE MODE
-menu.itemname.menuarcade.teamarcade = TEAM ARCADE
-menu.itemname.menuarcade.teamcoop = TEAM CO-OP
-menu.itemname.menuarcade.back = BACK
+menu.itemname.menuarcade.arcade = Single Mode
+menu.itemname.menuarcade.teamarcade = Team Arcade
+menu.itemname.menuarcade.teamcoop = Team Co-op
+menu.itemname.menuarcade.back = Back
 
 ; Submenu: Versus
 menu.itemname.menuversus = Versus Mode
-menu.itemname.menuversus.versus = 1P VS 2P
-menu.itemname.menuversus.teamversus = TEAM VERSUS
-menu.itemname.menuversus.versuscoop = VERSUS CO-OP
-menu.itemname.menuversus.freebattle = QUICK MATCH
-menu.itemname.menuversus.back = BACK
+menu.itemname.menuversus.versus = 1P vs 2P
+menu.itemname.menuversus.teamversus = Team Versus
+menu.itemname.menuversus.versuscoop = Versus Co-op
+menu.itemname.menuversus.freebattle = Quick Match
+menu.itemname.menuversus.back = Back
 
 ; Submenu: Story Mode
-menu.itemname.storymode = STORY MODE
+menu.itemname.storymode = Story Mode
 ; story arcs menu items are automatically added before storymode.back
-menu.itemname.storymode.back = BACK
+menu.itemname.storymode.back = Back
 
 ; Submenu: Network
 menu.itemname.menunetwork = Network
-menu.itemname.menunetwork.serverhost = HOST GAME
-menu.itemname.menunetwork.serverjoin = JOIN GAME
-menu.itemname.menunetwork.back = BACK
+menu.itemname.menunetwork.serverhost = Host Game
+menu.itemname.menunetwork.serverjoin = Join Game
+menu.itemname.menunetwork.back = Back
 
 ; known IP addresses show up before serverjoin.back item
-menu.itemname.menunetwork.serverjoin.joinadd = NEW ADDRESS
-menu.itemname.menunetwork.serverjoin.back = BACK
+menu.itemname.menunetwork.serverjoin.joinadd = New Address
+menu.itemname.menunetwork.serverjoin.back = Back
 
 ; This group is hidden and should not be moved to other menus.
 ; It's opened automatically, after synchronization with online player.
-menu.itemname.server.netplayversus = VERSUS 2P
-menu.itemname.server.netplayteamcoop = ARCADE CO-OP
-menu.itemname.server.netplaysurvivalcoop = SURVIVAL CO-OP
-menu.itemname.server.back = EXIT
+menu.itemname.server.netplayversus = Versus 2P
+menu.itemname.server.netplayteamcoop = Arcade Co-op
+menu.itemname.server.netplaysurvivalcoop = Survival Co-op
+menu.itemname.server.back = Exit
 
 ; Submenu: Practice
 menu.itemname.menupractice = Practice
-menu.itemname.menupractice.training = TRAINING
-menu.itemname.menupractice.back = BACK
+menu.itemname.menupractice.training = Training
+menu.itemname.menupractice.back = Back
 
 ; Submenu: Mission
 menu.itemname.menumission = Mission
-menu.itemname.menumission.survival = SURVIVAL
-menu.itemname.menumission.survivalcoop = SURVIVAL CO-OP
-menu.itemname.menumission.timeattack = TIME ATTACK
-menu.itemname.menumission.bonusgames = BONUS GAMES
-menu.itemname.menumission.back = BACK
+menu.itemname.menumission.survival = Survival
+menu.itemname.menumission.survivalcoop = Survival Co-op
+menu.itemname.menumission.timeattack = Time Attack
+menu.itemname.menumission.bonusgames = Bonus Games
+menu.itemname.menumission.back = Back
 
 ; Submenu: Mission => Bonus Games
 ; bonus characters menu items are automatically added before bonusgames.back
-menu.itemname.menumission.bonusgames.back = BACK
+menu.itemname.menumission.bonusgames.back = Back
 
 ; Submenu: Watch Mode
 menu.itemname.menuwatch = Watch Mode
-menu.itemname.menuwatch.watch = CPU MATCH
-menu.itemname.menuwatch.randomtest = RANDOMTEST
-menu.itemname.menuwatch.replay = REPLAY
-menu.itemname.menuwatch.back = BACK
+menu.itemname.menuwatch.watch = CPU Match
+menu.itemname.menuwatch.randomtest = Random Test
+menu.itemname.menuwatch.replay = Replay
+menu.itemname.menuwatch.back = Back
 
 ; Options
 menu.itemname.options = Options
@@ -2586,7 +2586,7 @@ credits.scale = 0.75, 0.75
 ; Flexible submenu grouping.
 ;Full documentation of this feature is available on Ikemen GO features wiki
 
-menu.itemname.arcade = ARCADE
+menu.itemname.arcade = Arcade
 
 ;-------------------
 ;Attract mode screen background
