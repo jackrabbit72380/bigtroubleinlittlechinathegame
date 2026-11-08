@@ -61,3 +61,30 @@ already writes is `menu.itemname.menunetwork.onlinelobby`.
   `IkemenOnlineServer-0.9.1-selfhost.zip` so your group is not on a shared list.
 - The Nakama fork instead needs a Nakama server plus its database before two
   players can be matched; its own `nakama/hosting.md` covers that.
+
+## The "Waiting for player 2... (7500)" screen
+
+That is the engine's own **HOST GAME** screen, not the lobby: it opens a TCP port
+(7500 by default) and waits for someone to connect to this PC's address on it.
+Nobody can join it unless they know your IP, can reach that port, and run exactly
+the same game. Leave it with the menu's cancel key - it waits forever otherwise.
+
+The lobby pack replaces that dance: rooms are listed, and the two players are put
+together without either of them typing an address.
+
+## Why the old folder crashes when a match starts
+
+The engine binaries that shipped in this folder are older than the game's Lua
+scripts. Its own logs show the panic:
+
+    Version: nightly   Build Time: 2026.11.03
+    external/script/main.lua:3781  in function 'game'
+    .\external\script\start.lua:5238  in function 'refresh'  (f_selectVersus, launchFight)
+
+A script calls into the engine, the engine has no such function on that build and
+answers with a nil, and the game panics. The same mismatch is visible without a
+crash: the engine rejects `Netplay.Rollback.LogsEnabled` as a key it does not
+know, and `external/mods/auraopts.lua` reports `commonStatesInsert is not
+available in this build`. That is why a match in this folder cannot be relied on,
+and why the online build is a whole v1.0.0 - engine and scripts from the same
+release - rather than a patched binary.
