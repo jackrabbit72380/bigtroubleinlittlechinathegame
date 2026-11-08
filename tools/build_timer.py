@@ -138,6 +138,17 @@ def patch_time():
 
 
 def main():
+    # Retired. Sprite 30,0 is not the timer's own: build_banner.py paints BOTH
+    # dragon heads and the yin-yang into it as one composite, and the heads are
+    # the HUD's centrepiece. Running this tool wrote a bare disc over that
+    # composite, which is why the heads disappeared and the yin-yang changed
+    # size. It keeps its own painter for reference, behind the same escape hatch
+    # build_powerbar.py uses, so nobody loses the disc but nobody gets it by
+    # accident either.
+    if not os.environ.get("TIMER_PAINT"):
+        print("timer: sprite 30,0 belongs to build_banner.py (heads + yin-yang); "
+              "set TIMER_PAINT=1 to paint the bare disc instead")
+        return
     if not os.path.isfile(FIGHT_SFF):
         raise SystemExit("data/fight.sff is missing")
     image, axis = paint()

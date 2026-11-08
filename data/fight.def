@@ -2221,7 +2221,7 @@ p1.bg0.spr = -1
 p1.bg1.spr = 222,0
 p1.face.spr = 9000,0
 p1.face.facing = 1
-p1.face.offset = 0, 0
+p1.face.offset = 21, 27
 ;Player 2
 p2.pos    = 1260,20
 p2.bg0.spr = -1
@@ -2230,19 +2230,19 @@ p2.bg1.spr = 222,0
 p2.bg1.facing = -1
 p2.face.spr = 9000,0
 p2.face.facing = -1
-p2.face.offset = 0, 0
-;p1.face.window = 24, 24, 116, 116
-;p2.face.window = 1264, 24, 1356, 116
+p2.face.offset = 21, 27
+p1.face.window = 29, 23, 97, 124
+p2.face.window = 1183, 23, 1251, 124
 p1.bg1.offset = 0, 0
 p1.bg1.scale = 0.667, 0.667
 p1.bg1.facing = 1
 p1.bg1.layerno = 2
-p1.face.scale = 0.667, 0.667
+p1.face.scale = 0.333, 0.333
 p1.face.layerno = 1
 p2.bg1.offset = 0, 0
 p2.bg1.scale = 0.667, 0.667
 p2.bg1.layerno = 2
-p2.face.scale = 0.667, 0.667
+p2.face.scale = 0.333, 0.333
 p2.face.layerno = 1
 [Simul Face]
 ;Player 1
@@ -2251,7 +2251,7 @@ p1.bg0.spr = -1
 p1.bg1.spr = 222,0
 p1.face.spr = 9000,0
 p1.face.facing = 1
-p1.face.offset = 0, 0
+p1.face.offset = 21, 27
 ;Player 2
 p2.pos    = 1260,20
 p2.bg0.spr = -1
@@ -2260,7 +2260,7 @@ p2.bg1.spr = 222,0
 p2.bg1.facing = -1
 p2.face.spr = 9000,0
 p2.face.facing = -1
-p2.face.offset = 0, 0
+p2.face.offset = 21, 27
 ;Player 3
 p3.pos    = 144,84
 p3.bg0.spr = 70,0
@@ -2313,13 +2313,15 @@ p1.bg1.offset = 0, 0
 p1.bg1.scale = 0.667, 0.667
 p1.bg1.facing = 1
 p1.bg1.layerno = 2
-p1.face.scale = 0.667, 0.667
+p1.face.scale = 0.333, 0.333
 p1.face.layerno = 1
 p2.bg1.offset = 0, 0
 p2.bg1.scale = 0.667, 0.667
 p2.bg1.layerno = 2
-p2.face.scale = 0.667, 0.667
+p2.face.scale = 0.333, 0.333
 p2.face.layerno = 1
+p1.face.window = 29, 23, 97, 124
+p2.face.window = 1183, 23, 1251, 124
 [Tag Face]
 ;Player 1
 p1.pos    = 20,20
@@ -2396,15 +2398,17 @@ p1.bg1.offset = 0, 0
 p1.bg1.scale = 0.667, 0.667
 p1.bg1.facing = 1
 p1.bg1.layerno = 2
-p1.face.offset = 0, 0
-p1.face.scale = 0.667, 0.667
+p1.face.offset = 21, 27
+p1.face.scale = 0.333, 0.333
 p1.face.layerno = 1
 p2.bg1.offset = 0, 0
 p2.bg1.scale = 0.667, 0.667
 p2.bg1.layerno = 2
-p2.face.offset = 0, 0
-p2.face.scale = 0.667, 0.667
+p2.face.offset = 21, 27
+p2.face.scale = 0.333, 0.333
 p2.face.layerno = 1
+p1.face.window = 29, 23, 97, 124
+p2.face.window = 1183, 23, 1251, 124
 [Turns Face]
 ;Player 1
 p1.pos    = 20,20
@@ -2447,41 +2451,43 @@ p1.bg1.offset = 0, 0
 p1.bg1.scale = 0.667, 0.667
 p1.bg1.facing = 1
 p1.bg1.layerno = 2
-p1.face.offset = 0, 0
-p1.face.scale = 0.667, 0.667
+p1.face.offset = 21, 27
+p1.face.scale = 0.333, 0.333
 p1.face.layerno = 1
 p2.bg1.offset = 0, 0
 p2.bg1.scale = 0.667, 0.667
 p2.bg1.layerno = 2
-p2.face.offset = 0, 0
-p2.face.scale = 0.667, 0.667
+p2.face.offset = 21, 27
+p2.face.scale = 0.333, 0.333
 p2.face.layerno = 1
+p1.face.window = 29, 23, 97, 124
+p2.face.window = 1183, 23, 1251, 124
 [Name]
 
 ;Player 1
-p1.pos = 13,145
-p1.name.scale = 1.6, 1.6
+p1.pos = 13,132
+p1.name.scale = 1, 1
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 
 ;Player 2
-p2.name.scale = 1.6, 1.6
-p2.pos = 1267,145
+p2.name.scale = 1, 1
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 [Simul Name]
 leaderontop = 1 ; This allows the names to render from top to bottom.
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,165
@@ -2502,15 +2508,15 @@ p4.name.palfx.mul = 178, 178, 178
 leaderontop = 1
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28, 160
@@ -2547,15 +2553,15 @@ p6.name.palfx.mul = 178, 178, 178
 leaderontop = 1
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,158
@@ -2603,14 +2609,14 @@ p8.name.palfx.mul = 178, 178, 178
 leaderontop = 1
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,165
@@ -2630,15 +2636,15 @@ p4.name.palfx.mul = 178, 178, 178
 leaderontop = 1
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28, 160
@@ -2673,15 +2679,15 @@ p6.name.palfx.mul = 178, 178, 178
 leaderontop = 1
 
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,0, 1, 255, 228, 140
+p1.name.font = 10,0, 1, 255, 228, 140
 p1.name.layerno = 0
 
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,0, -1, 255, 228, 140
+p2.name.font = 10,0, -1, 255, 228, 140
 
 ;Player 3
 p3.pos = 28,158
@@ -2728,13 +2734,13 @@ p8.name.palfx.mul = 178, 178, 178
 
 [Turns Name]
 ;Player 1
-p1.pos = 13,145
+p1.pos = 13,132
 ;p1.bg. =
-p1.name.font = 3,3, 1, 255, 228, 140
+p1.name.font = 10,3, 1, 255, 228, 140
 ;Player 2
-p2.pos = 1267,145
+p2.pos = 1267,132
 ;p2.bg. =
-p2.name.font = 3,1, -1, 255, 228, 140
+p2.name.font = 10,1, -1, 255, 228, 140
 
 ;Player 1 Teammates
 p1.teammate.pos = 28,160
@@ -2759,7 +2765,7 @@ p*.teammate.ko.hide = 1
 pos = 640,34
 ; Uncomment the following line to use a bg component
 bg.spr = 30,0
-bg.offset = 0,55
+bg.offset = 0,0
 bg.palfx.sinmul = 26, 26, 26, 24
 ; Time count display
 counter.offset = 0,17
@@ -2792,7 +2798,7 @@ counter11.layerno = 0
 
 ;-----------------------------------------------------------
 bg.spr = 30,0
-bg.offset = 0,55
+bg.offset = 0,0
 [Combo]
 team1.pos = 130,260        ;Coords to show
 team1.start.x = -240      ;Starting x-coords
@@ -3801,14 +3807,14 @@ useiconupto = 4
 
 ;-----------------------------------------------------------
 [WinCount]
-p1.pos = 70, 6
+p1.pos = 20, 6
 ;p1.bg.spr = 
-p1.text.font = 10, 0, 0, 255, 228, 140
+p1.text.font = 10, 0, 1, 255, 228, 140
 p1.text.text = WINS %s
 
-p2.pos = 1210, 6
+p2.pos = 1260, 6
 ;p2.bg.spr = 
-p2.text.font = 10, 0, 0, 255, 228, 140
+p2.text.font = 10, 0, -1, 255, 228, 140
 p2.text.text = WINS %s
 
 p1.enabled.netplayversus = 1

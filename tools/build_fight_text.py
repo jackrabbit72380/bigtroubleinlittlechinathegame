@@ -41,10 +41,14 @@ WINS_FACE = (
     # corner, so WINS %s printed across the fighter's legs in the 18px Pixel
     # face. It is on the top edge of the screen now, in the Display face the
     # round banner and the VS names use, on layerno 2 over the frame art.
-    ("p1.pos", "70, 6"),
-    ("p2.pos", "1210, 6"),
-    ("p1.text.font", "10, 0, 0, 255, 228, 140"),
-    ("p2.text.font", "10, 0, 0, 255, 228, 140"),
+    # Centred on x=70 the line spanned -11..151 and the W was cut off by the
+    # screen edge; p2 hung off the right one the same way. Left- and right-aligned
+    # against the corner cells instead, so the caption starts where the box does
+    # and any extra digit grows inward.
+    ("p1.pos", "20, 6"),
+    ("p2.pos", "1260, 6"),
+    ("p1.text.font", "10, 0, 1, 255, 228, 140"),
+    ("p2.text.font", "10, 0, -1, 255, 228, 140"),
     ("p1.layerno", "2"),
     ("p2.layerno", "2"),
 )
@@ -93,9 +97,53 @@ ROUND_KEYS = (
 # instead of the fighter. 1.6 of the Menu2Small cell puts them just under the
 # height of the VERSUS row without running into y=200.
 NAME_SIZE = (
-    ("p1.name.scale", "1.6, 1.6"),
-    ("p2.name.scale", "1.6, 1.6"),
+    ("p1.name.scale", "1, 1"),
+    ("p2.name.scale", "1, 1"),
 )
+
+
+DISPLAY = "ikemen1/fonts/Display.def"
+
+
+def place_name_face(text):
+    """Set both players' names in the wins caption's face, at its own size.
+
+    The names were Menu2Small at 1.6 - a 32px cell against the caption's 45 - so
+    the two captions on the same corner of the screen were two sizes of two
+    faces. TheDisplay face at 1:1 is what the wins counter and the round banner
+    already use, so the whole HUD reads as one voice. The band is held by lifting
+    the y by the difference in cell height.
+    """
+    text, idx = font_slot(text, DISPLAY)
+    if idx is None:
+        return text, False
+    made = False
+    names = ("Name", "Simul Name", "Simul_3P Name", "Simul_4P Name",
+             "Tag Name", "Tag_3P Name", "Tag_4p Name", "Turns Name")
+    for name in names:
+        start = text.find("[%s]" % name)
+        if start < 0:
+            continue
+        nxt = re.compile(r"^\[", re.M).search(text, start + len(name) + 2)
+        end = nxt.start() if nxt else len(text)
+        head, body, tail = text[:start], text[start:end], text[end:]
+        for side in ("p1", "p2"):
+            # the face, keeping the bank and colour already chosen for that side
+            pat = re.compile(r"^(;?[ \t]*%s\.name\.font[ \t]*=[ \t]*)-?\d+"
+                             r"([ \t]*,[^\r\n]*)$" % side, re.M)
+            def swap(m, idx=idx):
+                return "%s%d%s" % (m.group(1), idx, m.group(2))
+            if pat.search(body):
+                body = pat.sub(swap, body, count=1)
+            # 45-unit cell against the old 32, so the caption drops 13 units
+            # unless its pos is lifted by the same amount
+            pos = re.compile(r"^(;?[ \t]*%s\.pos[ \t]*=[ \t]*)(\d+),[ \t]*145[ \t]*$"
+                             % side, re.M)
+            if pos.search(body):
+                body = pos.sub(lambda m: "%s%s,132" % (m.group(1), m.group(2)), body)
+                made = True
+        text = head + body + tail
+    return text, made
 
 
 def place_name_size(text):
@@ -263,7 +311,8 @@ def build():
               newline="") as f:
         text = f.read()
     text, names = place_name_size(text)
-    if names:
+    text, faces = place_name_face(text)
+    if names or faces:
         with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
                   errors="surrogateescape", newline="") as f:
             f.write(text)
@@ -283,7 +332,7 @@ def build():
     with open(FIGHT_DEF, encoding="utf-8", errors="replace") as f:
         check = f.read()
     wins = check.split("[WinCount]", 1)[-1].split("\n[", 1)[0]
-    if "p1.pos = 70, 6" not in wins or "p1.layerno = 2" not in wins:
+    if "p1.pos = 20, 6" not in wins or "p1.layerno = 2" not in wins:
         raise SystemExit("[WinCount] did not take the character-box layout")
     if "round.default.font" in check:
         line = next(l for l in check.splitlines() if l.strip().startswith("round.default.font"))

@@ -1144,7 +1144,9 @@ def check_fight_hud():
     Both corners used to frame the portrait in their own 100x100 and 108x108
     boxes and clip it with a 92x92 window, so the HUD matched nothing else in
     the game. tools/build_face_boxes.py redraws them as the select screen's
-    128x160 gold cell, and the countdown moved off the banner onto the disc.
+    128x160 gold cell, and the countdown moved off the banner onto the disc. The
+    portrait is clipped to the cell's opening, because the art's size varies per
+    character and the taller ones hung out of the frame.
     """
     import re as _re
 
@@ -1171,16 +1173,22 @@ def check_fight_hud():
             if keys.get("%s.face.spr" % side) != "9000,0":
                 err("fight HUD: [%s] %s.face.spr is %r, not the character cell art"
                     % (name, side, keys.get("%s.face.spr" % side)))
+            import build_face_boxes as fb
+            want_scale = "%.3f, %.3f" % (fb.PORTRAIT, fb.PORTRAIT)
             scale = keys.get("%s.face.scale" % side, "")
-            if not scale.replace(" ", "").startswith("0.667"):
-                err("fight HUD: [%s] %s.face.scale is %r, so the portrait is not the "
-                    "size of the cell it sits in" % (name, side, scale))
-        for line in body.splitlines():
-            stripped = line.strip()
-            for side in ("p1", "p2"):
-                if stripped.startswith("%s.face.window" % side):
-                    err("fight HUD: [%s] still windows %s.face, which crops the cell "
-                        "art the corner is meant to show" % (name, side))
+            if ", ".join(p.strip() for p in scale.split(",")) != want_scale:
+                err("fight HUD: [%s] %s.face.scale is %r, not the select screen's "
+                    "portrait size (%s), so the fighter does not fit its cell"
+                    % (name, side, scale or "missing", want_scale))
+        import build_face_boxes as fb
+        for side in ("p1", "p2"):
+            want = ", ".join(str(v) for v in fb.cell_window(side))
+            have = keys.get("%s.face.window" % side, "")
+            norm = ", ".join(p.strip() for p in have.split(",")) if have else ""
+            if norm != want:
+                err("fight HUD: [%s] %s.face.window is %r, not the cell's opening "
+                    "(%s), so the portrait is not held inside its box"
+                    % (name, side, have or "missing", want))
 
     data, sprites, palettes = sffmod.read_sff(
         os.path.join(ROOT, "data", "fight.sff"))

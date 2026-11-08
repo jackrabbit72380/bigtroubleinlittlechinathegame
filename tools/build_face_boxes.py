@@ -36,9 +36,67 @@ FIGHT_DEF = os.path.join(ROOT, "data", "fight.def")
 CELL = (222, 0)                 # the gold cell frame on the select screen
 CELL_SIZE = (128, 160)          # as authored, in select-screen pixels
 SCALE = 1280.0 / 1920.0         # fight.def's coordinate space
+# The select screen draws a portrait at 0.5 in its 1920-wide space. The HUD used
+# 0.667 - the cell's scale - for the picture as well as for the frame, so the art
+# was drawn half again larger than the screen it was clipped against and the
+# fighters hung out of their boxes. Matching the select screen's 0.5, converted
+# into fight units, is what makes the picture the same size in both places.
+SELECT_PORTRAIT = 0.5
+PORTRAIT = SELECT_PORTRAIT * SCALE
 POS = {"p1": (20, 20), "p2": (1260, 20)}
 
 SECTIONS = ("Face", "Simul Face", "Tag Face", "Turns Face")
+
+
+def cell_opening(image):
+    """The frame's opening, in the cell's own pixels.
+
+    The gold cell is a painted ring, and its rounded corners are transparent, so
+    a plain bounding box of the transparent pixels is the whole sprite and a scan
+    inward from one edge runs straight past the border. What the portrait has to
+    fit through is the gap *between* the painted left and right edges on each
+    row; the rect below is the widest rectangle that sits inside all of them.
+    """
+    w, h = image.size
+    px = image.load()
+    rows = []
+    for y in range(h):
+        painted = [x for x in range(w) if px[x, y][3] > 8]
+        if len(painted) < 2:
+            continue
+        gap = [x for x in range(painted[0], painted[-1] + 1) if px[x, y][3] <= 8]
+        if not gap:
+            continue
+        rows.append((y, gap[0], gap[-1] + 1))
+    if not rows:
+        return 0, 0, w, h
+    x1 = max(r[1] for r in rows)
+    x2 = min(r[2] for r in rows)
+    if x2 <= x1:
+        return 0, 0, w, h
+    return x1, rows[0][0], x2, rows[-1][0] + 1
+
+
+def cell_window(side, image=None):
+    """The frame's opening as a face.window rect, in fight.def units.
+
+    The cell is drawn from POS at SCALE with its axis at the top-left, so the
+    opening lands at pos + opening * SCALE; player two's cell is mirrored, so its
+    opening is mirrored too. This is the box the portrait is held inside, and it
+    is the same 128x160 cell the select screen uses, scaled for the fight space.
+    """
+    if image is None:
+        sd, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+        src = next(s for s in sprites if (s["group"], s["number"]) == CELL)
+        image = sff.decode_sprite(sd, src, palettes, src["pal"]).convert("RGBA")
+    ox1, oy1, ox2, oy2 = cell_opening(image)
+    x, y = POS[side]
+    if side == "p1":
+        x1, x2 = x + ox1 * SCALE, x + ox2 * SCALE
+    else:
+        x1, x2 = x - ox2 * SCALE, x - ox1 * SCALE
+    return (int(round(x1)), int(round(y + oy1 * SCALE)),
+            int(round(x2)), int(round(y + oy2 * SCALE)))
 
 
 def copy_cell_sprite():
@@ -74,6 +132,17 @@ def copy_cell_sprite():
     return image.size + (src["axis"], done)
 
 
+def cell_offset():
+    """Where the portrait starts, so the art sits centred in the opening."""
+    sd, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    src = next(s for s in sprites if (s["group"], s["number"]) == CELL)
+    image = sff.decode_sprite(sd, src, palettes, src["pal"]).convert("RGBA")
+    ox1, oy1, ox2, oy2 = cell_opening(image)
+    drawn = (CELL_SIZE[0] * PORTRAIT, CELL_SIZE[1] * PORTRAIT)
+    return (int(round(ox1 * SCALE + ((ox2 - ox1) * SCALE - drawn[0]) / 2.0)),
+            int(round(oy1 * SCALE + ((oy2 - oy1) * SCALE - drawn[1]) / 2.0)))
+
+
 def cell_keys(side):
     """The keys that turn one corner into the select screen's cell."""
     facing = "1" if side == "p1" else "-1"
@@ -86,10 +155,16 @@ def cell_keys(side):
         ("%s.bg1.facing" % side, facing),
         ("%s.bg1.layerno" % side, "2"),
         ("%s.face.spr" % side, "9000,0"),
-        ("%s.face.offset" % side, "0, 0"),
-        ("%s.face.scale" % side, scale),
+        ("%s.face.offset" % side, "%d, %d" % cell_offset()),
+        ("%s.face.scale" % side, "%.3f, %.3f" % (PORTRAIT, PORTRAIT)),
         ("%s.face.facing" % side, facing),
         ("%s.face.layerno" % side, "1"),
+        # The corner art is the fighter's own 9000,0, and its size varies by
+        # character, so without this the taller ones spilled past the frame and
+        # read as cut off. The window is the cell's opening, at the cell's scale,
+        # so the picture is framed by the box instead of hanging out of it.
+        ("%s.face.window" % side,
+         "%d, %d, %d, %d" % cell_window(side)),
     ]
 
 
@@ -114,9 +189,7 @@ def patch_def():
                 else:
                     body = body.rstrip("\r\n") + "\n" + line + "\n"
                 changed.append("%s/%s" % (name, key))
-            # the window cropped the portrait; the cell art is already the box
-            body = re.sub(r"(?m)^([ \t]*)(%s\.face\.window[ \t]*=[^\r\n]*)$"
-                          % side, r"\1;\2", body)
+
         text = head + body + tail
     with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
               errors="surrogateescape", newline="") as f:
