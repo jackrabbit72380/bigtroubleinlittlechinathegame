@@ -331,6 +331,7 @@ spriteno = 0, 2
 layerno = 1
 start = -960,0
 scalestart = 0.234375, 0.234375
+sin.y = 15, 264, 2
 mask = 1
 alpha = 256,96
 trans = add
@@ -341,6 +342,7 @@ spriteno = 0, 3
 layerno = 1
 start = -960,0
 scalestart = 0.234375, 0.234375
+sin.y = 15, 264, 32
 mask = 1
 alpha = 256,96
 trans = add
@@ -351,6 +353,7 @@ spriteno = 0, 0
 layerno = 1
 start = -960,0
 scalestart = 0.234375, 0.234375
+sin.y = 15, 264, 2
 mask = 1
 
 [TitleBG Title Logo 2]
@@ -359,6 +362,7 @@ spriteno = 0, 1
 layerno = 1
 start = -960,0
 scalestart = 0.234375, 0.234375
+sin.y = 15, 264, 32
 mask = 1
 
 ;----------------------------

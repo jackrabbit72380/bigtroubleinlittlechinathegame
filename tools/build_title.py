@@ -645,7 +645,7 @@ def wordmark():
     return logo, box
 
 
-def place_def(start, scale=1, static=False):
+def place_def(start, scale=1):
     """Move the four logo layers to where the reference art has the wordmark.
 
     system.def ships the engine's own logo at start = -250,155, which put this
@@ -675,10 +675,6 @@ def place_def(start, scale=1, static=False):
                 continue
             elif bare.startswith("scalestart="):
                 continue          # rewritten right after the start line
-            elif static and (bare.startswith("sin.y") or bare.startswith("sin.x")):
-                # the wordmark is painted into the backdrop, so a bobbing layer
-                # would slide off it and show the doubled logo
-                continue
         out.append(line)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
@@ -869,9 +865,9 @@ def build():
     if aligned:
         # no fitting at all: the art carries the wordmark's place with it
         start = where
-        place_def(start, 1.0 / factor, static=True)
+        place_def(start, 1.0 / factor)
         print(f"title logo on the backdrop's grid: start = {start[0]},{start[1]}, "
-              f"scalestart {1.0 / factor:.6g}, no bob")
+              f"scalestart {1.0 / factor:.6g}")
     else:
         axis = next(sp["axis"] for sp in sprites
                     if (sp["group"], sp["number"]) == (0, 0))
