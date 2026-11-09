@@ -38,7 +38,7 @@ localcoord = 1920,1080   ;Local coordinate space width and height
 [Files]
 spr = system.sff            ;Filename of sprite data
 snd = system.snd            ;Filename of sound data
-logo.storyboard = logo.def  ;Logo storyboard definition (optional)
+;logo.storyboard = logo.def  ;Off: the title stack draws the splash art
 ;intro.storyboard =         ;Intro storyboard definition (optional)
 select = select.def         ;Character and stage selection list
 fight = fight.def           ;Fight definition filename
@@ -137,7 +137,9 @@ footer.info.font = 11, 0, 0, 240, 196, 88, 255, -1
 footer.title.scale = 0.5, 0.5
 footer.title.offset = 5, 5000
 footer.title.font = 11, 0, 1, 240, 196, 88, 255, -1
-fadein.time = 10
+; The painted art is the opening beat now: it fades up from black in the
+; title stack, instead of arriving behind a separate splash card.
+fadein.time = 60
 fadeout.time = 10
 menu.pos = 960, 470
 menu.tween.factor = 0.5
@@ -276,6 +278,8 @@ menu.itemname.exit = Leave Chinatown
 ;Title background definition
 [TitleBGdef]
 bgclearcolor = 0, 0, 0
+; [TitleBG Background Sky] and [TitleBG Title Overlay] are the opening beat:
+; the painting is this stack's overlay, so it keeps its cut-out over the sky.
 
 [TitleBG Background Sky]
 type = normal
@@ -2619,7 +2623,7 @@ fadein.col = 0, 0, 0
 fadeout.time = 10
 fadeout.col = 0, 0, 0
 credits.snd = 400, 0
-logo.storyboard = logo.def
+;logo.storyboard = logo.def  ;Off: the title stack draws the splash art
 intro.storyboard = intro.def
 start.storyboard = 
 start.time = 600

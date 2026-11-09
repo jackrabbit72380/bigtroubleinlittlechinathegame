@@ -81,21 +81,19 @@ concept_art/ui/splash.png        (also picked up)
 
 What the build does with it:
 
-- packs it into `data/ikemen1/system.sff` as sprite `206, 0` (a group the
-  engine does not use), axis at the frame centre, with every pixel of its
-  transparency intact: the night sky behind it is sprite `207, 0`, drawn first;
-- rewrites `data/ikemen1/logo.def` as one scene: fade up from black, hold, fade
-  out into the title. The timing lives in `tools/build_splash.py`
-  (`SECONDS`, `FADE_IN`, `FADE_OUT`).
-- paints the game's wordmark onto the card at the fraction of the frame the
-  title screen draws it, so the logo does not jump when the card hands over.
+- packs it into `data/ikemen1/system.sff` as sprite `205, 0` and places it in
+  `system.def` as `[TitleBG Title Overlay]`, drawn over
+  `[TitleBG Background Sky]`: the art keeps every pixel of its transparency and
+  the night sky shows through it;
+- paints the game's wordmark into the same sprite at the fraction of the frame
+  the title screen draws it, so the logo sits where the menu expects it.
 
-With no file present, the build paints a fallback card — the game's wordmark on
-a starfield — so the splash always exists. The console says which it used:
+There is no separate splash screen any more. The title stack draws the painting,
+and the title fades up from black over the first second, which is why the art
+lives in `tools/build_title.py` rather than in a splash storyboard.
 
-```
-using painted splash art_src/ui/splash.png
-```
+Without the file the title keeps its painted clouds, and the console says which
+plate it used.
 
-Both `logo.def` and `system.sff` come from the engine download and are restored
-on every build, which is why the splash is generated rather than committed.
+`system.sff` and `system.def` come from the engine download and are restored on
+every build, which is why the art is generated rather than committed.

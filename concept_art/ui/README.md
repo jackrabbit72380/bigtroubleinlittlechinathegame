@@ -17,11 +17,10 @@ These are a fallback for `art_src/ui/`, which is checked first. If both exist,
 
 ```
 python3 tools/build_title.py     # title_logo.png
-python3 tools/build_splash.py    # splash.png
 ```
 
 or `python3 tools/build_all.py` to rebuild everything. The console prints which
-path it used, e.g. `using painted splash concept_art/ui/splash.png`.
+path it used, e.g. `using painted title art concept_art/ui/splash.png`.
 
 Without these files the build paints its own title wordmark and splash card, so
 nothing breaks if the folder is empty.

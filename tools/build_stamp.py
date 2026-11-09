@@ -55,7 +55,6 @@ DATA_FILES = (
     "data/music.json",
     "data/retired.txt",
     "data/albums.sff",
-    "data/ikemen1/logo.def",
     "data/ikemen1/credits.def",
     "external/gamecontrollerdb.txt",
     # the three 3D stages: their defs decide how the floating island is framed and

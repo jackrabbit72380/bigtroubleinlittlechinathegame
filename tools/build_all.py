@@ -117,12 +117,6 @@ def main():
     title_sff = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "system.sff")
     if os.path.isfile(title_sff):
         scripts.append("build_title.py")
-    # The splash lives in the engine data too - logo.def points at system.sff -
-    # so it is rebuilt from the same reset, after the title has written its
-    # layers, to keep both edits to that file in one pass.
-    logo_def = os.path.join(TOOLS, os.pardir, "data", "ikemen1", "logo.def")
-    if os.path.isfile(logo_def):
-        scripts.append("build_splash.py")
     # The select screen itself: the portrait grid, its frames and cursors,
     # painted into the same system.sff.
     if os.path.isfile(title_sff):
