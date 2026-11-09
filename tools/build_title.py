@@ -394,18 +394,48 @@ def flat_key(img, tol=20):
 
 
 def plate():
-    """A painted title logo from art_src, if one has been supplied."""
+    """A painted title logo from art_src, if one has been supplied.
+
+    Returns (image, path, aligned). ``aligned`` means the art is on the same
+    canvas as the title backdrop, so the wordmark is already painted where it
+    belongs: the art is packed at its own resolution with its canvas left alone,
+    and the layers are given the backdrop's start and scalestart. That puts the
+    engine's logo exactly on the painted wordmark.
+
+    Keying and fitting it to a small sprite instead is what centred a second,
+    smaller wordmark over the painting: cropping to the ink throws away the
+    canvas position, and the sprite was then hung from TOP_MARGIN on its own.
+    """
     path = first_plate(PLATES)
-    if path:
-        img = flat_key(Image.open(path))
-        k = min(CANVAS[0] / float(img.width), CANVAS[1] / float(img.height))
-        img = img.resize((max(1, int(round(img.width * k))),
-                          max(1, int(round(img.height * k)))), Image.LANCZOS)
-        out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-        out.alpha_composite(img, ((CANVAS[0] - img.width) // 2,
-                                  (CANVAS[1] - img.height) // 2))
-        return out, path
-    return None, None
+    if not path:
+        return None, None, False
+    img = Image.open(path).convert("RGBA")
+    if img.width >= FRAME[0] * 2 and img.height >= FRAME[1] * 2:
+        return opaque_off_black(img), path, True
+    img = flat_key(Image.open(path))
+    k = min(CANVAS[0] / float(img.width), CANVAS[1] / float(img.height))
+    img = img.resize((max(1, int(round(img.width * k))),
+                      max(1, int(round(img.height * k)))), Image.LANCZOS)
+    out = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+    out.alpha_composite(img, ((CANVAS[0] - img.width) // 2,
+                              (CANVAS[1] - img.height) // 2))
+    return out, path, False
+
+
+def opaque_off_black(img):
+    """Keep every visible pixel off pure black.
+
+    ``mask = 1`` keys colour 0 out of a cut-out, so no visible pixel may sit on
+    it: the night painting and the wordmark are both full of near-black, and
+    punched holes would be worse than a shade. Clear pixels stay (0, 0, 0, 0) -
+    they are the cut-out itself.
+    """
+    r, g, b, a = img.split()
+    black = ImageChops.lighter(ImageChops.lighter(r, g), b).point(
+        lambda v: 0 if v else 255)
+    img.paste((1, 1, 1, 255),
+              mask=ImageChops.multiply(black, a.point(lambda v: 255 if v else 0)))
+    return img
 
 
 def overlay():
@@ -450,16 +480,7 @@ def overlay():
     left = (img.width - tw) // 2
     top = (img.height - th) // 2
     img = img.crop((left, top, left + tw, top + th)).convert("RGBA")
-    # mask = 1 keys colour 0 out of a cut-out, so no visible pixel may be pure
-    # black: the night painting is full of near-black, and punched holes in it
-    # would be worse than a shade. Clear pixels stay (0, 0, 0, 0) - they are the
-    # cut-out itself, and the sky shows through them.
-    r, g, b, a = img.split()
-    black = ImageChops.lighter(ImageChops.lighter(r, g), b).point(
-        lambda v: 0 if v else 255)
-    img.paste((1, 1, 1, 255),
-              mask=ImageChops.multiply(black, a.point(lambda v: 255 if v else 0)))
-    return img, path
+    return opaque_off_black(img), path
 
 
 def bg_start(section):
@@ -623,7 +644,7 @@ def wordmark():
     return logo, box
 
 
-def place_def(start):
+def place_def(start, scale=1, static=False):
     """Move the four logo layers to where the reference art has the wordmark.
 
     system.def ships the engine's own logo at start = -250,155, which put this
@@ -641,12 +662,22 @@ def place_def(start):
         if s.startswith("["):
             section, pending = s.lower(), False
         elif section.startswith("[titlebg title logo"):
-            if s.replace(" ", "") in ("spriteno=0,0", "spriteno=0,1",
-                                       "spriteno=0,2", "spriteno=0,3"):
+            bare = s.replace(" ", "").lower()
+            if bare in ("spriteno=0,0", "spriteno=0,1",
+                        "spriteno=0,2", "spriteno=0,3"):
                 pending = True
-            elif pending and s.replace(" ", "").startswith("start="):
-                line = f"start = {start[0]},{start[1]}"
+            elif pending and bare.startswith("start="):
+                out.append(f"start = {start[0]},{start[1]}")
+                if scale != 1:
+                    out.append("scalestart = %.6g, %.6g" % (scale, scale))
                 pending = False
+                continue
+            elif bare.startswith("scalestart="):
+                continue          # rewritten right after the start line
+            elif static and (bare.startswith("sin.y") or bare.startswith("sin.x")):
+                # the wordmark is painted into the backdrop, so a bobbing layer
+                # would slide off it and show the doubled logo
+                continue
         out.append(line)
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")
@@ -752,14 +783,20 @@ def build():
     if found != slots:
         raise SystemExit(f"system.sff is missing logo slots: {slots - found}")
 
-    painted, source = plate()
+    painted, source, aligned = plate()
     if painted is None:
         logo, box = wordmark()
+    elif aligned:
+        logo, box = painted, painted.getbbox()
+        print(f"using painted title plate {os.path.relpath(source, ROOT)} at "
+              f"{logo.width}x{logo.height} on the backdrop's canvas")
     else:
         logo, box = painted, painted.getbbox()
         print(f"using painted title plate {os.path.relpath(source, ROOT)}")
 
-    glow = logo.filter(ImageFilter.GaussianBlur(3.2 * GROW))
+    # the glow is measured in sprite pixels, so it scales with the plate
+    grow = GROW * (logo.width / float(CANVAS[0])) if aligned else GROW
+    glow = logo.filter(ImageFilter.GaussianBlur(3.2 * grow))
     blank = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
 
     # 0,0 + 0,2 were a bright layer and its additive shadow; 0,1 + 0,3 were a
@@ -784,6 +821,8 @@ def build():
     if floor_img.height != FRAME[1]:
         raise SystemExit("the floor cloud layer does not reach the frame's floor")
 
+    sky_axis = next((sp["axis"] for sp in sprites
+                     if (sp["group"], sp["number"]) == (100, 0)), (0, 0))
     replacement = {(0, 0): logo, (0, 2): glow, (0, 1): blank, (0, 3): blank,
                    SKY_SLOT: sky_img, CLOUD_BOTTOM: floor_img}
 
@@ -791,8 +830,11 @@ def build():
     for sp in sprites:
         key = (sp["group"], sp["number"])
         if key in replacement:
+            # on the backdrop's grid the logo shares the sky's axis, so the same
+            # start and scalestart land it on the painted wordmark
+            axis = sky_axis if aligned and key[0] == 0 else sp["axis"]
             out.append({"group": key[0], "number": key[1],
-                        "image": replacement[key], "axis": sp["axis"]})
+                        "image": replacement[key], "axis": axis})
         else:
             out.append({"group": sp["group"], "number": sp["number"],
                         "raw": sp["raw"], "format": sp["format"],
@@ -805,8 +847,6 @@ def build():
     over_img, over_src = overlay()
     out = [sp for sp in out if (sp["group"], sp["number"]) != OVERLAY]
     if over_img is not None:
-        sky_axis = next((sp["axis"] for sp in sprites
-                         if (sp["group"], sp["number"]) == (100, 0)), (0, 0))
         out.append({"group": OVERLAY[0], "number": OVERLAY[1],
                     "image": over_img, "axis": sky_axis})
 
@@ -821,11 +861,22 @@ def build():
 
     # Centre the inked box on the screen and hang it TOP_MARGIN down, measured
     # from where the ink actually landed rather than from the canvas edge.
-    axis = next(sp["axis"] for sp in sprites
-                if (sp["group"], sp["number"]) == (0, 0))
-    start = (int(round(axis[0] - (box[0] + box[2]) / 2.0)),
-             int(round(TOP_MARGIN + axis[1] - box[1])))
-    place_def(start)
+    where = bg_start("titlebg background sky") or (-640, 0)
+    factor = 1.0
+    if over_img is not None:
+        factor = over_img.width / float(FRAME[0])
+    if aligned:
+        # no fitting at all: the art carries the wordmark's place with it
+        start = where
+        place_def(start, 1.0 / factor, static=True)
+        print(f"title logo on the backdrop's grid: start = {start[0]},{start[1]}, "
+              f"scalestart {1.0 / factor:.6g}, no bob")
+    else:
+        axis = next(sp["axis"] for sp in sprites
+                    if (sp["group"], sp["number"]) == (0, 0))
+        start = (int(round(axis[0] - (box[0] + box[2]) / 2.0)),
+                 int(round(TOP_MARGIN + axis[1] - box[1])))
+        place_def(start)
     if strip_menu_shade():
         print("removed the black menu panel from the title background")
     dead = strip_dead_scale()
@@ -837,10 +888,6 @@ def build():
           f"reaches the bottom of the frame")
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
-    where = bg_start("titlebg background sky") or (-640, 0)
-    factor = 1.0
-    if over_img is not None:
-        factor = over_img.width / float(FRAME[0])
     if place_overlay(where if over_img is not None else None, 1.0 / factor):
         print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)} "
               f"at {over_img.width}x{over_img.height} over the sky "
