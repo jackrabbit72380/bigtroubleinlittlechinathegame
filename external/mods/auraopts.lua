@@ -3,34 +3,37 @@
 --;===========================================================
 -- data/aura.zss (written by tools/build_aura.py from tools/aura.zss) draws a
 -- glow around each fighter. Its glowing state reads its numbers from the
--- character's own maps, and this file is what fills them in: the settings below
--- are pushed to every player each frame, so changing one on this screen is live
--- in the fight the menu was opened over.
+-- character's own maps, and this file is what fills them in.
 --
--- The module is loaded from here too, with commonStatesInsert, so the player
--- never has to add "data/aura.zss" to a States line in save/config.ini.
+-- DESIGNING
+--   TARGET picks whose glow is on the bench: EVERYONE, or one of the characters
+--   in the match (read with player()/name(), the same pair debug.lua uses).
+--   The rows edit a draft, and sync() pushes the draft to the players the target
+--   covers every frame - so the fight itself is the preview once a match is
+--   running. APPLY stores the draft as that target's own look. RESET puts the
+--   draft back to defaults without storing it. Characters with their own entry
+--   keep it; EVERYONE only fills in the rest.
 --
--- Two kinds of glow share the module, and TYPE chooses between them:
+-- TWO KINDS, one module:
 --   GLOW  the released Glow.zss numbers: one steady colour, full brightness,
 --         a tight radius, at any power.
 --   AURA  the same glow function driven by power: red from 1000, green from
 --         2000, a colour that cycles from 3000 - or one colour, if STYLE says
 --         SINGLE COLOUR.
 -- Each kind remembers its own SIZE / OPACITY / DETAIL / LAYER / MIN POWER /
--- SHOW WHEN, so switching between them swaps one look for another instead of
--- renaming the same one. Rows that cannot affect the current choice are greyed.
+-- SHOW WHEN. Rows that cannot affect the current choice are greyed out.
 --
--- The sample on the right of the screen is drawn from the same scatter the
--- module uses - copies of one word instead of copies of the fighter's current
--- animation frame. The fight blends them additively and this screen does not,
--- so treat its brightness as a guide, not a match.
+-- The sample on the right is drawn from the same scatter the module uses -
+-- copies of one word instead of copies of the fighter's current animation
+-- frame. The fight blends them additively and this screen does not, so treat
+-- its brightness as a guide, not a match.
 --
 -- The screen is the pause menu's own text sprite, drawn over the paused fight -
 -- the same approach external/mods/devhelp.lua and musicselect.lua use, because a
 -- textImgNew sprite given a font opened an empty screen on a real build here.
 --
--- Settings persist in save/aura.cfg as "key = value" lines, so a choice survives
--- a restart without anyone editing a file by hand.
+-- Settings persist in save/aura.cfg, one [section] per target, so choices
+-- survive a restart without anyone editing a file by hand.
 
 local FILE = 'save/aura.cfg'
 local MODULE = 'data/aura.zss'
@@ -56,11 +59,12 @@ local POWER_STEPS = {0, 1000, 2000, 3000}
 local POWER_NAMES = {[0] = 'ANY POWER', [1000] = '1000+',
                      [2000] = '2000+', [3000] = '3000+'}
 
+local KINDS = {'glow', 'aura'}
+local FIELDS = {'size', 'alpha', 'quality', 'life', 'layer', 'minpower'}
+
 -- type:  0 off, 1 GLOW, 2 AURA
 -- style: 1 the power ladder, 2 one colour (AURA only)
 -- layer: 1 behind the fighter (a halo), 2 in front of it (a wash)
--- The two kinds keep separate numbers: GLOW ships at 6 / 256 / 30, AURA at
--- 10 / 100 / 50, which is what makes them look different out of the box.
 local function defaults()
 	return {
 		type = 2,
@@ -71,10 +75,32 @@ local function defaults()
 	}
 end
 
-local CFG = defaults()
 local DEFAULT = defaults()
-local KINDS = {'glow', 'aura'}
-local FIELDS = {'size', 'alpha', 'quality', 'life', 'layer', 'minpower'}
+
+local function copyOf(src)
+	local out = {type = src.type, style = src.style, colour = src.colour}
+	for _, kind in ipairs(KINDS) do
+		out[kind] = {}
+		for _, field in ipairs(FIELDS) do
+			out[kind][field] = src[kind][field]
+		end
+	end
+	return out
+end
+
+local function sameAs(a, b)
+	if a.type ~= b.type or a.style ~= b.style or a.colour ~= b.colour then
+		return false
+	end
+	for _, kind in ipairs(KINDS) do
+		for _, field in ipairs(FIELDS) do
+			if a[kind][field] ~= b[kind][field] then
+				return false
+			end
+		end
+	end
+	return true
+end
 
 local LIMIT = {
 	size = {4, 20},
@@ -101,12 +127,16 @@ local function onSteps(value, steps, fallback)
 	return fallback
 end
 
-local function tidy()
-	CFG.type = clampInt(CFG.type, 0, 2, DEFAULT.type)
-	CFG.style = clampInt(CFG.style, 1, 2, DEFAULT.style)
-	CFG.colour = clampInt(CFG.colour, 1, #COLOURS, DEFAULT.colour)
-	for _, name in ipairs(KINDS) do
-		local got, fallback = CFG[name], DEFAULT[name]
+local function tidyOne(cfg)
+	cfg.type = clampInt(cfg.type, 0, 2, DEFAULT.type)
+	cfg.style = clampInt(cfg.style, 1, 2, DEFAULT.style)
+	cfg.colour = clampInt(cfg.colour, 1, #COLOURS, DEFAULT.colour)
+	for _, kind in ipairs(KINDS) do
+		local got, fallback = cfg[kind], DEFAULT[kind]
+		if type(got) ~= 'table' then
+			got = {}
+			cfg[kind] = got
+		end
 		got.size = clampInt(got.size, LIMIT.size[1], LIMIT.size[2], fallback.size)
 		got.alpha = clampInt(got.alpha, LIMIT.alpha[1], LIMIT.alpha[2], fallback.alpha)
 		got.quality = clampInt(got.quality, LIMIT.quality[1], LIMIT.quality[2], fallback.quality)
@@ -116,17 +146,60 @@ local function tidy()
 	end
 end
 
+--;===========================================================
+--; SAVED LOOKS, ONE PER TARGET
+--;===========================================================
+local SAVED = {everyone = defaults()}
+local DRAFT = defaults()          -- what the rows edit
+local targets = {{key = 'everyone', label = 'EVERYONE'}}
+local TARGET = targets[1]
+local notice = nil
+
+local function assignValue(cfg, key, value)
+	if key == 'type' then
+		cfg.type = value
+	elseif key == 'style' then
+		cfg.style = value
+	elseif key == 'colour' then
+		cfg.colour = value
+	elseif key == 'mode' then              -- written before the two kinds existed
+		cfg.type = (value == 0) and 0 or 2
+		cfg.style = (value == 2) and 2 or 1
+	else
+		local kind, field = key:match('^(%a+)_(%a+)$')
+		if kind ~= nil and cfg[kind] ~= nil and cfg[kind][field] ~= nil then
+			cfg[kind][field] = value
+		elseif cfg.aura[key] ~= nil then
+			cfg.aura[key] = value           -- a bare "size = 12" from the first version
+		end
+	end
+end
+
 local function load()
-	local flat = {}
+	local legacy = {}
 	local ok = pcall(function()
 		local f = io.open(FILE, 'r')
 		if f == nil then
 			return
 		end
+		local section = nil
 		for line in f:lines() do
-			local key, value = line:match('^%s*([%a_]+)%s*=%s*(-?%d+)%s*$')
-			if key ~= nil then
-				flat[key] = tonumber(value)
+			local header = line:match('^%s*%[(.-)%s*%]%s*$')
+			if header ~= nil then
+				local key = header:lower()
+				if key ~= 'everyone' and SAVED[key] == nil then
+					SAVED[key] = defaults()
+				end
+				section = SAVED[key] or SAVED.everyone
+			else
+				local field, value = line:match('^%s*([%a_]+)%s*=%s*(-?%d+)%s*$')
+				if field ~= nil then
+					if section == nil then
+						legacy[field] = tonumber(value)
+					else
+						assignValue(section, field, tonumber(value))
+					end
+				end
 			end
 		end
 		f:close()
@@ -134,47 +207,38 @@ local function load()
 	if not ok then
 		print('auraopts: could not read ' .. FILE .. ' - using the defaults')
 	end
-
-	if flat.type ~= nil then CFG.type = flat.type end
-	if flat.style ~= nil then CFG.style = flat.style end
-	if flat.colour ~= nil then CFG.colour = flat.colour end
-	for _, name in ipairs(KINDS) do
-		for _, field in ipairs(FIELDS) do
-			local value = flat[name .. '_' .. field]
-			if value ~= nil then
-				CFG[name][field] = value
-			end
-		end
+	for field, value in pairs(legacy) do
+		assignValue(SAVED.everyone, field, value)
 	end
-
-	-- A file written before the two kinds existed says mode, size, alpha...:
-	-- read it as AURA, which is what it was setting.
-	if flat.mode ~= nil then
-		CFG.type = (flat.mode == 0) and 0 or 2
-		CFG.style = (flat.mode == 2) and 2 or 1
+	for _, cfg in pairs(SAVED) do
+		tidyOne(cfg)
 	end
-	for _, field in ipairs(FIELDS) do
-		if flat[field] ~= nil then
-			CFG.aura[field] = flat[field]
-		end
-	end
-
-	tidy()
+	DRAFT = copyOf(SAVED.everyone)
 end
 
 local function save()
+	local keys = {}
+	for key in pairs(SAVED) do
+		keys[#keys + 1] = key
+	end
+	table.sort(keys)
 	local ok, err = pcall(function()
 		local f = io.open(FILE, 'w')
 		if f == nil then
 			error('cannot open ' .. FILE .. ' for writing')
 		end
 		f:write('# aura glow settings, written by the in-game Aura screen\n')
-		f:write(string.format('type = %d\n', CFG.type))
-		f:write(string.format('style = %d\n', CFG.style))
-		f:write(string.format('colour = %d\n', CFG.colour))
-		for _, name in ipairs(KINDS) do
-			for _, field in ipairs(FIELDS) do
-				f:write(string.format('%s_%s = %d\n', name, field, CFG[name][field]))
+		f:write('# one section per target: everyone, or a character name in lowercase\n')
+		for _, key in ipairs(keys) do
+			local cfg = SAVED[key]
+			f:write(string.format('[%s]\n', key))
+			f:write(string.format('type = %d\n', cfg.type))
+			f:write(string.format('style = %d\n', cfg.style))
+			f:write(string.format('colour = %d\n', cfg.colour))
+			for _, kind in ipairs(KINDS) do
+				for _, field in ipairs(FIELDS) do
+					f:write(string.format('%s_%s = %d\n', kind, field, cfg[kind][field]))
+				end
 			end
 		end
 		f:close()
@@ -186,13 +250,63 @@ end
 
 -- The numbers the chosen kind is using right now.
 local function active()
-	if CFG.type == 1 then
-		return CFG.glow
+	if DRAFT.type == 1 then
+		return DRAFT.glow
 	end
-	return CFG.aura
+	return DRAFT.aura
 end
 
-load()
+--;===========================================================
+--; WHO IS WHO
+--;===========================================================
+-- player(n) selects that player and answers whether it exists; name() then
+-- reads the selected entity's name. Both are how debug.lua inspects a player,
+-- and the current selection is handed back so the engine is left as it was.
+local function playerName(p)
+	if type(player) ~= 'function' then
+		return nil
+	end
+	local hadId, previous = pcall(id)
+	local ok, got = pcall(function()
+		if not player(p) then
+			return nil
+		end
+		if type(name) ~= 'function' then
+			return nil
+		end
+		return name()
+	end)
+	if hadId and previous ~= nil then
+		pcall(playerId, previous)
+	end
+	if ok and type(got) == 'string' and got ~= '' then
+		return got
+	end
+	return nil
+end
+
+-- EVERYONE first, then each character in the match once.
+local function refreshTargets()
+	targets = {{key = 'everyone', label = 'EVERYONE'}}
+	local seen = {everyone = true}
+	for p = 1, 8 do
+		local got = playerName(p)
+		if got ~= nil then
+			local key = got:lower()
+			if not seen[key] then
+				seen[key] = true
+				targets[#targets + 1] = {key = key, label = got:upper()}
+			end
+		end
+	end
+	for _, entry in ipairs(targets) do
+		if entry.key == TARGET.key then
+			TARGET = entry
+			return
+		end
+	end
+	TARGET = targets[1]
+end
 
 --;===========================================================
 --; PUSH THE SETTINGS INTO THE FIGHT
@@ -229,30 +343,59 @@ local function applyMap(p, key, value)
 	return false
 end
 
+-- Whose numbers a player should be wearing right now: the draft when the target
+-- covers them, otherwise their own entry, otherwise the shared one.
+local function configFor(p, got)
+	if got ~= nil and TARGET.key ~= 'everyone' and got:lower() == TARGET.key then
+		return DRAFT
+	end
+	if got ~= nil then
+		local own = SAVED[got:lower()]
+		if own ~= nil then
+			return own
+		end
+	end
+	if TARGET.key == 'everyone' then
+		return DRAFT
+	end
+	return SAVED.everyone
+end
+
+local function pushOne(p, cfg)
+	local colour = COLOURS[cfg.colour] or COLOURS[1]
+	local off = (cfg.type == 0) and 1 or 0
+	local kind = (cfg.type == 1) and 1 or 2
+	local single = (cfg.style == 2) and 1 or 0
+	local under = (cfg.type ~= 0 and cfg[cfg.type == 1 and 'glow' or 'aura'].layer == 2) and 1 or 0
+	local got = cfg[cfg.type == 1 and 'glow' or 'aura']
+
+	applyMap(p, 'btlc_aura_off', off)
+	applyMap(p, 'btlc_aura_type', kind)
+	applyMap(p, 'btlc_aura_style', cfg.style)
+	applyMap(p, 'btlc_aura_single', single)
+	applyMap(p, 'btlc_aura_under', under)
+	applyMap(p, 'btlc_aura_size', got.size)
+	applyMap(p, 'btlc_aura_alpha', got.alpha)
+	applyMap(p, 'btlc_aura_quality', got.quality)
+	applyMap(p, 'btlc_aura_life', got.life)
+	applyMap(p, 'btlc_aura_minpower', got.minpower)
+	applyMap(p, 'btlc_aura_r', colour.r)
+	applyMap(p, 'btlc_aura_g', colour.g)
+	applyMap(p, 'btlc_aura_b', colour.b)
+end
+
 local function sync()
 	if failed then
 		return
 	end
-	local colour = COLOURS[CFG.colour] or COLOURS[1]
-	local off = (CFG.type == 0) and 1 or 0
-	local kind = (CFG.type == 1) and 1 or 2
-	local single = (CFG.style == 2) and 1 or 0
-	local under = (CFG.type ~= 0 and active().layer == 2) and 1 or 0
-	local got = active()
 	for p = 1, 8 do
-		applyMap(p, 'btlc_aura_off', off)
-		applyMap(p, 'btlc_aura_type', kind)
-		applyMap(p, 'btlc_aura_style', CFG.style)
-		applyMap(p, 'btlc_aura_single', single)
-		applyMap(p, 'btlc_aura_under', under)
-		applyMap(p, 'btlc_aura_size', got.size)
-		applyMap(p, 'btlc_aura_alpha', got.alpha)
-		applyMap(p, 'btlc_aura_quality', got.quality)
-		applyMap(p, 'btlc_aura_life', got.life)
-		applyMap(p, 'btlc_aura_minpower', got.minpower)
-		applyMap(p, 'btlc_aura_r', colour.r)
-		applyMap(p, 'btlc_aura_g', colour.g)
-		applyMap(p, 'btlc_aura_b', colour.b)
+		local got = playerName(p)
+		if got ~= nil then
+			local cfg = configFor(p, got)
+			if cfg ~= nil then
+				pushOne(p, cfg)
+			end
+		end
 	end
 end
 
@@ -297,37 +440,60 @@ if not okLoad then
 	print('auraopts: could not load ' .. MODULE .. ': ' .. tostring(errLoad))
 end
 
+load()
+refreshTargets()
+if TARGET.key == 'everyone' then
+	DRAFT = copyOf(SAVED.everyone)
+end
+
 --;===========================================================
 --; THE SCREEN
 --;===========================================================
 local ROWS = {
 	{
-		label = 'TYPE',
-		value = function() return TYPE_NAMES[CFG.type + 1] end,
+		label = 'DESIGN FOR',
+		value = function() return TARGET.label end,
 		step = function(d)
-			CFG.type = (CFG.type + d) % 3
-			if CFG.type < 0 then CFG.type = 2 end
+			refreshTargets()
+			local at = 1
+			for i, entry in ipairs(targets) do
+				if entry.key == TARGET.key then at = i end
+			end
+			at = at + d
+			if at < 1 then at = #targets end
+			if at > #targets then at = 1 end
+			TARGET = targets[at]
+			DRAFT = copyOf(SAVED[TARGET.key] or DEFAULT)
+			notice = nil
+		end,
+	},
+	{
+		label = 'TYPE',
+		value = function() return TYPE_NAMES[DRAFT.type + 1] end,
+		step = function(d)
+			DRAFT.type = (DRAFT.type + d) % 3
+			if DRAFT.type < 0 then DRAFT.type = 2 end
 		end,
 	},
 	{
 		label = 'STYLE',
-		value = function() return STYLE_NAMES[CFG.style] end,
+		value = function() return STYLE_NAMES[DRAFT.style] end,
 		step = function()
-			CFG.style = (CFG.style == 1) and 2 or 1
+			DRAFT.style = (DRAFT.style == 1) and 2 or 1
 		end,
-		dim = function() return CFG.type ~= 2 end,
+		dim = function() return DRAFT.type ~= 2 end,
 	},
 	{
 		label = 'COLOUR',
-		value = function() return COLOURS[CFG.colour].name end,
+		value = function() return COLOURS[DRAFT.colour].name end,
 		step = function(d)
-			CFG.colour = CFG.colour + d
-			if CFG.colour < 1 then CFG.colour = #COLOURS end
-			if CFG.colour > #COLOURS then CFG.colour = 1 end
+			DRAFT.colour = DRAFT.colour + d
+			if DRAFT.colour < 1 then DRAFT.colour = #COLOURS end
+			if DRAFT.colour > #COLOURS then DRAFT.colour = 1 end
 		end,
 		-- the ladder picks its own colours, so COLOUR only matters for GLOW
 		-- and for AURA in single-colour mode
-		dim = function() return CFG.type == 0 or (CFG.type == 2 and CFG.style == 1) end,
+		dim = function() return DRAFT.type == 0 or (DRAFT.type == 2 and DRAFT.style == 1) end,
 	},
 	{
 		label = 'LAYER',
@@ -335,25 +501,25 @@ local ROWS = {
 		step = function()
 			active().layer = (active().layer == 1) and 2 or 1
 		end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
 	},
 	{
 		label = 'SIZE',
 		value = function() return tostring(active().size) end,
 		step = function(d) active().size = active().size + d end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
 	},
 	{
 		label = 'OPACITY',
 		value = function() return tostring(active().alpha) end,
 		step = function(d) active().alpha = active().alpha + d * 10 end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
 	},
 	{
 		label = 'DETAIL',
 		value = function() return tostring(active().quality) end,
 		step = function(d) active().quality = active().quality + d * 5 end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
 	},
 	{
 		label = 'MIN POWER',
@@ -368,7 +534,7 @@ local ROWS = {
 			if at > #POWER_STEPS then at = 1 end
 			active().minpower = POWER_STEPS[at]
 		end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
 	},
 	{
 		label = 'SHOW WHEN',
@@ -383,22 +549,31 @@ local ROWS = {
 			if at > #LIFE_STEPS then at = 1 end
 			active().life = LIFE_STEPS[at]
 		end,
-		dim = function() return CFG.type == 0 end,
+		dim = function() return DRAFT.type == 0 end,
+	},
+	{
+		label = 'APPLY',
+		value = function()
+			if sameAs(DRAFT, SAVED[TARGET.key] or DEFAULT) then
+				return 'ALREADY SET'
+			end
+			return 'STORE FOR ' .. TARGET.label
+		end,
+		step = function()
+			SAVED[TARGET.key] = copyOf(DRAFT)
+			save()
+			sync()
+			notice = 'APPLIED TO ' .. TARGET.label
+		end,
+		action = true,
 	},
 	{
 		label = 'RESET',
 		value = function() return 'BACK TO DEFAULTS' end,
 		step = function()
-			CFG.type = DEFAULT.type
-			CFG.style = DEFAULT.style
-			CFG.colour = DEFAULT.colour
-			for _, name in ipairs(KINDS) do
-				for _, field in ipairs(FIELDS) do
-					CFG[name][field] = DEFAULT[name][field]
-				end
-			end
-			save()
+			DRAFT = defaults()
 			sync()
+			notice = 'RESET - PRESS APPLY TO KEEP IT'
 		end,
 		action = true,
 	},
@@ -407,7 +582,7 @@ local ROWS = {
 local PALE = {208, 186, 136}
 local GOLD = {255, 228, 140}
 local DIMC = {128, 112, 84}
-local LABELW = 16
+local LABELW = 13
 
 local function screenSize()
 	local w, h = 1920, 1080
@@ -446,16 +621,17 @@ end
 -- scatters copies of one word with the same grid, colour, opacity and radius.
 -- The fight blends additively and this does not, so brightness is only a guide.
 local function drawSample(txt, sw, sh)
-	local cx, cy = sw * 0.76, sh * 0.42
+	local cx, cy = sw * 0.78, sh * 0.40
 	drawRow(txt, 'LIVE SAMPLE', cx - 120, cy - 170, DIMC, 0.8)
+	drawRow(txt, 'for ' .. TARGET.label, cx - 120, cy - 142, DIMC, 0.8)
 
-	if CFG.type == 0 then
+	if DRAFT.type == 0 then
 		drawRow(txt, 'nothing drawn', cx - 120, cy, DIMC, 0.8)
 		return
 	end
 
 	local got = active()
-	local colour = COLOURS[CFG.colour] or COLOURS[1]
+	local colour = COLOURS[DRAFT.colour] or COLOURS[1]
 	local n = math.floor(got.quality / 10)
 	if n < 2 then n = 2 end
 	local reach = 50 + got.size * 7
@@ -500,7 +676,7 @@ local function auraDraw(sec)
 	local title = nil
 	pcall(function() title = sec.movelist.title.TextSpriteData end)
 
-	local y = sh * 0.13
+	local y = sh * 0.10
 	if title ~= nil then
 		pcall(function()
 			textImgReset(title)
@@ -512,8 +688,8 @@ local function auraDraw(sec)
 	end
 	y = y + 70
 
-	local x = sw * 0.22
-	local pitch = 50
+	local x = sw * 0.20
+	local pitch = 46
 	for i, row in ipairs(ROWS) do
 		local here = (i == menu.cursorPosY)
 		local dimmed = (row.dim ~= nil) and row.dim()
@@ -531,17 +707,23 @@ local function auraDraw(sec)
 
 	drawSample(txt, sw, sh)
 
-	y = y + (#ROWS) * pitch + 20
+	y = y + (#ROWS) * pitch + 18
 	drawRow(txt, 'UP / DOWN  ROW      LEFT / RIGHT  CHANGE', x, y, DIMC, 0.8)
-	drawRow(txt, 'Z  SAVE AND CLOSE      ESC  CLOSE', x, y + 34, DIMC, 0.8)
+	drawRow(txt, 'Z  APPLY AND CLOSE      ESC  CLOSE', x, y + 32, DIMC, 0.8)
 
-	local status = 'aura module loaded'
-	if not loaded then
-		status = 'aura module NOT loaded - see console'
-	elseif failed then
-		status = 'colour changes need a build with writable maps'
+	local status = notice
+	if status == nil then
+		if not sameAs(DRAFT, SAVED[TARGET.key] or DEFAULT) then
+			status = 'UNSAVED - APPLY TO KEEP IT'
+		elseif not loaded then
+			status = 'aura module NOT loaded - see console'
+		elseif failed then
+			status = 'colour changes need a build with writable maps'
+		else
+			status = 'saved for ' .. TARGET.label
+		end
 	end
-	drawRow(txt, status, x, y + 74, DIMC, 0.8)
+	drawRow(txt, status, x, y + 70, DIMC, 0.8)
 
 	-- leave the shared sprite as the pause menu expects it
 	pcall(textImgReset, txt)
@@ -560,28 +742,28 @@ local function auraUpdate(sec)
 	elseif getInput(-1, down) then
 		menu.cursorPosY = menu.cursorPosY + 1
 		if menu.cursorPosY > #ROWS then menu.cursorPosY = 1 end
-	elseif getInput(-1, right) then
+	elseif getInput(-1, right) or getInput(-1, left) then
+		local d = getInput(-1, right) and 1 or -1
 		local row = ROWS[menu.cursorPosY]
 		if row ~= nil then
-			row.step(1)
-			tidy()
+			row.step(d)
+			tidyOne(DRAFT)
+			if row.action then
+				notice = notice            -- APPLY/RESET set their own message
+			else
+				notice = nil
+			end
 			sync()
-			if row.action then save() end
-		end
-	elseif getInput(-1, left) then
-		local row = ROWS[menu.cursorPosY]
-		if row ~= nil then
-			row.step(-1)
-			tidy()
-			sync()
-			if row.action then save() end
 		end
 	end
 
 	if esc() or getInput(-1, key(sec, 'cancel', {'ESC'}), key(sec, 'done', {'a'})) then
 		pcall(function() sndPlay(motif.Snd, sec.cancel.snd[1], sec.cancel.snd[2]) end)
+		-- leaving never throws the draft away: it becomes the target's look
+		SAVED[TARGET.key] = copyOf(DRAFT)
 		save()
 		sync()
+		notice = nil
 		menu.itemname = ''
 		menu.cursorPosY = menu.pauseCursor or 1
 	end
@@ -600,6 +782,10 @@ local okMenu, errMenu = pcall(function()
 			end
 			menu.cursorPosY = 1
 			menu.itemname = 'aura'
+			notice = nil
+			refreshTargets()
+			DRAFT = copyOf(SAVED[TARGET.key] or DEFAULT)
+			sync()
 		end
 		return true
 	end
