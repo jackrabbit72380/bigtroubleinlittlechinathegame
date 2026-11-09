@@ -143,12 +143,17 @@ local function setLine(text, index, value)
 	-- set it reads as a literal "r", which let the carriage return be swallowed
 	-- into the value and quietly turned every CRLF line into a bare LF.
 	text = text:gsub('(\n[ \t]*' .. key .. '[ \t]*=[ \t]*)([^;%s][^;\r\n]*)',
-		function(head, old)
+		function(head, rest)
+			-- The value ends where the padding before a comment begins, and that
+			-- padding goes back untouched: a .def lines its trailing comments up in
+			-- a column, and trimming the blanks shifted every one of them.
+			local old = rest:match('^(.-)[ \t]*$')
+			local tail = rest:sub(#old + 1)
 			if old == value then
-				return head .. old
+				return head .. rest
 			end
 			moved = moved + 1
-			return head .. value
+			return head .. value .. tail
 		end)
 	return text, moved
 end
