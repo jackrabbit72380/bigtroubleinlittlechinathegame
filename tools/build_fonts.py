@@ -1065,7 +1065,7 @@ def _video_rows(prefix, suffix=""):
 # also owns the saved choice. The label carries the one thing a player needs to
 # know: the motif is read at startup, so the new face arrives with the next
 # launch rather than the moment the row is pressed.
-FONT_MENU = "menu.itemname.menuvideo.font = Font (next launch)\n"
+FONT_MENU = "menu.itemname.font = Font (next launch)\n"
 
 RESOLUTION_MENU = (
     """; Options > Video > Render Size. The engine takes the size straight from the

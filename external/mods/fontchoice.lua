@@ -8,7 +8,7 @@
 -- the Karate face added for the player - so swapping one for the other changes
 -- the letterforms and nothing else: same height, same advance, same rows.
 --
--- Options > Video > Font picks a set. The motif is read once, at startup, so a
+-- Options > Font picks a set. The motif is read once, at startup, so a
 -- pick lands on the next launch; the row's own label says so. The choice is
 -- kept in save/font.cfg, and the motif's three font lines are pointed at it
 -- from here on every load as well, so a rebuild that reset them is corrected
@@ -89,7 +89,7 @@ function fontchoice.save(choice)
 	if SETS[choice] == nil then
 		return false
 	end
-	return writeAll(FILE, '; Picked in Options > Video > Font.\n'
+	return writeAll(FILE, '; Picked in Options > Font.\n'
 		.. '; Read by external/mods/fontchoice.lua.\n'
 		.. 'font = ' .. choice .. '\n')
 end
@@ -177,9 +177,9 @@ local function installRow()
 		end
 		return true
 	end
-	-- The engine keys a submenu row by the last part of its itemname; the motif
-	-- row is declared as menuvideo.font, so both spellings are registered and
-	-- the row answers whichever one the options screen asks for.
+	-- The engine keys a row by the last part of its itemname; the row is
+	-- declared as "font" on the Options screen (an earlier build put it inside
+	-- the Video submenu), so both spellings are registered.
 	options.t_itemname['font'] = handler
 	options.t_itemname['menuvideo_font'] = handler
 	options.t_vardisplay['font'] = display
