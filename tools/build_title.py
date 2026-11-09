@@ -397,10 +397,11 @@ def plate():
     """A painted title logo from art_src, if one has been supplied.
 
     Returns (image, path, aligned). ``aligned`` means the art is on the same
-    canvas as the title backdrop, so the wordmark is already painted where it
-    belongs: the art is packed at its own resolution with its canvas left alone,
-    and the layers are given the backdrop's start and scalestart. That puts the
-    engine's logo exactly on the painted wordmark.
+    canvas as the title backdrop, so it already carries the lettering at its
+    place on that canvas: the art is packed at its own resolution with its canvas
+    left alone, and the layers are given the backdrop's start and scalestart.
+    That draws the logo where the art puts it on the backdrop's grid, over the
+    cut-out, instead of centring it separately.
 
     Keying and fitting it to a small sprite instead is what centred a second,
     smaller wordmark over the painting: cropping to the ink throws away the

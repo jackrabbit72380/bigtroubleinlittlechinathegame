@@ -85,10 +85,11 @@ What the build does with it:
   `system.def` as `[TitleBG Title Overlay]`, drawn over
   `[TitleBG Background Sky]`: the art keeps every pixel of its transparency and
   the night sky shows through it;
-- packs the title wordmark into the slots at `0,0`-`0,3` and draws it with the
-  backdrop's own `start` and `scalestart`, so the engine's logo lands on the
-  wordmark painted in the art instead of being centred on its own. Art on the
-  same canvas as the backdrop is packed as-is: nothing is cropped or re-fitted.
+- packs the title lettering into the slots at `0,0`-`0,3` and draws it with the
+  backdrop's own `start` and `scalestart`, so the engine's logo lands where the
+  art puts it on the backdrop's grid instead of being centred on its own. Art on
+  the same canvas as the backdrop is packed as-is: nothing is cropped or
+  re-fitted.
 
 A master larger than the frame is packed at its own resolution and drawn back
 down with `scalestart`, so an 8K painting keeps its detail on a 4K render.
