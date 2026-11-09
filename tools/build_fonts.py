@@ -545,6 +545,19 @@ FACE_ACTIVE = [(0.00, (255, 255, 240)), (0.34, (255, 246, 190)),
 FONTS = (("Display", 34, 3, FACE), ("DisplayActive", 34, 3, FACE_ACTIVE),
          ("Body", 13, 2, FACE))
 
+# The second typeface the player can pick in Options > Font. It is baked into
+# the same cells as the gold face above - same cell height, same per-character
+# widths, same space advance - so a menu row keeps exactly the size and length
+# it has now and only the letterforms change. Without the shared cell widths the
+# engine would advance by Karate's own glyph widths (src/font.go: CharWidth is
+# the sprite width), and every centred and right-aligned string in the motif
+# would drift, which is the trap stock_cells() already exists to avoid.
+KARATE_TTF = os.path.join(ROOT, "font", "Karate", "Karate.ttf")
+KARATE_FONTS = (("Display", "DisplayK", FACE),
+                ("DisplayActive", "DisplayActiveK", FACE_ACTIVE),
+                ("Body", "BodyK", FACE))
+FACE_DEPTH = {name: depth for name, _px, depth, _stops in FONTS}
+
 # The screenpack's remaining bitmap faces. They are stock MUGEN fonts - white or
 # grey glyphs in eight palette banks - and they are what still showed through in
 # the scoreboard names, the round timer, the hit and combo counters, the win
@@ -638,8 +651,15 @@ def glyph(ch, font, cell_h, depth, face_stops=FACE, base=None, cell_w=None):
     return out
 
 
-def write_font(name, px, depth, ttf, face_stops=FACE):
-    """Bake Display/Body into bitmap fonts and write their .def."""
+def write_font(name, px, depth, ttf, face_stops=FACE, cell_h=None, cells=None,
+               space_w=None):
+    """Bake Display/Body into bitmap fonts and write their .def.
+
+    ``cell_h`` and ``space_w`` pin the .def to another face's metrics instead of
+    measuring this one, and ``cells`` gives each glyph that face's own sprite
+    width, so a second typeface can stand in for the first without moving a
+    single row.
+    """
     font = ImageFont.truetype(ttf, px)
     ascent, descent = font.getmetrics()
     # The cell has to come out at exactly SUPERSAMPLE times the size the face
@@ -649,13 +669,16 @@ def write_font(name, px, depth, ttf, face_stops=FACE):
     ref = ImageFont.truetype(ttf, max(1, px // SUPERSAMPLE))
     ref_asc, ref_desc = ref.getmetrics()
     ref_depth = max(1, depth // SUPERSAMPLE)
-    cell_h = (ref_asc + ref_desc + ref_depth + 1) * SUPERSAMPLE
-    space_w = max(2, int(round(ref.getlength(" "))) + ref_depth) * SUPERSAMPLE
+    if cell_h is None:
+        cell_h = (ref_asc + ref_desc + ref_depth + 1) * SUPERSAMPLE
+    if space_w is None:
+        space_w = max(2, int(round(ref.getlength(" "))) + ref_depth) * SUPERSAMPLE
 
     sprites = []
     for code in range(33, 127):
         sprites.append({"group": 0, "number": code, "axis": (0, 0),
-                        "image": glyph(chr(code), font, cell_h, depth, face_stops)})
+                        "image": glyph(chr(code), font, cell_h, depth, face_stops,
+                                       cell_w=(cells or {}).get(chr(code)))})
     # the engine takes the space advance from Size, not from a glyph
     with open(os.path.join(FONT_DIR, name + ".sff"), "wb") as fh:
         fh.write(sff.write_sff(sprites))
@@ -722,6 +745,69 @@ def write_stock(name, cell_h, depth, ttf):
     return len(sprites)
 
 
+def face_metrics(name):
+    """(space advance, cell height) from a baked face's own .def."""
+    path = os.path.join(FONT_DIR, name + ".def")
+    size_x, cell_h = 1, 1
+    if os.path.isfile(path):
+        text = open(path, encoding="utf-8-sig", errors="replace").read()
+        m = re.search(r"^[ \t]*Size[ \t]*=[ \t]*(\d+)[ \t]*,[ \t]*(\d+)",
+                      text, re.MULTILINE | re.IGNORECASE)
+        if m:
+            size_x, cell_h = int(m.group(1)), int(m.group(2))
+    return size_x, cell_h
+
+
+def baked_cells(name):
+    """Per-character sprite width a baked face already uses."""
+    path = os.path.join(FONT_DIR, name + ".sff")
+    if not os.path.isfile(path):
+        return {}
+    _n, sprites, _p = sff.read_sff(path)
+    return {chr(sp["number"]): sp["w"] for sp in sprites
+            if sp["group"] == 0 and 33 <= sp["number"] <= 126}
+
+
+def fit_px(ttf, cell_h, depth):
+    """Pixel size whose baked cell lands on cell_h.
+
+    A cell is the face's ascent + descent + extrusion + 1, doubled by the
+    supersample. Karate is proportioned differently from DejaVu, so matching the
+    height needs a size of its own rather than the same number.
+    """
+    best, best_gap = 4, None
+    for px in range(4, 401):
+        ref = ImageFont.truetype(ttf, max(1, px // SUPERSAMPLE))
+        ref_asc, ref_desc = ref.getmetrics()
+        got = (ref_asc + ref_desc + max(1, depth // SUPERSAMPLE) + 1) * SUPERSAMPLE
+        gap = abs(got - cell_h)
+        if best_gap is None or gap < best_gap:
+            best, best_gap = px, gap
+        if gap == 0:
+            break
+    return best
+
+
+def bake_karate():
+    """Bake the second pickable typeface into cells the gold face already owns."""
+    if not os.path.isfile(KARATE_TTF):
+        print(f"  no {os.path.relpath(KARATE_TTF, ROOT)}: leaving the font "
+              f"choice on one face", file=sys.stderr)
+        return 0
+    total = 0
+    for base, name, face_stops in KARATE_FONTS:
+        size_x, cell_h = face_metrics(base)
+        if size_x <= 1 or cell_h <= 1:
+            print(f"  warning: {base}.def has no usable Size, skipping {name}")
+            continue
+        depth = FACE_DEPTH[base] * SUPERSAMPLE
+        px = fit_px(KARATE_TTF, cell_h, depth)
+        total += write_font(name, px, depth, KARATE_TTF, face_stops,
+                            cell_h=cell_h, cells=baked_cells(base), space_w=size_x)
+        print(f"  karate {name}: fitted at {px}px into the {cell_h}px cell")
+    return total
+
+
 NOTICE = """The Display.ttf face shipped here is {name}, the same one
 tools/build_title.py uses to paint the title wordmark, so the menus and the logo
 are the same typeface.
@@ -784,6 +870,7 @@ def install_ttf():
         write_font(name, px * SUPERSAMPLE, depth * SUPERSAMPLE, dst, face_stops)
     for name, cell_h, depth in STOCK_FONTS:
         write_stock(name, cell_h, depth, dst)
+    bake_karate()
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
@@ -972,6 +1059,14 @@ def _video_rows(prefix, suffix=""):
         for size, label in RESOLUTION_LADDER)
 
 
+# Options > Video > Font. The engine builds that submenu from the
+# menu.itemname.menuvideo.* keys it finds, so this row is the menu entry; the
+# handler that switches the face lives in external/mods/fontchoice.lua, which
+# also owns the saved choice. The label carries the one thing a player needs to
+# know: the motif is read at startup, so the new face arrives with the next
+# launch rather than the moment the row is pressed.
+FONT_MENU = "menu.itemname.menuvideo.font = Font (next launch)\n"
+
 RESOLUTION_MENU = (
     """; Options > Video > Render Size. The engine takes the size straight from the
 suffix, so this block IS the list: every entry of RESOLUTION_LADDER, in order.
@@ -1127,6 +1222,7 @@ def place_video_menu(text):
     if not header:
         return text, 0
     block = (nl + "; >>> video submenu (generated by tools/build_fonts.py)" + nl
+             + FONT_MENU.rstrip("\r\n").replace("\n", nl) + nl
              + RESOLUTION_MENU.rstrip("\r\n").replace("\n", nl) + nl
              + WINDOW_MENU.rstrip("\r\n").replace("\n", nl) + nl
              + "; <<< video submenu" + nl)
@@ -1408,6 +1504,13 @@ def main():
         print(f"  registered font10/font11 in {os.path.basename(MOTIF)}")
 
     text, _repointed = repair_font_files(text)
+
+    # The shipped face is the Karate one. Options > Video > Font steps back to
+    # the gold logo face, and external/mods/fontchoice.lua writes these same
+    # three lines whenever the player picks something else, so the choice
+    # survives a rebuild instead of being reset by this line every time.
+    for handle, name in ((10, "DisplayK"), (11, "BodyK"), (12, "DisplayActiveK")):
+        text, _count = set_key(text, "font%d" % handle, f"ikemen1/fonts/{name}.def")
 
     text, res_added = ensure_resolution_menu(text)
     if res_added:            print(f"  rewrote the video resolution list in "
