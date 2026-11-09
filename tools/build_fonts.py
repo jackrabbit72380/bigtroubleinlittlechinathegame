@@ -838,6 +838,22 @@ SAMPLE_SETS = (("DisplayK_S", 1), ("DisplayK", 0), ("DisplayK_L", 2),
                ("Display", 3))
 
 
+def space_advance(face):
+    """The width this face gives a space: the .def's Size.x.
+
+    A bitmap face has no space glyph at all, so the engine advances a space by
+    Size.x instead of by a sprite width. The sample has to do the same, or the
+    words run together.
+    """
+    path = os.path.join(FONT_DIR, face + ".def")
+    if not os.path.isfile(path):
+        return 0
+    text = open(path, encoding="utf-8-sig", errors="replace").read()
+    found = re.search(r"^[ \t]*Size[ \t]*=[ \t]*(-?\d+)[ \t]*,[ \t]*(-?\d+)",
+                      text, re.MULTILINE | re.IGNORECASE)
+    return int(found.group(1)) if found else 0
+
+
 def sample_sheet(face, text=SAMPLE_TEXT, canvas=SAMPLE_CANVAS):
     """The sample words in one baked face, centred on a fixed-size sheet.
 
@@ -851,22 +867,28 @@ def sample_sheet(face, text=SAMPLE_TEXT, canvas=SAMPLE_CANVAS):
         return None
     data, sprites, palettes = sff.read_sff(path)
     cells = {sp["number"]: sp for sp in sprites if sp["group"] == 0}
+    space = space_advance(face)
     glyphs = []
     for ch in text:
+        if ch == " ":
+            glyphs.append((None, space))
+            continue
         sp = cells.get(ord(ch))
         if sp is None:
             continue
-        glyphs.append(sff.decode_sprite(data, sp, palettes, sp["pal"]).convert("RGBA"))
-    if not glyphs:
+        img = sff.decode_sprite(data, sp, palettes, sp["pal"]).convert("RGBA")
+        glyphs.append((img, img.width))
+    if not any(img is not None for img, _w in glyphs):
         return None
-    width = sum(g.width for g in glyphs)
-    height = max(g.height for g in glyphs)
+    width = sum(w for _img, w in glyphs)
+    height = max(img.height for img, _w in glyphs if img is not None)
     sheet = Image.new("RGBA", (max(canvas[0], width), max(canvas[1], height)),
                       (0, 0, 0, 0))
     x = (sheet.width - width) // 2
-    for g in glyphs:
-        sheet.alpha_composite(g, (x, 0))
-        x += g.width
+    for img, w in glyphs:
+        if img is not None:
+            sheet.alpha_composite(img, (x, 0))
+        x += w
     return sheet
 
 
