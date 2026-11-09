@@ -16,9 +16,14 @@
 --   AURA  the same glow function driven by power: red from 1000, green from
 --         2000, a colour that cycles from 3000 - or one colour, if STYLE says
 --         SINGLE COLOUR.
--- Each kind remembers its own SIZE / OPACITY / DETAIL / SHOW WHEN, so switching
--- between them swaps one look for another instead of renaming the same one.
--- Rows that cannot affect the current choice are greyed out.
+-- Each kind remembers its own SIZE / OPACITY / DETAIL / LAYER / MIN POWER /
+-- SHOW WHEN, so switching between them swaps one look for another instead of
+-- renaming the same one. Rows that cannot affect the current choice are greyed.
+--
+-- The sample on the right of the screen is drawn from the same scatter the
+-- module uses - copies of one word instead of copies of the fighter's current
+-- animation frame. The fight blends them additively and this screen does not,
+-- so treat its brightness as a guide, not a match.
 --
 -- The screen is the pause menu's own text sprite, drawn over the paused fight -
 -- the same approach external/mods/devhelp.lua and musicselect.lua use, because a
@@ -43,12 +48,17 @@ local COLOURS = {
 
 local TYPE_NAMES = {'OFF', 'GLOW', 'AURA'}
 local STYLE_NAMES = {'POWER LADDER', 'SINGLE COLOUR'}
+local LAYER_NAMES = {'BEHIND', 'IN FRONT'}
 local LIFE_STEPS = {0, 50, 30, 15}
 local LIFE_NAMES = {[0] = 'ANY TIME', [50] = 'BELOW 50% LIFE',
                     [30] = 'BELOW 30% LIFE', [15] = 'BELOW 15% LIFE'}
+local POWER_STEPS = {0, 1000, 2000, 3000}
+local POWER_NAMES = {[0] = 'ANY POWER', [1000] = '1000+',
+                     [2000] = '2000+', [3000] = '3000+'}
 
 -- type:  0 off, 1 GLOW, 2 AURA
 -- style: 1 the power ladder, 2 one colour (AURA only)
+-- layer: 1 behind the fighter (a halo), 2 in front of it (a wash)
 -- The two kinds keep separate numbers: GLOW ships at 6 / 256 / 30, AURA at
 -- 10 / 100 / 50, which is what makes them look different out of the box.
 local function defaults()
@@ -56,15 +66,15 @@ local function defaults()
 		type = 2,
 		style = 1,
 		colour = 1,
-		glow = {size = 6, alpha = 256, quality = 30, life = 0},
-		aura = {size = 10, alpha = 100, quality = 50, life = 0},
+		glow = {size = 6, alpha = 256, quality = 30, life = 0, layer = 1, minpower = 0},
+		aura = {size = 10, alpha = 100, quality = 50, life = 0, layer = 1, minpower = 0},
 	}
 end
 
 local CFG = defaults()
 local DEFAULT = defaults()
 local KINDS = {'glow', 'aura'}
-local FIELDS = {'size', 'alpha', 'quality', 'life'}
+local FIELDS = {'size', 'alpha', 'quality', 'life', 'layer', 'minpower'}
 
 local LIMIT = {
 	size = {4, 20},
@@ -82,6 +92,15 @@ local function clampInt(value, lo, hi, fallback)
 	return math.floor(value + 0.5)
 end
 
+local function onSteps(value, steps, fallback)
+	for _, step in ipairs(steps) do
+		if step == value then
+			return value
+		end
+	end
+	return fallback
+end
+
 local function tidy()
 	CFG.type = clampInt(CFG.type, 0, 2, DEFAULT.type)
 	CFG.style = clampInt(CFG.style, 1, 2, DEFAULT.style)
@@ -91,13 +110,9 @@ local function tidy()
 		got.size = clampInt(got.size, LIMIT.size[1], LIMIT.size[2], fallback.size)
 		got.alpha = clampInt(got.alpha, LIMIT.alpha[1], LIMIT.alpha[2], fallback.alpha)
 		got.quality = clampInt(got.quality, LIMIT.quality[1], LIMIT.quality[2], fallback.quality)
-		local life = clampInt(got.life, 0, 100, fallback.life)
-		got.life = 0
-		for _, step in ipairs(LIFE_STEPS) do
-			if step == life then
-				got.life = life
-			end
-		end
+		got.layer = clampInt(got.layer, 1, 2, fallback.layer)
+		got.life = onSteps(clampInt(got.life, 0, 100, fallback.life), LIFE_STEPS, 0)
+		got.minpower = onSteps(clampInt(got.minpower, 0, 3000, fallback.minpower), POWER_STEPS, 0)
 	end
 end
 
@@ -222,16 +237,19 @@ local function sync()
 	local off = (CFG.type == 0) and 1 or 0
 	local kind = (CFG.type == 1) and 1 or 2
 	local single = (CFG.style == 2) and 1 or 0
+	local under = (CFG.type ~= 0 and active().layer == 2) and 1 or 0
 	local got = active()
 	for p = 1, 8 do
 		applyMap(p, 'btlc_aura_off', off)
 		applyMap(p, 'btlc_aura_type', kind)
 		applyMap(p, 'btlc_aura_style', CFG.style)
 		applyMap(p, 'btlc_aura_single', single)
+		applyMap(p, 'btlc_aura_under', under)
 		applyMap(p, 'btlc_aura_size', got.size)
 		applyMap(p, 'btlc_aura_alpha', got.alpha)
 		applyMap(p, 'btlc_aura_quality', got.quality)
 		applyMap(p, 'btlc_aura_life', got.life)
+		applyMap(p, 'btlc_aura_minpower', got.minpower)
 		applyMap(p, 'btlc_aura_r', colour.r)
 		applyMap(p, 'btlc_aura_g', colour.g)
 		applyMap(p, 'btlc_aura_b', colour.b)
@@ -312,6 +330,14 @@ local ROWS = {
 		dim = function() return CFG.type == 0 or (CFG.type == 2 and CFG.style == 1) end,
 	},
 	{
+		label = 'LAYER',
+		value = function() return LAYER_NAMES[active().layer] end,
+		step = function()
+			active().layer = (active().layer == 1) and 2 or 1
+		end,
+		dim = function() return CFG.type == 0 end,
+	},
+	{
 		label = 'SIZE',
 		value = function() return tostring(active().size) end,
 		step = function(d) active().size = active().size + d end,
@@ -327,6 +353,21 @@ local ROWS = {
 		label = 'DETAIL',
 		value = function() return tostring(active().quality) end,
 		step = function(d) active().quality = active().quality + d * 5 end,
+		dim = function() return CFG.type == 0 end,
+	},
+	{
+		label = 'MIN POWER',
+		value = function() return POWER_NAMES[active().minpower] or 'ANY POWER' end,
+		step = function(d)
+			local at = 1
+			for i, step in ipairs(POWER_STEPS) do
+				if step == active().minpower then at = i end
+			end
+			at = at + d
+			if at < 1 then at = #POWER_STEPS end
+			if at > #POWER_STEPS then at = 1 end
+			active().minpower = POWER_STEPS[at]
+		end,
 		dim = function() return CFG.type == 0 end,
 	},
 	{
@@ -401,6 +442,53 @@ local function drawRow(txt, text, x, y, colour, scale)
 	end)
 end
 
+-- The module scatters copies of the fighter's current animation frame; this
+-- scatters copies of one word with the same grid, colour, opacity and radius.
+-- The fight blends additively and this does not, so brightness is only a guide.
+local function drawSample(txt, sw, sh)
+	local cx, cy = sw * 0.76, sh * 0.42
+	drawRow(txt, 'LIVE SAMPLE', cx - 120, cy - 170, DIMC, 0.8)
+
+	if CFG.type == 0 then
+		drawRow(txt, 'nothing drawn', cx - 120, cy, DIMC, 0.8)
+		return
+	end
+
+	local got = active()
+	local colour = COLOURS[CFG.colour] or COLOURS[1]
+	local n = math.floor(got.quality / 10)
+	if n < 2 then n = 2 end
+	local reach = 50 + got.size * 7
+	local step = reach / (n - 1)
+	local base = math.floor(got.alpha * 2 / (n * n))
+	if base < 6 then base = 6 end
+	if base > 60 then base = 60 end
+
+	for i = 0, n - 1 do
+		for h = 0, n - 1 do
+			pcall(function()
+				textImgReset(txt)
+				textImgSetAlign(txt, 0)            -- 0 = centred on the point
+				pcall(textImgSetScale, txt, 1, 1)
+				textImgSetColor(txt, colour[1], colour[2], colour[3], base)
+				textImgSetText(txt, 'GLOW')
+				textImgSetPos(txt, cx + (h - (n - 1) / 2) * step,
+					cy + (i - (n - 1) / 2) * step)
+				textImgDraw(txt)
+			end)
+		end
+	end
+
+	drawRow(txt, string.format('%d copies at %d each', n * n, base),
+		cx - 120, cy + 100, DIMC, 0.8)
+	drawRow(txt, string.format('%.0f opacity per copy in the fight',
+		got.alpha / (got.quality * 0.25)), cx - 120, cy + 134, DIMC, 0.8)
+	if got.minpower > 0 then
+		drawRow(txt, string.format('only from %d power', got.minpower),
+			cx - 120, cy + 168, DIMC, 0.8)
+	end
+end
+
 local function auraDraw(sec)
 	pcall(rectDraw, sec.movelist.overlay.RectData)
 
@@ -412,7 +500,7 @@ local function auraDraw(sec)
 	local title = nil
 	pcall(function() title = sec.movelist.title.TextSpriteData end)
 
-	local y = sh * 0.16
+	local y = sh * 0.13
 	if title ~= nil then
 		pcall(function()
 			textImgReset(title)
@@ -424,8 +512,8 @@ local function auraDraw(sec)
 	end
 	y = y + 70
 
-	local x = sw * 0.24
-	local pitch = 52
+	local x = sw * 0.22
+	local pitch = 50
 	for i, row in ipairs(ROWS) do
 		local here = (i == menu.cursorPosY)
 		local dimmed = (row.dim ~= nil) and row.dim()
@@ -441,7 +529,9 @@ local function auraDraw(sec)
 			x, y + (i - 1) * pitch, colour, 1)
 	end
 
-	y = y + (#ROWS) * pitch + 30
+	drawSample(txt, sw, sh)
+
+	y = y + (#ROWS) * pitch + 20
 	drawRow(txt, 'UP / DOWN  ROW      LEFT / RIGHT  CHANGE', x, y, DIMC, 0.8)
 	drawRow(txt, 'Z  SAVE AND CLOSE      ESC  CLOSE', x, y + 34, DIMC, 0.8)
 
