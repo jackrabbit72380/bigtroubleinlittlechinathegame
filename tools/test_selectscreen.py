@@ -351,6 +351,38 @@ def check_stage_wall(problems):
             if ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah:
                 problems.append("stage cards %d and %d overlap" % (i + 1, j + 1))
                 return
+    # The cursor walks that grid: every arrow moves it, either end wraps, and
+    # neither direction can leave the wall. The arithmetic is the screen's own.
+    step = lua.eval("start.f_stageCursorStep")
+    if step is None:
+        problems.append("the stage wall has no cursor step")
+        return
+    checks = (
+        ("left wraps at the first card", step(1, -1, 0, 12), 0),
+        ("left wraps off RANDOM", step(0, -1, 0, 12), 12),
+        ("right wraps at the last card", step(12, 1, 0, 12), 0),
+        ("down steps a row", step(1, 3, 0, 12), 4),
+        ("up steps a row", step(1, -3, 0, 12), 11),
+        ("down wraps off the last row", step(10, 3, 0, 12), 0),
+        ("left wraps to the last map with no RANDOM", step(1, -1, 1, 12), 12),
+        ("right wraps to the first map with no RANDOM", step(12, 1, 1, 12), 1),
+    )
+    for why, got, expect in checks:
+        if got is None or int(got) != expect:
+            problems.append("the stage cursor %s (got %s, wanted %d)" % (why, got, expect))
+    no = 1
+    for _ in range(13):
+        no = step(no, 1, 0, 12)
+    if int(no) != 1:
+        problems.append("a full lap of the wall does not return to where it started")
+    # all four arrows, read for both players, not just one key for one of them
+    for needle, why in (("stageKeysOf(stageInfo.skip and stageInfo.skip.previous", "left"),
+                        ("stageKeysOf(stageInfo.skip and stageInfo.skip.next", "right"),
+                        ("stageKeysOf(stageInfo.previous", "up"),
+                        ("stageKeysOf(stageInfo.next", "down"),
+                        ("for side = 1, 2 do", "both players")):
+        if needle not in text:
+            problems.append("the stage wall does not read %s from %s" % (why, "either player" if why == "both players" else "the arrows"))
 
 
 def main():

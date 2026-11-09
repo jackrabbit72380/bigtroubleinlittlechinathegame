@@ -1828,7 +1828,6 @@ function start.f_stageGrid(count, cols, pad, window)
 	end
 	return cards
 end
--- <<< stage preview grid geometry
 
 -- How many cards the wall puts in one row. The stage cursor moves by this
 -- much on up/down, so the arrows follow the grid the player can see.
@@ -1839,6 +1838,23 @@ function start.f_stageGridCols(count)
 	local maxCols = math.max(1, math.floor((availW + pad) / (grid.card[1] + pad)))
 	return math.max(1, math.min(count or 0, maxCols))
 end
+
+-- One step across the stage wall. The cursor is a stop number, so a step is
+-- simply that number moved inside [minIdx, maxIdx] and wrapped at whichever
+-- end it runs off: left and right walk card by card, up and down walk a row at
+-- a time, and neither direction can fall off the wall.
+function start.f_stageCursorStep(no, by, minIdx, maxIdx)
+	if no == nil or by == nil or minIdx == nil or maxIdx == nil or maxIdx < minIdx then
+		return no
+	end
+	local span = maxIdx - minIdx + 1
+	local pos = (no - minIdx + by) % span
+	if pos < 0 then
+		pos = pos + span
+	end
+	return minIdx + pos
+end
+-- <<< stage preview grid geometry
 
 function start.f_getCharData(ref)
 	return main.t_selChars[ref + 1]
@@ -4729,36 +4745,76 @@ function start.f_stageMenu()
 		stageListNo = r.init
 	end
 
-	-- Which player is on the stage cursor: the picked map is outlined in their
-	-- colour, so a two-player pick shows whose choice it is
-	for side = 1, 2 do
-		local st = motif.select_info.stage
-		if getInput(side, st.next.key) or getInput(side, st.previous.key)
-			or getInput(side, st.skip.next.key) or getInput(side, st.skip.previous.key) then
-			start.stageSide = side
-		end
-	end
-	-- The wall is a grid, so the arrows move in two dimensions: left and right
-	-- step one card, up and down step a whole row. The old wiring stepped one
-	-- card on up/down and jumped ten on left/right, which walked off the end of
-	-- the wall and read as a cursor that moved once and then stuck.
+	-- The wall is a grid, so all four arrows move in two dimensions: left and
+	-- right step one card, up and down step a whole row, and either end wraps.
+	-- Both players are read, and the screenpack's own stage keys count as well as
+	-- the arrows, so a different key layout still walks the wall. A press moves
+	-- once and holding auto-repeats after a short pause: one tap cannot fly across
+	-- the wall, and a held key does not stutter on the repeat.
 	local cols = start.f_stageGridCols(#main.t_selectableStages)
-	local span = stageListMaxIdx - stageListMinIdx + 1
-	if span < 1 then span = 1 end
 	local function stepStage(by)
-		stageListNo = stageListNo + by
-		while stageListNo > stageListMaxIdx do stageListNo = stageListNo - span end
-		while stageListNo < stageListMinIdx do stageListNo = stageListNo + span end
+		local nextNo = start.f_stageCursorStep(stageListNo, by, stageListMinIdx, stageListMaxIdx)
+		if nextNo == stageListNo then
+			return
+		end
+		stageListNo = nextNo
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 	end
-	if getInput(-1, {"L"}) then
-		stepStage(-1)
-	elseif getInput(-1, {"R"}) then
-		stepStage(1)
-	elseif getInput(-1, {"U"}) then
-		stepStage(-cols)
-	elseif getInput(-1, {"D"}) then
-		stepStage(cols)
+	local stageInfo = motif.select_info.stage
+	-- the motif's binding first, then the plain arrow, so both work
+	local function stageKeysOf(group, fallback)
+		local keys = { fallback }
+		if group ~= nil and group.key ~= nil then
+			if type(group.key) == 'table' then
+				for _, k in ipairs(group.key) do table.insert(keys, k) end
+			else
+				table.insert(keys, group.key)
+			end
+		end
+		return keys
+	end
+	local directions = {
+		{ by = -1, keys = stageKeysOf(stageInfo.skip and stageInfo.skip.previous, 'L') },
+		{ by = 1, keys = stageKeysOf(stageInfo.skip and stageInfo.skip.next, 'R') },
+		{ by = -cols, keys = stageKeysOf(stageInfo.previous, 'U') },
+		{ by = cols, keys = stageKeysOf(stageInfo.next, 'D') },
+	}
+	local function directionHeld(keys)
+		for side = 1, 2 do
+			if getInput(side, keys) then return true end
+		end
+		return getInput(-1, keys) and true or false
+	end
+	-- Which player is on the stage cursor: the picked map is outlined in their
+	-- colour, so a two-player pick shows whose choice it is. It reads the same
+	-- key lists the cursor moves on, so the outline can only follow a player who
+	-- is actually pressing something, and a bare key name from the def cannot be
+	-- handed to the engine where it wants a list.
+	for side = 1, 2 do
+		for _, dir in ipairs(directions) do
+			if getInput(side, dir.keys) then
+				start.stageSide = side
+				break
+			end
+		end
+	end
+	local heldIndex = nil
+	for i, dir in ipairs(directions) do
+		if directionHeld(dir.keys) then
+			heldIndex = i
+			break
+		end
+	end
+	local firstPress = heldIndex ~= nil and heldIndex ~= (start.stageHeldDir or 0)
+	start.stageHeldDir = heldIndex or 0
+	if heldIndex == nil then
+		start.stageRepeat = 0
+	else
+		start.stageRepeat = (start.stageRepeat or 0) - 1
+		if firstPress or start.stageRepeat <= 0 then
+			stepStage(directions[heldIndex].by)
+			start.stageRepeat = firstPress and 16 or 5
+		end
 	end
 	local selected, handled = start.f_stageSlotSelected(main.t_selectableStageSlots[stageListNo])
 	local ref = start.f_stageMenuRef()
