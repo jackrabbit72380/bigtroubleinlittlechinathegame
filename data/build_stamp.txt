@@ -1,7 +1,7 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-0f5cc91e20341d18053a9af74e117c2eed04ff5ab97409ed57ae2ed193442d6f  data/ikemen1/system.def
+91fa90c1acacd8e137b5c250e9ab4ca69a9b87324507a0140d049913dabdde18  data/ikemen1/system.def
 9a8ffe90872c56342af85c54d49d3addccd24d2a242f9895577bec88b0bf51a1  data/ikemen1/system.sff
 ad0660810bd839fdac27855e031e57e69ee47fa1442fcef40f7c926599870999  data/system.base.def
 d0a1ddc60bb82f1ac4920d4075fccebae5618547c109022a5d93cb4c61284a80  data/fight.def
@@ -23,7 +23,7 @@ af85d42241289b82b3262e3a2f6e457121f3ad9db6af7bd2007d3fc55be74f48  stages/stage3d
 ff394fdd2113c28960d083f1b254450337dd5565ff3bd7f99464dd10057f01f9  stages/stage3d_rain.sff
 f49f42be831601a24b8a3207db40d29dd7b4aa49181a52e6eff82b97aebc2b96  external/mods/auraopts.lua
 e11764f6caf3165048412c890f834832b42c4ed4b35f662ad31cf47170d0e3e9  external/mods/devhelp.lua
-4dbffc1d0c28873722fc2fb0a1bfa7250fe869440cb84c4de3ef789860254459  external/mods/fontchoice.lua
+3c46b23f1fb43166dfe2d12e7812ee5f81d3c6eeba03253123a2b777edbb81d8  external/mods/fontchoice.lua
 08b6ef7f5ae4ad8478a5d39d5fef0e694eacb74d6b2120cc3653426ab9cc4f89  external/mods/modnotice.lua
 9b8dc5fa1c53f3d357516d3396cbc123d810eaeb28f02f9265b2ca548f707ab0  external/mods/musicselect.lua
 05cb4b3258c78126372072d8db5def6023206d2cd8a3b1b2c43fae2d55dedf55  external/mods/rainthunder.lua
