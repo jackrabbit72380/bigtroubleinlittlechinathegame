@@ -13,6 +13,8 @@
 # btlc_aura_r/g/b   that colour
 # btlc_aura_alpha / quality / size   the glow's own arguments
 # btlc_aura_life    0 = always, otherwise show below this % of life
+# btlc_aura_under   1 = draw over the fighter, unset = behind it
+# btlc_aura_minpower  hide the glow below this power, unset = any power
 #
 # GLOW and AURA are the same glow function given different numbers, not two
 # copies of it: GLOW is one steady colour at full brightness with a tight
@@ -27,7 +29,8 @@ ignoreHitPause
 		let size = ifElse(map(btlc_aura_size) > 0, map(btlc_aura_size), 10);
 		let kind = ifElse(map(btlc_aura_type) > 0, map(btlc_aura_type), 2);
 		let watch = map(btlc_aura_life);
-		if $watch = 0 || life < lifeMax * $watch / 100
+		let floor = map(btlc_aura_minpower);
+		if power >= $floor && ($watch = 0 || life < lifeMax * $watch / 100)
 		{
 			if $kind = 1
 			{
@@ -110,7 +113,7 @@ ignoreHitPause{
 					trans: addalpha;
 					alpha: $a,255-$a;
 					ownpal: 1;
-					under: 1;
+					under: ifElse(map(btlc_aura_under) = 1, 0, 1);
 					facing: ifElse($f = -1, -1, 1);
 					angle: angle;
 					xshear: xShear;
@@ -138,7 +141,7 @@ ignoreHitPause{
 					trans: addalpha;
 					alpha: $a,255-$a;
 					ownpal: 1;
-					under: 1;
+					under: ifElse(map(btlc_aura_under) = 1, 0, 1);
 					facing: ifElse($f = -1, -1, 1);
 					angle: angle;
 					xshear: xShear;
