@@ -40,8 +40,9 @@ AXIS = (640, 360)
 # it or overwrites it. 206 is free: 200-205, 220-225, 400-403, 500, 600, 610,
 # 700, 800, 810, 921-923 and 1000 are taken.
 SPRITE = (206, 0)
-# The night sky is a sprite of its own and the storyboard draws it behind the
-# poster, so the poster keeps every pixel of transparency the art came with.
+# The night sky is still written as its own sprite (207,0) so the sky art stays
+# available, but the poster bakes a copy of it in: the engine draws only the
+# poster layer, and a plate over a missing sky reads as black.
 SKY_SPRITE = (207, 0)
 
 SECONDS = 4.0
@@ -155,9 +156,10 @@ def poster():
             if abs(img.width / float(img.height) - 16 / 9.0) > 0.06:
                 print(f"  warning: {os.path.relpath(path, ROOT)} is "
                       f"{img.width}x{img.height}, not 16:9; it will be cropped")
-            # Nothing is baked behind the plate: the sky is drawn under it by
-            # the storyboard, so the poster stays a cut-out.
-            card = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
+            # The sky is baked in behind the plate. A second layer for it was
+            # not drawn by the engine - the clear parts of the cut-out came out
+            # black - so the one layer that does draw carries both.
+            card = night_sky(halo=False)
             card.alpha_composite(cover(img, CANVAS))
             mark = card_wordmark()
             if mark is not None:
@@ -180,12 +182,6 @@ def storyboard():
         f"fadein.time = {FADE_IN}\n"
         f"fadeout.time = {FADE_OUT}\n"
         f"end.time = {end}\n"
-        "\n"
-        "[Splash Sky]\n"
-        "type = normal\n"
-        f"spriteno = {SKY_SPRITE[0]}, {SKY_SPRITE[1]}\n"
-        "start = 0, 0\n"
-        "mask = 0\n"
         "\n"
         "[Splash Poster]\n"
         "type = normal\n"
@@ -259,18 +255,14 @@ def build():
             raise SystemExit(f"splash sprite {slot} did not make it into system.sff")
     with open(LOGO_DEF, encoding="utf-8") as f:
         text = f.read()
-    for slot in (SKY_SPRITE, SPRITE):
-        if f"spriteno = {slot[0]}, {slot[1]}" not in text:
-            raise SystemExit(f"logo.def does not draw sprite {slot}")
-    if text.index("spriteno = %d" % SKY_SPRITE[0]) > text.index("spriteno = %d" % SPRITE[0]):
-        raise SystemExit("logo.def draws the sky after the poster")
+    if f"spriteno = {SPRITE[0]}, {SPRITE[1]}" not in text:
+        raise SystemExit(f"logo.def does not draw sprite {SPRITE}")
     if "mask = 1" not in text.split("[Splash Poster]", 1)[1]:
         raise SystemExit("logo.def draws the poster with mask = 0: its "
                          "clear field would come out black")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
-    preview = sky_img.copy()
-    preview.alpha_composite(art_img)
+    preview = art_img.copy()
     preview.save(os.path.join(ROOT, "artifacts", "splash.png"))
     print(f"wrote the splash into data/ikemen1/system.sff ({total} sprites, sky "
           f"{SKY_SPRITE[0]},{SKY_SPRITE[1]}, poster {SPRITE[0]},{SPRITE[1]}, "

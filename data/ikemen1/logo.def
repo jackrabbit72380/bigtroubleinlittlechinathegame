@@ -9,12 +9,6 @@ fadein.time = 30
 fadeout.time = 45
 end.time = 240
 
-[Splash Sky]
-type = normal
-spriteno = 207, 0
-start = 0, 0
-mask = 0
-
 [Splash Poster]
 type = normal
 spriteno = 206, 0
