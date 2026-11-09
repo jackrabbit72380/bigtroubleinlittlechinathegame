@@ -1519,14 +1519,44 @@ local randomAnims = {}
 -- green. It used to be built here as a text sprite, and this build refuses the
 -- textImg* calls that need (textImgSetFont among them), so the stop drew
 -- nothing at all - leaving only the cursor box's white tab under the wall.
+-- The words on this screen are painted art, not text, so they do not follow
+-- Options > Font by themselves. Each is painted in both faces by
+-- tools/build_select_grid.py and this reads the pick: save/font.cfg is what that
+-- screen writes and what the next launch loads the faces from. Cached, because a
+-- pick only lands on the next launch and cannot change mid-session.
+local SELECT_FACE = nil
+
+local function selectFace()
+	if SELECT_FACE == nil then
+		SELECT_FACE = 'karate'
+		pcall(function()
+			local text = main.f_fileRead('save/font.cfg', 'r', true)
+			local pick = type(text) == 'string'
+				and text:lower():match('font%s*=%s*([%w_]+)') or nil
+			if pick == 'original' then
+				SELECT_FACE = 'original'
+			end
+		end)
+	end
+	return SELECT_FACE
+end
+
+-- 151,0 / 151,11 are RANDOM in the gold face and 151,13 / 151,12 the same word
+-- in Karate. Both pairs are painted into the same box, so the screen's own
+-- RANDOM_ART measurements hold whichever face is picked.
+local RANDOM_SPR = {original = {base = 0, lit = 11}, karate = {base = 13, lit = 12}}
+local LABEL_SPRITE = {original = {20, 21}, karate = {22, 23}}
+
 local function randomStopAnim(lit)
-	local key = lit and 'lit' or 'base'
+	local face = selectFace()
+	local key = face .. (lit and 'lit' or 'base')
 	if randomAnims[key] == nil then
 		-- Each state names its own sprite in full, so the sprite the screen
 		-- shows is readable where it is written; motifSprite only decides
 		-- whether that sprite can be drawn at all.
-		local def = key == 'lit' and '151,11, 0,0, -1' or '151,0, 0,0, -1'
-		randomAnims[key] = motifSprite(def, 151, key == 'lit' and 11 or 0) or false
+		local number = (RANDOM_SPR[face] or RANDOM_SPR.karate)[lit and 'lit' or 'base']
+		randomAnims[key] = motifSprite(
+			string.format('151,%d, 0,0, -1', number), 151, number) or false
 	end
 	return randomAnims[key] or nil
 end
@@ -1646,11 +1676,14 @@ local LABEL_X = {58, 1544}
 local WORD_Y = 0
 
 local function labelAnim(pn)
-	if labelAnims[pn] == nil then
-		local def = pn == 1 and '151,20, 0,0, -1' or '151,21, 0,0, -1'
-		labelAnims[pn] = motifSprite(def, 151, 19 + pn) or false
+	local face = selectFace()
+	local key = face .. pn
+	if labelAnims[key] == nil then
+		local number = (LABEL_SPRITE[face] or LABEL_SPRITE.karate)[pn]
+		labelAnims[key] = motifSprite(
+			string.format('151,%d, 0,0, -1', number), 151, number) or false
 	end
-	return labelAnims[pn] or nil
+	return labelAnims[key] or nil
 end
 
 function start.f_drawPlayerLabels()

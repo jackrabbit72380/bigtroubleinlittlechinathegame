@@ -236,6 +236,13 @@ def background(grid=True):
 
 LABEL_SPR = ((151, 20), (151, 21))
 LABEL_WORDS = ("PLAYER 1", "PLAYER 2")
+# The same three words again in the Karate face. The captions and the RANDOM stop
+# are painted art, so they cannot follow Options > Font on their own; every word
+# on this screen is set in the mode title's face, so each is painted twice and
+# start.lua draws the pair the saved pick names.
+KARATE_LABEL = ((151, 22), (151, 23))
+KARATE_RANDOM = (151, 13)
+KARATE_RANDOM_MARK = (151, 12)
 
 # The words on the select screen are painted in the mode title's own face, at the
 # title's own size. title.font is font 10, i.e. the bitmap Display face baked by
@@ -245,30 +252,41 @@ LABEL_WORDS = ("PLAYER 1", "PLAYER 2")
 # (DejaVu at a size of its own, flat gold) that only looked similar.
 DISPLAY_DEF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.def")
 DISPLAY_SFF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.sff")
+KARATE_DEF = os.path.join(ROOT, "data", "ikemen1", "fonts", "DisplayK.def")
+KARATE_SFF = os.path.join(ROOT, "data", "ikemen1", "fonts", "DisplayK.sff")
 TITLE_SCALE = 0.75             # title.scale in [Select Info]
 WORD_PAD = 2                   # clear pixels round every word, so no ink on the edge
 
 
-def display_face():
-    """(glyphs by character, the face's space advance) from Display.sff."""
-    if not (os.path.isfile(DISPLAY_DEF) and os.path.isfile(DISPLAY_SFF)):
-        raise SystemExit("select screen: the Display face is missing")
+def face_files(face="original"):
+    """The .def and .sff of one of the two faces this screen can wear."""
+    if face == "karate":
+        return KARATE_DEF, KARATE_SFF
+    return DISPLAY_DEF, DISPLAY_SFF
+
+
+def display_face(face="original"):
+    """(glyphs by character, the face's space advance) from that face's art."""
+    def_path, sff_path = face_files(face)
+    if not (os.path.isfile(def_path) and os.path.isfile(sff_path)):
+        raise SystemExit("select screen: the %s face is missing" % face)
     space = 30.0
-    with open(DISPLAY_DEF, encoding="utf-8-sig", errors="replace") as fh:
+    with open(def_path, encoding="utf-8-sig", errors="replace") as fh:
         for line in fh:
             if line.strip().lower().startswith("size"):
                 try:
-                    space = float(line.split("=", 1)[1].split(",")[0]) or space
+                    space = float(line.split("=", 1)[1].split(",")[0])
                 except (IndexError, ValueError):
                     pass
                 break
-    raw, sprites, pals = sff.read_sff(DISPLAY_SFF)
+    data, sprites, palettes = sff.read_sff(sff_path)
     glyphs = {}
     for sp in sprites:
         if sp["group"] == 0 and 33 <= sp["number"] <= 126:
-            glyphs[chr(sp["number"])] = sff.decode_sprite(raw, sp, pals).convert("RGBA")
+            glyphs[chr(sp["number"])] = sff.decode_sprite(
+                data, sp, palettes, sp["pal"]).convert("RGBA")
     if not glyphs:
-        raise SystemExit("select screen: Display.sff has no glyphs")
+        raise SystemExit("select screen: the %s face has no glyphs" % face)
     return glyphs, space
 
 
@@ -282,15 +300,27 @@ def tint_word(img, colour):
     return out
 
 
-def display_word(text, scale=TITLE_SCALE, tint=None):
+def display_word(text, scale=TITLE_SCALE, tint=None, face="original",
+                 canvas=None, align="left"):
     """A word set the way the engine sets the mode title.
 
     Same glyph art, same advance (the engine advances by the sprite's width) and
     same text scale as title.font / title.scale, so a caption drawn from this is
     the title's own type, not an imitation of it.
+
+    ``face`` picks which of the two baked typefaces the glyphs come from, and
+    ``canvas`` pins the painted box instead of letting the word size it - that is
+    what lands the second face on a sprite the screen already places by size.
     """
-    glyphs, space = display_face()
+    glyphs, space = display_face(face)
     cell_h = max(g.height for g in glyphs.values())
+    if canvas is not None:
+        # Fit inside the box the other face fills: whichever limit bites first,
+        # height or width, decides the scale, so no word can overflow.
+        natural = sum(space if ch == " " else glyphs[ch].width
+                      for ch in text if ch == " " or ch in glyphs)
+        scale = min((canvas[1] - 2 * WORD_PAD) / float(cell_h),
+                    (canvas[0] - 2 * WORD_PAD) / float(max(1, natural)))
     x = 0.0
     pieces = []
     for ch in text:
@@ -299,20 +329,24 @@ def display_word(text, scale=TITLE_SCALE, tint=None):
             continue
         g = glyphs.get(ch)
         if g is None:
-            raise SystemExit("select screen: the Display face has no %r" % ch)
+            raise SystemExit("select screen: the %s face has no %r" % (face, ch))
         w = max(1, int(round(g.width * scale)))
         h = max(1, int(round(g.height * scale)))
         pieces.append((x, g.resize((w, h), Image.LANCZOS) if (w, h) != g.size else g))
         x += g.width * scale
-    img = Image.new("RGBA", (int(round(x)) + 2 * WORD_PAD,
-                             int(round(cell_h * scale)) + 2 * WORD_PAD),
-                    (0, 0, 0, 0))
+    if canvas is None:
+        size = (int(round(x)) + 2 * WORD_PAD,
+                int(round(cell_h * scale)) + 2 * WORD_PAD)
+        left = WORD_PAD
+    else:
+        size = (canvas[0], canvas[1])
+        left = WORD_PAD if align != "centre" else int(round((size[0] - x) / 2.0))
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
     for px, g in pieces:
-        img.alpha_composite(g, (int(round(px)) + WORD_PAD, WORD_PAD))
+        img.alpha_composite(g, (int(round(px)) + left, WORD_PAD))
     if tint is not None:
         img = tint_word(img, tint)
     return img
-
 
 def grid_overlay():
     """The wall of portrait cells on its own, for start.lua to draw."""
@@ -338,7 +372,7 @@ def grid_overlay():
     return img
 
 
-def label_word(text):
+def label_word(text, face="original", canvas=None):
     """PLAYER 1 / PLAYER 2 as their own sprite, in the mode title's own face.
 
     The select screen used to carry these two captions in the backdrop picture
@@ -346,7 +380,7 @@ def label_word(text):
     mode title drawn between them. They are drawn by start.lua now, at the size
     they are painted, so they sit on the title's own row.
     """
-    return display_word(text)
+    return display_word(text, face=face, canvas=canvas)
 
 
 def _plate(accent, dim):
@@ -488,7 +522,7 @@ def random_card(size):
     return img
 
 
-def random_label(size=RANDOM_LABEL, lit=False):
+def random_label(size=RANDOM_LABEL, lit=False, face="original", canvas=None):
     """RANDOM as plain type, in the mode title's own face and size.
 
     The stop is marked by the word itself changing colour. Nothing is drawn
@@ -498,7 +532,8 @@ def random_label(size=RANDOM_LABEL, lit=False):
     from the same glyphs at the same size, so the word cannot shift or change
     size when a player's pick moves onto it.
     """
-    return display_word("RANDOM", tint=GREEN_LIT if lit else None)
+    return display_word("RANDOM", tint=GREEN_LIT if lit else None, face=face,
+                        canvas=canvas, align="centre")
 
 
 def repaint_random_mark():
@@ -510,9 +545,17 @@ def repaint_random_mark():
     per-cell offset to undo that with.
     """
     d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
+    here = {(sp["group"], sp["number"]): sp for sp in sprites}
+    gold = here.get(RANDOM_CELL)
+    if gold is None:
+        raise SystemExit("select screen: 151,0 is missing, so Karate's RANDOM "
+                         "has no box to fit")
+    box = (gold["w"], gold["h"])
     wanted = {RANDOM_CELL: random_label(),
               RANDOM_MARK: random_label(lit=True),
-              RANDOM_PORTRAIT: random_card(RANDOM_PANEL)}
+              RANDOM_PORTRAIT: random_card(RANDOM_PANEL),
+              KARATE_RANDOM: random_label(face="karate", canvas=box),
+              KARATE_RANDOM_MARK: random_label(lit=True, face="karate", canvas=box)}
     out, done = [], set()
     for sp in sprites:
         key = (sp["group"], sp["number"])
@@ -882,6 +925,14 @@ def patch_bg_layer():
     return True
 
 
+def gold_box(spr, sprites):
+    """The size the gold word is painted at, which the second face has to fit."""
+    for sp in sprites:
+        if (sp["group"], sp["number"]) == spr:
+            return (sp["w"], sp["h"])
+    raise SystemExit("select screen: %d,%d is not in system.sff" % spr)
+
+
 def main():
     if not os.path.isfile(SYSTEM_SFF) or not os.path.isfile(SYSTEM_DEF):
         raise SystemExit("data/ikemen1 is missing - fetch the engine data first")
@@ -890,6 +941,11 @@ def main():
               CELL_SPR: cell_frame()}
     for spr, word in zip(LABEL_SPR, ("PLAYER 1", "PLAYER 2")):
         images[spr] = label_word(word)
+    # The captions again in Karate, fitted to the box the gold ones already sit in.
+    _d, _now, _p = sff.read_sff(SYSTEM_SFF)
+    for gold, karate, word in zip(LABEL_SPR, KARATE_LABEL, LABEL_WORDS):
+        images[karate] = label_word(word, face="karate",
+                                    canvas=gold_box(gold, _now))
     for spr, colour in zip(CURSOR, PLAYER_COLOURS):
         images[spr] = cursor_frame(colour)
     for spr in CURSOR_WHITE:
