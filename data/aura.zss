@@ -6,11 +6,17 @@
 # maps set - a build where that module failed, say - the ifElse defaults
 # keep the module looking exactly as released.
 #
-# btlc_aura_off     1 = no aura at all
-# btlc_aura_single  1 = one colour instead of the power ladder
+# btlc_aura_off     1 = nothing drawn at all
+# btlc_aura_type    1 = GLOW, 2 = AURA; unset reads as AURA
+# btlc_aura_style   1 = the power ladder, 2 = one colour (AURA only)
+# btlc_aura_single  1 = one colour; still written for builds with the old module
 # btlc_aura_r/g/b   that colour
 # btlc_aura_alpha / quality / size   the glow's own arguments
 # btlc_aura_life    0 = always, otherwise show below this % of life
+#
+# GLOW and AURA are the same glow function given different numbers, not two
+# copies of it: GLOW is one steady colour at full brightness with a tight
+# radius, whatever the power, and AURA is the power ladder below.
 [StateDef +1]
 ignoreHitPause
 {
@@ -19,28 +25,39 @@ ignoreHitPause
 		let alpha = ifElse(map(btlc_aura_alpha) > 0, map(btlc_aura_alpha), 100);
 		let quality = ifElse(map(btlc_aura_quality) > 0, map(btlc_aura_quality), 50);
 		let size = ifElse(map(btlc_aura_size) > 0, map(btlc_aura_size), 10);
+		let kind = ifElse(map(btlc_aura_type) > 0, map(btlc_aura_type), 2);
 		let watch = map(btlc_aura_life);
 		if $watch = 0 || life < lifeMax * $watch / 100
 		{
-			if map(btlc_aura_single) = 0
+			if $kind = 1
 			{
+				# GLOW: the released Glow.zss numbers - one colour, no ladder
 				# alpha, quality, size, r, g, b, priority, id, updatehitpause, movehitpause
-				if power >= 1000 && power < 2000
-				{
-					call glow($alpha, $quality, $size, 255,0,0, 1, 92000, 1, 1);
-				}
-				if power >= 2000 && power < 3000
-				{
-					call glow(ifElse($alpha > 220, 220, $alpha + 15), $quality, $size, 0,255,0, 1, 92000, 1, 1);
-				}
-				if power >= 3000
-				{
-					call glow(ifElse($alpha > 185, 185, $alpha + 35), 30, 5.5, 175 + 175*cos(gameTime * 0.1),180 + 180* sin (gameTime * 0.08),180 + 180 * cos (gameTime * 0.05 +45), 1, 92000, 1, 1);
-				}
+				call glow($alpha, $quality, $size, map(btlc_aura_r), map(btlc_aura_g), map(btlc_aura_b), 1, 92000, 1, 1);
 			}
 			else
 			{
-				call glow($alpha, $quality, $size, map(btlc_aura_r), map(btlc_aura_g), map(btlc_aura_b), 1, 92000, 1, 1);
+				if map(btlc_aura_style) = 2
+				{
+					# AURA, one colour
+					call glow($alpha, $quality, $size, map(btlc_aura_r), map(btlc_aura_g), map(btlc_aura_b), 1, 92000, 1, 1);
+				}
+				else
+				{
+					# AURA, the power ladder
+					if power >= 1000 && power < 2000
+					{
+						call glow($alpha, $quality, $size, 255,0,0, 1, 92000, 1, 1);
+					}
+					if power >= 2000 && power < 3000
+					{
+						call glow(ifElse($alpha > 220, 220, $alpha + 15), $quality, $size, 0,255,0, 1, 92000, 1, 1);
+					}
+					if power >= 3000
+					{
+						call glow(ifElse($alpha > 185, 185, $alpha + 35), 30, 5.5, 175 + 175*cos(gameTime * 0.1),180 + 180* sin (gameTime * 0.08),180 + 180 * cos (gameTime * 0.05 +45), 1, 92000, 1, 1);
+					}
+				}
 			}
 		}
 	}
