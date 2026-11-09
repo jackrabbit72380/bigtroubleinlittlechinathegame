@@ -868,8 +868,16 @@ def install_ttf():
         print(f"  {os.path.relpath(dst, ROOT)} already current")
     for name, px, depth, face_stops in FONTS:
         write_font(name, px * SUPERSAMPLE, depth * SUPERSAMPLE, dst, face_stops)
+    # The HUD's own faces - the lifebar names, the round timer, the hit and
+    # combo counters, the powerbar readout, the win quote - are stock bitmap
+    # fonts rebaked into the gold gradient here. They take the Karate face too
+    # when it is installed, so the scoreboard is not the last thing left in the
+    # old typeface. Their .def files are not rewritten, so every Size, Spacing
+    # and Offset the lifebar was laid out against still holds, and each cell
+    # keeps the stock width the string measurement was built on.
+    hud_ttf = KARATE_TTF if os.path.isfile(KARATE_TTF) else dst
     for name, cell_h, depth in STOCK_FONTS:
-        write_stock(name, cell_h, depth, dst)
+        write_stock(name, cell_h, depth, hud_ttf)
     bake_karate()
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:

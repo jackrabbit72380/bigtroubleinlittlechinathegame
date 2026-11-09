@@ -21,6 +21,11 @@
 
 local FILE = 'save/font.cfg'
 local MOTIF = 'data/ikemen1/system.def'
+-- The in-game HUD is a file of its own and names the same two faces for the
+-- lifebar names and the demo caption, so the pick has to follow it there too.
+-- Its numbers are baked art rather than a font line, so those simply ship in
+-- the picked face.
+local HUD = 'data/fight.def'
 
 -- The two faces, in the order the row steps through them.
 local ORDER = {'karate', 'original'}
@@ -35,6 +40,16 @@ local SETS = {
 		[10] = 'ikemen1/fonts/Display.def',
 		[11] = 'ikemen1/fonts/Body.def',
 		[12] = 'ikemen1/fonts/DisplayActive.def',
+	},
+}
+local HUD_SET = {
+	karate = {
+		[10] = 'ikemen1/fonts/DisplayK.def',
+		[11] = 'ikemen1/fonts/BodyK.def',
+	},
+	original = {
+		[10] = 'ikemen1/fonts/Display.def',
+		[11] = 'ikemen1/fonts/Body.def',
 	},
 }
 -- What a fresh install wears: the face this was asked for.
@@ -97,13 +112,13 @@ end
 -- Point the motif's three font lines at one set. Pure, and it reports how many
 -- lines actually moved, so it can be checked without touching a file: a second
 -- pass over the same text moves nothing.
-function fontchoice.applyTo(text, choice)
-	local set = SETS[choice]
+function fontchoice.applyTo(text, choice, mapping)
+	local set = mapping or SETS[choice]
 	if set == nil or type(text) ~= 'string' then
 		return text, 0
 	end
 	local moved = 0
-	for index = 10, 12 do
+	for index in pairs(set) do
 		local value = set[index]
 		-- Anchored to the start of a line and to the bare key, so the
 		-- font10.height line beside it and any commented-out copy are left
@@ -126,15 +141,18 @@ function fontchoice.apply(choice)
 	if SETS[choice] == nil then
 		return false, 0
 	end
-	local text = readAll(MOTIF)
-	if text == nil then
-		return false, 0
+	local wrote, total = false, 0
+	for _, target in ipairs({{MOTIF, SETS[choice]}, {HUD, HUD_SET[choice]}}) do
+		local text = readAll(target[1])
+		if text ~= nil then
+			local updated, moved = fontchoice.applyTo(text, choice, target[2])
+			if moved > 0 then
+				wrote = writeAll(target[1], updated) or wrote
+				total = total + moved
+			end
+		end
 	end
-	local updated, moved = fontchoice.applyTo(text, choice)
-	if moved == 0 then
-		return false, 0
-	end
-	return writeAll(MOTIF, updated), moved
+	return wrote, total
 end
 
 function fontchoice.next(choice)
