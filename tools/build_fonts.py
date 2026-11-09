@@ -558,6 +558,12 @@ KARATE_FONTS = (("Display", "DisplayK", FACE),
                 ("Body", "BodyK", FACE))
 FACE_DEPTH = {name: depth for name, _px, depth, _stops in FONTS}
 
+# The size stops Options > Font can step through. M is the face the game ships
+# with, so the middle setting is a no-op; S and L are baked variants of every
+# face, which is the only way a baked bitmap face can change size without the
+# engine rescaling it.
+SIZE_STEPS = (("S", 0.90), ("M", 1.00), ("L", 1.15))
+
 # The screenpack's remaining bitmap faces. They are stock MUGEN fonts - white or
 # grey glyphs in eight palette banks - and they are what still showed through in
 # the scoreboard names, the round timer, the hit and combo counters, the win
@@ -717,32 +723,136 @@ def stock_cells(name):
             if sp["group"] == 0 and 33 <= sp["number"] <= 126}
 
 
-def write_stock(name, cell_h, depth, ttf):
+def write_stock(name, cell_h, depth, ttf, scale=1.0, suffix=""):
     """Rebake a stock bitmap face in the gradient, leaving its .def alone.
 
     A stock .def carries Offset = 0,0 and the engine draws each glyph at
     y - Size.y + 1, so the cell height has to stay exactly Size.y or every row
     of the scoreboard shifts; and because the engine advances by the sprite
-    width, each cell also keeps the stock width. Action.def is an RGBA font
-    whose banks are sprite groups, so all six of its banks get written.
+    width, each cell also keeps the stock width.
+
+    ``scale`` bakes a size step: cell, extrusion and every glyph's width are
+    multiplied together, and the step's .def gets the Offset that cancels the
+    engine's Size.y shift, so the taller text keeps the base face's top edge.
     """
-    px = max(6, int(round(cell_h * 0.74)))
+    h = max(6, int(round(cell_h * scale)))
+    px = max(6, int(round(h * 0.74)))
     font = ImageFont.truetype(ttf, px)
     ascent, _descent = font.getmetrics()
-    base = min(cell_h - depth - 1, ascent)
+    base = min(h - depth - 1, ascent)
     banks = (0, 1, 2, 3, 4, 5) if name == "Action" else (0,)
     cells = stock_cells(name)
     sprites = []
     for bank in banks:
         for code in range(33, 127):
+            width = cells.get(chr(code))
             sprites.append({"group": bank, "number": code, "axis": (0, 0),
-                            "image": glyph(chr(code), font, cell_h, depth,
-                                           base=base,
-                                           cell_w=cells.get(chr(code)))})
-    with open(os.path.join(FONT_DIR, name + ".sff"), "wb") as fh:
+                            "image": glyph(chr(code), font, h, depth, base=base,
+                                           cell_w=(width * scale) if width else None)})
+    tag = name + suffix
+    with open(os.path.join(FONT_DIR, tag + ".sff"), "wb") as fh:
         fh.write(sff.write_sff(sprites))
-    print(f"  rebaked {name}: {len(sprites)} glyphs, {cell_h}px cell")
+    if suffix:
+        write_step_def(name, tag, cell_h, h, scale)
+    print(f"  rebaked {tag}: {len(sprites)} glyphs, {h}px cell")
     return len(sprites)
+
+
+def write_step_def(base_name, tag, base_h, cell_h, scale):
+    """The .def for a size step of a stock face.
+
+    Size.y is the new cell height, so the engine's y - Size.y + 1 shift would
+    climb by exactly the height it grew; Offset.y takes that term back out and
+    the text keeps the top edge it has at the middle setting.
+    """
+    text = open(os.path.join(FONT_DIR, base_name + ".def"), encoding="utf-8-sig",
+                errors="replace").read()
+
+    def pair(key):
+        m = re.search(r"^[ \t]*" + key + r"[ \t]*=[ \t]*(-?\d+)[ \t]*,[ \t]*(-?\d+)",
+                      text, re.MULTILINE | re.IGNORECASE)
+        return (int(m.group(1)), int(m.group(2))) if m else (1, 0)
+
+    size_x = max(1, int(round(pair("Size")[0] * scale)))
+    spacing = (int(round(pair("Spacing")[0] * scale)),
+               int(round(pair("Spacing")[1] * scale)))
+    body = ('[FNT v2]\n; FNT v2 version number.  Don\'t change this.\n'
+            'fntversion = 2,00\n; Name of this font.\nname = "%s"\n\n'
+            '[Def]\n; Bitmap glyphs, baked for one size step of this face.\n'
+            'Type = bitmap\nBankType = palette\n'
+            '; width is the space advance, height is the cell height\n'
+            'Size = %d,%d\nSpacing = %d,%d\n'
+            '; the engine shifts glyphs by offset.y - Size.y + 1; this cancels the\n'
+            '; shift the taller cell would add, so the text keeps its top edge\n'
+            'Offset = 0,%d\nFile = %s.sff\n'
+            % (tag, size_x, cell_h, spacing[0], spacing[1], cell_h - base_h, tag))
+    with open(os.path.join(FONT_DIR, tag + ".def"), "w", encoding="utf-8",
+              newline="\n") as fh:
+        fh.write(body)
+
+
+HUD_METRICS = (("display", "DisplayK"), ("body", "BodyK"), ("names", "Menu2"),
+               ("wins", "Menu2Small"), ("info", "Pixel"), ("timer", "Timer"),
+               ("combo", "ComboCounter"), ("hits", "HitNum"),
+               ("power", "PowerbarNum"), ("round", "Round"))
+
+
+def write_metrics():
+    """Record the letter height every size step actually draws.
+
+    The Font screen prints these, so they are measured from the art instead of
+    guessed from the scale factor: fitting a face into a cell rounds to whole
+    pixels, and the ink height is what the player actually sees.
+    """
+    rows = []
+    for group, face in HUD_METRICS:
+        for label, _scale in SIZE_STEPS:
+            tag = face + ("" if label == "M" else "_" + label)
+            path = os.path.join(FONT_DIR, tag + ".sff")
+            if not os.path.isfile(path):
+                continue
+            data, sprites, palettes = sff.read_sff(path)
+            ink = 0
+            for sp in sprites:
+                if sp["group"] == 0 and sp["number"] == ord("0"):
+                    box = sff.decode_sprite(data, sp, palettes, sp["pal"]).getchannel("A").getbbox()
+                    ink = (box[3] - box[1]) if box else 0
+                    break
+            rows.append("%-8s %s %d" % (group, label, ink))
+    with open(os.path.join(FONT_DIR, "metrics.txt"), "w", encoding="utf-8",
+              newline="\n") as fh:
+        fh.write("; letter height in pixels, per face and size step\n")
+        fh.write("\n".join(rows) + "\n")
+    return len(rows)
+
+
+def bake_size_steps():
+    """Bake the S and L steps for every face the Font screen can resize."""
+    if not os.path.isfile(KARATE_TTF):
+        return 0
+    total = 0
+    for label, scale in SIZE_STEPS:
+        if scale == 1.0:
+            continue
+        suffix = "_" + label
+        for name, cell_h, depth in STOCK_FONTS:
+            if name == "Action":
+                continue
+            total += write_stock(name, cell_h, depth, KARATE_TTF,
+                                 scale=scale, suffix=suffix)
+        for base, name, stops in KARATE_FONTS:
+            size_x, cell_h = face_metrics(base)
+            if cell_h <= 1:
+                continue
+            h = max(6, int(round(cell_h * scale)))
+            depth = FACE_DEPTH[base] * SUPERSAMPLE
+            px = fit_px(KARATE_TTF, h, depth)
+            cells = {ch: max(2, int(round(w * scale)))
+                     for ch, w in baked_cells(base).items()}
+            total += write_font(name + suffix, px, depth, KARATE_TTF, stops,
+                                cell_h=h, cells=cells,
+                                space_w=max(1, int(round(size_x * scale))))
+    return total
 
 
 def face_metrics(name):
@@ -879,6 +989,8 @@ def install_ttf():
     for name, cell_h, depth in STOCK_FONTS:
         write_stock(name, cell_h, depth, hud_ttf)
     bake_karate()
+    bake_size_steps()
+    write_metrics()
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
@@ -1073,7 +1185,24 @@ def _video_rows(prefix, suffix=""):
 # also owns the saved choice. The label carries the one thing a player needs to
 # know: the motif is read at startup, so the new face arrives with the next
 # launch rather than the moment the row is pressed.
-FONT_MENU = "menu.itemname.font = Font (next launch)\n"
+FONT_MENU = (
+    "; The Font screen. The labels are read from here; the rows themselves are\n"
+    "; driven by external/mods/fontchoice.lua, which owns the pick and the sizes.\n"
+    "menu.itemname.fontmenu = Font\n"
+    "menu.itemname.fontmenu.face = Face\n"
+    "menu.itemname.fontmenu.display = Big menu text\n"
+    "menu.itemname.fontmenu.body = Small menu text\n"
+    "menu.itemname.fontmenu.names = Fighter names\n"
+    "menu.itemname.fontmenu.wins = Win quote\n"
+    "menu.itemname.fontmenu.info = Time and stage text\n"
+    "menu.itemname.fontmenu.timer = Round timer\n"
+    "menu.itemname.fontmenu.combo = Combo count\n"
+    "menu.itemname.fontmenu.hits = Hit count\n"
+    "menu.itemname.fontmenu.power = Power readout\n"
+    "menu.itemname.fontmenu.round = Round banner\n"
+    "menu.itemname.fontmenu.save = Save font settings\n"
+    "menu.itemname.fontmenu.back = Return to Chinatown\n"
+)
 
 RESOLUTION_MENU = (
     """; Options > Video > Render Size. The engine takes the size straight from the

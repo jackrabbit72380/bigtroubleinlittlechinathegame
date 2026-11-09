@@ -1,0 +1,17 @@
+[FNT v2]
+; FNT v2 version number.  Don't change this.
+fntversion = 2,00
+; Name of this font.
+name = "HitNum_S"
+
+[Def]
+; Bitmap glyphs, baked for one size step of this face.
+Type = bitmap
+BankType = palette
+; width is the space advance, height is the cell height
+Size = 11,34
+Spacing = -2,4
+; the engine shifts glyphs by offset.y - Size.y + 1; this cancels the
+; shift the taller cell would add, so the text keeps its top edge
+Offset = 0,-4
+File = HitNum_S.sff

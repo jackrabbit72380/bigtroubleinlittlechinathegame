@@ -1,0 +1,17 @@
+[FNT v2]
+; FNT v2 version number.  Don't change this.
+fntversion = 2,00
+; Name of this font.
+name = "Round_S"
+
+[Def]
+; Bitmap glyphs, baked for one size step of this face.
+Type = bitmap
+BankType = palette
+; width is the space advance, height is the cell height
+Size = 40,162
+Spacing = -22,8
+; the engine shifts glyphs by offset.y - Size.y + 1; this cancels the
+; shift the taller cell would add, so the text keeps its top edge
+Offset = 0,-18
+File = Round_S.sff

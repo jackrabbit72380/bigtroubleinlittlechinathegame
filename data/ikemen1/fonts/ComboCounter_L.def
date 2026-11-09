@@ -1,0 +1,17 @@
+[FNT v2]
+; FNT v2 version number.  Don't change this.
+fntversion = 2,00
+; Name of this font.
+name = "ComboCounter_L"
+
+[Def]
+; Bitmap glyphs, baked for one size step of this face.
+Type = bitmap
+BankType = palette
+; width is the space advance, height is the cell height
+Size = 41,69
+Spacing = 0,7
+; the engine shifts glyphs by offset.y - Size.y + 1; this cancels the
+; shift the taller cell would add, so the text keeps its top edge
+Offset = 0,9
+File = ComboCounter_L.sff
