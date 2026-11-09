@@ -322,6 +322,7 @@ type = normal
 spriteno = 205, 0
 layerno = 0
 start = -960,0
+scalestart = 0.234375, 0.234375
 mask = 1
 
 [TitleBG Title LogoShadow]

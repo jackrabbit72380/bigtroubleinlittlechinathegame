@@ -429,12 +429,21 @@ def overlay():
     # image that is already the frame's shape scales both sides by the same
     # amount and crops nothing.
     #
-    # Exactly frame size, never 2x: these title layers are drawn 1:1 and their
-    # scale parameters are dead (see strip_dead_scale), so a plate packed at 2x
-    # for scalestart = 0.5 covers a corner of the screen instead of the frame -
-    # the same trap as the "scale = 1.5" lines. At frame size it lands exactly
-    # like the sky at 204,0, which is the layer it has to line up with.
-    tw, th = FRAME
+    # Packed at the master's own resolution, never downsampled to the frame.
+    # These system layers honour scalestart - the shipped screenpack scales its
+    # own attract logo with scalestart = 1.5,1.5 - so a plate drawn at
+    # 1/scale covers exactly the frame while keeping every pixel of an 8K master
+    # for a render above localcoord. The "scale = 1.5" lines this build strips
+    # were a different, invalid key: scalestart is the one the engine reads.
+    wide = img.width >= FRAME[0] * 2 and img.height >= FRAME[1] * 2
+    if wide:
+        th = img.height
+        tw = int(round(th * FRAME[0] / float(FRAME[1])))
+        if tw > img.width:
+            tw = img.width
+            th = int(round(tw * FRAME[1] / float(FRAME[0])))
+    else:
+        tw, th = FRAME
     k = max(tw / float(img.width), th / float(img.height))
     img = img.resize((max(1, int(round(img.width * k))),
                       max(1, int(round(img.height * k)))), Image.LANCZOS)
@@ -473,8 +482,13 @@ def bg_start(section):
     return None
 
 
-def place_overlay(start):
+def place_overlay(start, scale=1):
     """Add the backdrop layer after the clouds and before the logo.
+
+    ``scale`` is the plate's width over the frame's. A master with the pixels for
+    more than the frame is packed at full resolution and drawn back down with
+    ``scalestart``, which these system layers honour, so the frame gets every
+    pixel of the art instead of a 1920-wide downsample.
 
     ``mask = 1`` is what makes the plate a cut-out. It is what every other
     transparent layer in this file uses - the engine's own wordmark at 0,0 is a
@@ -508,6 +522,8 @@ def place_overlay(start):
                      "spriteno = %d, %d" % OVERLAY,
                      "layerno = 0",
                      "start = %d,%d" % start]
+            if scale != 1:
+                block.append("scalestart = %.6g, %.6g" % (scale, scale))
             block += ["mask = 1", ""]
             out.extend(block)
             placed = True
@@ -822,9 +838,13 @@ def build():
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
     where = bg_start("titlebg background sky") or (-640, 0)
-    if place_overlay(where if over_img is not None else None):
+    factor = 1.0
+    if over_img is not None:
+        factor = over_img.width / float(FRAME[0])
+    if place_overlay(where if over_img is not None else None, 1.0 / factor):
         print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)} "
-              f"at {over_img.width}x{over_img.height}, drawn 1:1 with mask = 1")
+              f"at {over_img.width}x{over_img.height} over the sky "
+              f"(scalestart {1.0 / factor:.6g}, mask = 1)")
     elif over_img is None:
         print("no art_src/ui/splash.png - the title keeps its painted clouds")
 

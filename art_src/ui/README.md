@@ -85,8 +85,11 @@ What the build does with it:
   `system.def` as `[TitleBG Title Overlay]`, drawn over
   `[TitleBG Background Sky]`: the art keeps every pixel of its transparency and
   the night sky shows through it;
-- paints the game's wordmark into the same sprite at the fraction of the frame
-  the title screen draws it, so the logo sits where the menu expects it.
+- packs the title wordmark into the slots at `0,0`-`0,3`, where the title
+  screen expects it.
+
+A master larger than the frame is packed at its own resolution and drawn back
+down with `scalestart`, so an 8K painting keeps its detail on a 4K render.
 
 There is no separate splash screen any more. The title stack draws the painting,
 and the title fades up from black over the first second, which is why the art
