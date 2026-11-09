@@ -347,10 +347,6 @@ SKY_SLOT = (100, 0)
 # height here; the layer tiles horizontally, so its width is left alone.
 CLOUD_BOTTOM = (100, 3)
 OVERLAY = (205, 0)
-# Twice the title frame. A backdrop packed this size and drawn at scale 0.5
-# lands on exactly the same pixels as a 1x one, but keeps the art's own detail
-# for a render resolution above localcoord.
-DOUBLE = (FRAME[0] * 2, FRAME[1] * 2)
 SPLASHES = (os.path.join(ROOT, "art_src", "ui", "splash.png"),
             os.path.join(ROOT, "concept_art", "ui", "splash.png"))
 
@@ -431,18 +427,30 @@ def overlay():
     #
     # A 16:9 source is only ever resized here, never cropped: cover-fitting an
     # image that is already the frame's shape scales both sides by the same
-    # amount and crops nothing. Art with the pixels for 2x the frame is packed at
-    # 2x and drawn at half scale (see place_overlay), so a 4K render samples real
-    # pixels instead of an upscale, and anything smaller is downsampled cleanly.
-    wide = img.width >= DOUBLE[0] and img.height >= DOUBLE[1]
-    tw, th = DOUBLE if wide else FRAME
+    # amount and crops nothing.
+    #
+    # Exactly frame size, never 2x: these title layers are drawn 1:1 and their
+    # scale parameters are dead (see strip_dead_scale), so a plate packed at 2x
+    # for scalestart = 0.5 covers a corner of the screen instead of the frame -
+    # the same trap as the "scale = 1.5" lines. At frame size it lands exactly
+    # like the sky at 204,0, which is the layer it has to line up with.
+    tw, th = FRAME
     k = max(tw / float(img.width), th / float(img.height))
     img = img.resize((max(1, int(round(img.width * k))),
                       max(1, int(round(img.height * k)))), Image.LANCZOS)
     left = (img.width - tw) // 2
     top = (img.height - th) // 2
-    img = img.crop((left, top, left + tw, top + th))
-    return img.convert("RGBA"), path
+    img = img.crop((left, top, left + tw, top + th)).convert("RGBA")
+    # mask = 1 keys colour 0 out of a cut-out, so no visible pixel may be pure
+    # black: the night painting is full of near-black, and punched holes in it
+    # would be worse than a shade. Clear pixels stay (0, 0, 0, 0) - they are the
+    # cut-out itself, and the sky shows through them.
+    r, g, b, a = img.split()
+    black = ImageChops.lighter(ImageChops.lighter(r, g), b).point(
+        lambda v: 0 if v else 255)
+    img.paste((1, 1, 1, 255),
+              mask=ImageChops.multiply(black, a.point(lambda v: 255 if v else 0)))
+    return img, path
 
 
 def bg_start(section):
@@ -465,12 +473,14 @@ def bg_start(section):
     return None
 
 
-def place_overlay(start, scale=1):
+def place_overlay(start):
     """Add the backdrop layer after the clouds and before the logo.
 
-    ``scale`` is the size multiplier the sprite was packed at: 2 for a 2x
-    backdrop, which is drawn back down with ``scalestart`` so the layer still
-    covers exactly the frame.
+    ``mask = 1`` is what makes the plate a cut-out. It is what every other
+    transparent layer in this file uses - the engine's own wordmark at 0,0 is a
+    32-bit cut-out drawn with it - and with ``mask = 0`` the clear pixels of a
+    32-bit sprite are painted over the sky instead of letting it through, which
+    is the black plate.
 
     Definition order is drawing order inside a layerno, so putting this section
     between the sky/cloud layers and [TitleBG Title Logo] is what makes the art
@@ -498,9 +508,7 @@ def place_overlay(start, scale=1):
                      "spriteno = %d, %d" % OVERLAY,
                      "layerno = 0",
                      "start = %d,%d" % start]
-            if scale != 1:
-                block.append("scalestart = %g, %g" % (1.0 / scale, 1.0 / scale))
-            block += ["mask = 0", ""]
+            block += ["mask = 1", ""]
             out.extend(block)
             placed = True
         out.append(line)
@@ -814,12 +822,9 @@ def build():
     # Called either way: with no plate the layer and its sprite are removed
     # again, so deleting art_src/ui/splash.png restores the plain clouds.
     where = bg_start("titlebg background sky") or (-640, 0)
-    factor = 1
-    if over_img is not None:
-        factor = max(1, int(round(over_img.width / float(FRAME[0]))))
-    if place_overlay(where if over_img is not None else None, factor):
+    if place_overlay(where if over_img is not None else None):
         print(f"using painted title backdrop {os.path.relpath(over_src, ROOT)} "
-              f"at {over_img.width}x{over_img.height}, drawn at 1/{factor}")
+              f"at {over_img.width}x{over_img.height}, drawn 1:1 with mask = 1")
     elif over_img is None:
         print("no art_src/ui/splash.png - the title keeps its painted clouds")
 
