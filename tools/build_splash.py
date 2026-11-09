@@ -191,7 +191,9 @@ def storyboard():
         "type = normal\n"
         f"spriteno = {SPRITE[0]}, {SPRITE[1]}\n"
         "start = 0, 0\n"
-        "mask = 0\n"
+        "; mask = 1 keeps it a cut-out: with mask = 0 the engine paints\n"
+        "; sprite colour 0 like any other pixel, so the clear field turns black.\n"
+        "mask = 1\n"
     )
 
 
@@ -262,6 +264,9 @@ def build():
             raise SystemExit(f"logo.def does not draw sprite {slot}")
     if text.index("spriteno = %d" % SKY_SPRITE[0]) > text.index("spriteno = %d" % SPRITE[0]):
         raise SystemExit("logo.def draws the sky after the poster")
+    if "mask = 1" not in text.split("[Splash Poster]", 1)[1]:
+        raise SystemExit("logo.def draws the poster with mask = 0: its "
+                         "clear field would come out black")
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
     preview = sky_img.copy()
