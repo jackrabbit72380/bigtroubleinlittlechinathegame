@@ -74,6 +74,14 @@ local KARATE_ONLY = {names = true, wins = true, info = true, timer = true,
 
 local DEFAULT_FACE = 'karate'
 local DEFAULT_STEP = 'M'
+-- The live sample. The rows say what each setting is; this shows it. A text sprite
+-- cannot be restyled while the game runs on this build (textImgSetFont is refused
+-- here, and a textImgNew sprite given a font draws nothing at all), so the words
+-- are baked as art by tools/build_fonts.py and drawn over the menu.
+local SAMPLE = 'data/ikemen1/fonts/Sample.sff'
+local SAMPLE_NUMBER = {karate = {S = 1, M = 0, L = 2}, original = {M = 3}}
+local SAMPLE_CANVAS_W = 1600        -- the width every baked sheet is centred on
+local SAMPLE_Y = 880                -- clear of the last row (748) and the footer
 
 -- group -> step -> letter height, read from the shipped metrics
 local HEIGHT = {}
@@ -335,6 +343,86 @@ end
 fontchoice.t_groups = GROUPS
 fontchoice.t_steps = STEPS
 
+-- THE LIVE SAMPLE
+local sampleFile, sampleTried = nil, false
+local sampleAnims = {}
+
+local function sampleData()
+	if not sampleTried then
+		sampleTried = true
+		if type(sffNew) == 'function' then
+			local ok, file = pcall(sffNew, SAMPLE)
+			if ok then
+				sampleFile = file
+			end
+		end
+	end
+	return sampleFile
+end
+
+-- Which baked sheet the pick shows: the big menu text's face and size, because
+-- that is the lettering every row of this screen is written in. The gold face
+-- was only engraved at one size, so it always shows that one.
+function fontchoice.sampleNumber()
+	local face = SAMPLE_NUMBER[state.face] or SAMPLE_NUMBER.karate
+	local step = state.steps.display or DEFAULT_STEP
+	if face[step] == nil then
+		step = 'M'
+	end
+	return face[step]
+end
+
+local function drawSample()
+	local file = sampleData()
+	if file == nil or type(animNew) ~= 'function' or type(animDraw) ~= 'function' then
+		return
+	end
+	local number = fontchoice.sampleNumber()
+	local anim = sampleAnims[number]
+	if anim == nil then
+		local ok, made = pcall(animNew, file, number .. ', 0, 0, 0, -1')
+		if not ok or made == nil then
+			return
+		end
+		anim = made
+		sampleAnims[number] = anim
+	end
+	-- Drawn at the same 0.75 the rows are drawn at, in the motif's own space, so
+	-- the sample is the size the row actually is and not a scaled-up guess.
+	local w, h, scale = 1920, 1080, 0.75
+	pcall(function()
+		if motif.info.localcoord[1] ~= nil then
+			w, h = motif.info.localcoord[1], motif.info.localcoord[2]
+		end
+	end)
+	pcall(function()
+		scale = motif.option_info.menu.item.scale[1]
+	end)
+	pcall(animSetLocalcoord, anim, w, h)
+	pcall(animSetScale, anim, scale, scale)
+	pcall(animSetPos, anim, math.floor((w - SAMPLE_CANVAS_W * scale) / 2 + 0.5), SAMPLE_Y)
+	pcall(animDraw, anim)
+	pcall(animUpdate, anim)
+end
+
+-- The menu draws the rows and flips the frame before it calls the highlighted
+-- row, so a row marks this screen as open and the next flip paints the sample:
+-- it lands in the same frame as the rows, with no timer of its own.
+local onScreen = false
+
+if type(refresh) == 'function' and _G.fontchoiceSampleHook == nil then
+	_G.fontchoiceSampleHook = true
+	local engineRefresh = refresh
+	refresh = function(...)
+		local was = onScreen
+		onScreen = false
+		if was then
+			pcall(drawSample)
+		end
+		return engineRefresh(...)
+	end
+end
+
 local ROWS = {'face', 'display', 'body', 'names', 'wins', 'info', 'timer', 'combo',
 	'hits', 'power', 'round', 'save'}
 
@@ -354,6 +442,7 @@ local function installRows()
 			return fontchoice.label(group)
 		end
 		local handler = function(t, item)
+			onScreen = true
 			-- Every row answers both directions, the way Fullscreen does, and
 			-- wraps: S -> M -> L -> S and KARATE -> ORIGINAL -> KARATE.
 			if getInput(-1, motif.option_info.menu.add.key, motif.option_info.menu.subtract.key) then

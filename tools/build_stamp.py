@@ -104,7 +104,27 @@ def shader_files():
     return sorted(found)
 
 
-FILES = DATA_FILES + tuple(lua_scripts()) + tuple(shader_files())
+def font_files():
+    """Every face in data/ikemen1/fonts, in a stable order.
+
+    Options > Font repoints system.def and fight.def at whichever of these files
+    the player picked, and external/mods/fontchoice.lua opens metrics.txt and
+    Sample.sff to label the rows and draw the live sample. A rebaked face, a new
+    size step or a re-measured height is therefore an update the launch console
+    has to notice, even when no Lua changed.
+    """
+    found = []
+    folder = os.path.join(ROOT, "data", "ikemen1", "fonts")
+    for base, dirs, names in os.walk(folder):
+        dirs.sort()
+        for name in sorted(names):
+            rel = os.path.relpath(os.path.join(base, name), ROOT)
+            found.append(rel.replace(os.sep, "/"))
+    return sorted(found)
+
+
+FILES = (DATA_FILES + tuple(lua_scripts()) + tuple(font_files())
+         + tuple(shader_files()))
 
 
 def content(rel):

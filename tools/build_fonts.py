@@ -826,6 +826,71 @@ def write_metrics():
     return len(rows)
 
 
+# The live sample the Font screen draws under its rows. The engine cannot restyle a
+# text sprite at runtime on this build (textImgSetFont is refused), so the words
+# are baked here from the glyphs the options screen already ships: the same art a
+# row would draw, laid out with each glyph's own sprite width, because that width
+# is what the engine advances by.
+SAMPLE_TEXT = "Chinatown 1-2-3"
+SAMPLE_CANVAS = (1600, 120)     # one canvas for every sheet, so it centres blind
+#                  face          sprite number on the sheet
+SAMPLE_SETS = (("DisplayK_S", 1), ("DisplayK", 0), ("DisplayK_L", 2),
+               ("Display", 3))
+
+
+def sample_sheet(face, text=SAMPLE_TEXT, canvas=SAMPLE_CANVAS):
+    """The sample words in one baked face, centred on a fixed-size sheet.
+
+    Every sheet is the same size, so the screen can centre it without measuring
+    anything: what changes between them is only the size of the letters inside.
+    Glyphs keep their baked art and their own width - the engine advances by the
+    sprite width, so the line measures exactly as the menu would draw it.
+    """
+    path = os.path.join(FONT_DIR, face + ".sff")
+    if not os.path.isfile(path):
+        return None
+    data, sprites, palettes = sff.read_sff(path)
+    cells = {sp["number"]: sp for sp in sprites if sp["group"] == 0}
+    glyphs = []
+    for ch in text:
+        sp = cells.get(ord(ch))
+        if sp is None:
+            continue
+        glyphs.append(sff.decode_sprite(data, sp, palettes, sp["pal"]).convert("RGBA"))
+    if not glyphs:
+        return None
+    width = sum(g.width for g in glyphs)
+    height = max(g.height for g in glyphs)
+    sheet = Image.new("RGBA", (max(canvas[0], width), max(canvas[1], height)),
+                      (0, 0, 0, 0))
+    x = (sheet.width - width) // 2
+    for g in glyphs:
+        sheet.alpha_composite(g, (x, 0))
+        x += g.width
+    return sheet
+
+
+def write_sample():
+    """Bake Sample.sff: the live sample at each face and size step.
+
+    Sprite numbers 0/1/2 are the Karate face at M/S/L and 3 is the gold face at
+    M; external/mods/fontchoice.lua picks one by the current setting.
+    """
+    sprites = []
+    for face, number in SAMPLE_SETS:
+        sheet = sample_sheet(face)
+        if sheet is None:
+            continue
+        sprites.append({"group": 0, "number": number, "axis": (0, 0),
+                        "image": sheet})
+    if not sprites:
+        return 0
+    with open(os.path.join(FONT_DIR, "Sample.sff"), "wb") as fh:
+        fh.write(sff.write_sff(sprites))
+    print(f"  baked Sample.sff: {len(sprites)} live sample sheets")
+    return len(sprites)
+
+
 def bake_size_steps():
     """Bake the S and L steps for every face the Font screen can resize."""
     if not os.path.isfile(KARATE_TTF):
@@ -991,6 +1056,7 @@ def install_ttf():
     bake_karate()
     bake_size_steps()
     write_metrics()
+    write_sample()
     with open(os.path.join(FONT_DIR, "Display-NOTICE.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write(NOTICE.format(name=name))
