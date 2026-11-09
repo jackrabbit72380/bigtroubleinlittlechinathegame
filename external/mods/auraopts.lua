@@ -617,6 +617,28 @@ local function drawRow(txt, text, x, y, colour, scale)
 	end)
 end
 
+-- The selected row, haloed in the colour being designed: eight faint copies
+-- around the text, the same trick the module uses on the fighter.
+local function drawGlowRow(txt, text, x, y, colour, got)
+	local reach = 3 + got.size * 0.45
+	local base = math.floor(got.alpha / 8)
+	if base < 10 then base = 10 end
+	if base > 70 then base = 70 end
+	for i = 0, 7 do
+		local angle = i * math.pi / 4
+		local dx, dy = math.cos(angle) * reach, math.sin(angle) * reach
+		pcall(function()
+			textImgReset(txt)
+			textImgSetAlign(txt, 1)
+			pcall(textImgSetScale, txt, 1, 1)
+			textImgSetColor(txt, colour[1], colour[2], colour[3], base)
+			textImgSetText(txt, text)
+			textImgSetPos(txt, x + dx, y + dy)
+			textImgDraw(txt)
+		end)
+	end
+end
+
 -- The module scatters copies of the fighter's current animation frame; this
 -- scatters copies of one word with the same grid, colour, opacity and radius.
 -- The fight blends additively and this does not, so brightness is only a guide.
@@ -701,8 +723,12 @@ local function auraDraw(sec)
 			colour = GOLD
 		end
 		local value = row.value()
-		drawRow(txt, string.format('%-' .. LABELW .. 's%s', row.label, value),
-			x, y + (i - 1) * pitch, colour, 1)
+		local line = string.format('%-' .. LABELW .. 's%s', row.label, value)
+		local rowY = y + (i - 1) * pitch
+		if here and DRAFT.type ~= 0 then
+			drawGlowRow(txt, line, x, rowY, COLOURS[DRAFT.colour], active())
+		end
+		drawRow(txt, line, x, rowY, colour, 1)
 	end
 
 	drawSample(txt, sw, sh)

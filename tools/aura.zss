@@ -15,6 +15,8 @@
 # btlc_aura_life    0 = always, otherwise show below this % of life
 # btlc_aura_under   1 = draw over the fighter, unset = behind it
 # btlc_aura_minpower  hide the glow below this power, unset = any power
+# btlc_aura_follow   helpers only: 1 = glow around this helper's own
+#                    animation, which is how text sprites get a glow
 #
 # GLOW and AURA are the same glow function given different numbers, not two
 # copies of it: GLOW is one steady colour at full brightness with a tight
@@ -22,6 +24,16 @@
 [StateDef +1]
 ignoreHitPause
 {
+	# A helper is not a fighter: it has no life and no power, so the ladder
+	# below means nothing to it. It glows its own animation only when its state
+	# asks for it with map(btlc_aura_follow) := 1.
+	if isHelper && map(btlc_aura_follow) = 1 && map(btlc_aura_off) = 0
+	{
+		let halpha = ifElse(map(btlc_aura_alpha) > 0, map(btlc_aura_alpha), 100);
+		let hquality = ifElse(map(btlc_aura_quality) > 0, map(btlc_aura_quality), 50);
+		let hsize = ifElse(map(btlc_aura_size) > 0, map(btlc_aura_size), 10);
+		call glow($halpha, $hquality, $hsize, map(btlc_aura_r), map(btlc_aura_g), map(btlc_aura_b), 1, 92000, 1, 1);
+	}
 	if !isHelper && life > 0 && map(btlc_aura_off) = 0 && !isAsserted(Invisible)
 	{
 		let alpha = ifElse(map(btlc_aura_alpha) > 0, map(btlc_aura_alpha), 100);
@@ -87,7 +99,7 @@ ignoreHitPause{
 	removeExplod{id: $id;}
 	
 	#p2facing fix
-	if getHitVar(frame) && map(previous_facing) = facing && getHitVar(facing)
+	if !isHelper && getHitVar(frame) && map(previous_facing) = facing && getHitVar(facing)
 	{
 		if (facing != (-playerId(getHitVar(id)), facing) * getHitVar(facing))
 		{
