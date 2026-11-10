@@ -3874,7 +3874,7 @@ function start.f_selectScreen()
 				for i = 1, stCount do
 					local cell = cards[i]
 					local card = start.f_stageCard(i)
-					if cell ~= nil and card ~= nil then
+					if stagePhase and cell ~= nil and card ~= nil then
 						spriteDraw(card, cell.x, cell.y)
 					end
 				end
@@ -3883,7 +3883,7 @@ function start.f_selectScreen()
 				-- instead of being stretched over it
 				local frame = pick ~= nil and start.f_stageFrameSprite(start.stageSide or 1) or nil
 				local picked = pick ~= nil and cards[pick] or nil
-				if frame ~= nil and picked ~= nil then
+				if stagePhase and frame ~= nil and picked ~= nil then
 					spriteDraw(frame, picked.x, picked.y)
 				end
 				-- The fighters are not drawn here. This screen is the map wall and the
@@ -4018,7 +4018,7 @@ function start.f_selectScreen()
 					stage_text = stage_text .. '  ' .. start.stageDbg
 				end
 				textImgSetText(stageTextData, stage_text)
-				textImgDraw(stageTextData)
+				if stagePhase then textImgDraw(stageTextData) end
 			end
 		else
 			--draw record text
