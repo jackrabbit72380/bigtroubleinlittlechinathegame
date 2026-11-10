@@ -3865,14 +3865,36 @@ function start.f_selectScreen()
 				-- names under them, took the wall's room and put a caption on the same
 				-- row as the stage's own name.
 				if not stageEnd then
-					-- A direction being held is never a confirm. This screenpack's confirm
-					-- list is a, b, c, x, y and z, and A is also a movement key on a WASD
-					-- keyboard: every attempt to walk the wall left picked the stage and
-					-- started the match on the spot.
-					local steering = (start.stageHeldDir or 0) ~= 0
-					local confirmPressed = slotSelected or (not slotHandled and not steering
-						and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)
-						or { "a", "b", "c", "x", "y", "z" })))
+					-- Confirm is read exactly the way the character grid reads its own:
+					-- the command of every player still choosing goes into one list, and the
+					-- button that picks a character picks the stage. Both players can walk
+					-- the wall and both can pick on it.
+					local owners = {}
+					for side = 1, 2 do
+						local cmds = start.p[side] and start.p[side].t_selCmd
+						if cmds then
+							for _, entry in ipairs(cmds) do
+								if entry.cmd ~= nil then
+									table.insert(owners, entry.cmd)
+								end
+							end
+						end
+					end
+					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
+						or { "a", "b", "c", "x", "y", "z" }
+					local confirmPressed = slotSelected
+					if not confirmPressed and not slotHandled then
+						if #owners > 0 then
+							local ok, hit = pcall(getInput, owners, doneKeys)
+							confirmPressed = ok and hit and true or false
+						end
+						-- A direction being held is not a confirm on its own: a cursor on its
+						-- way somewhere must not pick the map on the way past.
+						if not confirmPressed and (start.stageHeldDir or 0) == 0 then
+							local ok, hit = pcall(getInput, -1, doneKeys)
+							confirmPressed = ok and hit and true or false
+						end
+					end
 					-- The wall does not pick for the player when the character-select timer
 					-- runs out. Expiring there started matches before anyone had chosen.
 					local timedOut = timerSelect == -1 and not main.stageMenu
