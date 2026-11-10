@@ -282,17 +282,9 @@ def check_stage_wall(problems):
         problems.append("nothing bakes the stage cards into the screenpack")
     else:
         bake = read(wall_tool)
-        for needle, why in (("motif.select_info.cell", "the grid's own key tables"),
-                        ("keyTable(cell.left)", "left from the grid's left key"),
-                        ("keyTable(cell.right)", "right from the grid's right key"),
-                        ("keyTable(cell.up)", "up from the grid's up key"),
-                        ("keyTable(cell.down)", "down from the grid's down key"),
-                        ("keyTable(stageKeys.previous)", "up from the screenpack's stage key"),
-                        ("keyTable(stageKeys.next)", "down from the screenpack's stage key"),
-                        ("keyTable(skip.previous)", "left from the screenpack's skip key"),
-                        ("keyTable(skip.next)", "right from the screenpack's skip key"),
-                        ("pcall(getInput", "no key read can take the screen down"),
-                        ("for side = 1, 2 do", "the keys off both players")):
+        for needle, why in (("CARD = (457, 150)", "the card size is not fixed"),
+                            ("def frame_sprite(", "the pick has no baked frame"),
+                            ("[ExtraStages]", "the cards are not baked from the stage pool")):
             if needle not in bake:
                 problems.append("build_stage_wall.py: " + why)
     # that backdrop sprite is the character wall's frame: a grid of empty cells is
@@ -450,15 +442,17 @@ def check_stage_wall(problems):
     if int(step(step(2, "U", COUNT, COLS, True), "D", COUNT, COLS, True)) != 1:
         problems.append("a column clamped through RANDOM does not land on the first card")
     # all four arrows, read for both players, not just one key for one of them.
-    # The directions are L, R, U and D: B and F are how the grid spells back and
-    # forward internally and are not key names, and asking for them is what left
-    # the wall answering nothing. The reads go through each player's own command
-    # buffer, the path the character grid's movement already uses.
-    for needle, why in (("keyList('left', 'L', 'left')", "left from the arrows"),
-                        ("keyList('right', 'R', 'right')", "right from the arrows"),
-                        ("keyList('up', 'U', 'up')", "up from the arrows"),
-                        ("keyList('down', 'D', 'down')", "down from the arrows"),
-                        ("entry.cmd", "its keys through the per-player command buffers the grid uses"),
+    # The wall must hand getInput the motif's own key tables - cell.left.key and
+    # friends - because those are what the character grid moves on; rebuilt copies
+    # holding invented names answered nothing and left the wall deaf.
+    for needle, why in (("keyTable(cell.left)", "left from the grid's own left key"),
+                        ("keyTable(cell.right)", "right from the grid's own right key"),
+                        ("keyTable(cell.up)", "up from the grid's own up key"),
+                        ("keyTable(cell.down)", "down from the grid's own down key"),
+                        ("keyTable(stageKeys.previous)", "up from the screenpack's stage keys"),
+                        ("keyTable(stageKeys.next)", "down from the screenpack's stage keys"),
+                        ("keyTable(skip.previous)", "left from the screenpack's skip keys"),
+                        ("keyTable(skip.next)", "right from the screenpack's skip keys"),
                         ("pcall(getInput", "its input through reads that cannot raise"),
                         ("for side = 1, 2 do", "the keys off both players")):
         if needle not in text:
