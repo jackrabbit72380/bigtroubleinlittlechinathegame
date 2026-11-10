@@ -15,8 +15,8 @@ stage's picture has to be sized into a card.
 Sprites written into data/ikemen1/system.sff (groups 240-242 are this tool's own):
 
     240,0 .. 240,<n-1>   one card per stage, in [ExtraStages] order, axis centred
-    241,0                the picked card's frame, player 1's green, axis centred
-    242,0                the same frame in player 2's blue
+    241,0                the picked card's frame in player 1's cursor green
+    242,0                the same frame in player 2's cursor red
 
 Run: python3 tools/build_stage_wall.py
 """
@@ -65,11 +65,17 @@ def screen_window(path=None):
                     text)
     return tuple(int(g) for g in hit.groups()) if hit else WINDOW
 
-GOLD = (236, 200, 120)
-GOLD_DIM = (150, 118, 62)
+# The two frame colours are the screenpack's own cursor ones, read off the sprites
+# the character screen draws its cursor from: 223,0 is (72,232,96) over its shaded
+# (43,139,57), 223,1 is (236,62,62) over (141,37,37). A flat single colour in a
+# different green, and a blue for player 2, read as a different screen's art.
+FRAME_COLOURS = {1: ((72, 232, 96), (43, 139, 57)),
+                 2: ((236, 62, 62), (141, 37, 37))}
+# The gold is the character cells' own gold, from 222,0, so the wall's rules and
+# the names on the cards match the grid they are picked from.
+GOLD = (206, 168, 86)
+GOLD_DIM = (126, 96, 42)
 INK = (10, 12, 16)
-P1_GREEN = (116, 255, 128)
-P2_BLUE = (122, 200, 255)
 NAME_STRIP = 30
 
 PREVIEW = os.path.join(ROOT, "artifacts", "stage_wall.png")
@@ -195,18 +201,25 @@ def paint_card(def_path):
     return card
 
 
-def frame_sprite(colour, reach=5, width=4):
-    """The picked card's frame, centred on its card like the card itself."""
+def frame_sprite(colour, dim, reach=5, width=4):
+    """The picked card's frame, in the player's own cursor colours.
+
+    Two colours, bright face and shaded inner edge, which is how the character
+    screen's cursor is shaded - and the corners run on past the card, the same
+    corner marks the cursor has.
+    """
     w, h = CARD[0] + reach * 2, CARD[1] + reach * 2
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     draw.rectangle([0, 0, w - 1, h - 1], outline=colour + (255,), width=width)
     draw.rectangle([width, width, w - 1 - width, h - 1 - width],
-                   outline=colour + (90,), width=1)
+                   outline=dim + (190,), width=1)
     for cx, cy, dx, dy in ((0, 0, 1, 1), (w - 1, 0, -1, 1),
                            (0, h - 1, 1, -1), (w - 1, h - 1, -1, -1)):
         draw.line([(cx, cy), (cx + dx * 18, cy)], fill=colour + (255,), width=width + 2)
         draw.line([(cx, cy), (cx, cy + dy * 18)], fill=colour + (255,), width=width + 2)
+        draw.line([(cx + dx * width, cy + dy * width),
+                   (cx + dx * 18, cy + dy * width)], fill=dim + (255,), width=1)
     return img
 
 
@@ -252,7 +265,8 @@ def main():
         wall.alpha_composite(card, (int(round(cell["cx"] - CARD[0] / 2.0)),
                                     int(round(cell["cy"] - CARD[1] / 2.0))))
     for side, group in FRAME_GROUPS_ITEMS():
-        images[(group, 0)] = frame_sprite(P1_GREEN if side == 1 else P2_BLUE)
+        colour, dim = FRAME_COLOURS[side]
+        images[(group, 0)] = frame_sprite(colour, dim)
 
     total = rewrite_system_sff(images)
     os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
