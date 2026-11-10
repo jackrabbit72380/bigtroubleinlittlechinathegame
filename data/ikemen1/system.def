@@ -141,13 +141,13 @@ footer.title.font = 10, 0, 1, 240, 196, 88, 255, -1
 ; title stack, instead of arriving behind a separate splash card.
 fadein.time = 60
 fadeout.time = 10
-menu.pos = 726, 342
+menu.pos = 726, 338
 menu.tween.factor = 0.5
 menu.item.font = 10,0,0, 240, 196, 88
-menu.item.scale = 0.47, 0.47
+menu.item.scale = 0.5, 0.5
 menu.item.active.font = 12,0,0, 255, 228, 140
-menu.item.active.scale = 0.47, 0.47
-menu.item.spacing = 0, 39
+menu.item.active.scale = 0.5, 0.5
+menu.item.spacing = 0, 41
 menu.item.layerno = 2
 menu.item.active.layerno = 2
 
