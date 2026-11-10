@@ -27,6 +27,7 @@ rewrite the motif (build_devhelp.py adds menu entries to it):
     python3 tools/build_text_faces.py
 """
 
+import math
 import os
 import re
 import sys
@@ -311,6 +312,115 @@ def add_sizes(text):
     return "\n".join(out), added
 
 
+# Every menu draws its rows through a clipped window, and the engine builds that
+# window's bottom edge from the row PITCH and this margin - a row's height never
+# enters the sum: pos.y + (visibleitems - 1) * spacing + margins.y[2]. Stock margins
+# are 21,2, so any list whose text grows loses the bottom of its last row: that is
+# what sliced "Leave Chinatown", and the same numbers cut 66px off both the Options
+# and Replay lists. So every block is measured here and given a margin that reaches
+# past its own last row, and if the list then runs off the bottom of the frame the
+# pitch is tightened too - a window cannot hold what is off screen.
+FACE_LINE = re.compile(r"^\s*font(\d+)\s*=\s*(\S+)", re.I)
+SIZE_LINE = re.compile(r"^\s*size\s*=\s*[^,]+,\s*([0-9.]+)", re.I)
+
+
+def fit_windows(text, frame_h=1080):
+    """Make every menu's item window reach past its last row."""
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    lines = text.split("\n")
+    faces, cells = {}, {}
+    for line in lines:
+        m = FACE_LINE.match(line)
+        if m:
+            faces[int(m.group(1))] = m.group(2)
+
+    def cell_height(index):
+        name = faces.get(index)
+        if not name:
+            return None
+        if name in cells:
+            return cells[name]
+        height = None
+        full = os.path.join(base, "data", *name.split("/"))
+        if os.path.isfile(full):
+            for art in open(full, encoding="utf-8", errors="replace"):
+                m = SIZE_LINE.match(art)
+                if m:
+                    height = float(m.group(1))
+                    break
+        cells[name] = height
+        return height
+
+    section, here, blocks = "(top)", {}, []
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            if here:
+                blocks.append((section, here))
+            section, here = s, {}
+            continue
+        m = re.match(r"^\s*([A-Za-z0-9_.]+)\s*=\s*([^;]*)$", line)
+        if m:
+            here.setdefault(m.group(1).lower(), i)
+    if here:
+        blocks.append((section, here))
+
+    need = ("menu.pos", "menu.item.spacing", "menu.window.visibleitems",
+            "menu.item.font", "menu.window.margins.y")
+
+    def raw(here, k):
+        return lines[here[k]].split("=", 1)[1].split(";")[0].strip()
+
+    def rewrite(here, k, body):
+        # keep whatever line terminator the motif already used
+        tail = "\r" if lines[here[k]].endswith("\r") else ""
+        indent = re.match(r"^\s*", lines[here[k]]).group(0)
+        lines[here[k]] = indent + body + tail
+
+    changes = []
+    for name, here in blocks:
+        if not all(k in here for k in need):
+            continue
+        try:
+            pos_y = float(raw(here, "menu.pos").split(",")[1])
+            spacing = [float(v) for v in raw(here, "menu.item.spacing").split(",")]
+            visible = int(float(raw(here, "menu.window.visibleitems")))
+            margins = [float(v) for v in raw(here, "menu.window.margins.y").split(",")]
+            font = int(raw(here, "menu.item.font").split(",")[0])
+        except (ValueError, IndexError):
+            continue
+        scale = None
+        for k in ("menu.item.scale", "menu.item.active.scale"):
+            if k in here:
+                try:
+                    value = float(raw(here, k).split(",")[1])
+                    scale = value if scale is None else max(scale, value)
+                except (ValueError, IndexError):
+                    pass
+        height = cell_height(font)
+        if height is None:
+            continue
+        row_h = height * (1.0 if scale is None else scale)
+        margin = int(math.ceil(row_h)) + 4
+        offset = max(0, visible - 1)
+        note = []
+        if offset and spacing[1] * offset + margin > frame_h - pos_y:
+            fit = max(int(math.ceil(row_h)) + 2,
+                      int((frame_h - pos_y - margin) // offset))
+            if fit < spacing[1]:
+                note.append("pitch %g -> %d" % (spacing[1], fit))
+                spacing[1] = fit
+                rewrite(here, "menu.item.spacing",
+                        "menu.item.spacing = %g, %d" % (spacing[0], fit))
+        if margins[1] < margin:
+            note.append("margin %g -> %d" % (margins[1], margin))
+            rewrite(here, "menu.window.margins.y",
+                    "menu.window.margins.y = %g, %d" % (margins[0], margin))
+        if note:
+            changes.append("%s (%s)" % (name, ", ".join(note)))
+    return "\n".join(lines), changes
+
+
 def main():
     if not os.path.isfile(MOTIF):
         print("no %s - nothing to patch" % MOTIF)
@@ -324,6 +434,7 @@ def main():
     text, names = place_names(text)
     text, lifted = place_bottom_row(text)
     text, fitted = fit_lists(text)
+    text, windows = fit_windows(text)
 
     if text == original:
         print("motif captions already in the Display face at one size")
@@ -339,6 +450,9 @@ def main():
         print("  sized %d caption(s) that had no scale: %s" % (len(sized), ", ".join(sized)))
     if fitted:
         print("  re-seated %d list block(s): %s" % (len(fitted), ", ".join(fitted)))
+    if windows:
+        print("  opened %d item window(s) so no row is clipped: %s"
+              % (len(windows), ", ".join(windows)))
     return 0
 
 
