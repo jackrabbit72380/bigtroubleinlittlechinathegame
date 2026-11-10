@@ -1,12 +1,12 @@
 # Big Trouble in Little China - data stamp. Written by tools/build_stamp.py.
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
-194ab2d645f5f240f2dab24cb1bd3d8877bdbff39bb6ec901541ee34f47f0773  data/ikemen1/system.def
+c19d6f75a45096179a1eabb526fa42d969547c4f5b16115542314d87b37dbcc6  data/ikemen1/system.def
 ece02ed4ce5907e0b5c6c3daa9b382aa04e977cbe1141968cd41bc1b91f5b529  data/ikemen1/system.sff
 ad0660810bd839fdac27855e031e57e69ee47fa1442fcef40f7c926599870999  data/system.base.def
 239dad4181b5c662689376937cec53163ce60acad81ebb7c4b4360d7b3f4a9ab  data/fight.def
 b1e3f0d2f5458d3fc4653fba38fd7bed859630b89b2b36b3774f52d2ea1e023a  data/system.snd
-e6a95fdf361ee2dcb5112d8b8b97f27c4605177d4681071ec1b8fb4646e9c304  data/select.def
+02ac4cfa0fd6838b9105c1f9c54b571df0f2788ba9ddbad816d696cb87f61066  data/select.def
 ea09f5ecebca9bc359fcbbf361898ba90d31a40853bdb6ba73e286222cb9293c  data/music.json
 97cdd130e95ea187a0979f68bb708b684a4f1b78a56af718aafe64fe076221eb  data/retired.txt
 da0f5fad7f25ffdaab27b16e64499a1e664d66d25131016b6960a95f49faed4c  data/albums.sff
