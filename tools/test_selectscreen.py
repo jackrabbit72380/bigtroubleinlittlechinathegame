@@ -441,15 +441,20 @@ def check_stage_wall(problems):
             problems.append("up then down does not return to card %d" % card)
     if int(step(step(2, "U", COUNT, COLS, True), "D", COUNT, COLS, True)) != 1:
         problems.append("a column clamped through RANDOM does not land on the first card")
-    # all four arrows, read for both players, not just one key for one of them
-    for needle, why in (("keyList('left', 'B')", "left"),
-                        ("keyList('right', 'F')", "right"),
-                        ("keyList('up', 'U')", "up"),
-                        ("keyList('down', 'D')", "down"),
-                        ("pcall(getInput", "input reads that cannot raise"),
-                        ("for side = 1, 2 do", "both players")):
+    # all four arrows, read for both players, not just one key for one of them.
+    # The directions are L, R, U and D: B and F are how the grid spells back and
+    # forward internally and are not key names, and asking for them is what left
+    # the wall answering nothing. The reads go through each player's own command
+    # buffer, the path the character grid's movement already uses.
+    for needle, why in (("keyList('left', 'L', 'left')", "left from the arrows"),
+                        ("keyList('right', 'R', 'right')", "right from the arrows"),
+                        ("keyList('up', 'U', 'up')", "up from the arrows"),
+                        ("keyList('down', 'D', 'down')", "down from the arrows"),
+                        ("entry.cmd", "its keys through the per-player command buffers the grid uses"),
+                        ("pcall(getInput", "its input through reads that cannot raise"),
+                        ("for side = 1, 2 do", "the keys off both players")):
         if needle not in text:
-            problems.append("the stage wall does not read %s from %s" % (why, "either player" if why == "both players" else "the arrows"))
+            problems.append("the stage wall does not read %s" % why)
 
 
 def main():
