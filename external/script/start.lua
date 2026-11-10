@@ -3795,6 +3795,16 @@ function start.f_selectScreen()
 		if start.p[1].selEnd and start.p[2].selEnd and start.p[1].teamEnd and start.p[2].teamEnd then
 			restoreCursor = true
 			local slotSelected, slotHandled = false, false
+			-- The stage screen must open live. If a stageEnd survived from an earlier
+			-- pass, this block is skipped: the wall is still drawn, but every key falls
+			-- through to the engine's own handler below, which starts the match on the
+			-- first button press - and a punch button is a button. The wall has not been
+			-- confirmed on this visit until stagePhase is up, so clear it there.
+			if main.stageMenu and stageEnd and not stagePhase then
+				stageEnd = false
+				start.stageConfirmArmed = false
+				start.stageConfirmQueued = false
+			end
 			if main.stageMenu and not stageEnd then --Stage select
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
 				-- The wall goes first: fade it to black, then swap to the stage
