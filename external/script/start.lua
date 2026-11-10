@@ -3739,6 +3739,7 @@ function start.f_selectScreen()
 					stagePhase, stagePhaseFade, stagePhaseWait = false, false, 0
 					start.stageConfirmArmed = false
 					start.stageConfirmQueued = false
+					start.stagePickHold = 0
 					-- the frame is black now: give the last pick back, so the wall
 					-- returns with one player still choosing
 					for side = 2, 1, -1 do
@@ -3804,6 +3805,7 @@ function start.f_selectScreen()
 				stageEnd = false
 				start.stageConfirmArmed = false
 				start.stageConfirmQueued = false
+				start.stagePickHold = 0
 			end
 			if main.stageMenu and not stageEnd then --Stage select
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
@@ -3825,6 +3827,7 @@ function start.f_selectScreen()
 						stagePhase, stagePhaseFade = true, false
 						start.stageConfirmArmed = false
 						start.stageConfirmQueued = false
+						start.stagePickHold = 0
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
 				end
@@ -3940,26 +3943,22 @@ function start.f_selectScreen()
 					-- And a direction always wins over a confirm. On a keyboard where the
 					-- player's right key is also a punch button, walking the wall must never
 					-- pick a map on the way past.
-					-- A pick on this wall takes two presses: the first arms it, the
-					-- second locks the map in. D is one of the player's punch buttons in
-					-- this screenpack - button z is bound to the key D - so a movement key
-					-- on a keyboard where that key is also a button used to start the match
-					-- the moment the player tried to walk. Now the worst a wrong key can do
-					-- is arm a pick, and any direction press cancels that again.
+					-- A pick on this wall has to be held, not tapped. D is one of the
+					-- player's punch buttons in this screenpack - button z is bound to the
+					-- key D - so a tap of the key a player walks with used to start the
+					-- match. A direction being held always cancels the pick, and a single
+					-- press never counts: only a steady hold with no direction does, so
+					-- tapping keys to find the way across the wall cannot start a match.
 					local confirmPressed = slotSelected
-					if not confirmPressed and rawConfirm and start.stageConfirmArmed
-						and (start.stageHeldDir or 0) == 0 then
-						if start.stageConfirmQueued then
-							confirmPressed = true
-						else
-							start.stageConfirmQueued = true
-							start.stageConfirmArmed = false
-							sndPlay(motif.Snd, motif.select_info.stage.swap.snd[1], motif.select_info.stage.swap.snd[2])
-						end
+					local holdPick = rawConfirm and start.stageConfirmArmed
+						and (start.stageHeldDir or 0) == 0
+					if holdPick then
+						start.stagePickHold = (start.stagePickHold or 0) + 1
+					else
+						start.stagePickHold = 0
 					end
-					if (start.stageHeldDir or 0) ~= 0 then
-						start.stageConfirmQueued = false
-						start.stageConfirmArmed = false
+					if not confirmPressed and holdPick and start.stagePickHold >= 40 then
+						confirmPressed = true
 					end
 					-- The wall does not pick for the player when the character-select timer
 					-- runs out. Expiring there started matches before anyone had chosen.
@@ -4011,8 +4010,8 @@ function start.f_selectScreen()
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
 				end
 				textImgReset(stageTextData)
-				if start.stageConfirmQueued then
-					stage_text = stage_text .. '   -   PRESS AGAIN TO PICK'
+				if (start.stagePickHold or 0) > 0 then
+					stage_text = stage_text .. '   -   HOLD TO PICK'
 				end
 				if start.stageDbg ~= nil then
 					stage_text = stage_text .. '  ' .. start.stageDbg
