@@ -76,7 +76,12 @@ FRAME_COLOURS = {1: ((72, 232, 96), (43, 139, 57)),
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
 INK = (10, 12, 16)
-NAME_STRIP = 30
+# The name under each map is a line of the game's text, so it is drawn at the one
+# size the menus draw: 43px. The strip is that line plus its own padding - at 30px
+# it only had room for 21px letters, which read as a caption beside the menu rows
+# rather than as the same text. A long map name still shrinks to fit its card.
+NAME_SIZE = 43
+NAME_STRIP = 56
 
 PREVIEW = os.path.join(ROOT, "artifacts", "stage_wall.png")
 
@@ -190,7 +195,7 @@ def paint_card(def_path):
     strip = Image.new("RGBA", (w, NAME_STRIP), INK + (216,))
     card.paste(strip, (0, h - NAME_STRIP), strip)
     draw = ImageDraw.Draw(card)
-    font = fit_text(draw, name, w - 24)
+    font = fit_text(draw, name, w - 24, size=NAME_SIZE)
     tw = draw.textlength(name, font=font)
     bbox = draw.textbbox((0, 0), name, font=font)
     draw.text(((w - tw) / 2.0,
