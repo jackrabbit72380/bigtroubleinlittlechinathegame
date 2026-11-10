@@ -3401,6 +3401,8 @@ function start.f_selectScreen()
 	-- its own, reached by fading the grid out and the stage screen in.
 	local stagePhase = false
 	local stagePhaseFade = false
+	-- frames spent waiting for the grid fade to report itself finished
+	local stagePhaseWait = 0
 	-- set while the stage screen is fading back out to the wall, and while
 	-- that fade is actually running
 	local stageBack, stageBackFade = false, false
@@ -3722,7 +3724,7 @@ function start.f_selectScreen()
 				elseif not fadeActive() then
 					fadeSkip()
 					stageBack, stageBackFade = false, false
-					stagePhase, stagePhaseFade = false, false
+					stagePhase, stagePhaseFade, stagePhaseWait = false, false, 0
 					-- the frame is black now: give the last pick back, so the wall
 					-- returns with one player still choosing
 					for side = 2, 1, -1 do
@@ -3785,10 +3787,16 @@ function start.f_selectScreen()
 				-- screen and fade that in. Without the wait both were on the frame
 				-- at once, the card on top of the last grid rows.
 				if not stagePhase then
+					-- The wall is drawn from the first frame, but its input only starts
+					-- once this fade reports itself finished. A fade that never does left
+					-- the wall on screen and deaf: the cards were there, confirm still
+					-- worked, and no direction ever reached it. Two seconds is the
+					-- backstop - after that the wall takes its input regardless.
+					stagePhaseWait = stagePhaseWait + 1
 					if not stagePhaseFade then
 						fadeOutInit(motif.select_info.fadeout.FadeData)
 						stagePhaseFade = true
-					elseif not fadeActive() then
+					elseif not fadeActive() or stagePhaseWait > 120 then
 						fadeSkip()
 						stagePhase, stagePhaseFade = true, false
 						fadeInInit(motif.select_info.fadein.FadeData)
@@ -4848,12 +4856,13 @@ end
 -- defines nothing. Filled here rather than at load time because the motif table is
 -- not necessarily complete when this file is first read.
 function start.f_selStageKeys()
-	-- This engine's direction key names are U, D, B (back, i.e. left) and F
-	-- (forward, i.e. right). The theme used to name the stage keys L and R here,
-	-- and those are not key names at all: every getInput() on them raised, so the
-	-- wall answered no key and each press fell through to the map confirm. They
-	-- are normalised to B and F here, for anything that reads them; the wall itself
-	-- moves on the character grid's cell keys (start.f_stageMenu).
+	-- This build's direction key names are U, D, L and R - the same four the
+	-- engine's own stage menu reads straight off stage.previous, stage.next and
+	-- the two skip keys. B and F are the grid's internal back/forward spellings,
+	-- not key names: a read of those returns nothing, and renaming L and R to them
+	-- here is what left the wall answering no key at all. Any B or F already in the
+	-- motif is renamed back, so everything that reads these keys - the wall and the
+	-- stage slot cycler - is asking for names this build answers to.
 	local si = motif and motif.select_info
 	local stage = si and si.stage
 	if stage == nil then
@@ -4864,10 +4873,10 @@ function start.f_selStageKeys()
 		local keys = {}
 		for _, k in ipairs(type(source) == 'table' and source or { source }) do
 			local name = tostring(k)
-			if name == 'L' then
-				name = 'B'
-			elseif name == 'R' then
-				name = 'F'
+			if name == 'B' then
+				name = 'L'
+			elseif name == 'F' then
+				name = 'R'
 			end
 			table.insert(keys, name)
 		end
@@ -4882,9 +4891,9 @@ function start.f_selStageKeys()
 	normalise(stage.previous, 'U')
 	stage.skip = stage.skip or {}
 	stage.skip.next = stage.skip.next or {}
-	normalise(stage.skip.next, 'F')
+	normalise(stage.skip.next, 'R')
 	stage.skip.previous = stage.skip.previous or {}
-	normalise(stage.skip.previous, 'B')
+	normalise(stage.skip.previous, 'L')
 end
 
 function start.f_stageSlotSelected(group)
@@ -4994,11 +5003,38 @@ function start.f_stageMenu()
 		end
 		return keys
 	end
+	-- The engine's own stage menu reads its four stage keys straight off the
+	-- motif, so those are asked for first here too, mapped onto the wall's four
+	-- directions: stage.previous is up, stage.next is down, and the two skip keys
+	-- are left and right.
+	local stageKeys = motif.select_info.stage
+	local function stageKey(dir)
+		local group
+		if dir == 'U' then
+			group = stageKeys.previous
+		elseif dir == 'D' then
+			group = stageKeys.next
+		elseif dir == 'L' then
+			group = stageKeys.skip and stageKeys.skip.previous
+		else
+			group = stageKeys.skip and stageKeys.skip.next
+		end
+		local keys = {}
+		local source = group and group.key
+		if type(source) == 'table' then
+			for _, k in ipairs(source) do
+				table.insert(keys, tostring(k))
+			end
+		elseif source ~= nil then
+			table.insert(keys, tostring(source))
+		end
+		return keys
+	end
 	local directions = {
-		{ dir = 'L', keys = keyList('left', 'L', 'left') },
-		{ dir = 'R', keys = keyList('right', 'R', 'right') },
-		{ dir = 'U', keys = keyList('up', 'U', 'up') },
-		{ dir = 'D', keys = keyList('down', 'D', 'down') },
+		{ dir = 'L', keys = keyList('left', 'L', 'left'), stage = stageKey('L') },
+		{ dir = 'R', keys = keyList('right', 'R', 'right'), stage = stageKey('R') },
+		{ dir = 'U', keys = keyList('up', 'U', 'up'), stage = stageKey('U') },
+		{ dir = 'D', keys = keyList('down', 'D', 'down'), stage = stageKey('D') },
 	}
 	-- A key name this engine does not know raises inside getInput, and one bad name
 	-- must not take the whole screen down with it - that is what left the wall dead
@@ -5032,17 +5068,25 @@ function start.f_stageMenu()
 		end
 		return false
 	end
-	local function directionHeld(keys)
-		if sideHolds(1, keys) or sideHolds(2, keys) then
-			return true
-		end
+	local function anyHeld(keys)
 		for _, name in ipairs(keys) do
-			local ok, hit = pcall(getInput, -1, { name })
-			if ok and hit then
-				return true
+			for _, who in ipairs({ -1, 1, 2 }) do
+				local ok, hit = pcall(getInput, who, { name })
+				if ok and hit then
+					return true
+				end
 			end
 		end
 		return false
+	end
+	local function directionHeld(dir)
+		if anyHeld(dir.stage) then
+			return true
+		end
+		if sideHolds(1, dir.keys) or sideHolds(2, dir.keys) then
+			return true
+		end
+		return anyHeld(dir.keys)
 	end
 	-- Which player is on the stage cursor: the picked map is outlined in their
 	-- colour, so a two-player pick shows whose choice it is. It reads the same
@@ -5059,10 +5103,20 @@ function start.f_stageMenu()
 	end
 	local heldIndex = nil
 	for i, dir in ipairs(directions) do
-		if directionHeld(dir.keys) then
+		if directionHeld(dir) then
 			heldIndex = i
 			break
 		end
+	end
+	-- A wall that still refuses to move leaves a note here naming the direction
+	-- it did see, so the next look is at numbers instead of another guess.
+	if heldIndex ~= nil then
+		pcall(main.f_printTable, {
+			dir = directions[heldIndex].dir,
+			stageNo = stageListNo,
+			cards = cardCount,
+			cols = cols,
+		}, 'debug/stage_wall.txt')
 	end
 	local firstPress = heldIndex ~= nil and heldIndex ~= (start.stageHeldDir or 0)
 	start.stageHeldDir = heldIndex or 0
