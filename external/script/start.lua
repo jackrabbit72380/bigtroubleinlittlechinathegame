@@ -5193,26 +5193,57 @@ function start.f_stageMenu()
 	-- the only thing taken from it is which way the cursor went. Reading the keys
 	-- a second way here is what left the wall answering nothing while the grid
 	-- answered everything.
-	if heldIndex == nil and start.f_cellMovement ~= nil then
-		for side = 1, 2 do
-			local cmd = start.f_menuCmd(side)
-			local cursor = cmd ~= nil and start.c and start.c[cmd] or nil
-			if cursor ~= nil and cursor.selX ~= nil and cursor.selY ~= nil then
-				local ok, gx, gy = pcall(start.f_cellMovement, cursor.selX, cursor.selY, cmd, side, nil, nil)
-				if ok and gx ~= nil and gy ~= nil and (gx ~= cursor.selX or gy ~= cursor.selY) then
-					local name = gx > cursor.selX and 'R' or gx < cursor.selX and 'L' or gy > cursor.selY and 'D' or 'U'
-					for i, dir in ipairs(directions) do
-						if dir.dir == name then
-							heldIndex = i
-							break
-						end
-					end
-					if heldIndex ~= nil then
+	-- Inside a select screen the engine calls the four directions F, B, U and D,
+	-- and that is what the character grid reads. Asking for those same names is
+	-- what lets this wall see a direction at all.
+	if heldIndex == nil then
+		local byCommand = { U = 'U', D = 'D', L = 'B', R = 'F' }
+		for i, dir in ipairs(directions) do
+			local name = byCommand[dir.dir]
+			if name ~= nil then
+				for side = 1, 2 do
+					local ok, hit = pcall(commandGetState, side, name)
+					if ok and hit then
+						heldIndex = i
 						start.stageSide = side
-						start.stageGridDir = true
 						break
 					end
 				end
+			end
+			if heldIndex ~= nil then
+				break
+			end
+		end
+	end
+	-- And then the character screen's own movement function, called with the
+	-- player index the grid itself passes, taking only the direction the cursor
+	-- went from its answer.
+	if heldIndex == nil and start.f_cellMovement ~= nil then
+		for side = 1, 2 do
+			local cursor = start.c and start.c[side] or nil
+			if cursor ~= nil and cursor.selX ~= nil and cursor.selY ~= nil then
+				for _, cmd in ipairs({ side, start.f_menuCmd(side) }) do
+					if cmd ~= nil then
+						local ok, gx, gy = pcall(start.f_cellMovement, cursor.selX, cursor.selY, cmd, side, nil, nil)
+						if ok and gx ~= nil and gy ~= nil and (gx ~= cursor.selX or gy ~= cursor.selY) then
+							local name = gx > cursor.selX and 'R' or gx < cursor.selX and 'L' or gy > cursor.selY and 'D' or 'U'
+							for i, dir in ipairs(directions) do
+								if dir.dir == name then
+									heldIndex = i
+									break
+								end
+							end
+							if heldIndex ~= nil then
+								start.stageSide = side
+								start.stageGridDir = true
+								break
+							end
+						end
+					end
+				end
+			end
+			if heldIndex ~= nil then
+				break
 			end
 		end
 	end
