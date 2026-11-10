@@ -1661,6 +1661,50 @@ def ensure_variant_scales(text, scale="0.75, 0.75"):
             out.append("%s%s.scale = %s\n" % (indent, missing[i], scale))
     return "".join(out), len(missing)
 
+# The active/selected/value rows of a menu draw the same face as the row they
+# highlight, so they belong at that row's scale. One number for all of them is
+# wrong wherever a screen sets its own: the title menu runs at 0.48 so nine items
+# fit under the wordmark, and forcing 0.75 there made the selected row grow the
+# moment it was highlighted. This copies each block's own base scale onto its
+# variants, so a screen keeps the size it was laid out at.
+ITEM_VARIANTS = ("active", "selected", "selected.active",
+                 "value", "value.active", "info", "info.active")
+
+
+def match_variant_scales(text):
+    """Copy each menu block's own base scale onto its active/selected rows."""
+    base, cur = {}, ""
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            cur = s.lower()
+            continue
+        m = KEY_LINE.match(line)
+        if m and m.group(2).lower() == "menu.item.scale":
+            base[cur] = m.group(4).strip()
+    out, changed, cur = [], 0, ""
+    for line in text.splitlines(True):
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            cur = s.lower()
+            out.append(line)
+            continue
+        m = KEY_LINE.match(line.rstrip("\r\n"))
+        if m and cur in base:
+            key = m.group(2).lower()
+            for variant in ITEM_VARIANTS:
+                if key != "menu.item." + variant + ".scale":
+                    continue
+                want = base[cur]
+                if m.group(4).strip() != want:
+                    line = (m.group(1) + m.group(2) + m.group(3) + want +
+                            ("\r\n" if line.endswith("\r\n") else "\n"))
+                    changed += 1
+                break
+        out.append(line)
+    return "".join(out), changed
+
+
 def halve_paired_scales(text):
     """Halve the .scale of every text that draws one of the doubled faces.
 
@@ -1814,6 +1858,9 @@ def main():
     text, filled = ensure_variant_scales(text)
     if filled:
         print(f"  gave {filled} unpaired text row(s) the caption scale")
+    text, matched = match_variant_scales(text)
+    if matched:
+        print(f"  matched {matched} menu row(s) to their block's own scale")
     if text != original:
         text = halve_paired_scales(text)
 
