@@ -3725,6 +3725,7 @@ function start.f_selectScreen()
 					fadeSkip()
 					stageBack, stageBackFade = false, false
 					stagePhase, stagePhaseFade, stagePhaseWait = false, false, 0
+					start.stageConfirmArmed = false
 					-- the frame is black now: give the last pick back, so the wall
 					-- returns with one player still choosing
 					for side = 2, 1, -1 do
@@ -3799,6 +3800,7 @@ function start.f_selectScreen()
 					elseif not fadeActive() or stagePhaseWait > 120 then
 						fadeSkip()
 						stagePhase, stagePhaseFade = true, false
+						start.stageConfirmArmed = false
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
 				end
@@ -3888,24 +3890,36 @@ function start.f_selectScreen()
 					end
 					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
 						or { "a", "b", "c", "x", "y", "z" }
-					local confirmPressed = slotSelected
-					if not confirmPressed and not slotHandled then
+					local rawConfirm = false
+					if not slotHandled then
 						for side = 1, 2 do
 							local owners = sideOwners(side)
 							if #owners > 0 then
 								local ok, hit = pcall(getInput, owners, doneKeys)
 								if ok and hit then
-									confirmPressed = true
+									rawConfirm = true
 									break
 								end
 							end
 						end
-						-- A direction being held is not a confirm on its own: a cursor on its
-						-- way somewhere must not pick the map on the way past.
-						if not confirmPressed and (start.stageHeldDir or 0) == 0 then
+						if not rawConfirm then
 							local ok, hit = pcall(getInput, -1, doneKeys)
-							confirmPressed = ok and hit and true or false
+							rawConfirm = ok and hit and true or false
 						end
+					end
+					-- A button already down cannot pick anything: it has to be released
+					-- once with the wall open, so a key held from the grid or from the wall
+					-- opening can never launch the match by itself.
+					if not rawConfirm then
+						start.stageConfirmArmed = true
+					end
+					-- And a direction always wins over a confirm. On a keyboard where the
+					-- player's right key is also a punch button, walking the wall must never
+					-- pick a map on the way past.
+					local confirmPressed = slotSelected
+					if not confirmPressed and rawConfirm and start.stageConfirmArmed
+						and (start.stageHeldDir or 0) == 0 then
+						confirmPressed = true
 					end
 					-- The wall does not pick for the player when the character-select timer
 					-- runs out. Expiring there started matches before anyone had chosen.
@@ -5042,11 +5056,21 @@ function start.f_stageMenu()
 		end
 		return list
 	end
+	-- The motif's cell keys are asked for first, then this screenpack's stage keys.
+	-- After those, every spelling a hand could be on: arrow names, WASD and IJKL, in
+	-- both cases. One list that happens to be spelled differently in this build can
+	-- no longer make the whole wall deaf.
+	local spelling = {
+		L = { 'left', 'LEFT', 'a', 'A', 'j', 'J', 'L' },
+		R = { 'right', 'RIGHT', 'd', 'D', 'l', 'L', 'R' },
+		U = { 'up', 'UP', 'w', 'W', 'i', 'I', 'U' },
+		D = { 'down', 'DOWN', 's', 'S', 'k', 'K', 'D' },
+	}
 	local directions = {
-		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), keyTable(skip.previous)) },
-		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), keyTable(skip.next)) },
-		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), keyTable(stageKeys.previous)) },
-		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), keyTable(stageKeys.next)) },
+		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), keyTable(skip.previous)), keys = spelling.L },
+		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), keyTable(skip.next)), keys = spelling.R },
+		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), keyTable(stageKeys.previous)), keys = spelling.U },
+		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), keyTable(stageKeys.next)), keys = spelling.D },
 	}
 	-- One read, guarded: a name this engine does not know raises inside getInput,
 	-- and one bad source must not take the screen down with it. Each player is
@@ -5080,11 +5104,14 @@ function start.f_stageMenu()
 				return true
 			end
 		end
-		local cmd = start.f_menuCmd(side)
-		if cmd ~= nil and heldBy({ dir.name }, cmd) then
+		if heldBy(dir.keys, side) then
 			return true
 		end
-		return heldBy({ dir.name }, side) or heldBy({ dir.name }, -1)
+		local cmd = start.f_menuCmd(side)
+		if cmd ~= nil and heldBy(dir.keys, cmd) then
+			return true
+		end
+		return heldBy(dir.keys, -1)
 	end
 	-- Which player is on the stage cursor: the picked map is outlined in their
 	-- colour, so a two-player pick shows whose choice it is. It reads the same
