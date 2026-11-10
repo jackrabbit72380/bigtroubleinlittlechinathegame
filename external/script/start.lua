@@ -4971,122 +4971,59 @@ function start.f_stageMenu()
 		stageListNo = nextNo
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 	end
-	-- The wall moves on the character grid's own keys, so the stage screen answers
-	-- the same WASD, IJKL and arrow bindings the grid does. The motif's cell keys
-	-- are used when it defines them, and this build's own direction names when it
-	-- does not: U, D, L and R - the four this screenpack binds for its stages and
-	-- palette. B and F are how the grid spells back and forward internally; they
-	-- are not key names, and asking the engine for them answered nothing.
-	local cellKeys = motif.select_info.cell
-	local function keyList(cellName, ...)
-		local keys = {}
-		local group = cellKeys and cellKeys[cellName]
-		local source = group and group.key
-		if type(source) == 'table' then
-			for _, k in ipairs(source) do
-				table.insert(keys, tostring(k))
-			end
-		elseif source ~= nil then
-			table.insert(keys, tostring(source))
+	-- The wall moves on the same key tables the character grid moves on. The grid
+	-- hands getInput the motif's own objects - cell.up.key and friends - and it does
+	-- move, so those objects are handed over here too instead of rebuilt copies of
+	-- them. Rebuilt copies were the whole fault: the names in them (left, up, ...)
+	-- are not names this screenpack defines anywhere, so every read answered nothing
+	-- and only a chord of two keys could shake a direction loose. This screenpack's
+	-- own stage keys - stage.previous, stage.next and the two skip keys - are asked
+	-- for as a second source, which is what the engine's own stage menu reads.
+	local cell = motif.select_info.cell or {}
+	local stageKeys = motif.select_info.stage or {}
+	local skip = stageKeys.skip or {}
+	local function keyTable(group)
+		if group == nil then
+			return nil
 		end
-		for _, name in ipairs({ ... }) do
-			local seen = false
-			for _, have in ipairs(keys) do
-				if have == name then
-					seen = true
-					break
-				end
-			end
-			if not seen then
-				table.insert(keys, name)
-			end
-		end
-		return keys
+		return group.key
 	end
-	-- The engine's own stage menu reads its four stage keys straight off the
-	-- motif, so those are asked for first here too, mapped onto the wall's four
-	-- directions: stage.previous is up, stage.next is down, and the two skip keys
-	-- are left and right.
-	local stageKeys = motif.select_info.stage
-	local function stageKey(dir)
-		local group
-		if dir == 'U' then
-			group = stageKeys.previous
-		elseif dir == 'D' then
-			group = stageKeys.next
-		elseif dir == 'L' then
-			group = stageKeys.skip and stageKeys.skip.previous
-		else
-			group = stageKeys.skip and stageKeys.skip.next
+	local function sourcesOf(...)
+		local list = {}
+		for _, source in ipairs({ ... }) do
+			table.insert(list, source)
 		end
-		local keys = {}
-		local source = group and group.key
-		if type(source) == 'table' then
-			for _, k in ipairs(source) do
-				table.insert(keys, tostring(k))
-			end
-		elseif source ~= nil then
-			table.insert(keys, tostring(source))
-		end
-		return keys
+		return list
 	end
 	local directions = {
-		{ dir = 'L', keys = keyList('left', 'L', 'left'), stage = stageKey('L') },
-		{ dir = 'R', keys = keyList('right', 'R', 'right'), stage = stageKey('R') },
-		{ dir = 'U', keys = keyList('up', 'U', 'up'), stage = stageKey('U') },
-		{ dir = 'D', keys = keyList('down', 'D', 'down'), stage = stageKey('D') },
+		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), keyTable(skip.previous)) },
+		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), keyTable(skip.next)) },
+		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), keyTable(stageKeys.previous)) },
+		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), keyTable(stageKeys.next)) },
 	}
-	-- A key name this engine does not know raises inside getInput, and one bad name
-	-- must not take the whole screen down with it - that is what left the wall dead
-	-- to every key. Each read is guarded, and every player is asked, then "any".
-	-- A direction is read the way the character grid reads one: through each
-	-- player's own command buffer. That is the path the grid's movement already
-	-- answers on, and the only one proven here - asking by player number alone
-	-- answered nothing, which is why the wall never moved. The player number and
-	-- "any player" are still asked as well, and each key name is read on its own
-	-- inside its own guard, so one name this build does not know cannot hide the
-	-- ones that work.
-	local function sideHolds(side, keys)
-		local cmds = start.p[side] and start.p[side].t_selCmd
-		if cmds then
-			for _, entry in ipairs(cmds) do
-				if entry.cmd ~= nil then
-					for _, name in ipairs(keys) do
-						local ok, hit = pcall(getInput, entry.cmd, { name })
-						if ok and hit then
-							return true
-						end
-					end
-				end
-			end
+	-- One read, guarded: a name this engine does not know raises inside getInput,
+	-- and one bad source must not take the screen down with it. Each player is
+	-- asked, then "any player", then the plain direction name as a last resort.
+	local function heldBy(source, side)
+		if source == nil then
+			return false
 		end
-		for _, name in ipairs(keys) do
-			local ok, hit = pcall(getInput, side, { name })
-			if ok and hit then
+		local ok, hit = pcall(getInput, side, source)
+		if ok and hit then
+			return true
+		end
+		return false
+	end
+	local function sourceHeld(source, side)
+		return heldBy(source, side) or heldBy(source, -1)
+	end
+	local function dirHeld(dir, side)
+		for _, source in ipairs(dir.sources) do
+			if sourceHeld(source, side) then
 				return true
 			end
 		end
-		return false
-	end
-	local function anyHeld(keys)
-		for _, name in ipairs(keys) do
-			for _, who in ipairs({ -1, 1, 2 }) do
-				local ok, hit = pcall(getInput, who, { name })
-				if ok and hit then
-					return true
-				end
-			end
-		end
-		return false
-	end
-	local function directionHeld(dir)
-		if anyHeld(dir.stage) then
-			return true
-		end
-		if sideHolds(1, dir.keys) or sideHolds(2, dir.keys) then
-			return true
-		end
-		return anyHeld(dir.keys)
+		return heldBy({ dir.name }, side) or heldBy({ dir.name }, -1)
 	end
 	-- Which player is on the stage cursor: the picked map is outlined in their
 	-- colour, so a two-player pick shows whose choice it is. It reads the same
@@ -5095,7 +5032,7 @@ function start.f_stageMenu()
 	-- handed to the engine where it wants a list.
 	for side = 1, 2 do
 		for _, dir in ipairs(directions) do
-			if sideHolds(side, dir.keys) then
+			if dirHeld(dir, side) then
 				start.stageSide = side
 				break
 			end
@@ -5103,7 +5040,7 @@ function start.f_stageMenu()
 	end
 	local heldIndex = nil
 	for i, dir in ipairs(directions) do
-		if directionHeld(dir) then
+		if dirHeld(dir, 1) or dirHeld(dir, 2) then
 			heldIndex = i
 			break
 		end

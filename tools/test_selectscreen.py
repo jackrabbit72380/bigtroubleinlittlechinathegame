@@ -282,9 +282,17 @@ def check_stage_wall(problems):
         problems.append("nothing bakes the stage cards into the screenpack")
     else:
         bake = read(wall_tool)
-        for needle, why in (("CARD = (457, 150)", "the card size is not fixed"),
-                            ("def frame_sprite(", "the pick has no baked frame"),
-                            ("[ExtraStages]", "the cards are not baked from the stage pool")):
+        for needle, why in (("motif.select_info.cell", "the grid's own key tables"),
+                        ("keyTable(cell.left)", "left from the grid's left key"),
+                        ("keyTable(cell.right)", "right from the grid's right key"),
+                        ("keyTable(cell.up)", "up from the grid's up key"),
+                        ("keyTable(cell.down)", "down from the grid's down key"),
+                        ("keyTable(stageKeys.previous)", "up from the screenpack's stage key"),
+                        ("keyTable(stageKeys.next)", "down from the screenpack's stage key"),
+                        ("keyTable(skip.previous)", "left from the screenpack's skip key"),
+                        ("keyTable(skip.next)", "right from the screenpack's skip key"),
+                        ("pcall(getInput", "no key read can take the screen down"),
+                        ("for side = 1, 2 do", "the keys off both players")):
             if needle not in bake:
                 problems.append("build_stage_wall.py: " + why)
     # that backdrop sprite is the character wall's frame: a grid of empty cells is
