@@ -3983,6 +3983,9 @@ function start.f_selectScreen()
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
 				end
 				textImgReset(stageTextData)
+				if start.stageDbg ~= nil then
+					stage_text = stage_text .. '  ' .. start.stageDbg
+				end
 				textImgSetText(stageTextData, stage_text)
 				textImgDraw(stageTextData)
 			end
@@ -5177,6 +5180,17 @@ function start.f_stageMenu()
 			cards = cardCount,
 			cols = cols,
 		}, 'debug/stage_wall.txt')
+	end
+	-- TEMPORARY readout. The map-name line prints these numbers, so a wall that will
+	-- not move can be read off the screen: each direction as 1 or 0, then the cursor
+	-- and the number of cards. If the line never shows them, this function is never
+	-- running and the wall on screen is not the live stage screen.
+	do
+		local flags = {}
+		for _, d in ipairs(directions) do
+			flags[#flags + 1] = d.dir .. ((dirHeld(d, 1) or dirHeld(d, 2)) and '1' or '0')
+		end
+		start.stageDbg = table.concat(flags, ' ') .. ' n' .. tostring(stageListNo) .. ' c' .. tostring(cardCount)
 	end
 	local firstPress = heldIndex ~= nil and heldIndex ~= (start.stageHeldDir or 0)
 	start.stageHeldDir = heldIndex or 0
