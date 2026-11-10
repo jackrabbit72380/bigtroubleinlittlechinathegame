@@ -121,12 +121,14 @@ def check_motif(problems):
     if (key(si, "cell.random.spr") or "").replace(" ", "") != "-1":
         problems.append("RANDOM still draws a cell sprite")
 
-    # the stage screen: a card and a name, once the wall is gone
-    if (key(si, "stage.portrait.spr") or "").replace(" ", "") != "9000,1":
-        problems.append("the stage screen has no preview card")
-    win = key(si, "stage.portrait.window") or ""
-    if win.replace(" ", "") in ("", "0,0,0,0"):
-        problems.append("the stage card's window is empty")
+    # The stage screen is the wall: every map is a baked card (240,<n>) and the
+    # picked one is framed (241,0 for player 1, 242,0 for player 2), so there is no
+    # separate preview card and no window to fit one into. What must hold is that
+    # the wall still has its backdrop and the name is still on the caption row.
+    if (key(si, "stage.portrait.spr") or "").replace(" ", "") != "-1":
+        problems.append("the stage screen still draws a separate preview card")
+    if (key(si, "stage.portrait.bg.spr") or "").replace(" ", "") != "225,0":
+        problems.append("the stage screen has no backdrop under the wall")
     if (key(si, "stage.pos") or "").split(",")[-1].strip() != "120":
         problems.append("the stage name is not on the caption row")
     return text
@@ -202,7 +204,9 @@ def check_vs_portraits(problems):
 
 def check_script(problems):
     text = read(START)
-    if "'151,0, 0,0, -1'" not in text or "'151,11, 0,0, -1'" not in text:
+    if "RANDOM_SPR = {original = {base = 0, lit = 11}, karate = {base = 13, lit = 12}}" not in text:
+        problems.append("start.lua no longer names the RANDOM sprites")
+    if "'151,%d, 0,0, -1'" not in text:
         problems.append("start.lua does not draw the RANDOM word from its sprites")
     if "animNew, nil" in text:
         problems.append("start.lua builds runtime art with a nil sprite file, "
