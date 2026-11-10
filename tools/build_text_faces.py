@@ -212,13 +212,13 @@ def place_bottom_row(text):
 # higher under its title, and the title list shows two fewer rows at once (it
 # already scrolled - the wordmark needs the top half of the screen).
 # The title list is the one block that cannot use the caption size: its room is
-# the empty band the painted backdrop leaves under the wordmark (y 334..698 on a
-# 1080 frame), and nine rows of a 77px face at 0.75 do not fit in 364px. 0.49
-# draws the same face at 38px with ~3px between rows, which is what lets the list
+# the empty band the painted backdrop leaves under the wordmark (y 334..697 on a
+# 1080 frame), and nine rows of a 77px face at 0.75 do not fit in 363px. 0.48
+# draws the same face at 37px with ~3px between rows, which is what lets the list
 # sit inside that hole instead of printing across the fighters. Written here
 # because patch() has already forced every text scale to the caption size by the
 # time the screens are fitted.
-TITLE_SCALE = "0.49, 0.49"
+TITLE_SCALE = "0.48, 0.48"
 
 FIT = {
     "[Pause Menu]": {"title.offset": "960, 118", "menu.pos": "960, 190"},
@@ -227,7 +227,7 @@ FIT = {
     # The pitch is restated here because patch_spacing() has already forced the
     # caption pitch on this block; title rows are 35px of ink, not 67.5.
     "[Title Info]": {"menu.window.visibleitems": "9",
-                     "menu.item.spacing": "0, 41",
+                     "menu.item.spacing": "0, 40",
                      "menu.item.scale": TITLE_SCALE,
                      "menu.item.active.scale": TITLE_SCALE},
 }
