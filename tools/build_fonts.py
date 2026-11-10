@@ -1793,6 +1793,10 @@ MENU_PITCH = 40                # the main menu's own row pitch
 # fontN -> the cell height that face draws, for the families this pass sizes
 FACE_INK = {"10": 90.0, "11": 40.0, "12": 90.0}
 MIDDLE_X = 960                 # the middle of the 1920 frame
+# The stage wall's name line: the map you are on, written in the band above the
+# wall. It sat at y=120, low enough to read as a caption hanging over the cards
+# rather than as the screen's title; 40 is the top of the frame, clear of them.
+STAGE_NAME_Y = 40
 
 
 def scale_on_menu_ink(ink):
@@ -1842,6 +1846,9 @@ def uniform_menu_text(text):
             # the band is one row tall on the new pitch, so two rows' bands cannot
             # overlap and the highlight no longer depends on the old pitch
             want = "%s, %s, %s, %d" % (parts[0], parts[1], parts[2], MENU_PITCH - 1)
+        elif low == "stage.pos" and cur == "select info" and len(parts) > 1:
+            # the stage wall's own name line, at the top of the frame
+            want = "%s, %d" % (parts[0], STAGE_NAME_Y)
         elif low == "menu.pos" and cur != "title info" and len(parts) > 1:
             try:
                 if abs(float(parts[0]) - MIDDLE_X) > 200:

@@ -3615,8 +3615,11 @@ function start.f_selectScreen()
 			if side == 1 then
 				if not stagePhase then
 					start.f_drawRandomStop()
+					-- PLAYER 1 / PLAYER 2 name the two fighters' columns on the
+					-- character grid. The stage wall is one shared wall of maps, so on
+					-- it those two captions say nothing and are not drawn.
+					start.f_drawPlayerLabels()
 				end
-				start.f_drawPlayerLabels()
 			end
 			--draw done cursors
 			local persist = motif.select_info['p' .. side].cursor.persist
@@ -3893,6 +3896,22 @@ function start.f_selectScreen()
 				if stagePhase and frame ~= nil and picked ~= nil then
 					spriteDraw(frame, picked.x, picked.y)
 				end
+				-- RANDOM is a position on this wall with no card of its own, so its
+				-- word is what marks it: at the foot of the screen, under the wall,
+				-- gold until the stage cursor stands on it. The name line at the top
+				-- is left to the map you are on, so the word is never written twice.
+				local rndWord = randomStopAnim(stageListNo == 0)
+				if rndWord ~= nil then
+					local sh = 1080
+					pcall(function()
+						local lc = motif.info.localcoord
+						if lc ~= nil and lc[2] ~= nil and lc[2] > 0 then
+							sh = lc[2]
+						end
+					end)
+					spriteDraw(rndWord, 960 - math.floor(RANDOM_ART[1] / 2),
+						sh - RANDOM_ART[2] - 8)
+				end
 				-- The fighters are not drawn here. This screen is the map wall and the
 				-- map's name: two full-body portraits over the cards, with both fighter
 				-- names under them, took the wall's room and put a caption on the same
@@ -4009,6 +4028,12 @@ function start.f_selectScreen()
 				local stage_text = motif.select_info.stage.random.text
 				if stageListNo ~= 0 then
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
+				end
+				-- RANDOM's word belongs at the foot of the wall with the stop it
+				-- marks, so this line stays empty on that stop rather than writing the
+				-- same word at the top of the screen as well.
+				if stageListNo == 0 then
+					stage_text = ' '
 				end
 				textImgReset(stageTextData)
 				textImgSetText(stageTextData, stage_text)

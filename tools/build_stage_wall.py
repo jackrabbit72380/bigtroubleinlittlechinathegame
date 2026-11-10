@@ -76,12 +76,6 @@ FRAME_COLOURS = {1: ((72, 232, 96), (43, 139, 57)),
 GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
 INK = (10, 12, 16)
-# The name under each map is a line of the game's text, so it is drawn at the one
-# size the menus draw: 43px. The strip is that line plus its own padding - at 30px
-# it only had room for 21px letters, which read as a caption beside the menu rows
-# rather than as the same text. A long map name still shrinks to fit its card.
-NAME_SIZE = 43
-NAME_STRIP = 56
 
 PREVIEW = os.path.join(ROOT, "artifacts", "stage_wall.png")
 
@@ -187,20 +181,15 @@ def fit_text(draw, text, max_width, size=21, floor=13):
 
 
 def paint_card(def_path):
-    """One finished card: the map, a gold rule, and the stage's name under it."""
+    """One finished card: the map, inside its gold rule, and nothing else.
+
+    The map's name is not painted on the card. A card is a picture of the place;
+    its name is drawn by the screen as text, once, where the screen's own text
+    sits - so no name sits inside the art at a size and colour of its own.
+    """
     w, h = CARD
     card = preview_art(def_path)
-    name = stage_name(def_path,
-                      os.path.basename(def_path)[:-4].replace("_", " ").title())
-    strip = Image.new("RGBA", (w, NAME_STRIP), INK + (216,))
-    card.paste(strip, (0, h - NAME_STRIP), strip)
     draw = ImageDraw.Draw(card)
-    font = fit_text(draw, name, w - 24, size=NAME_SIZE)
-    tw = draw.textlength(name, font=font)
-    bbox = draw.textbbox((0, 0), name, font=font)
-    draw.text(((w - tw) / 2.0,
-               h - NAME_STRIP + (NAME_STRIP - (bbox[3] - bbox[1])) / 2.0 - bbox[1]),
-              name, font=font, fill=GOLD + (255,))
     draw.rectangle([0, 0, w - 1, h - 1], outline=GOLD + (255,), width=2)
     draw.rectangle([2, 2, w - 3, h - 3], outline=GOLD_DIM + (150,), width=1)
     return card

@@ -121,13 +121,17 @@ def check_motif(problems):
     # The stage screen is the wall: every map is a baked card (240,<n>) and the
     # picked one is framed (241,0 for player 1, 242,0 for player 2), so there is no
     # separate preview card and no window to fit one into. What must hold is that
-    # the wall still has its backdrop and the name is still on the caption row.
+    # the wall still has its backdrop and the name is the screen's title line: at
+    # the top of the frame, in the band above the wall, not hanging over the cards.
     if (key(si, "stage.portrait.spr") or "").replace(" ", "") != "-1":
         problems.append("the stage screen still draws a separate preview card")
     if (key(si, "stage.portrait.bg.spr") or "").replace(" ", "") != "225,0":
         problems.append("the stage screen has no backdrop under the wall")
-    if (key(si, "stage.pos") or "").split(",")[-1].strip() != "120":
-        problems.append("the stage name is not on the caption row")
+    m = re.match(r"-?\d+\s*,\s*(-?\d+)", key(si, "stage.pos") or "")
+    if not m:
+        problems.append("the stage name has no position")
+    elif not 0 <= int(m.group(1)) <= 60:
+        problems.append("the stage name is not at the top of the frame")
     return text
 
 
