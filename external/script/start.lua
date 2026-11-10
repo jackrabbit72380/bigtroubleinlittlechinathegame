@@ -5192,6 +5192,38 @@ function start.f_stageMenu()
 			break
 		end
 	end
+	-- The character screen's own reader. Whatever moves the cursor on the
+	-- character grid moves this wall too, because this is that same call with the
+	-- same arguments - the motif's own cell keys, the player's own bindings - and
+	-- the only thing taken from it is which way the cursor went. Reading the keys
+	-- a second way here is what left the wall answering nothing while the grid
+	-- answered everything.
+	if heldIndex == nil and start.f_cellMovement ~= nil then
+		for side = 1, 2 do
+			local cmd = start.f_menuCmd(side)
+			local cursor = cmd ~= nil and start.c and start.c[cmd] or nil
+			if cursor ~= nil and cursor.selX ~= nil and cursor.selY ~= nil then
+				local ok, gx, gy = pcall(start.f_cellMovement, cursor.selX, cursor.selY, cmd, side, nil, nil)
+				if ok and gx ~= nil and gy ~= nil and (gx ~= cursor.selX or gy ~= cursor.selY) then
+					local name = gx > cursor.selX and 'R' or gx < cursor.selX and 'L' or gy > cursor.selY and 'D' or 'U'
+					for i, dir in ipairs(directions) do
+						if dir.dir == name then
+							heldIndex = i
+							break
+						end
+					end
+					if heldIndex ~= nil then
+						start.stageSide = side
+						start.stageGridDir = true
+						break
+					end
+				end
+			end
+		end
+	end
+	if heldIndex == nil then
+		start.stageGridDir = false
+	end
 	-- A wall that still refuses to move leaves a note here naming the direction
 	-- it did see, so the next look is at numbers instead of another guess.
 	if heldIndex ~= nil then
@@ -5211,7 +5243,7 @@ function start.f_stageMenu()
 		for _, d in ipairs(directions) do
 			flags[#flags + 1] = d.dir .. ((dirHeld(d, 1) or dirHeld(d, 2)) and '1' or '0')
 		end
-		start.stageDbg = table.concat(flags, ' ') .. ' n' .. tostring(stageListNo) .. ' c' .. tostring(cardCount)
+		start.stageDbg = table.concat(flags, ' ') .. (start.stageGridDir and ' grid' or '') .. ' n' .. tostring(stageListNo) .. ' c' .. tostring(cardCount)
 	end
 	local firstPress = heldIndex ~= nil and heldIndex ~= (start.stageHeldDir or 0)
 	start.stageHeldDir = heldIndex or 0
