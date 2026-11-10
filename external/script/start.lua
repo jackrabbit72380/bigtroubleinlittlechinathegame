@@ -3917,6 +3917,23 @@ function start.f_selectScreen()
 					end
 					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
 						or { "a", "b", "c", "x", "y", "z" }
+					-- On a default keyboard the x, y and z buttons sit on the A, S and D
+					-- keys, so those three are left out of this screen's pick: WASD cannot
+					-- start a match here under any circumstances. The wall is picked with
+					-- the a, b or c button - Z, X or C - held down, and nothing else.
+					do
+						local filtered = {}
+						for _, k in ipairs(doneKeys) do
+							local name = tostring(k):lower()
+							if name ~= 'x' and name ~= 'y' and name ~= 'z' then
+								table.insert(filtered, name)
+							end
+						end
+						if #filtered == 0 then
+							filtered = { 'a', 'b', 'c' }
+						end
+						doneKeys = filtered
+					end
 					local rawConfirm = false
 					if not slotHandled then
 						for side = 1, 2 do
