@@ -5110,7 +5110,30 @@ function start.f_stageMenu()
 		end
 		return heldBy(source, side) or heldBy(source, -1)
 	end
+	-- The one read that does not depend on what a key is called: the player's own
+	-- direction commands. The stage slot cycler already asks the engine this way
+	-- (commandGetState), and a direction the player can walk with is a direction
+	-- this screen can move on, whatever key it sits on.
+	local commandFor = { U = 'holdup', D = 'holddown', L = 'holdback', R = 'holdfwd' }
+	local function commandHeld(dir, side)
+		local name = commandFor[dir]
+		if name == nil then
+			return false
+		end
+		local cmd = start.f_menuCmd(side)
+		if cmd ~= nil then
+			local ok, hit = pcall(commandGetState, cmd, name)
+			if ok and hit then
+				return true
+			end
+		end
+		local ok, hit = pcall(commandGetState, side, name)
+		return ok and hit and true or false
+	end
 	local function dirHeld(dir, side)
+		if commandHeld(dir.dir, side) then
+			return true
+		end
 		for _, source in ipairs(dir.sources) do
 			if sourceHeld(source, side) then
 				return true
