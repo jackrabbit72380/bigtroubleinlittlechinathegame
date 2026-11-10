@@ -4059,10 +4059,15 @@ function start.f_teamMenu(side, t)
 			textImgDraw(motif.select_info['p' .. side].teammenu.selftitle.TextSpriteData)
 		end
 		--Draw team cursor
+		--The arrow art points right from its pivot, and the motif draws one
+		--sprite for both sides, so P2's copy came out aiming away from the
+		--mode it marks. It is drawn mirrored here instead, which puts the tip
+		--on the word for both players.
 		main.f_animPosDraw(
 			motif.select_info['p' .. side].teammenu.item.cursor.AnimData,
 			(start.p[side].teamMenu - 1) * metricW(motif.select_info['p' .. side].teammenu.item.spacing),
-			(start.p[side].teamMenu - 1) * metricH(motif.select_info['p' .. side].teammenu.item.spacing)
+			(start.p[side].teamMenu - 1) * metricH(motif.select_info['p' .. side].teammenu.item.spacing),
+			(side == 1) and 1 or -1
 		)
 		local teammenu = motif.select_info['p' .. side].teammenu
 		local itemCfg = teammenu.item
@@ -4089,8 +4094,30 @@ function start.f_teamMenu(side, t)
 			--build that cannot report text width. Everything else measures itself.
 			wordW = 143
 		end
+		--The markers also have to stop short of the portrait grid: four of them
+		--at the old fixed 38px pitch reached over its first column. The row now
+		--measures the free band (longest mode word to the grid edge) and
+		--tightens its own pitch to fit inside it, so no offset has to be
+		--hand-nudged and a wider marker count still lands inside the band.
+		local ICON_SPR_W, ICON_SPR_AXIS, ICON_MARGIN = 30, 14, 10
+		local iconCount = math.max(main.numSimul[2], main.numTurns[2], main.numTag[2], 1)
+		local itemX = metricW(teammenu.pos)
+		local gridX0 = metricW(motif.select_info.pos)
+		local cellW = metricW(motif.select_info.cell.size)
+		local cellGapX = dims(motif.select_info.cell.spacing, 2)
+		local gridX1 = gridX0 + motif.select_info.columns * (cellW + cellGapX) - cellGapX
+		local rowStart = itemX + iconDir * (wordW + 18)
+		local rowEdge = (iconDir > 0) and (gridX0 - ICON_MARGIN) or (gridX1 + ICON_MARGIN)
+		local band = (rowEdge - rowStart) * iconDir
+		local iconPitch = 38
+		if iconCount > 1 then
+			local fit = math.floor((band - (ICON_SPR_W - ICON_SPR_AXIS)) / (iconCount - 1))
+			if fit < iconPitch then
+				iconPitch = (fit > ICON_SPR_W) and fit or ICON_SPR_W
+			end
+		end
 		local iconX0 = iconDir * (wordW + 18)
-		local iconSpacingX = iconDir * 38
+		local iconSpacingX = iconDir * iconPitch
 		local iconY0 = 10
 		for i = 1, #t do
 			local x = (i - 1) * spacingX

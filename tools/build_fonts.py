@@ -485,6 +485,11 @@ SECTION_LAYOUT = {
         ("p1.teammenu.item.cursor.spr", "180,0"),
         ("p2.teammenu.item.cursor.anim", "-1"),
         ("p2.teammenu.item.cursor.spr", "180,0"),
+        # The arrow's pivot sits on its tip, so its offset is the gap between
+        # the tip and the mode word. It was 45px out, which read as a stray
+        # mark in the margin; 8px puts the tip on the word it points at.
+        ("p1.teammenu.item.cursor.offset", "-8, 0"),
+        ("p2.teammenu.item.cursor.offset", "8, 0"),
         # "TEAM MODE" was drawn through a perspective projection: yangle 52.5 on
         # both sides, so the heading came out as a skewed parallelogram that read
         # as a broken face next to the upright Single/Simul/Tag/Turns list. It is
