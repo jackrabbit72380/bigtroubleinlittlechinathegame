@@ -326,6 +326,12 @@ SECTION_LAYOUT = {
         ("menu.item.font", f"{D},0,0, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
         ("menu.item.spacing", "0, 40"),
+        # The item window is what clips the rows, and the engine derives its
+        # bottom from this margin, not from the row size: pos.y + 8 * pitch +
+        # margins.y[2]. At the stock 30 that is 684 while the ninth row runs to
+        # 697, so the engine sliced the bottom third off "Leave Chinatown". 64
+        # puts the window edge at 718, past the last row and still on screen.
+        ("menu.window.margins.y", "40, 64"),
         # Nine top-level rows, so the window has to hold all nine at once - one
         # fewer and the last entry only exists after scrolling.
         ("menu.window.visibleitems", "9"),

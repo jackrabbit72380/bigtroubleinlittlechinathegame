@@ -179,7 +179,7 @@ textinput.overlay.alpha = 0, 128
 
 ; These parameters define the window in which the items are visible
 ; in.
-menu.window.margins.y = 40, 30
+menu.window.margins.y = 40, 64
 menu.window.visibleitems = 9
 menu.boxcursor.visible = 0         ;Set to 1 to enable default cursor display
 menu.boxcursor.tween.snap = 1      ;Set to 0 to disable cursor snap on menu section change
