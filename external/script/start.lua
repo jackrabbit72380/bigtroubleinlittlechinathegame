@@ -3919,8 +3919,13 @@ function start.f_selectScreen()
 						end
 						return owners
 					end
-					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
-						or { "a", "b", "c", "x", "y", "z" }
+					-- The wall is picked with the start button, and nothing else. The
+					-- punch buttons sit on the A, S and D keys on a default keyboard, so any
+					-- of them could start a match on a key a player walks with; none of them
+					-- picks the stage here. One press of the start button takes the map - a
+					-- single press, like picking a character - and D cannot start a match on
+					-- this screen whatever it is bound to.
+					local doneKeys = { 's' }
 					local rawConfirm = false
 					if not slotHandled then
 						for side = 1, 2 do
