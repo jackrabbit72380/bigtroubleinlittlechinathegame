@@ -3417,6 +3417,18 @@ function start.f_selectScreen()
 	if stageListNo > #main.t_selectableStageSlots then
 		stageListNo = #main.t_selectableStageSlots
 	end
+	-- A wall that opens is never already confirmed. stageEnd outlives the screen, so
+	-- a leftover from an earlier visit left the wall skipping its own input: the
+	-- cards were drawn, the cursor never ran, and the first confirm key took the
+	-- screen straight to the match.
+	stageEnd = false
+	-- One note of the key tables this build actually carries, so a wall that does
+	-- not answer can be read instead of guessed at.
+	pcall(main.f_printTable, {
+		cell = motif.select_info.cell,
+		done = motif.select_info.done,
+		stage = motif.select_info.stage,
+	}, 'debug/stage_wall_keys.txt')
 	local stageRef = start.f_stageMenuRef()
 
 	-- Reset stage portrait animation if it was already seen when entering the select screen
