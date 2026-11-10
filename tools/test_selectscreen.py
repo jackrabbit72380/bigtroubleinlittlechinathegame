@@ -442,10 +442,11 @@ def check_stage_wall(problems):
     if int(step(step(2, "U", COUNT, COLS, True), "D", COUNT, COLS, True)) != 1:
         problems.append("a column clamped through RANDOM does not land on the first card")
     # all four arrows, read for both players, not just one key for one of them
-    for needle, why in (("stageKeysOf(stageInfo.skip and stageInfo.skip.previous", "left"),
-                        ("stageKeysOf(stageInfo.skip and stageInfo.skip.next", "right"),
-                        ("stageKeysOf(stageInfo.previous", "up"),
-                        ("stageKeysOf(stageInfo.next", "down"),
+    for needle, why in (("keyList('left', 'B')", "left"),
+                        ("keyList('right', 'F')", "right"),
+                        ("keyList('up', 'U')", "up"),
+                        ("keyList('down', 'D')", "down"),
+                        ("pcall(getInput", "input reads that cannot raise"),
                         ("for side = 1, 2 do", "both players")):
         if needle not in text:
             problems.append("the stage wall does not read %s from %s" % (why, "either player" if why == "both players" else "the arrows"))

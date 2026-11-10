@@ -4815,20 +4815,43 @@ end
 -- defines nothing. Filled here rather than at load time because the motif table is
 -- not necessarily complete when this file is first read.
 function start.f_selStageKeys()
+	-- This engine's direction key names are U, D, B (back, i.e. left) and F
+	-- (forward, i.e. right). The theme used to name the stage keys L and R here,
+	-- and those are not key names at all: every getInput() on them raised, so the
+	-- wall answered no key and each press fell through to the map confirm. They
+	-- are normalised to B and F here, for anything that reads them; the wall itself
+	-- moves on the character grid's cell keys (start.f_stageMenu).
 	local si = motif and motif.select_info
 	local stage = si and si.stage
 	if stage == nil then
 		return
 	end
+	local function normalise(group, fallback)
+		local source = group.key
+		local keys = {}
+		for _, k in ipairs(type(source) == 'table' and source or { source }) do
+			local name = tostring(k)
+			if name == 'L' then
+				name = 'B'
+			elseif name == 'R' then
+				name = 'F'
+			end
+			table.insert(keys, name)
+		end
+		if #keys == 0 then
+			table.insert(keys, fallback)
+		end
+		group.key = keys
+	end
 	stage.next = stage.next or {}
-	stage.next.key = stage.next.key or { 'U', 'R' }
+	normalise(stage.next, 'D')
 	stage.previous = stage.previous or {}
-	stage.previous.key = stage.previous.key or { 'D', 'L' }
+	normalise(stage.previous, 'U')
 	stage.skip = stage.skip or {}
 	stage.skip.next = stage.skip.next or {}
-	stage.skip.next.key = stage.skip.next.key or { 'U', 'R' }
+	normalise(stage.skip.next, 'F')
 	stage.skip.previous = stage.skip.previous or {}
-	stage.skip.previous.key = stage.skip.previous.key or { 'D', 'L' }
+	normalise(stage.skip.previous, 'B')
 end
 
 function start.f_stageSlotSelected(group)
@@ -4906,30 +4929,45 @@ function start.f_stageMenu()
 		stageListNo = nextNo
 		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
 	end
-	local stageInfo = motif.select_info.stage
-	-- the motif's binding first, then the plain arrow, so both work
-	local function stageKeysOf(group, fallback)
-		local keys = { fallback }
-		if group ~= nil and group.key ~= nil then
-			if type(group.key) == 'table' then
-				for _, k in ipairs(group.key) do table.insert(keys, k) end
-			else
-				table.insert(keys, group.key)
+	-- The wall moves on the character grid's own keys, so the stage screen answers
+	-- the same WASD, IJKL and arrow bindings the grid does. The motif's cell keys
+	-- are used when it defines them, and this engine's direction names when it does
+	-- not: U, D, B (back, left) and F (forward, right).
+	local cellKeys = motif.select_info.cell
+	local function keyList(cellName, fallback)
+		local keys = {}
+		local group = cellKeys and cellKeys[cellName]
+		local source = group and group.key
+		if type(source) == 'table' then
+			for _, k in ipairs(source) do
+				table.insert(keys, tostring(k))
 			end
+		elseif source ~= nil then
+			table.insert(keys, tostring(source))
+		end
+		if #keys == 0 then
+			table.insert(keys, fallback)
 		end
 		return keys
 	end
 	local directions = {
-		{ dir = 'L', keys = stageKeysOf(stageInfo.skip and stageInfo.skip.previous, 'L') },
-		{ dir = 'R', keys = stageKeysOf(stageInfo.skip and stageInfo.skip.next, 'R') },
-		{ dir = 'U', keys = stageKeysOf(stageInfo.previous, 'U') },
-		{ dir = 'D', keys = stageKeysOf(stageInfo.next, 'D') },
+		{ dir = 'L', keys = keyList('left', 'B') },
+		{ dir = 'R', keys = keyList('right', 'F') },
+		{ dir = 'U', keys = keyList('up', 'U') },
+		{ dir = 'D', keys = keyList('down', 'D') },
 	}
+	-- A key name this engine does not know raises inside getInput, and one bad name
+	-- must not take the whole screen down with it - that is what left the wall dead
+	-- to every key. Each read is guarded, and every player is asked, then "any".
 	local function directionHeld(keys)
 		for side = 1, 2 do
-			if getInput(side, keys) then return true end
+			local ok, hit = pcall(getInput, side, keys)
+			if ok and hit then
+				return true
+			end
 		end
-		return getInput(-1, keys) and true or false
+		local ok, hit = pcall(getInput, -1, keys)
+		return ok and hit and true or false
 	end
 	-- Which player is on the stage cursor: the picked map is outlined in their
 	-- colour, so a two-player pick shows whose choice it is. It reads the same
@@ -4938,7 +4976,8 @@ function start.f_stageMenu()
 	-- handed to the engine where it wants a list.
 	for side = 1, 2 do
 		for _, dir in ipairs(directions) do
-			if getInput(side, dir.keys) then
+			local ok, hit = pcall(getInput, side, dir.keys)
+			if ok and hit then
 				start.stageSide = side
 				break
 			end
