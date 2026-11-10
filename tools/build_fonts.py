@@ -301,10 +301,10 @@ SECTION_LAYOUT = {
         # (x 470..1000) carries no art at all from y 300 down to y 690, where the
         # crowd's heads begin. The logo's own ink stops at y 330.
         #
-        # So the nine rows run 344..686: the block starts 14px under the logo and
-        # the last row's ink ends 4px above the first head. That leaves 342px for
-        # nine rows, which is a 38px pitch and a 0.46 text scale (the face's 77px
-        # ink becomes 35px, with ~3px of air between rows). At the full 0.75 the
+        # So the nine rows run 342..696: the block starts 12px under the logo and the
+        # last row's ink ends about 4px above the first head. That leaves 354px for
+        # nine rows, which is a 39px pitch and a 0.47 text scale (the face's 77px
+        # ink becomes 36px, with ~3px of air between rows). At the full 0.75 the
         # rows are 58px tall and the block needs 470px, so it would cut through
         # the fighters - the one thing the empty area exists to avoid.
         #
@@ -313,7 +313,7 @@ SECTION_LAYOUT = {
         # a quarter-screen to its right. Centre-aligned (0), so a long label grows
         # either side of that axis: the longest, "Tournament of Storms", spans
         # about 424px and stays inside the black column.
-        ("menu.pos", "726, 344"),
+        ("menu.pos", "726, 342"),
         # The keys this screen's script reads. options.lua and start.lua call
         # getInput with motif.title_info.menu.done.key and the section defined
         # no menu keys at all, so nothing confirmed anything here; the bindings
@@ -324,7 +324,7 @@ SECTION_LAYOUT = {
         # rightwards off the column.
         ("menu.item.font", f"{D},0,0, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
-        ("menu.item.spacing", "0, 38"),
+        ("menu.item.spacing", "0, 39"),
         # Nine top-level rows, so the window has to hold all nine at once - one
         # fewer and the last entry only exists after scrolling.
         ("menu.window.visibleitems", "9"),
