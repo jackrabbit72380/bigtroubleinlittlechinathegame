@@ -3869,24 +3869,36 @@ function start.f_selectScreen()
 					-- the command of every player still choosing goes into one list, and the
 					-- button that picks a character picks the stage. Both players can walk
 					-- the wall and both can pick on it.
-					local owners = {}
-					for side = 1, 2 do
-						local cmds = start.p[side] and start.p[side].t_selCmd
-						if cmds then
-							for _, entry in ipairs(cmds) do
-								if entry.cmd ~= nil then
-									table.insert(owners, entry.cmd)
+					local function sideOwners(side)
+						local owners, seen = {}, {}
+						if main.coop and (side == 1 or gameMode('versuscoop')) then
+							for _, v in ipairs(start.p[side].t_selCmd) do
+								if v.cmd ~= nil and not seen[v.cmd] then
+									table.insert(owners, v.cmd)
+									seen[v.cmd] = true
 								end
 							end
+						else
+							local cmd = start.f_menuCmd(side)
+							if cmd ~= nil then
+								table.insert(owners, cmd)
+							end
 						end
+						return owners
 					end
 					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
 						or { "a", "b", "c", "x", "y", "z" }
 					local confirmPressed = slotSelected
 					if not confirmPressed and not slotHandled then
-						if #owners > 0 then
-							local ok, hit = pcall(getInput, owners, doneKeys)
-							confirmPressed = ok and hit and true or false
+						for side = 1, 2 do
+							local owners = sideOwners(side)
+							if #owners > 0 then
+								local ok, hit = pcall(getInput, owners, doneKeys)
+								if ok and hit then
+									confirmPressed = true
+									break
+								end
+							end
 						end
 						-- A direction being held is not a confirm on its own: a cursor on its
 						-- way somewhere must not pick the map on the way past.
@@ -5049,7 +5061,17 @@ function start.f_stageMenu()
 		end
 		return false
 	end
+	-- The grid reads its directions with the number start.f_menuCmd() hands it, so
+	-- the wall asks the same way: that number first, then the side itself, then "any
+	-- player", and the plain direction name last.
 	local function sourceHeld(source, side)
+		if source == nil then
+			return false
+		end
+		local cmd = start.f_menuCmd(side)
+		if cmd ~= nil and heldBy(source, cmd) then
+			return true
+		end
 		return heldBy(source, side) or heldBy(source, -1)
 	end
 	local function dirHeld(dir, side)
@@ -5057,6 +5079,10 @@ function start.f_stageMenu()
 			if sourceHeld(source, side) then
 				return true
 			end
+		end
+		local cmd = start.f_menuCmd(side)
+		if cmd ~= nil and heldBy({ dir.name }, cmd) then
+			return true
 		end
 		return heldBy({ dir.name }, side) or heldBy({ dir.name }, -1)
 	end
