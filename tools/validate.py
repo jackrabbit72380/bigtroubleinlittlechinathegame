@@ -700,9 +700,30 @@ def check_menu_theme():
             err("menu theme: [%s] rows centre on y=%.0f, not the frame's middle"
                 % (name, centre))
 
-    # The title list is the third centred column, on the wordmark's axis. It is
-    # not centred vertically on purpose - the logo fills the top half - so only
+    # The title list is the third centred column, on the wordmark's own axis. It
+    # is not centred vertically on purpose - the logo fills the top half - so only
     # the horizontal axis is enforced here, plus the rows fitting the frame.
+    # That axis is measured rather than assumed: art_src/ui/title_logo.png carries
+    # the painted wordmark wherever the artist put it, and the menu centres under
+    # that ink. Without a plate the drawn wordmark is centred, so the frame's
+    # middle is the right answer.
+    def wordmark_axis(frame_width):
+        for relative in ("art_src/ui/title_logo.png", "concept_art/ui/title_logo.png"):
+            path = os.path.join(ROOT, *relative.split("/"))
+            if not os.path.isfile(path):
+                continue
+            try:
+                from PIL import Image   # only the art checks need Pillow
+                with Image.open(path) as plate:
+                    box = plate.convert("RGBA").getchannel("A").getbbox()
+                    width = plate.size[0]
+            except (OSError, ValueError):
+                continue
+            if box and width:
+                return (box[0] + box[2]) / 2.0 * frame_width / width
+        return frame_width / 2.0
+
+    title_axis = wordmark_axis(frame_w)
     for name, keys in values.items():
         if name.lower() != "title info":
             continue
@@ -714,9 +735,9 @@ def check_menu_theme():
             rows = max(1, int(float(keys.get("menu.window.visibleitems", "10"))))
         except (KeyError, ValueError, IndexError):
             continue
-        if abs(pos[0] - frame_w / 2.0) > 0.5:
-            err("menu theme: [%s] column is at x=%.0f, not the wordmark's axis"
-                % (name, pos[0]))
+        if abs(pos[0] - title_axis) > 1.5:
+            err("menu theme: [%s] column is at x=%.0f, not the wordmark's axis "
+                "of %.0f" % (name, pos[0], title_axis))
         if align != 0 or active != 0:
             err("menu theme: [%s] rows are not centre-aligned, so the column "
                 "does not centre under the logo" % name)

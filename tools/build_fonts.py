@@ -295,17 +295,25 @@ PAUSE_LAYOUT = (
 
 SECTION_LAYOUT = {
     "Title Info": (
-        # The same centred column as the pause and options lists, on the
-        # wordmark's own axis: labels are centre-aligned (0) on 1920/2 = 960, so
-        # every row centres under the centred logo instead of hanging off a
-        # left-aligned edge at 800 - the column used to be right-aligned at 1240,
-        # which pushed long labels off the frame, then left-aligned at 800, which
-        # left the block looking shifted. It stays at 470 instead of being
-        # centred vertically: the wordmark fills the top half of the screen, and
-        # a centred block would sit through "CHINA". From 470 the nine rows at a
-        # 56px pitch end at 963, which leaves the bottom headroom the logo has
-        # above them.
-        ("menu.pos", "960, 470"),
+        # The title menu sits in the hole the painted backdrop leaves under the
+        # wordmark, not across the fighters below it. Measured on
+        # art_src/ui/splash.png at 1920x1080: the column under the logo
+        # (x 470..1000) carries no art at all from y 300 down to y 690, where the
+        # crowd's heads begin. The logo's own ink stops at y 330.
+        #
+        # So the nine rows run 344..686: the block starts 14px under the logo and
+        # the last row's ink ends 4px above the first head. That leaves 342px for
+        # nine rows, which is a 38px pitch and a 0.46 text scale (the face's 77px
+        # ink becomes 35px, with ~3px of air between rows). At the full 0.75 the
+        # rows are 58px tall and the block needs 470px, so it would cut through
+        # the fighters - the one thing the empty area exists to avoid.
+        #
+        # x is the logo's own axis, (471+981)/2 = 726, so every label centres
+        # under the wordmark instead of on the frame's middle at 960, which reads
+        # a quarter-screen to its right. Centre-aligned (0), so a long label grows
+        # either side of that axis: the longest, "Tournament of Storms", spans
+        # about 424px and stays inside the black column.
+        ("menu.pos", "726, 344"),
         # The keys this screen's script reads. options.lua and start.lua call
         # getInput with motif.title_info.menu.done.key and the section defined
         # no menu keys at all, so nothing confirmed anything here; the bindings
@@ -316,8 +324,10 @@ SECTION_LAYOUT = {
         # rightwards off the column.
         ("menu.item.font", f"{D},0,0, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
-        ("menu.item.spacing", "0, 56"),
-        ("menu.window.visibleitems", "10"),
+        ("menu.item.spacing", "0, 38"),
+        # Nine top-level rows, so the window has to hold all nine at once - one
+        # fewer and the last entry only exists after scrolling.
+        ("menu.window.visibleitems", "9"),
         # The engine's own footer ("I.K.E.M.E.N. GO" bottom-left, build number
         # bottom-right) is drawn from these keys. Deleting them did not remove
         # it - the engine falls back to its stock footer - so they are written
