@@ -22,26 +22,23 @@ DEF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 
 def caption_scale():
-    """The text scale that draws the caption face 67.5 units tall.
+    """The size every caption on this screen is drawn at: the main menu's own.
 
-    The face is baked at twice the pixels so 4K samples real detail, and every
-    text that draws it carries half the scale to stay the same size on screen.
-    Read it off the shipped face instead of hard-coding the number, so the check
-    still means "one size" after the next re-bake.
+    One text size for the whole game means one reference, so this reads the main
+    menu's scale out of the motif rather than holding a copy of it. A copy is how
+    the captions were left at 0.75 while the menu above them sat at 0.48, and how
+    a test went on passing while the two screens drew different sizes.
     """
-    cell = 45.0
-    face = os.path.join(os.path.dirname(DEF), "fonts", "Display.def")
-    if os.path.isfile(face):
-        with open(face, encoding="utf-8-sig", errors="surrogateescape") as fh:
-            for line in fh:
-                if line.strip().lower().startswith("size"):
-                    try:
-                        cell = float(line.split("=", 1)[1].split(",")[1]) or 45.0
-                    except (IndexError, ValueError):
-                        pass
-                    break
-    scale = 67.5 / cell
-    return "%g,%g" % (scale, scale)
+    import os as _os
+    root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    text = open(_os.path.join(root, "data", "ikemen1", "system.def"),
+                encoding="utf-8", errors="replace").read()
+    block = re.search(r"\[Title Info\](.*?)(?=\n\[|\Z)", text, re.S | re.I)
+    hit = block and re.search(r"^\s*menu\.item\.scale\s*=\s*([^;\r\n]+)",
+                              block.group(1), re.M | re.I)
+    return hit.group(1).strip().replace(" ", "") if hit else "0.48,0.48"
+
+
 SFF = os.path.join(ROOT, "data", "ikemen1", "system.sff")
 
 

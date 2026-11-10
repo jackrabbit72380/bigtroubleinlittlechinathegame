@@ -1774,6 +1774,94 @@ def halve_paired_scales(text):
     return "".join(out)
 
 
+# One text size for the whole game, and it is the main menu's.
+#
+# The main menu draws the 90px menu cell at 0.48, so its letters are 43px on
+# screen; every other screen was left at 0.75 and drew the same face at 68px, and
+# the Body-face lines under them at 30px, so moving from the title menu into
+# options or pause changed the size of the type. Rows were pitched at 74, 71 or
+# 46 against the main menu's 40, which is what left those lists spread out, and
+# one screen anchored its column at 621 - a number from the old 1280-wide motif.
+#
+# This pass runs last, after every per-section layout, and settles all of it: the
+# text scale, the row pitch (with the highlight band cut to one row of it) and the
+# column. Each family gets the scale that puts its own face on 43px, so Display
+# stays at 0.48 and Body comes up from 0.75 to 1.08 - both land on the same
+# letter height, which is the point.
+MENU_INK = 43.2                # the main menu's letters: 90px cell x 0.48
+MENU_PITCH = 40                # the main menu's own row pitch
+# fontN -> the cell height that face draws, for the families this pass sizes
+FACE_INK = {"10": 90.0, "11": 40.0, "12": 90.0}
+MIDDLE_X = 960                 # the middle of the 1920 frame
+
+
+def scale_on_menu_ink(ink):
+    """The draw scale that puts a face of this cell height on the menu's 43px."""
+    want = MENU_INK / ink
+    text = ("%.3f" % want).rstrip("0").rstrip(".")
+    return "%s, %s" % (text, text)
+
+
+def uniform_menu_text(text):
+    """Draw every screen's menu text at the main menu's size, pitch and centre."""
+    families, cur = {}, ""
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("[") and s.endswith("]"):
+            cur = s.strip("[]").strip().lower()
+            families.setdefault(cur, {})
+            continue
+        m = KEY_LINE.match(line)
+        if not m:
+            continue
+        key, value = m.group(2).lower(), m.group(4).strip()
+        face = value.split(",")[0].strip()
+        if key.endswith(".font") and face in FACE_INK:
+            families.setdefault(cur, {})[key[:-len(".font")]] = FACE_INK[face]
+
+    changed, cur = 0, ""
+    out = []
+    for line in text.splitlines(True):
+        body = line.rstrip("\r\n")
+        eol = line[len(body):]
+        s = body.strip()
+        if s.startswith("[") and s.endswith("]"):
+            cur = s.strip("[]").strip().lower()
+            out.append(line)
+            continue
+        m = KEY_LINE.match(body)
+        if not m:
+            out.append(line)
+            continue
+        indent, key, eq, value = m.group(1), m.group(2), m.group(3), m.group(4)
+        low, parts = key.lower(), [v.strip() for v in m.group(4).split(",")]
+        want = None
+        if low in ("menu.item.spacing", "keymenu.item.spacing") and len(parts) > 1:
+            want = "%s, %d" % (parts[0], MENU_PITCH)
+        elif low in ("menu.boxcursor.coords", "keymenu.boxcursor.coords") and len(parts) == 4:
+            # the band is one row tall on the new pitch, so two rows' bands cannot
+            # overlap and the highlight no longer depends on the old pitch
+            want = "%s, %s, %s, %d" % (parts[0], parts[1], parts[2], MENU_PITCH - 1)
+        elif low == "menu.pos" and cur != "title info" and len(parts) > 1:
+            try:
+                if abs(float(parts[0]) - MIDDLE_X) > 200:
+                    want = ", ".join(["%d" % MIDDLE_X] + parts[1:])
+            except ValueError:
+                want = None
+        elif low.endswith(".scale"):
+            ink = families.get(cur, {}).get(low[:-len(".scale")])
+            if ink is not None:
+                want = scale_on_menu_ink(ink)
+        if want is not None and want != value.strip():
+            out.append(indent + key + eq + want + eol)
+            changed += 1
+        else:
+            out.append(line)
+    if changed:
+        print(f"  set {changed} menu value(s) to the main menu's size, pitch and centre")
+    return "".join(out)
+
+
 # The Nakama engine build (RollinJay/IkemenGo-Nakama) has these three title menu
 # items; the stock engine has no handler for them. Its menu builder prunes
 # itemnames it has no handler for (main.lua, "Remove / recurse submenus"), so the
@@ -1863,6 +1951,7 @@ def main():
         print(f"  matched {matched} menu row(s) to their block's own scale")
     if text != original:
         text = halve_paired_scales(text)
+        text = uniform_menu_text(text)
 
         with open(MOTIF, "w", encoding="utf-8", errors="surrogateescape", newline="") as fh:
             fh.write(text)
