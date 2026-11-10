@@ -1166,28 +1166,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 	local tmpX = selX
 	local tmpY = selY
 	local found = false
-	-- Read a direction without letting one name it does not know hide the rest of
-	-- the table: the motif's own key table first, then its names one at a time, then
-	-- the engine's classic token for that arm. The tokens are U, D, B and F - up,
-	-- down, back and forward - and this build does not answer L and R, which is why
-	-- left and right did nothing while up and down worked.
-	local function keyDown(keys, token)
-		if keys ~= nil then
-			local ok, hit = pcall(getInput, cmd, keys)
-			if ok and hit then
-				return true
-			end
-			for i = 1, #keys do
-				local okOne, hitOne = pcall(getInput, cmd, { keys[i] })
-				if okOne and hitOne then
-					return true
-				end
-			end
-		end
-		local okToken, hitToken = pcall(getInput, cmd, { token })
-		return okToken and hitToken and true or false
-	end
-	if keyDown(motif.select_info.cell.up.key, 'U') or dir == 'U' then
+	if getInput(cmd, motif.select_info.cell.up.key) or dir == 'U' then
 		for i = 1, motif.select_info.rows do
 			selY = selY - 1
 			if selY < 0 then
@@ -1208,7 +1187,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				break
 			end
 		end
-	elseif keyDown(motif.select_info.cell.down.key, 'D') or dir == 'D' then
+	elseif getInput(cmd, motif.select_info.cell.down.key) or dir == 'D' then
 		for i = 1, motif.select_info.rows do
 			selY = selY + 1
 			if selY >= motif.select_info.rows then
@@ -1229,7 +1208,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				break
 			end
 		end
-	elseif keyDown(motif.select_info.cell.left.key, 'B') or dir == 'B' then
+	elseif getInput(cmd, motif.select_info.cell.left.key) or dir == 'B' then
 		if dir ~= nil then
 			found, selX = start.f_searchEmptyBoxes(selX, selY, side, -1)
 		else
@@ -1247,7 +1226,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				end
 			end
 		end
-	elseif keyDown(motif.select_info.cell.right.key, 'F') or dir == 'F' then
+	elseif getInput(cmd, motif.select_info.cell.right.key) or dir == 'F' then
 		if dir ~= nil then
 			found, selX = start.f_searchEmptyBoxes(selX, selY, side, 1)
 		else
