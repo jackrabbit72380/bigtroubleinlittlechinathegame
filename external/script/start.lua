@@ -3739,7 +3739,6 @@ function start.f_selectScreen()
 					stagePhase, stagePhaseFade, stagePhaseWait = false, false, 0
 					start.stageConfirmArmed = false
 					start.stageConfirmQueued = false
-					start.stagePickHold = 0
 					-- the frame is black now: give the last pick back, so the wall
 					-- returns with one player still choosing
 					for side = 2, 1, -1 do
@@ -3805,7 +3804,6 @@ function start.f_selectScreen()
 				stageEnd = false
 				start.stageConfirmArmed = false
 				start.stageConfirmQueued = false
-				start.stagePickHold = 0
 			end
 			if main.stageMenu and not stageEnd then --Stage select
 				start.p[1].screenDelay, start.p[2].screenDelay = 0, 0
@@ -3827,7 +3825,6 @@ function start.f_selectScreen()
 						stagePhase, stagePhaseFade = true, false
 						start.stageConfirmArmed = false
 						start.stageConfirmQueued = false
-						start.stagePickHold = 0
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
 				end
@@ -3917,23 +3914,6 @@ function start.f_selectScreen()
 					end
 					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
 						or { "a", "b", "c", "x", "y", "z" }
-					-- On a default keyboard the x, y and z buttons sit on the A, S and D
-					-- keys, so those three are left out of this screen's pick: WASD cannot
-					-- start a match here under any circumstances. The wall is picked with
-					-- the a, b or c button - Z, X or C - held down, and nothing else.
-					do
-						local filtered = {}
-						for _, k in ipairs(doneKeys) do
-							local name = tostring(k):lower()
-							if name ~= 'x' and name ~= 'y' and name ~= 'z' then
-								table.insert(filtered, name)
-							end
-						end
-						if #filtered == 0 then
-							filtered = { 'a', 'b', 'c' }
-						end
-						doneKeys = filtered
-					end
 					local rawConfirm = false
 					if not slotHandled then
 						for side = 1, 2 do
@@ -3960,21 +3940,13 @@ function start.f_selectScreen()
 					-- And a direction always wins over a confirm. On a keyboard where the
 					-- player's right key is also a punch button, walking the wall must never
 					-- pick a map on the way past.
-					-- A pick on this wall has to be held, not tapped. D is one of the
-					-- player's punch buttons in this screenpack - button z is bound to the
-					-- key D - so a tap of the key a player walks with used to start the
-					-- match. A direction being held always cancels the pick, and a single
-					-- press never counts: only a steady hold with no direction does, so
-					-- tapping keys to find the way across the wall cannot start a match.
+					-- Picking the stage is the character screen's own confirm, unchanged:
+					-- the button that picks a character picks the stage, on one press.
+					-- A direction that is being held still wins over it, so walking with a
+					-- key that is also a button never picks a map on the way past.
 					local confirmPressed = slotSelected
-					local holdPick = rawConfirm and start.stageConfirmArmed
-						and (start.stageHeldDir or 0) == 0
-					if holdPick then
-						start.stagePickHold = (start.stagePickHold or 0) + 1
-					else
-						start.stagePickHold = 0
-					end
-					if not confirmPressed and holdPick and start.stagePickHold >= 40 then
+					if not confirmPressed and rawConfirm and start.stageConfirmArmed
+						and (start.stageHeldDir or 0) == 0 then
 						confirmPressed = true
 					end
 					-- The wall does not pick for the player when the character-select timer
@@ -4027,9 +3999,6 @@ function start.f_selectScreen()
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
 				end
 				textImgReset(stageTextData)
-				if (start.stagePickHold or 0) > 0 then
-					stage_text = stage_text .. '   -   HOLD TO PICK'
-				end
 				if start.stageDbg ~= nil then
 					stage_text = stage_text .. '  ' .. start.stageDbg
 				end
