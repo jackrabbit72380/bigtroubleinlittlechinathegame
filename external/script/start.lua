@@ -4099,7 +4099,13 @@ function start.f_teamMenu(side, t)
 		--measures the free band (longest mode word to the grid edge) and
 		--tightens its own pitch to fit inside it, so no offset has to be
 		--hand-nudged and a wider marker count still lands inside the band.
-		local ICON_SPR_W, ICON_SPR_AXIS, ICON_MARGIN = 30, 14, 10
+		--ICON_MARGIN is the clear gap kept between the last marker and the grid,
+		--and ICON_MIN_PITCH the closest two markers may sit. The pitch is allowed
+		--to go under the sprite's own 30px width: its clear art is narrower than
+		--that box, and holding the pitch at 30 was what still let a fourth marker
+		--reach the grid edge.
+		local ICON_SPR_W, ICON_SPR_AXIS, ICON_MARGIN = 30, 14, 16
+		local ICON_MIN_PITCH = 22
 		local iconCount = math.max(main.numSimul[2], main.numTurns[2], main.numTag[2], 1)
 		local itemX = metricW(teammenu.pos)
 		local gridX0 = metricW(motif.select_info.pos)
@@ -4113,7 +4119,7 @@ function start.f_teamMenu(side, t)
 		if iconCount > 1 then
 			local fit = math.floor((band - (ICON_SPR_W - ICON_SPR_AXIS)) / (iconCount - 1))
 			if fit < iconPitch then
-				iconPitch = (fit > ICON_SPR_W) and fit or ICON_SPR_W
+				iconPitch = math.max(fit, ICON_MIN_PITCH)
 			end
 		end
 		local iconX0 = iconDir * (wordW + 18)
