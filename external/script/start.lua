@@ -3801,7 +3801,11 @@ function start.f_selectScreen()
 						stagePhase, stagePhaseFade = true, false
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
-				elseif not stageBack then
+				end
+				if not stageBack then
+					-- The wall takes its input from the first frame. The fade above is
+					-- scenery; waiting on it is what made the wall deaf whenever the fade
+					-- did not report itself finished, while the cards were already up.
 					slotSelected, slotHandled = start.f_stageMenu()
 				end
 				if not timerReset then
@@ -3861,9 +3865,18 @@ function start.f_selectScreen()
 				-- names under them, took the wall's room and put a caption on the same
 				-- row as the stage's own name.
 				if not stageEnd then
-					local confirmPressed = slotSelected or (not slotHandled and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)
-					or { "a", "b", "c", "x", "y", "z" })))
-					local canConfirmStage = ((confirmPressed and not screenDelayInterrupted) or timerSelect == -1) and #main.t_selectableStages > 0
+					-- A direction being held is never a confirm. This screenpack's confirm
+					-- list is a, b, c, x, y and z, and A is also a movement key on a WASD
+					-- keyboard: every attempt to walk the wall left picked the stage and
+					-- started the match on the spot.
+					local steering = (start.stageHeldDir or 0) ~= 0
+					local confirmPressed = slotSelected or (not slotHandled and not steering
+						and getInput(-1, ((motif.select_info.done and motif.select_info.done.key)
+						or { "a", "b", "c", "x", "y", "z" })))
+					-- The wall does not pick for the player when the character-select timer
+					-- runs out. Expiring there started matches before anyone had chosen.
+					local timedOut = timerSelect == -1 and not main.stageMenu
+					local canConfirmStage = ((confirmPressed and not screenDelayInterrupted) or timedOut) and #main.t_selectableStages > 0
 					if canConfirmStage then
 						local preloadReady = true
 						if stageListNo > 0 then
