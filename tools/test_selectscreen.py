@@ -339,9 +339,15 @@ def check_stage_wall(problems):
     # the stage screen's own window, read from the screen instead of typed here
     win = lua.eval("start.stageGrid.window")
     x1, y1, x2, y2 = (float(win[k]) for k in (1, 2, 3, 4))
+    band_top, band_bottom = 72.0, 1000.0
     for i, (x, y, w, h) in enumerate(boxes, 1):
-        if x < x1 - 0.5 or y < y1 - 0.5 or x + w > x2 + 0.5 or y + h > y2 + 0.5:
-            problems.append("stage card %d falls outside the stage window" % i)
+        # this pool is bigger than the window, so the wall may use the band the
+        # screen allows: the window's columns, below the captions, above the names
+        if x < x1 - 0.5 or x + w > x2 + 0.5:
+            problems.append("stage card %d falls outside the wall's columns" % i)
+            break
+        if y < band_top - 0.5 or y + h > band_bottom + 0.5:
+            problems.append("stage card %d leaves the band it may use" % i)
             break
         # and on the screen: a card hanging off the bottom is a card nobody can pick
         if y + h > 1080.5 or y < -0.5:
@@ -366,9 +372,11 @@ def check_stage_wall(problems):
     # the pool this theme ships is twelve stages: four rows, inside the band below
     # the caption row and above the fighter names
     real = lua.eval("start.f_stageGrid(12)")
+    rwin = lua.eval("start.stageGrid.window")
+    ry1, ry2 = float(rwin[2]), float(rwin[4])
     for i in range(1, 13):
-        if float(real[i]["y"]) - 75 < 71.5 or float(real[i]["y"]) + 75 > 1000.5:
-            problems.append("the twelve-stage wall leaves the band it may use")
+        if float(real[i]["y"]) - 75 < ry1 - 0.5 or float(real[i]["y"]) + 75 > ry2 + 0.5:
+            problems.append("the twelve-stage wall does not sit inside its window")
             break
     # and the preview tool's layout must agree with the screen at every pool size,
     # so a preview can never show a wall the game would place somewhere else
