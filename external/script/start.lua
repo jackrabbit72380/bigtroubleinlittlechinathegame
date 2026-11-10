@@ -1166,7 +1166,28 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 	local tmpX = selX
 	local tmpY = selY
 	local found = false
-	if getInput(cmd, motif.select_info.cell.up.key) or dir == 'U' then
+	-- Read a direction without letting one name it does not know hide the rest of
+	-- the table: the motif's own key table first, then its names one at a time, then
+	-- the engine's classic token for that arm. The tokens are U, D, B and F - up,
+	-- down, back and forward - and this build does not answer L and R, which is why
+	-- left and right did nothing while up and down worked.
+	local function keyDown(keys, token)
+		if keys ~= nil then
+			local ok, hit = pcall(getInput, cmd, keys)
+			if ok and hit then
+				return true
+			end
+			for i = 1, #keys do
+				local okOne, hitOne = pcall(getInput, cmd, { keys[i] })
+				if okOne and hitOne then
+					return true
+				end
+			end
+		end
+		local okToken, hitToken = pcall(getInput, cmd, { token })
+		return okToken and hitToken and true or false
+	end
+	if keyDown(motif.select_info.cell.up.key, 'U') or dir == 'U' then
 		for i = 1, motif.select_info.rows do
 			selY = selY - 1
 			if selY < 0 then
@@ -1187,7 +1208,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				break
 			end
 		end
-	elseif getInput(cmd, motif.select_info.cell.down.key) or dir == 'D' then
+	elseif keyDown(motif.select_info.cell.down.key, 'D') or dir == 'D' then
 		for i = 1, motif.select_info.rows do
 			selY = selY + 1
 			if selY >= motif.select_info.rows then
@@ -1208,7 +1229,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				break
 			end
 		end
-	elseif getInput(cmd, motif.select_info.cell.left.key) or dir == 'B' then
+	elseif keyDown(motif.select_info.cell.left.key, 'B') or dir == 'B' then
 		if dir ~= nil then
 			found, selX = start.f_searchEmptyBoxes(selX, selY, side, -1)
 		else
@@ -1226,7 +1247,7 @@ function start.f_cellMovement(selX, selY, cmd, side, snd, dir)
 				end
 			end
 		end
-	elseif getInput(cmd, motif.select_info.cell.right.key) or dir == 'F' then
+	elseif keyDown(motif.select_info.cell.right.key, 'F') or dir == 'F' then
 		if dir ~= nil then
 			found, selX = start.f_searchEmptyBoxes(selX, selY, side, 1)
 		else
@@ -5109,11 +5130,16 @@ function start.f_stageMenu()
 		U = { 'up', 'UP', 'w', 'W', 'i', 'I', 'U' },
 		D = { 'down', 'DOWN', 's', 'S', 'k', 'K', 'D' },
 	}
+	-- The engine answers U and D for up and down but not L and R for left and right:
+	-- the classic tokens are B (back) and F (forward). Up and down working while
+	-- left and right did nothing is exactly that. The tokens are asked for on their
+	-- own, after the grid's own table, so one name the build does not know cannot
+	-- hide the rest of a read.
 	local directions = {
-		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), keyTable(skip.previous)), keys = spelling.L },
-		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), keyTable(skip.next)), keys = spelling.R },
-		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), keyTable(stageKeys.previous)), keys = spelling.U },
-		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), keyTable(stageKeys.next)), keys = spelling.D },
+		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), { 'B' }, { 'L' }, { 'a' }, { 'j' }, keyTable(skip.previous)), keys = spelling.L },
+		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), { 'F' }, { 'R' }, { 'd' }, { 'l' }, keyTable(skip.next)), keys = spelling.R },
+		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), { 'U' }, { 'w' }, { 'i' }, keyTable(stageKeys.previous)), keys = spelling.U },
+		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), { 'D' }, { 's' }, { 'k' }, keyTable(stageKeys.next)), keys = spelling.D },
 	}
 	-- One read, guarded: a name this engine does not know raises inside getInput,
 	-- and one bad source must not take the screen down with it. Each player is
