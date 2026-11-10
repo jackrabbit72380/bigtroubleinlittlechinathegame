@@ -301,13 +301,10 @@ SECTION_LAYOUT = {
         # (x 470..1000) carries no art at all from y 300 down to y 690, where the
         # crowd's heads begin. The logo's own ink stops at y 330.
         #
-        # The game usually shows eight rows here, not nine: the engine drops story mode
-        # when no story arc is installed (main.f_start skips the group), and this
-        # screenpack ships none, so "The Legacy of Lo Pan" never appears. The list
-        # is therefore laid out for the eight rows that do: 334..694, a 45px pitch
-        # at 0.55 of the face (77px of ink becomes 42px, ~2.5px of air), still clear
-        # of the crowd. A ninth row, if story arcs are ever added, would end at 739.
-        # At the full 0.75 the
+        # All nine rows are live now that select.def declares a story arc, and nine is
+        # what the empty band can hold: 334..698 on a 41px pitch at 0.49 of the face
+        # (77px of ink becomes 38px, ~3px of air between rows), the last row ending
+        # just above the heads in the painting. At the full 0.75 the
         # rows are 58px tall and the block needs 470px, so it would cut through
         # the fighters - the one thing the empty area exists to avoid.
         #
@@ -327,7 +324,7 @@ SECTION_LAYOUT = {
         # rightwards off the column.
         ("menu.item.font", f"{D},0,0, {GOLD}"),
         ("menu.item.active.font", f"{DA},0,0, {BRIGHT}"),
-        ("menu.item.spacing", "0, 45"),
+        ("menu.item.spacing", "0, 41"),
         # Nine top-level rows, so the window has to hold all nine at once - one
         # fewer and the last entry only exists after scrolling.
         ("menu.window.visibleitems", "9"),

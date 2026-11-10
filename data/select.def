@@ -115,3 +115,22 @@ arcade.maxmatches = 3,2,1,1,0,0,0,0,0,0
 team.maxmatches = 2,1,1,1,0,0,0,0,0,0
 timeattack.maxmatches = 4,2,1,1,0,0,0,0,0,0
 survival.maxmatches = -1,0,0,0,0,0,0,0,0,0
+ ; The story campaign runs the same ladder as arcade, under its own
+ ; mode name, so its records and unlocks stay separate from a quick
+ ; arcade run. Without an arc declared here the engine drops the whole
+ ; Story Mode group from the title menu (main.f_start).
+ story.maxmatches = 3,2,1,1,0,0,0,0,0,0
+
+;-------------------------------------------------------------------------------
+[StoryMode]
+ ; The Legacy of Lo Pan - this screenpack's one story arc.
+ ;
+ ; name is the GameMode the arc reports and the key [Options] uses for its ladder
+ ; (story.maxmatches above). path is a Lua file: the engine's own default mode
+ ; script is what arcade mode runs, so the campaign plays this game's ladder with
+ ; this game's roster instead of needing a second copy of the mode logic.
+ ; unlock is Lua evaluated on every load; true means always available.
+ name = story
+ displayname = The Legacy of Lo Pan
+ path = external/script/default.lua
+ unlock = true

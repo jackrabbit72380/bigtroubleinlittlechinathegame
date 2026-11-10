@@ -144,10 +144,10 @@ fadeout.time = 10
 menu.pos = 726, 334
 menu.tween.factor = 0.5
 menu.item.font = 10,0,0, 240, 196, 88
-menu.item.scale = 0.55, 0.55
+menu.item.scale = 0.49, 0.49
 menu.item.active.font = 12,0,0, 255, 228, 140
-menu.item.active.scale = 0.55, 0.55
-menu.item.spacing = 0, 45
+menu.item.active.scale = 0.49, 0.49
+menu.item.spacing = 0, 41
 menu.item.layerno = 2
 menu.item.active.layerno = 2
 
@@ -193,6 +193,11 @@ cancel.snd = 100,2
 ; Flexible submenu grouping.
 ;Full documentation of this feature is available on Ikemen GO features wiki
 
+; Submenu: Story Mode
+menu.itemname.storymode = The Legacy of Lo Pan
+; story arcs menu items are automatically added before storymode.back
+menu.itemname.storymode.back = Return to Chinatown
+
 ; Submenu: Arcade
 menu.itemname.menuarcade = Dragon's Challenge
 menu.itemname.menuarcade.arcade = Lo Pan's Legacy
@@ -207,11 +212,6 @@ menu.itemname.menuversus.teamversus = Gang War
 menu.itemname.menuversus.versuscoop = Blood Oath
 menu.itemname.menuversus.freebattle = Street Showdown
 menu.itemname.menuversus.back = Return to Chinatown
-
-; Submenu: Story Mode
-menu.itemname.storymode = The Legacy of Lo Pan
-; story arcs menu items are automatically added before storymode.back
-menu.itemname.storymode.back = Return to Chinatown
 
 ; Submenu: Network
 menu.itemname.menunetwork = Tournament of Storms
