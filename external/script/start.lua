@@ -1855,9 +1855,11 @@ start.stageGrid = {
 	-- 0 = as many whole cards as the window fits across; a number pins the count
 	cols = 0,
 	pad = 14,
-	-- the wall's own window: clear of the PLAYER captions above it, and of the two
-	-- fighter names on y=1005 below it
-	window = { 80, 300, 1840, 970 },
+	-- The wall's own window: clear of the PLAYER captions above it and of the two
+	-- fighter names on y=1005 below it. It is 830px tall because thirteen stages
+	-- make five rows of this card - 5 * 150 + 4 * 14 = 806 - and at 670px tall the
+	-- bottom row hung 26px off the end of a 1080 frame, where nobody could see it.
+	window = { 80, 170, 1840, 1000 },
 }
 
 function start.f_stageGrid(count, cols, pad, window)

@@ -321,21 +321,27 @@ def check_stage_wall(problems):
     lua = LuaRuntime(unpack_returned_tuples=True)
     lua.execute("start = {}")
     lua.execute(text[start:end])
-    cards = lua.eval("start.f_stageGrid(12)")
+    # the real pool: thirteen stages, which is five rows of the card
+    cards = lua.eval("start.f_stageGrid(13)")
     boxes = []
-    for i in range(1, 13):
+    for i in range(1, 14):
         cell = cards[i]
         if cell is None:
             problems.append("the stage wall has a hole at position %d" % i)
             return
-        boxes.append((float(cell["x"]), float(cell["y"]), float(cell["w"]), float(cell["h"])))
-    # the stage screen's own window (start.stageGrid.window), not the character
-    # select's stage-hint strip at 443,373,1477,708 that the wall used to be
-    # squeezed into
-    x1, y1, x2, y2 = 80.0, 300.0, 1840.0, 970.0
+        # a card's x and y are its centre, so its box is half a card either side
+        w, h = float(cell["w"]), float(cell["h"])
+        boxes.append((float(cell["x"]) - w / 2, float(cell["y"]) - h / 2, w, h))
+    # the stage screen's own window, read from the screen instead of typed here
+    win = lua.eval("start.stageGrid.window")
+    x1, y1, x2, y2 = (float(win[k]) for k in (1, 2, 3, 4))
     for i, (x, y, w, h) in enumerate(boxes, 1):
         if x < x1 - 0.5 or y < y1 - 0.5 or x + w > x2 + 0.5 or y + h > y2 + 0.5:
             problems.append("stage card %d falls outside the stage window" % i)
+            break
+        # and on the screen: a card hanging off the bottom is a card nobody can pick
+        if y + h > 1080.5 or y < -0.5:
+            problems.append("stage card %d runs off the screen" % i)
             break
         if w < 200 or h < 60:
             problems.append("stage card %d is too small to read" % i)
