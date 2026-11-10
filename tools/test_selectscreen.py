@@ -416,8 +416,9 @@ def check_stage_wall(problems):
         ("leaves RANDOM going up", step(0, "U", COUNT, COLS, True), 13),
         ("wraps from RANDOM to the top row", step(0, "D", COUNT, COLS, True), 1),
         ("wraps from the top row to RANDOM", step(1, "U", COUNT, COLS, True), 0),
-        ("stays on RANDOM going left", step(0, "L", COUNT, COLS, True), 0),
-        ("stays on RANDOM going right", step(0, "R", COUNT, COLS, True), 0),
+        ("walks off RANDOM going left onto the last card", step(0, "L", COUNT, COLS, True), 13),
+        ("walks off RANDOM going right onto the first card", step(0, "R", COUNT, COLS, True), 1),
+        ("walks off the short last row going right onto RANDOM", step(13, "R", COUNT, COLS, True), 0),
         ("wraps to the short row with no RANDOM", step(1, "U", COUNT, COLS, False), 13),
         ("wraps to the top with no RANDOM", step(13, "D", COUNT, COLS, False), 1),
         ("a single column is a vertical list", step(2, "D", 5, 1, False), 3),
@@ -426,9 +427,22 @@ def check_stage_wall(problems):
     for why, got, expect in checks:
         if got is None or int(got) != int(expect):
             problems.append("the stage cursor %s (got %s, wanted %d)" % (why, got, expect))
-    # left then right returns to the same card on every stop, so no press can
-    # slide the cursor sideways along a row
+    # left then right returns to the same card on every stop in a row that has
+    # more than one card, so no press can slide the cursor sideways along a row.
+    # A row one card wide has no sideways neighbour of its own - RANDOM is one, and
+    # so is a short last row - and there a sideways press must simply move: that is
+    # the wall's opening position, and answering it with nothing is what left the
+    # whole wall unresponsive.
+    def row_width(card):
+        row = (card - 1) // COLS + 1
+        return min(COLS, COUNT - (row - 1) * COLS)
     for card in range(1, COUNT + 1):
+        if row_width(card) <= 1:
+            for d in ("L", "R", "U", "D"):
+                moved = step(card, d, COUNT, COLS, True)
+                if moved is None or int(moved) == card:
+                    problems.append("a one-card row answers %s with nothing at %d" % (d, card))
+            continue
         back = step(step(card, "L", COUNT, COLS, True), "R", COUNT, COLS, True)
         if back is None or int(back) != card:
             problems.append("left then right does not return to card %d" % card)

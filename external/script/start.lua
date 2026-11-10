@@ -1961,29 +1961,36 @@ function start.f_stageCursorStep(card, dir, count, cols, hasRandom)
 		end
 		return (r - 1) * cols + c
 	end
-	if dir == 'L' then
-		col = col - 1
-		if col < 1 then
-			col = width(row)
+	-- A row one card wide has nowhere to walk along, and RANDOM is exactly that:
+	-- one card under the wall. Left and right on it used to work out the same
+	-- position again and return without moving, so a wall opening on RANDOM - which
+	-- is where it opens - answered left and right with nothing at all. A sideways
+	-- press on a one-card row now carries on into the next row: right to its first
+	-- card, left to its last. A sideways press always moves something.
+	local function stepRow(r, step)
+		r = r + step
+		if r < 1 then
+			r = rows + extra
+		elseif r > rows + extra then
+			r = 1
 		end
-	elseif dir == 'R' then
-		col = col + 1
-		if col > width(row) then
-			col = 1
+		return r
+	end
+	if dir == 'L' or dir == 'R' then
+		local step = (dir == 'R') and 1 or -1
+		if width(row) <= 1 then
+			row = stepRow(row, step)
+			col = (step > 0) and 1 or width(row)
+		else
+			col = col + step
+			if col < 1 then
+				col = width(row)
+			elseif col > width(row) then
+				col = 1
+			end
 		end
-	elseif dir == 'U' then
-		row = row - 1
-		if row < 1 then
-			row = rows + extra
-		end
-		if col > width(row) then
-			col = width(row)
-		end
-	elseif dir == 'D' then
-		row = row + 1
-		if row > rows + extra then
-			row = 1
-		end
+	elseif dir == 'U' or dir == 'D' then
+		row = stepRow(row, (dir == 'U') and -1 or 1)
 		if col > width(row) then
 			col = width(row)
 		end
