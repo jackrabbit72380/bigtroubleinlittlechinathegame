@@ -3738,6 +3738,7 @@ function start.f_selectScreen()
 					stageBack, stageBackFade = false, false
 					stagePhase, stagePhaseFade, stagePhaseWait = false, false, 0
 					start.stageConfirmArmed = false
+					start.stageConfirmQueued = false
 					-- the frame is black now: give the last pick back, so the wall
 					-- returns with one player still choosing
 					for side = 2, 1, -1 do
@@ -3813,6 +3814,7 @@ function start.f_selectScreen()
 						fadeSkip()
 						stagePhase, stagePhaseFade = true, false
 						start.stageConfirmArmed = false
+						start.stageConfirmQueued = false
 						fadeInInit(motif.select_info.fadein.FadeData)
 					end
 				end
@@ -3928,10 +3930,26 @@ function start.f_selectScreen()
 					-- And a direction always wins over a confirm. On a keyboard where the
 					-- player's right key is also a punch button, walking the wall must never
 					-- pick a map on the way past.
+					-- A pick on this wall takes two presses: the first arms it, the
+					-- second locks the map in. D is one of the player's punch buttons in
+					-- this screenpack - button z is bound to the key D - so a movement key
+					-- on a keyboard where that key is also a button used to start the match
+					-- the moment the player tried to walk. Now the worst a wrong key can do
+					-- is arm a pick, and any direction press cancels that again.
 					local confirmPressed = slotSelected
 					if not confirmPressed and rawConfirm and start.stageConfirmArmed
 						and (start.stageHeldDir or 0) == 0 then
-						confirmPressed = true
+						if start.stageConfirmQueued then
+							confirmPressed = true
+						else
+							start.stageConfirmQueued = true
+							start.stageConfirmArmed = false
+							sndPlay(motif.Snd, motif.select_info.stage.swap.snd[1], motif.select_info.stage.swap.snd[2])
+						end
+					end
+					if (start.stageHeldDir or 0) ~= 0 then
+						start.stageConfirmQueued = false
+						start.stageConfirmArmed = false
 					end
 					-- The wall does not pick for the player when the character-select timer
 					-- runs out. Expiring there started matches before anyone had chosen.
@@ -3983,6 +4001,9 @@ function start.f_selectScreen()
 					stage_text = main.f_formatBySpec(motif.select_info.stage.text, {i = stageListNo, s = main.t_selStages[start.f_stageMenuRef()].name})
 				end
 				textImgReset(stageTextData)
+				if start.stageConfirmQueued then
+					stage_text = stage_text .. '   -   PRESS AGAIN TO PICK'
+				end
 				if start.stageDbg ~= nil then
 					stage_text = stage_text .. '  ' .. start.stageDbg
 				end
