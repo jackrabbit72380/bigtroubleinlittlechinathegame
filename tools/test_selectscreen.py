@@ -357,24 +357,44 @@ def check_stage_wall(problems):
     if step is None:
         problems.append("the stage wall has no cursor step")
         return
+    # 13 cards, three across: rows of 3,3,3,3 and a short row of one, with RANDOM
+    # as the row under the wall. The wall is 3 columns wide whatever the count, so
+    # these are the real numbers this screen works with.
+    COUNT, COLS = 13, 3
     checks = (
-        ("left wraps at the first card", step(1, -1, 0, 12), 0),
-        ("left wraps off RANDOM", step(0, -1, 0, 12), 12),
-        ("right wraps at the last card", step(12, 1, 0, 12), 0),
-        ("down steps a row", step(1, 3, 0, 12), 4),
-        ("up steps a row", step(1, -3, 0, 12), 11),
-        ("down wraps off the last row", step(10, 3, 0, 12), 0),
-        ("left wraps to the last map with no RANDOM", step(1, -1, 1, 12), 12),
-        ("right wraps to the first map with no RANDOM", step(12, 1, 1, 12), 1),
+        ("keeps its row moving left", step(2, "L", COUNT, COLS, True), 1),
+        ("keeps its row moving right", step(1, "R", COUNT, COLS, True), 2),
+        ("wraps within its row going left", step(1, "L", COUNT, COLS, True), 3),
+        ("wraps within its row going right", step(3, "R", COUNT, COLS, True), 1),
+        ("keeps its column moving down", step(1, "D", COUNT, COLS, True), 4),
+        ("keeps its column moving up", step(4, "U", COUNT, COLS, True), 1),
+        ("clamps to the short last row", step(12, "D", COUNT, COLS, True), 13),
+        ("is not taken off the wall into another row", step(12, "D", COUNT, COLS, True) in (1, 13), True),
+        ("reaches RANDOM going down off the wall", step(13, "D", COUNT, COLS, True), 0),
+        ("leaves RANDOM going up", step(0, "U", COUNT, COLS, True), 13),
+        ("wraps from RANDOM to the top row", step(0, "D", COUNT, COLS, True), 1),
+        ("wraps from the top row to RANDOM", step(1, "U", COUNT, COLS, True), 0),
+        ("stays on RANDOM going left", step(0, "L", COUNT, COLS, True), 0),
+        ("stays on RANDOM going right", step(0, "R", COUNT, COLS, True), 0),
+        ("wraps to the short row with no RANDOM", step(1, "U", COUNT, COLS, False), 13),
+        ("wraps to the top with no RANDOM", step(13, "D", COUNT, COLS, False), 1),
+        ("a single column is a vertical list", step(2, "D", 5, 1, False), 3),
+        ("an empty wall stays put", step(0, "D", 0, COLS, False), 0),
     )
     for why, got, expect in checks:
-        if got is None or int(got) != expect:
+        if got is None or int(got) != int(expect):
             problems.append("the stage cursor %s (got %s, wanted %d)" % (why, got, expect))
-    no = 1
-    for _ in range(13):
-        no = step(no, 1, 0, 12)
-    if int(no) != 1:
-        problems.append("a full lap of the wall does not return to where it started")
+    # left then right returns to the same card on every stop, so no press can
+    # slide the cursor sideways along a row
+    for card in range(1, COUNT + 1):
+        back = step(step(card, "L", COUNT, COLS, True), "R", COUNT, COLS, True)
+        if back is None or int(back) != card:
+            problems.append("left then right does not return to card %d" % card)
+    # and up then down does the same down every full column
+    for card in range(1, 10):
+        back = step(step(card, "U", COUNT, COLS, True), "D", COUNT, COLS, True)
+        if back is None or int(back) != card:
+            problems.append("up then down does not return to card %d" % card)
     # all four arrows, read for both players, not just one key for one of them
     for needle, why in (("stageKeysOf(stageInfo.skip and stageInfo.skip.previous", "left"),
                         ("stageKeysOf(stageInfo.skip and stageInfo.skip.next", "right"),

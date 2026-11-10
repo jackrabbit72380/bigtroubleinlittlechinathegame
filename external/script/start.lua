@@ -570,6 +570,46 @@ function start.f_stageMenuRef()
 	return group and group.available[group.slot]
 end
 
+-- The wall draws one card per stage, but the cursor counts stage slots, and one
+-- slot can hold several stages (a stage row with a slot parameter). These two
+-- translate between them so a step always lands on the card the player aimed at,
+-- and the outlined card is the one the cursor is on. 0 is the RANDOM stop.
+function start.f_stageCardOf(no)
+	if no == nil or no <= 0 then
+		return 0
+	end
+	local group = main.t_selectableStageSlots[no]
+	local ref = group and group.available[group.slot]
+	if ref == nil then
+		return no
+	end
+	for i, v in ipairs(main.t_selectableStages) do
+		if v == ref then
+			return i
+		end
+	end
+	return 0
+end
+
+function start.f_stageStopOf(card)
+	if card == nil or card <= 0 then
+		return 0
+	end
+	local ref = main.t_selectableStages[card]
+	if ref == nil then
+		return card
+	end
+	for i, group in ipairs(main.t_selectableStageSlots) do
+		for j, v in ipairs(group.available) do
+			if v == ref then
+				group.slot = j
+				return i
+			end
+		end
+	end
+	return 0
+end
+
 --sets stage
 function start.f_setStage(num, assigned)
 	if main.stageMenu then
@@ -1872,20 +1912,71 @@ function start.f_stageGridCols(count)
 	return math.max(1, math.min(count or 0, maxCols))
 end
 
--- One step across the stage wall. The cursor is a stop number, so a step is
--- simply that number moved inside [minIdx, maxIdx] and wrapped at whichever
--- end it runs off: left and right walk card by card, up and down walk a row at
--- a time, and neither direction can fall off the wall.
-function start.f_stageCursorStep(no, by, minIdx, maxIdx)
-	if no == nil or by == nil or minIdx == nil or maxIdx == nil or maxIdx < minIdx then
-		return no
+-- One step of the stage cursor, on the grid the cards are drawn on. The wall is
+-- cols cards across, so left and right keep the card's row and up and down keep
+-- its column. The last row is short, so a column past its end stops on that
+-- row's own last card instead of falling through to another row - which is what
+-- a flat +/-cols index did, taking a press on the bottom row somewhere else on
+-- the wall entirely. RANDOM, when the motif offers it, is one more row under the
+-- wall, one card wide. card 0 is the RANDOM stop, and so is the result.
+function start.f_stageCursorStep(card, dir, count, cols, hasRandom)
+	card = card or 0
+	if count == nil or count <= 0 then
+		return card
 	end
-	local span = maxIdx - minIdx + 1
-	local pos = (no - minIdx + by) % span
-	if pos < 0 then
-		pos = pos + span
+	cols = math.max(1, math.min(cols or 1, count))
+	local rows = math.ceil(count / cols)
+	local extra = hasRandom and 1 or 0
+	if card <= 0 and extra == 0 then
+		card = 1
 	end
-	return minIdx + pos
+	local row, col
+	if card <= 0 then
+		row, col = rows + 1, 1
+	else
+		row = math.floor((card - 1) / cols) + 1
+		col = (card - 1) % cols + 1
+	end
+	local function width(r)
+		if r > rows then
+			return 1
+		end
+		return math.min(cols, count - (r - 1) * cols)
+	end
+	local function stop(r, c)
+		if r > rows then
+			return 0
+		end
+		return (r - 1) * cols + c
+	end
+	if dir == 'L' then
+		col = col - 1
+		if col < 1 then
+			col = width(row)
+		end
+	elseif dir == 'R' then
+		col = col + 1
+		if col > width(row) then
+			col = 1
+		end
+	elseif dir == 'U' then
+		row = row - 1
+		if row < 1 then
+			row = rows + extra
+		end
+		if col > width(row) then
+			col = width(row)
+		end
+	elseif dir == 'D' then
+		row = row + 1
+		if row > rows + extra then
+			row = 1
+		end
+		if col > width(row) then
+			col = width(row)
+		end
+	end
+	return stop(row, col)
 end
 -- <<< stage preview grid geometry
 
@@ -4779,14 +4870,24 @@ function start.f_stageMenu()
 	end
 
 	-- The wall is a grid, so all four arrows move in two dimensions: left and
-	-- right step one card, up and down step a whole row, and either end wraps.
+	-- right walk their row, up and down walk their column, and either end wraps.
 	-- Both players are read, and the screenpack's own stage keys count as well as
 	-- the arrows, so a different key layout still walks the wall. A press moves
 	-- once and holding auto-repeats after a short pause: one tap cannot fly across
 	-- the wall, and a held key does not stutter on the repeat.
-	local cols = start.f_stageGridCols(#main.t_selectableStages)
-	local function stepStage(by)
-		local nextNo = start.f_stageCursorStep(stageListNo, by, stageListMinIdx, stageListMaxIdx)
+	-- The cursor walks the wall the way it is drawn: one stop per card, cols
+	-- across, with RANDOM as the row underneath. Left and right keep the row, up
+	-- and down keep the column, and a short last row clamps to its own end.
+	local cardCount = #main.t_selectableStages
+	local cols = start.f_stageGridCols(cardCount)
+	local hasRandom = stageListMinIdx == 0
+	local function stepStage(dir)
+		if cardCount <= 0 then
+			return
+		end
+		local card = start.f_stageCursorStep(
+			start.f_stageCardOf(stageListNo), dir, cardCount, cols, hasRandom)
+		local nextNo = start.f_stageStopOf(card)
 		if nextNo == stageListNo then
 			return
 		end
@@ -4807,10 +4908,10 @@ function start.f_stageMenu()
 		return keys
 	end
 	local directions = {
-		{ by = -1, keys = stageKeysOf(stageInfo.skip and stageInfo.skip.previous, 'L') },
-		{ by = 1, keys = stageKeysOf(stageInfo.skip and stageInfo.skip.next, 'R') },
-		{ by = -cols, keys = stageKeysOf(stageInfo.previous, 'U') },
-		{ by = cols, keys = stageKeysOf(stageInfo.next, 'D') },
+		{ dir = 'L', keys = stageKeysOf(stageInfo.skip and stageInfo.skip.previous, 'L') },
+		{ dir = 'R', keys = stageKeysOf(stageInfo.skip and stageInfo.skip.next, 'R') },
+		{ dir = 'U', keys = stageKeysOf(stageInfo.previous, 'U') },
+		{ dir = 'D', keys = stageKeysOf(stageInfo.next, 'D') },
 	}
 	local function directionHeld(keys)
 		for side = 1, 2 do
@@ -4845,7 +4946,7 @@ function start.f_stageMenu()
 	else
 		start.stageRepeat = (start.stageRepeat or 0) - 1
 		if firstPress or start.stageRepeat <= 0 then
-			stepStage(directions[heldIndex].by)
+			stepStage(directions[heldIndex].dir)
 			start.stageRepeat = firstPress and 16 or 5
 		end
 	end
