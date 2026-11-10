@@ -44,11 +44,26 @@ CARD = (457, 150)
 CARD_SPRITE = 240
 FRAME_SPRITES = {1: 241, 2: 242}
 
-# Only used to composite the preview image below with the same numbers
-# start.stageGrid uses, so the preview shows the wall as the screen lays it out.
+# The layout below comes from start.stageGrid so the preview cannot drift from the
+# screen again. WINDOW is the last known value, used only if start.lua cannot be read.
 WINDOW = (80, 300, 1840, 970)
 PAD = 14
 COLS = 0
+# The band a block bigger than the window may borrow: below the caption row and
+# above the fighter names. start.f_stageGrid uses the same numbers.
+BAND = (72, 1000)
+
+
+def screen_window(path=None):
+    """The stage wall's window, read from the screen that clips to it."""
+    path = path or os.path.join(ROOT, "external", "script", "start.lua")
+    try:
+        text = open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return WINDOW
+    hit = re.search(r"window\s*=\s*\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}",
+                    text)
+    return tuple(int(g) for g in hit.groups()) if hit else WINDOW
 
 GOLD = (236, 200, 120)
 GOLD_DIM = (150, 118, 62)
@@ -75,12 +90,17 @@ def pool():
     return refs
 
 
-def layout(count, window=WINDOW, pad=PAD, cols=COLS):
+def layout(count, window=None, pad=PAD, cols=COLS):
     """Where the screen will put the cards, for the preview only.
 
     Mirrors start.f_stageGrid: fixed-size cards, as many across as the window
-    holds, the block centred in it. Returns card centres.
+    holds, the block centred in it - but pinned to its top-left corner when the
+    block is bigger than the window, which is what the screen does too. A centred
+    preview hid that: five rows of cards are 806px tall and the old 670px window
+    pinned them to its top, leaving the bottom row 26px past the frame while the
+    preview showed it neatly inside. Returns card centres.
     """
+    window = window or screen_window()
     cw, ch = CARD
     x1, y1, x2, y2 = window
     avail_w, avail_h = x2 - x1, y2 - y1
@@ -91,8 +111,10 @@ def layout(count, window=WINDOW, pad=PAD, cols=COLS):
     rows = -(-count // cols)
     block_w = cols * cw + (cols - 1) * pad
     block_h = rows * ch + (rows - 1) * pad
-    ox = x1 + (avail_w - block_w) / 2.0
-    oy = y1 + (avail_h - block_h) / 2.0
+    ox = max(x1, x1 + (avail_w - block_w) / 2.0)
+    oy = max(y1, y1 + (avail_h - block_h) / 2.0)
+    if block_h > avail_h:
+        oy = max(BAND[0], BAND[0] + (BAND[1] - BAND[0] - block_h) / 2.0)
     cards = []
     for i in range(count):
         col, row = i % cols, i // cols

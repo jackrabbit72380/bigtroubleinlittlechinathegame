@@ -363,6 +363,30 @@ def check_stage_wall(problems):
                 return
     # The cursor walks that grid: every arrow moves it, either end wraps, and
     # neither direction can leave the wall. The arithmetic is the screen's own.
+    # the pool this theme ships is twelve stages: four rows, inside the band below
+    # the caption row and above the fighter names
+    real = lua.eval("start.f_stageGrid(12)")
+    for i in range(1, 13):
+        if float(real[i]["y"]) - 75 < 71.5 or float(real[i]["y"]) + 75 > 1000.5:
+            problems.append("the twelve-stage wall leaves the band it may use")
+            break
+    # and the preview tool's layout must agree with the screen at every pool size,
+    # so a preview can never show a wall the game would place somewhere else
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import build_stage_wall as wall_tool
+    except Exception as exc:
+        problems.append("the wall preview tool cannot be imported: %s" % exc)
+    else:
+        for count in range(1, 17):
+            mine, _, _ = wall_tool.layout(count)
+            theirs = lua.eval("start.f_stageGrid")(count)
+            for i in range(count):
+                if (abs(float(theirs[i + 1]["x"]) - mine[i]["cx"]) > 0.5
+                        or abs(float(theirs[i + 1]["y"]) - mine[i]["cy"]) > 0.5):
+                    problems.append("the wall preview disagrees with the screen at %d cards"
+                                    % count)
+                    break
     step = lua.eval("start.f_stageCursorStep")
     if step is None:
         problems.append("the stage wall has no cursor step")
