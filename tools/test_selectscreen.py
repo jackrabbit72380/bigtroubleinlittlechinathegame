@@ -390,11 +390,15 @@ def check_stage_wall(problems):
         back = step(step(card, "L", COUNT, COLS, True), "R", COUNT, COLS, True)
         if back is None or int(back) != card:
             problems.append("left then right does not return to card %d" % card)
-    # and up then down does the same down every full column
-    for card in range(1, 10):
+    # up then down returns to the same card everywhere, except for the two columns
+    # with no cell in RANDOM's one-card row: wrapping through it clamps to RANDOM,
+    # the same clamp any move into the short last row does
+    for card in (1,) + tuple(range(4, COUNT + 1)):
         back = step(step(card, "U", COUNT, COLS, True), "D", COUNT, COLS, True)
         if back is None or int(back) != card:
             problems.append("up then down does not return to card %d" % card)
+    if int(step(step(2, "U", COUNT, COLS, True), "D", COUNT, COLS, True)) != 1:
+        problems.append("a column clamped through RANDOM does not land on the first card")
     # all four arrows, read for both players, not just one key for one of them
     for needle, why in (("stageKeysOf(stageInfo.skip and stageInfo.skip.previous", "left"),
                         ("stageKeysOf(stageInfo.skip and stageInfo.skip.next", "right"),

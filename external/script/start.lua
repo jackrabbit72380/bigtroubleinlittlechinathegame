@@ -1918,7 +1918,9 @@ end
 -- row's own last card instead of falling through to another row - which is what
 -- a flat +/-cols index did, taking a press on the bottom row somewhere else on
 -- the wall entirely. RANDOM, when the motif offers it, is one more row under the
--- wall, one card wide. card 0 is the RANDOM stop, and so is the result.
+-- wall, one card wide, so a move into any row shorter than the column - the last
+-- row, or RANDOM's single card - stops on that row's last card rather than
+-- jumping rows. card 0 is the RANDOM stop, and so is the result.
 function start.f_stageCursorStep(card, dir, count, cols, hasRandom)
 	card = card or 0
 	if count == nil or count <= 0 then
