@@ -60,8 +60,9 @@ GOLD = (198, 152, 72)
 GOLD_L = (238, 202, 126)
 GOLD_D = (124, 88, 36)
 LACQUER = (24, 30, 26)
-FLOOR_C = (108, 86, 62)
-FLOOR_D = (76, 60, 44)
+FLOOR_L = (126, 114, 90)          # the light square of the chequer
+FLOOR_D = (68, 60, 48)            # the dark square
+GRID = (40, 34, 27)               # grout between them
 SMOKE = (36, 32, 26)
 
 # every warm source is collected here while the room is painted and blended in
@@ -620,34 +621,40 @@ def lanterns(base):
 
 # --------------------------------------------------------------------- the floor
 def floor(base):
-    """Warm stone tile, rows growing towards the camera, with a polished sheen."""
+    """The chequered stone floor of the reference: light and dark squares that
+    grow towards the camera, with grout between them and a polished sheen."""
     d = ImageDraw.Draw(base)
-    d.rectangle(box(0, FLOOR_Y, W, H), fill=FLOOR_D)
+    d.rectangle(box(0, FLOOR_Y, W, H), fill=GRID)
     rnd = random.Random(13)
     y = FLOOR_Y
     row = 0
     while y < H:
-        hgt = int(px(8) + row * px(3.4))
-        x = -rnd.randint(0, px(30))
+        hgt = int(px(9) + row * px(3.6))
+        tw = int(px(24) * (1 + row * 0.17))
+        x = (CX % tw) - tw               # the squares line up on the room's centre
         col = 0
         while x < W:
-            w = int(rnd.uniform(px(26), px(48)) * (1 + row * 0.18))
-            tone = 0.88 + 0.24 * rnd.random()
-            if (row + col) % 2 == 0:
-                tone *= 0.80
-            c = tint(tuple(int(v * tone) for v in FLOOR_C), rnd, 0.05)
-            skew = rnd.uniform(-px(1.4), px(1.4))
-            d.polygon([(x + px(1) + skew, y + px(1)),
-                       (x + w - px(1) + skew, y + px(1)),
-                       (x + w - px(1) - skew, y + hgt - px(1)),
-                       (x + px(1) - skew, y + hgt - px(1))], fill=c)
-            d.line([(x + px(2), y + px(1.6)), (x + w - px(2), y + px(1.6))],
-                   fill=mix(c, (255, 232, 190), 0.16), width=max(1, int(px(0.5))))
-            d.line([(x + px(2), y + hgt - px(1.4)), (x + w - px(2), y + hgt - px(1.4))],
-                   fill=mix(c, (18, 12, 8), 0.4), width=max(1, int(px(0.6))))
-            x += w + px(1.8)
+            light = (row + col) % 2 == 0
+            c = tint(tuple(int(v * (0.96 + 0.08 * rnd.random()))
+                           for v in (FLOOR_L if light else FLOOR_D)), rnd, 0.04)
+            d.rectangle(box(x + px(1.0), y + px(1.0), x + tw - px(1.0), y + hgt - px(1.0)),
+                        fill=c)
+            d.line([(x + px(1.4), y + px(1.5)), (x + tw - px(1.4), y + px(1.5))],
+                   fill=mix(c, (255, 238, 202), 0.20 if light else 0.11),
+                   width=max(1, int(px(0.5))))
+            d.line([(x + px(1.4), y + hgt - px(1.5)), (x + tw - px(1.4), y + hgt - px(1.5))],
+                   fill=mix(c, (14, 11, 8), 0.45), width=max(1, int(px(0.6))))
+            d.line([(x + px(1.4), y + px(1.5)), (x + px(1.4), y + hgt - px(1.5))],
+                   fill=mix(c, (18, 14, 10), 0.3), width=max(1, int(px(0.5))))
+            if rnd.random() < 0.20:
+                sx = x + rnd.uniform(px(3), max(px(4), tw - px(3)))
+                sy = y + rnd.uniform(px(2), max(px(3), hgt - px(3)))
+                d.line([(sx, sy), (sx + rnd.uniform(-px(7), px(7)),
+                                   sy + rnd.uniform(px(1), px(5)))],
+                       fill=mix(c, (38, 32, 24), 0.35), width=max(1, int(px(0.4))))
+            x += tw
             col += 1
-        y += hgt + px(1.6)
+        y += hgt
         row += 1
 
     sheen = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -664,13 +671,14 @@ def chair(base, cx, base_y, w, seed):
 
     The first pass drew the chair in the same dark walnut as the wainscot behind
     it, so at this size it read as a pot standing on the skirting. The frame is
-    now lighter timber with a lit top rail, and the slats have real gaps.
+    now red lacquered as in the reference, with a lit edge, gold lines down the
+    slats and a gold medallion on the back.
     """
     d = ImageDraw.Draw(base)
     h = w * 1.45
     seat_y = base_y - h * 0.34
-    frame = mix(WOOD, WOOD_L, 0.55)
-    frame_d = mix(WOOD, WOOD_D, 0.1)
+    frame = (134, 44, 36)
+    frame_d = (60, 20, 16)
 
     d.ellipse(box(cx - w * 0.62, base_y - px(5), cx + w * 0.62, base_y + px(6)),
               fill=(16, 11, 7, 130))
@@ -679,12 +687,12 @@ def chair(base, cx, base_y, w, seed):
                fill=frame_d, width=max(2, int(px(2.4))))
         d.line([(cx + side * w * 0.34 - px(1), seat_y),
                 (cx + side * w * 0.44 - px(1), base_y)],
-               fill=mix(frame, (212, 178, 124), 0.3), width=max(1, int(px(0.8))))
+               fill=mix(frame, GOLD_L, 0.35), width=max(1, int(px(0.8))))
     d.polygon([(cx - w * 0.54, seat_y - px(5)), (cx + w * 0.54, seat_y - px(5)),
                (cx + w * 0.46, seat_y + px(5)), (cx - w * 0.46, seat_y + px(5))],
-              fill=mix(WOOD, WOOD_L, 0.34))
+              fill=mix(RED, RED_L, 0.22))
     d.line([(cx - w * 0.54, seat_y - px(5)), (cx + w * 0.54, seat_y - px(5))],
-           fill=(216, 184, 130), width=max(1, int(px(0.8))))
+           fill=mix(GOLD_L, (250, 232, 180), 0.3), width=max(1, int(px(0.8))))
     d.line([(cx - w * 0.46, seat_y + px(5)), (cx + w * 0.46, seat_y + px(5))],
            fill=(26, 18, 12), width=max(1, int(px(1.0))))
 
@@ -694,22 +702,85 @@ def chair(base, cx, base_y, w, seed):
                fill=frame_d, width=max(2, int(px(3.2))))
         d.line([(cx + side * w * 0.50 - px(1.4), seat_y),
                 (cx + side * w * 0.54 - px(1.4), top_y)],
-               fill=mix(frame, (216, 182, 128), 0.32), width=max(1, int(px(1.0))))
+               fill=mix(frame, GOLD_L, 0.38), width=max(1, int(px(1.0))))
     d.rectangle(box(cx - w * 0.58, top_y, cx + w * 0.62, top_y + px(5)), fill=frame)
-    d.line([(cx - w * 0.58, top_y), (cx + w * 0.62, top_y)], fill=(226, 196, 142),
-           width=max(1, int(px(0.9))))
+    d.line([(cx - w * 0.58, top_y), (cx + w * 0.62, top_y)],
+           fill=mix(GOLD_L, (252, 236, 190), 0.3), width=max(1, int(px(0.9))))
     for k in range(3):
         sx = cx - w * 0.42 + k * w * 0.42
         d.rectangle(box(sx - px(3), top_y + px(6), sx + px(3), seat_y - px(3)), fill=frame)
         d.line([(sx - px(3), top_y + px(6)), (sx - px(3), seat_y - px(3))],
-               fill=mix(frame, (224, 194, 140), 0.3), width=max(1, int(px(0.7))))
+               fill=mix(frame, GOLD, 0.45), width=max(1, int(px(0.7))))
         d.line([(sx + px(3), top_y + px(6)), (sx + px(3), seat_y - px(3))],
                fill=frame_d, width=max(1, int(px(0.9))))
     mid_y = top_y + (seat_y - top_y) * 0.5
     d.rectangle(box(cx - w * 0.50, mid_y, cx + w * 0.52, mid_y + px(4)),
-                fill=mix(WOOD, WOOD_L, 0.4))
-    d.arc(box(cx - w * 0.24, mid_y - px(3), cx + w * 0.24, mid_y + px(7)), 200, 340,
-          fill=mix(GOLD, GOLD_D, 0.3), width=max(1, int(px(1.0))))
+                fill=mix(RED, RED_L, 0.3))
+    # the gold medallion on the back rail, with a cloud scroll inside it
+    mr = w * 0.15
+    d.ellipse(box(cx - mr, mid_y - mr * 0.6, cx + mr, mid_y + mr * 1.2),
+              fill=mix(GOLD, GOLD_D, 0.25))
+    d.arc(box(cx - mr, mid_y - mr * 0.6, cx + mr, mid_y + mr * 1.2), 0, 360,
+          fill=mix(GOLD_L, (252, 236, 190), 0.3), width=max(1, int(px(0.7))))
+    for k in range(2):
+        rr = mr * (0.62 - 0.2 * k)
+        d.arc(box(cx - rr, mid_y + mr * 0.3 - rr * 0.7,
+                  cx + rr, mid_y + mr * 0.3 + rr * 0.7),
+              200 + k * 40, 200 + k * 40 + 250, fill=mix(GOLD_D, RED, 0.35),
+              width=max(1, int(px(0.7))))
+
+
+def banner(base, cx, top, w, h, seed):
+    """A red temple banner: brass rod, cloth with a gold border and a medallion.
+
+    Hung high on the wall like the red cloth in the reference, so it clears the
+    tables and never reaches the fighters.
+    """
+    d = ImageDraw.Draw(base)
+    left, right = cx - w / 2.0, cx + w / 2.0
+
+    shadow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.rectangle(box(left + px(3), top + px(6), right + px(8), top + h + px(5)),
+                 fill=(12, 10, 8, 120))
+    base.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(px(4))))
+
+    rows = 16
+    edge = []
+    for i in range(rows + 1):
+        t = i / float(rows)
+        sway = math.sin(t * 2.2 + seed) * px(3.5) * t
+        edge.append((top + px(4) + h * t, left + sway, right + sway * 0.6))
+    for i in range(rows):
+        y0, l0, r0 = edge[i]
+        y1, l1, r1 = edge[i + 1]
+        d.polygon([(l0, y0), (r0, y0), (r1, y1), (l1, y1)],
+                  fill=mix(RED, (92, 24, 20), 0.3 + 0.08 * (i % 2)))
+    for k in (-0.62, -0.2, 0.22, 0.6):
+        d.line([(l + (r - l) * (0.5 + k * 0.5), y) for y, l, r in edge],
+               fill=mix(RED, (66, 15, 12), 0.5), width=max(1, int(px(0.9))))
+    for k in (0.0, 1.0):
+        d.line([(l + (r - l) * k, y) for y, l, r in edge],
+               fill=mix(GOLD, GOLD_D, 0.25), width=max(1, int(px(1.2))))
+    y_end, l_end, r_end = edge[-1]
+    d.line([(l_end, y_end), (r_end, y_end)], fill=mix(GOLD_L, GOLD, 0.4),
+           width=max(2, int(px(1.6))))
+
+    d.rectangle(box(left - px(4), top, right + px(4), top + px(4)),
+                fill=mix(BRASS, GOLD_D, 0.3))
+    d.line([(left - px(4), top), (right + px(4), top)], fill=(216, 180, 110),
+           width=max(1, int(px(0.6))))
+
+    my = top + px(4) + h * 0.36
+    mr = w * 0.26
+    d.ellipse(box(cx - mr, my - mr * 0.8, cx + mr, my + mr * 0.8),
+              fill=mix(GOLD, GOLD_D, 0.3))
+    d.arc(box(cx - mr, my - mr * 0.8, cx + mr, my + mr * 0.8), 0, 360,
+          fill=(248, 224, 164), width=max(1, int(px(0.7))))
+    for k in range(2):
+        rr = mr * (0.66 - 0.22 * k)
+        d.arc(box(cx - rr, my - rr * 0.7, cx + rr, my + rr * 0.7), 190 + k * 40,
+              190 + k * 40 + 250, fill=mix(GOLD_D, RED, 0.4), width=max(1, int(px(0.6))))
 
 
 def place_setting(d, cx, cy, r, rnd):
@@ -851,6 +922,9 @@ def paint():
     bar(base, BAR_X0, BAR_X1)
     glass_wall(base, GLASS_X0, GLASS_X1)
     lanterns(base)
+    for i, (bx, bh) in enumerate(((px(60), px(74)), (px(1585), px(66)),
+                                  (px(1770), px(78)))):
+        banner(base, bx, px(56), px(30), bh, 7 + i)
 
     floor(base)
     table_bay(base, px(130), 41)
