@@ -61,7 +61,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic = sound/Big Trouble in Little China OST Game Version/01 - Prologue.ogg
+bgmusic = sound/Big Trouble in Little China OST Movie Version/10 - Lo Pans Domain - Looking For A Girl.ogg
 bgmvolume = 100
 
 [BGdef]
