@@ -44,6 +44,8 @@ a change here without opening the engine.
 | **Wing Kong Trading Co Lobby** | | |
 | ![Wing Kong Prison](artifacts/wingkong_prison_card.png) | | |
 | **Wing Kong Prison** | | |
+| ![Lo Pan's Office](artifacts/lopan_office_card.png) | | |
+| **Lo Pan's Office** | | |
 
 ## Play it
 
