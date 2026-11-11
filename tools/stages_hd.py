@@ -1248,6 +1248,7 @@ MUSIC = {
     "wingkong_lobby": "sound/Big Trouble in Little China OST Movie Version/13 - Hide.ogg",
     "wingkong_prison": "sound/Big Trouble in Little China OST Movie Version/11 - Friends Of Yours - Escape Iron Basis.ogg",
     "lopan_office": "sound/Big Trouble in Little China OST Movie Version/1 - Prologue.ogg",
+    "shadow_alleys": "sound/Big Trouble in Little China OST Movie Version/4 - The Alley (Procession).ogg",
 }
 
 STAGES = {

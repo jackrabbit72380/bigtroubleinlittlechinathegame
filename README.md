@@ -46,6 +46,8 @@ a change here without opening the engine.
 | **Wing Kong Prison** | | |
 | ![Lo Pan's Office](artifacts/lopan_office_card.png) | | |
 | **Lo Pan's Office** | | |
+| ![Shadow Alleys](artifacts/shadow_alleys_card.png) | | |
+| **Shadow Alleys** | | |
 
 ## Play it
 

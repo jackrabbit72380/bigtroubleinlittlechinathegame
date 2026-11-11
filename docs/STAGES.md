@@ -1,6 +1,6 @@
 # The arenas
 
-Eighteen stages, all drawn procedurally — no bitmaps are committed as source — packed
+Nineteen stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -23,6 +23,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Wing Kong Trading Co Lobby | `stages/wingkong_lobby.def` | the reception: brass plate, studded doors, the safe, green light down the corridor |
 | Wing Kong Prison | `stages/wingkong_prison.def` | the holding floor: wire cage, barred windows, the stair, bowls on the table |
 | Lo Pan's Office | `stages/lopan_office.def` | the lacquer room: gilt panelling and niches, velvet chairs, the landscape panel, the red bar |
+| Shadow Alleys | `stages/shadow_alleys.def` | the back lane: awnings and lanterns, the doorway, crates and a handcart, wet bricks |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model
