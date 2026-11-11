@@ -42,6 +42,8 @@ a change here without opening the engine.
 | **Forbidden Hall** | **Outside Dragon of the Black Pool Restaurant** | **White Tiger Bar** |
 | ![Wing Kong Trading Co Lobby](artifacts/wingkong_lobby_card.png) | | |
 | **Wing Kong Trading Co Lobby** | | |
+| ![Wing Kong Prison](artifacts/wingkong_prison_card.png) | | |
+| **Wing Kong Prison** | | |
 
 ## Play it
 

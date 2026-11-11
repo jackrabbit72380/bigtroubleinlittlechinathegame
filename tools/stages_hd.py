@@ -1246,6 +1246,7 @@ MUSIC = {
     "dragon_street": "sound/Big Trouble in Little China OST Movie Version/12 - Escape From Wing Kong.ogg",
     "white_tiger_bar": "sound/Big Trouble in Little China OST Movie Version/7 - Tenement - White Tiger.ogg",
     "wingkong_lobby": "sound/Big Trouble in Little China OST Movie Version/13 - Hide.ogg",
+    "wingkong_prison": "sound/Big Trouble in Little China OST Movie Version/11 - Friends Of Yours - Escape Iron Basis.ogg",
 }
 
 STAGES = {

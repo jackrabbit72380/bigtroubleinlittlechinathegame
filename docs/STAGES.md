@@ -1,6 +1,6 @@
 # The arenas
 
-Sixteen stages, all drawn procedurally — no bitmaps are committed as source — packed
+Seventeen stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -21,6 +21,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Outside Dragon of the Black Pool Restaurant | `stages/dragon_street.def` | the street: wet pavement, neon, the lit window, the steps up to the door |
 | White Tiger Bar | `stages/white_tiger_bar.def` | the bar: jade paper, red lacquer, the sign over the counter, beads onto the red bed |
 | Wing Kong Trading Co Lobby | `stages/wingkong_lobby.def` | the reception: brass plate, studded doors, the safe, green light down the corridor |
+| Wing Kong Prison | `stages/wingkong_prison.def` | the holding floor: wire cage, barred windows, the stair, bowls on the table |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model
