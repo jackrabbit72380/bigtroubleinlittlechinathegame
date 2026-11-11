@@ -1,6 +1,6 @@
 # The arenas
 
-Nine stages, all drawn procedurally — no bitmaps are committed as source — packed
+Ten stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -14,6 +14,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | The Sewer | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
 | The Upside Down | `stages/hell_sinners.def` | rusted steel works lit from the floor, furnace fires, flooded sumps |
 | Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners |
+| The Buddha Garden | `stages/buddha_garden.def` | moon gate, seated Buddha, lanterns, pool and bridge |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model

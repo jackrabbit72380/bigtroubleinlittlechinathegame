@@ -1239,6 +1239,7 @@ MUSIC = {
     "the_upside_down": "sound/Big Trouble in Little China OST Movie Version/16 - Into the Spirit Path.ogg",
     "hell_sinners": "sound/LoPansDemise.ogg",
     "airport_terminal": "sound/Airport.ogg",
+    "buddha_garden": "sound/Big Trouble in Little China OST Game Version/01 - Prologue.ogg",
 }
 
 STAGES = {
