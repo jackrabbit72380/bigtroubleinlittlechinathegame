@@ -130,7 +130,7 @@ art for one fighter and leave the rest alone:
 The arenas are painted twice: `tools/build_stages.py` keeps the arcade version
 (1000×240 art, `localcoord = 320, 240`) for the four film locations, and
 `tools/stages_hd.py` paints the shipped one at arcade resolution ×4.5 (1920×1080).
-Same layout, real pixels at 1080p. The Upside Down ships from the HD pass only — it has no
+Same layout, real pixels at 1080p. The Sewer ships from the HD pass only — it has no
 arcade-resolution counterpart.
 
 | | arcade (`build_stages.py`) | HD (`stages_hd.py`) |
@@ -167,7 +167,7 @@ Precedence, in `tools/build_all.py` order:
 
 1. `build_stages.py` — arcade stages
 2. `stages_hd.py` — overwrites the same four ids at 1920×1080, and paints
-The Upside Down
+The Sewer
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`,
    on the same 8192×1080 / ±3136 geometry and split at 4096 like the rest
 

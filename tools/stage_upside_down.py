@@ -1,4 +1,5 @@
-"""The Upside Down: the sewer under Chinatown (4000x960 canvas, 1280x960).
+"""The Sewer: the drain under Chinatown (stage id "the_upside_down",
+4000x960 canvas, 1280x960).
 
 Painted from the reference art. What has to read on screen:
 
@@ -545,7 +546,7 @@ def paint():
 
 
 def main():
-    hd.STAGES["the_upside_down"] = ("The Upside Down", paint)
+    hd.STAGES["the_upside_down"] = ("The Sewer", paint)
     hd.build("the_upside_down")
     return 0
 

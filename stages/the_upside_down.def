@@ -1,11 +1,11 @@
 ;---------------------------------------------------------------------------
-; The Upside Down
+; The Sewer
 ; Part of Big Trouble in Little China: The Game (Ikemen GO)
 ; HD stage: painted at 1920x1080 by tools/stages_hd.py.
 ;---------------------------------------------------------------------------
 [Info]
-name = "The Upside Down"
-displayname = "The Upside Down"
+name = "The Sewer"
+displayname = "The Sewer"
 versiondate = 10,28,2026
 mugenversion = 1.0
 author = "Big Trouble in Little China: The Game"

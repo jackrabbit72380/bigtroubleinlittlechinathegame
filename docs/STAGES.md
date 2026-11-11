@@ -11,7 +11,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Wing Kong Exchange | `stages/wingkong_exchange.def` | loading bay, neon signage, rain |
 | Chinatown Back Alley | `stages/chinatown_alley.def` | lanterns, vertical shop signs, steam |
 | Pork Chop Express | `stages/porkchop_express.def` | storm highway, lightning, wet asphalt |
-| The Upside Down | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
+| The Sewer | `stages/the_upside_down.def` | brick sewer vault, steel sump, dead tree, dragon |
 | Hell of the Upside-Down Sinners | `stages/hell_sinners.def` | rusted steel works lit from the floor, furnace fires, flooded sumps |
 | Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners |
 | Training Room | `stages/stage0.def` | the engine's training stage |
