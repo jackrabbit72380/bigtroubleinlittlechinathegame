@@ -207,6 +207,22 @@ def cobweb(base, cx, cy, r, side="left"):
 
 
 # -------------------------------------------------------------------- the cage
+def mesh_patch(base, x0, y0, x1, y1, alpha=58, step=None):
+    """Diagonal wire mesh, masked to a box so it cannot run out of its panel."""
+    step = step or px(11)
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    span = y1 - y0
+    for k in range(-int(span), int(x1 - x0) + int(span), int(step)):
+        mx = x0 + k
+        d.line([(mx, y0), (mx + span, y1)], fill=MESH + (alpha,), width=max(1, int(px(0.6))))
+        d.line([(mx, y0), (mx - span, y1)], fill=MESH + (alpha,), width=max(1, int(px(0.6))))
+    mask = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(mask).rectangle(box(x0, y0, x1, y1), fill=255)
+    layer.putalpha(ImageChops.multiply(layer.getchannel("A"), mask))
+    base.alpha_composite(layer)
+
+
 def cage(base, x0, x1, top):
     """The cell: pale timber framing over wire mesh, and the dark behind it."""
     d = ImageDraw.Draw(base)
@@ -234,20 +250,7 @@ def cage(base, x0, x1, top):
     # the mesh, over the dark. The diagonals run past the cage on both sides, so
     # the layer is masked to the cage box: without that the wire drew itself
     # across the whole wall.
-    mesh = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    md = ImageDraw.Draw(mesh)
-    step = px(11)
-    span = PLINTH - top
-    for k in range(-int(span), int(x1 - x0) + int(span), int(step)):
-        mx = x0 + k
-        md.line([(mx, top), (mx + span, PLINTH)], fill=MESH + (58,),
-                width=max(1, int(px(0.6))))
-        md.line([(mx, top), (mx - span, PLINTH)], fill=MESH + (58,),
-                width=max(1, int(px(0.6))))
-    mask = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(mask).rectangle(box(x0, top, x1, PLINTH), fill=255)
-    mesh.putalpha(ImageChops.multiply(mesh.getchannel("A"), mask))
-    base.alpha_composite(mesh)
+    mesh_patch(base, x0, top, x1, PLINTH)
 
     # the frame: posts, rails, and a lit edge on every member
     posts = [x0, x0 + (x1 - x0) / 3.0, x0 + (x1 - x0) * 2 / 3.0, x1]
@@ -263,23 +266,39 @@ def cage(base, x0, x1, top):
         d.line([(x0 - px(8), y + h), (x1 + px(8), y + h)], fill=FRAME_D,
                width=max(1, int(px(1.2))))
 
-    # the door in the last bay: hung, hinged, and padlocked
+    # the door in the last bay: wire like the rest of the cage, on its own frame,
+    # hung on hinges and padlocked through a hasp
     dx0 = x0 + (x1 - x0) * 2 / 3.0 + px(14)
     dx1 = x1 - px(14)
-    d.rectangle(box(dx0, top + px(16), dx1, PLINTH - px(16)), fill=mix(DARK, (40, 32, 22), 0.3))
-    d.rectangle(box(dx0, top + px(16), dx1, PLINTH - px(16)), outline=FRAME_D,
-                width=max(2, int(px(1.6))))
-    for hy in (top + px(30), PLINTH - px(34)):
-        d.rectangle(box(dx0 - px(10), hy, dx0 + px(4), hy + px(9)), fill=IRON)
-        d.line([(dx0 - px(10), hy), (dx0 + px(4), hy)], fill=(120, 122, 120),
+    dy0, dy1 = top + px(16), PLINTH - px(16)
+    d.rectangle(box(dx0, dy0, dx1, dy1), fill=mix(DARK, (44, 36, 26), 0.28))
+    mesh_patch(base, dx0, dy0, dx1, dy1, alpha=64)
+    # the door's own stiles and rails
+    for x in (dx0, dx1 - px(9)):
+        d.rectangle(box(x, dy0, x + px(9), dy1), fill=FRAME)
+        d.line([(x, dy0), (x, dy1)], fill=FRAME_L, width=max(1, int(px(1.2))))
+    for y in (dy0, dy1 - px(9)):
+        d.rectangle(box(dx0, y, dx1, y + px(9)), fill=FRAME)
+        d.line([(dx0, y), (dx1, y)], fill=FRAME_L, width=max(1, int(px(1.2))))
+    # hinges on the hung edge
+    for hy in (top + px(30), PLINTH - px(40)):
+        d.rectangle(box(dx0 - px(9), hy, dx0 + px(2), hy + px(10)), fill=IRON)
+        d.line([(dx0 - px(9), hy), (dx0 + px(2), hy)], fill=(128, 130, 126),
                width=max(1, int(px(0.8))))
-    # hasp, padlock and a chain
-    hy = top + (PLINTH - top) * 0.52
-    d.rectangle(box(dx1 - px(54), hy, dx1 - px(4), hy + px(8)), fill=mix(IRON, (86, 88, 86), 0.4))
-    d.ellipse(box(dx1 - px(30), hy + px(6), dx1 - px(8), hy + px(28)), outline=IRON,
-              width=max(2, int(px(2.4))))
-    d.rectangle(box(dx1 - px(28), hy + px(14), dx1 - px(10), hy + px(30)), fill=mix(IRON, (110, 112, 108), 0.3))
-    d.ellipse(box(dx1 - px(24), hy + px(24), dx1 - px(20), hy + px(28)), fill=(24, 24, 22))
+        d.ellipse(box(dx0 - px(6), hy + px(2), dx0 - px(2), hy + px(7)), fill=(92, 94, 90))
+    # the hasp crossing the door's edge, with the padlock through it
+    hy = top + (PLINTH - top) * 0.50
+    d.rectangle(box(dx1 - px(60), hy, dx1 + px(10), hy + px(9)),
+                fill=mix(IRON, (96, 98, 92), 0.35))
+    d.line([(dx1 - px(60), hy), (dx1 + px(10), hy)], fill=(146, 148, 142),
+           width=max(1, int(px(0.9))))
+    d.ellipse(box(dx1 - px(6), hy + px(8), dx1 + px(14), hy + px(26)), outline=IRON,
+              width=max(2, int(px(2.6))))
+    d.rectangle(box(dx1 - px(9), hy + px(16), dx1 + px(16), hy + px(36)),
+                fill=mix(IRON, (112, 114, 108), 0.3))
+    d.rectangle(box(dx1 - px(9), hy + px(16), dx1 + px(16), hy + px(36)),
+                outline=(84, 86, 82), width=max(1, int(px(1.0))))
+    d.ellipse(box(dx1 + px(1), hy + px(24), dx1 + px(6), hy + px(29)), fill=(22, 22, 20))
 
     # a bulb hanging in the cell, and the pool it makes on the straw
     bx = x0 + (x1 - x0) * 0.42
