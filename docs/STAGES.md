@@ -1,6 +1,6 @@
 # The arenas
 
-Eleven stages, all drawn procedurally — no bitmaps are committed as source — packed
+Twelve stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -16,6 +16,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Airport Terminal | `stages/airport_terminal.def` | departures hall, glazed wall, parked airliners |
 | The Buddha Garden | `stages/buddha_garden.def` | moon gate, seated Buddha, lanterns, pool and bridge |
 | Inside Dragon of the Black Pool Restaurant | `stages/dragon_restaurant.def` | the dining room: flocked paper, scrolls, dragon mural, bar |
+| Dragon of the Black Pool Restaurant Kitchen | `stages/dragon_kitchen.def` | the working kitchen: white tile, range and hood, prep benches, the swing door |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model
