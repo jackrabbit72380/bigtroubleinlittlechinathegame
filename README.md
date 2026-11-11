@@ -40,6 +40,8 @@ a change here without opening the engine.
 | **The Buddha Garden** | **Inside Dragon of the Black Pool Restaurant** | **Dragon of the Black Pool Restaurant Kitchen** |
 | ![Forbidden Hall](artifacts/forbidden_hall_card.png) | ![Outside the Dragon](artifacts/dragon_street_card.png) | ![White Tiger Bar](artifacts/white_tiger_bar_card.png) |
 | **Forbidden Hall** | **Outside Dragon of the Black Pool Restaurant** | **White Tiger Bar** |
+| ![Wing Kong Trading Co Lobby](artifacts/wingkong_lobby_card.png) | | |
+| **Wing Kong Trading Co Lobby** | | |
 
 ## Play it
 
