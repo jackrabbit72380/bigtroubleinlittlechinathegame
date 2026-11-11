@@ -1,11 +1,11 @@
 ;---------------------------------------------------------------------------
-; Hell of the Upside-Down Sinners
+; The Upside Down
 ; Part of Big Trouble in Little China: The Game (Ikemen GO)
 ; HD stage: painted at 1920x1080 by tools/stages_hd.py.
 ;---------------------------------------------------------------------------
 [Info]
-name = "Hell of the Upside-Down Sinners"
-displayname = "Hell of the Upside-Down Sinners"
+name = "The Upside Down"
+displayname = "The Upside Down"
 versiondate = 10,28,2026
 mugenversion = 1.0
 author = "Big Trouble in Little China: The Game"

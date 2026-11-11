@@ -1,4 +1,4 @@
-"""Hell of the Upside-Down Sinners: the punishment floor under Lo Pan's palace.
+"""The Upside Down: the punishment floor under Lo Pan's palace.
 
 The film's torture rooms are three ideas in one place, and the stage takes all
 three:
@@ -815,7 +815,7 @@ def paint():
 
 
 def main():
-    hd.STAGES["hell_sinners"] = ("Hell of the Upside-Down Sinners", paint)
+    hd.STAGES["hell_sinners"] = ("The Upside Down", paint)
     hd.build("hell_sinners")
     return 0
 

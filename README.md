@@ -34,8 +34,8 @@ a change here without opening the engine.
 | **Lo Pan's Throne** | **Lo Pan's Ceremony** | **Lo Pan's Hallway** |
 | ![Wing Kong Exchange](artifacts/wingkong_exchange_card.png) | ![Chinatown Back Alley](artifacts/chinatown_alley_card.png) | ![Pork Chop Express](artifacts/porkchop_express_card.png) |
 | **Wing Kong Exchange** | **Chinatown Back Alley** | **Pork Chop Express** |
-| ![The Upside Down](artifacts/the_upside_down_card.png) | ![Hell of the Upside-Down Sinners](artifacts/hell_sinners_card.png) | ![Airport Terminal](artifacts/airport_terminal_card.png) |
-| **The Sewer** | **Hell of the Upside-Down Sinners** | **Airport Terminal** |
+| ![The Upside Down](artifacts/the_upside_down_card.png) | ![The Upside Down](artifacts/hell_sinners_card.png) | ![Airport Terminal](artifacts/airport_terminal_card.png) |
+| **The Sewer** | **The Upside Down** | **Airport Terminal** |
 
 ## Play it
 
