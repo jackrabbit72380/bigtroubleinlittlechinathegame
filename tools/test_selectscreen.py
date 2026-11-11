@@ -474,6 +474,55 @@ def check_stage_wall(problems):
             problems.append("the stage wall does not read %s" % why)
 
 
+def check_random_word_size(problems):
+    """The stage screen's RANDOM word is menu type, not a poster.
+
+    The word is a painted sprite: the gold pair carries 45px of ink in its 294x72
+    canvas and the Karate pair 60px, while every other line on the screen is set
+    at 43px of ink. start.lua brings the word down to that height with a draw
+    scale, so the numbers it divides by are read here against the sprites
+    themselves - a repaint that changes the ink without the constants would put
+    the word back a size larger than the rest of the screen.
+    """
+    text = read(START)
+    ink = re.search(r"local RANDOM_INK = (\d+)", text)
+    painted = re.search(r"local RANDOM_PAINTED_INK = \{original = (\d+), karate = (\d+)\}",
+                        text)
+    if not ink or not painted:
+        problems.append("start.lua no longer sets the RANDOM word's drawn height")
+        return
+    if int(ink.group(1)) != 43:
+        problems.append("the RANDOM word is drawn at %spx of ink, not the screen's 43"
+                        % ink.group(1))
+    scale_at = text.find("local function randomWordScale")
+    if scale_at < 0:
+        problems.append("the RANDOM word is drawn at its painted size again")
+    else:
+        call_at = text.find("spriteDraw(rndWord,", scale_at)
+        drawn = text[scale_at:call_at + 200] if call_at > 0 else ""
+        if "randomWordScale()" not in drawn:
+            problems.append("the stage screen draws the RANDOM word without "
+                            "scaling it to the screen's text")
+    _d, sprites, _p = sff.read_sff(SFF)
+    have = {(s["group"], s["number"]): s for s in sprites}
+    for key, want, label in (((151, 0), int(painted.group(1)), "gold"),
+                             ((151, 12), int(painted.group(2)), "Karate")):
+        sp = have.get(key)
+        if sp is None:
+            continue
+        img = sff.decode_sprite(_d, sp, _p).convert("RGBA")
+        w, h = img.size
+        px = img.load()
+        rows = [y for y in range(h) if any(px[x, y][3] > 24 for x in range(w))]
+        if not rows:
+            problems.append("RANDOM word sprite %d,%d is blank" % key)
+            continue
+        measured = rows[-1] - rows[0] + 1
+        if measured != want:
+            problems.append("the %s RANDOM word paints %dpx of ink but start.lua "
+                            "divides by %d" % (label, measured, want))
+
+
 def main():
     problems = []
     text = check_motif(problems)
@@ -485,6 +534,7 @@ def main():
           % ("ok " if len(problems) == before else "FAIL"))
     before = len(problems)
     check_sprites(problems)
+    check_random_word_size(problems)
     print("  %s the RANDOM stop is green type and the cursors are 2x art"
           % ("ok " if len(problems) == before else "FAIL"))
     before = len(problems)

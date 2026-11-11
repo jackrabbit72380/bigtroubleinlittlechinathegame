@@ -1651,6 +1651,19 @@ end
 -- would read a nil global and the select screen would stop on the first
 -- frame it was drawn.
 local RANDOM_ART = {294, 72}
+-- The word is painted into that 294x72 canvas at each face's own size: the gold
+-- pair carries 45px of ink and the Karate pair 60px. Every other line on the
+-- select screen is set at 43px of ink - the size the menu text was brought to -
+-- so the stage screen's word is drawn at the scale that brings its face to that
+-- height instead of at the painted size. It was the one thing on the screen
+-- larger than the rest of it.
+local RANDOM_INK = 43
+local RANDOM_PAINTED_INK = {original = 45, karate = 60}
+
+local function randomWordScale()
+	local face = selectFace()
+	return RANDOM_INK / (RANDOM_PAINTED_INK[face] or RANDOM_PAINTED_INK.karate)
+end
 
 function start.f_drawRandomStop()
 	local si = motif.select_info
@@ -3909,8 +3922,14 @@ function start.f_selectScreen()
 							sh = lc[2]
 						end
 					end)
-					spriteDraw(rndWord, 960 - math.floor(RANDOM_ART[1] / 2),
-						sh - RANDOM_ART[2] - 8)
+					-- Drawn at the screen's text size, not the canvas's. animSetPos
+					-- takes screen pixels and the scale only changes the size drawn
+					-- (fontchoice.lua centres its sample the same way), so the box is
+					-- scaled first and the word is placed by that box's own width.
+					local k = randomWordScale()
+					local w, h = RANDOM_ART[1] * k, RANDOM_ART[2] * k
+					spriteDraw(rndWord, 960 - math.floor(w / 2),
+						sh - math.floor(h) - 8, k)
 				end
 				-- The fighters are not drawn here. This screen is the map wall and the
 				-- map's name: two full-body portraits over the cards, with both fighter
