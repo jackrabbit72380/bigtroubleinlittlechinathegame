@@ -50,6 +50,21 @@ def stage_name(sid):
     return None
 
 
+def fit_font(draw, text, width, size=BAND_H - 8, floor=12):
+    """Largest face that fits the band, so a long stage name is not clipped.
+
+    Card names were drawn at one fixed size, which was fine until a stage was
+    called something longer than the card is wide: the name then ran off both
+    edges. Shrinking to fit keeps every name whole.
+    """
+    while size > floor:
+        f = art.font(size)
+        if draw.textlength(text, font=f) <= width:
+            return f
+        size -= 1
+    return art.font(floor)
+
+
 def card(preview, name):
     """One README card: the preview framed under its name."""
     art_img = preview.convert("RGBA")
@@ -66,7 +81,7 @@ def card(preview, name):
     img = Image.new("RGBA", (CARD_W, CARD_H), INK + (255,))
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, CARD_W - 1, BAND_H - 1], fill=(14, 11, 16, 255))
-    font = art.font(BAND_H - 8)
+    font = fit_font(d, name, CARD_W - 24)
     box = font.getbbox(name)
     tx = (CARD_W - (box[2] - box[0])) // 2 - box[0]
     ty = (BAND_H - (box[3] - box[1])) // 2 - box[1]
