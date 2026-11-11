@@ -509,6 +509,59 @@ def _window_problems(name, raw):
     return out
 
 
+def _block(text, start, end):
+    """The body of one label, from its own line to the next named one."""
+    i = text.find("\n" + start + "\n")
+    if i < 0:
+        return ""
+    j = text.find("\n" + end + "\n", i + 1)
+    return text[i:j if j > 0 else len(text)]
+
+
+def _writefail_problems(name, raw):
+    """A refused write has to be repaired, and a write that still refuses has to
+    be reported.
+
+    A run closed in the middle of a checkout leaves .git\\index.lock in the
+    updater's repository, and git then refuses every later write with "File
+    exists" - on every following run, because the only repair that cleared lock
+    files was reached from a failed fetch and never from the write path. The
+    per-file fallback also ignored what git said: each file was logged as
+    "writing", the refusal went nowhere, and the run carried on to 100% and
+    started the game. That is an update that writes nothing and reports success.
+
+    So the batch is retried once after the lock is cleared, a single file is too,
+    a file that still refuses is recorded, and the lock is looked for where git
+    says the repository is rather than only where this script spelled it.
+    """
+    if name != "Update and Play.bat":
+        return []
+    text = raw.decode("utf-8", "replace").replace("\r\n", "\n")
+    out = []
+    flush = _block(text, ":gitflush_retry", ":gitfile")
+    if "call :gitunlock" not in flush:
+        out.append("%s: a refused batch is retried without clearing git's lock "
+                   "file, so every later write in the run fails on the same "
+                   "stale index.lock" % name)
+    one = _block(text, ":gitfile", ":gitfile_stuck")
+    if "if not errorlevel 1 goto gitfile_marker" not in one:
+        out.append("%s: a file git refused is logged as written, so a run that "
+                   "wrote nothing reaches 100%% and starts the game" % name)
+    if "goto gitfile_stuck" not in one:
+        out.append("%s: a file that will not land is never recorded, so the run "
+                   "cannot say which one refused" % name)
+    unlock = _block(text, ":gitunlock", ":exehead")
+    if "rev-parse --absolute-git-dir" not in unlock:
+        out.append("%s: lock files are only looked for where this script spelled "
+                   "the repository, and on a machine whose profile is written in "
+                   "the shell's own form that is a different folder" % name)
+    if 'if defined GITW set "GITLOCKS=%GITW%"' not in unlock:
+        out.append("%s: a shell-form path from git is deleted as if cmd could "
+                   "read it, so the lock that stops every write is never cleared"
+                   % name)
+    return out
+
+
 def _paint_problems(name, raw):
     """The count belongs at the muzzle, and the bar must not be made of pipes.
 
@@ -876,6 +929,7 @@ def problems(root):
             found.extend(_problems_for(name, raw))
             found.extend(_syntax_problems(name, raw))
             found.extend(_progress_problems(name, raw))
+            found.extend(_writefail_problems(name, raw))
             found.extend(_quiet_window_problems(name, raw))
             found.extend(_report_problems(name, raw))
             found.extend(_selfupdate_problems(name, raw))

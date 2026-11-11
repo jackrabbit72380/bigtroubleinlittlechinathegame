@@ -178,6 +178,28 @@ WINDOW = [
      "closing that window ends the game"),
 ]
 
+# a write git refused: the lock is repaired and retried, and a file that still
+# refuses is recorded instead of the run carrying on as if it landed
+WRITEFAIL = [
+    ("a refused batch is retried without clearing the lock",
+     b'call :gitunlock\r\ncall :says "the batch did not finish',
+     b'call :says "the batch did not finish',
+     "without clearing git's lock"),
+    ("a refused file is logged as written",
+     b'if not errorlevel 1 goto gitfile_marker\r\n', b'',
+     "logged as written"),
+    ("a file that will not land is not recorded",
+     b'goto gitfile_stuck\r\n', b'',
+     "cannot say which one"),
+    ("the lock is only looked for where the script spelled it",
+     b'for /f "delims=" %%d in (\'git rev-parse --absolute-git-dir 2^>nul\') do set "GITLOCKS=%%d"\r\n',
+     b'',
+     "only looked for where this script"),
+    ("a shell path is deleted as if cmd could read it",
+     b'if defined GITW set "GITLOCKS=%GITW%"', b'rem no conversion',
+     "shell-form path"),
+]
+
 PAINT = [
     ("the no-cursor path stops redrawing the barrel",
      b'call :gunredraw %~1 %RPOS%\r\n', b'',
@@ -270,6 +292,17 @@ def main():
             failures += 1
             continue
         found = checker._window_problems(UPDATER, real.replace(old, new))
+        ok = any(want in problem for problem in found)
+        print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
+                                 "" if ok else "no guard fired"))
+        failures += 0 if ok else 1
+
+    for label, old, new, want in WRITEFAIL:
+        if old not in real:
+            print("  FAIL %-34s the shipped line is gone" % label)
+            failures += 1
+            continue
+        found = checker._writefail_problems(UPDATER, real.replace(old, new))
         ok = any(want in problem for problem in found)
         print("  %s %-34s %s" % ("ok " if ok else "FAIL", label,
                                  "" if ok else "no guard fired"))

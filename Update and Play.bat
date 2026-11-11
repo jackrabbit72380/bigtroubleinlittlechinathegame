@@ -245,6 +245,7 @@ set "GITTRIED="
 set "GITFIXED="
 set "GITQUIET="
 set "GITLOCKED="
+set "GITUNLOCKED="
 set "GWAIT=0"
 rem The updater's repository is kept here from now on: per user, writable,
 rem and outside the game folder, which is the folder a scanner, a backup
@@ -593,6 +594,7 @@ rem on its own instead of holding the window.
 type nul > "%CACHE%\git.log"
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
 if errorlevel 1 goto gitflush_retry
+:gitflush_done
 call :log wrote %NDONE% of %NCH% file(s)
 
 del /q "%CACHE%\todo.txt" >nul 2>&1
@@ -605,6 +607,20 @@ rem has open, or one an antivirus is reading - so its files are tried one at a
 rem time and the window names the one that will not go, instead of a dozen names
 rem and a percentage. Whatever fails is written to stuck.txt, and the recheck at
 rem the end hashes everything that landed and writes the rest again.
+rem
+rem It is also, and more often, one lock file. A write interrupted by the window
+rem being closed leaves .git\index.lock in the updater's repository, and git then
+rem refuses every later write with "File exists" - for run after run, because the
+rem only thing that ever cleared locks was reached from a failed fetch and never
+rem from here. Clearing it costs nothing, so it is cleared and the whole batch
+rem tried once more before its files are split up.
+if defined GITUNLOCKED goto gitflush_retry_files
+set "GITUNLOCKED=1"
+call :gitunlock
+call :says "the batch did not finish - clearing git's lock and trying once more"
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- %BATCH% >>"%CACHE%\git.log" 2>&1
+if not errorlevel 1 goto gitflush_done
+:gitflush_retry_files
 call :gitflush_log
 call :says "the batch did not finish - trying its files one at a time"
 call :says "git refused - what it said is in btilc-updater.log"
@@ -620,6 +636,19 @@ rem window, like the batch above, so a helper that cannot start cannot end the
 rem run either.
 call :log writing %~1
 git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- "%~1" >>"%CACHE%\git.log" 2>&1
+if not errorlevel 1 goto gitfile_marker
+rem This used to be a line the run walked past: a file was logged as written
+rem whether git wrote it or not, so a folder that received nothing still ended
+rem the run at 100% and started the game. A refusal is answered once - the stale
+rem lock above is the usual cause - and a file that still refuses is recorded and
+rem stops the run from claiming the update landed.
+if defined GITUNLOCKED goto gitfile_stuck
+set "GITUNLOCKED=1"
+call :gitunlock
+call :says "a file was refused - clearing git's lock and writing it again"
+git -c core.longpaths=true -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 checkout FETCH_HEAD -- "%~1" >>"%CACHE%\git.log" 2>&1
+if errorlevel 1 goto gitfile_stuck
+:gitfile_marker
 set "G1OK=%CACHE%\flush1.ok"
 set "G1BAD=%CACHE%\flush1.bad"
 if exist "%G1OK%" del /q "%G1OK%" >nul 2>&1
@@ -1088,16 +1117,43 @@ exit /b 0
 rem Lock files are markers, never data. One left by an interrupted git, or one
 rem a scanner is still holding, makes every later write fail with the same
 rem message; clearing them is the whole repair.
+rem
+rem The folder is asked of git instead of being spelled from %GITSTORE%. They are
+rem the same folder on most machines and not on all of them: where the profile is
+rem written in the shell's own form, LOCALAPPDATA is a path like
+rem /home/lands/AppData/Local, cmd reads that as a folder on the game drive and
+rem git reads it as a folder inside its own install - so this script could delete
+rem a lock out of a folder nobody had made while the real one refused every write.
 if not exist "%GITSTORE%" exit /b 0
-del /q "%GITSTORE%\.git\index.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\HEAD.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\config.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\shallow.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\FETCH_HEAD.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\packed-refs.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\gc.pid" >nul 2>&1
-del /q "%GITSTORE%\.git\refs\heads\main.lock" >nul 2>&1
-del /q "%GITSTORE%\.git\refs\remotes\origin\main.lock" >nul 2>&1
+set "GITLOCKS=%GITSTORE%\.git"
+for /f "delims=" %%d in ('git rev-parse --absolute-git-dir 2^>nul') do set "GITLOCKS=%%d"
+if not defined GITLOCKS set "GITLOCKS=%GITSTORE%\.git"
+call :gitunlock_windows
+del /q "%GITLOCKS%\index.lock" >nul 2>&1
+del /q "%GITLOCKS%\HEAD.lock" >nul 2>&1
+del /q "%GITLOCKS%\config.lock" >nul 2>&1
+del /q "%GITLOCKS%\shallow.lock" >nul 2>&1
+del /q "%GITLOCKS%\FETCH_HEAD.lock" >nul 2>&1
+del /q "%GITLOCKS%\packed-refs.lock" >nul 2>&1
+del /q "%GITLOCKS%\gc.pid" >nul 2>&1
+del /q "%GITLOCKS%\refs\heads\main.lock" >nul 2>&1
+del /q "%GITLOCKS%\refs\remotes\origin\main.lock" >nul 2>&1
+exit /b 0
+
+:gitunlock_windows
+rem git answers in its own path form. cygpath, which ships beside git, is the one
+rem thing on the machine that can say where cmd will find that same folder.
+if not "%GITLOCKS:~0,1%"=="/" exit /b 0
+if not defined WHERE exit /b 0
+set "CYPATH="
+set "GITBIN="
+for /f "delims=" %%g in ('"%WHERE%" git 2^>nul') do if not defined GITBIN set "GITBIN=%%~dpg"
+if not defined GITBIN exit /b 0
+for %%c in ("%GITBIN%cygpath.exe" "%GITBIN%..\usr\bin\cygpath.exe" "%GITBIN%..\bin\cygpath.exe" "%GITBIN%..\..\usr\bin\cygpath.exe") do if not defined CYPATH if exist "%%~c" set "CYPATH=%%~c"
+if not defined CYPATH exit /b 0
+set "GITW="
+for /f "delims=" %%w in ('"%CYPATH%" -w "%GITLOCKS%" 2^>nul') do set "GITW=%%w"
+if defined GITW set "GITLOCKS=%GITW%"
 exit /b 0
 
 :exehead
