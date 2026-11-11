@@ -1,6 +1,6 @@
 # The arenas
 
-Thirteen stages, all drawn procedurally — no bitmaps are committed as source — packed
+Fourteen stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -18,6 +18,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Inside Dragon of the Black Pool Restaurant | `stages/dragon_restaurant.def` | the dining room: flocked paper, scrolls, dragon mural, bar |
 | Dragon of the Black Pool Restaurant Kitchen | `stages/dragon_kitchen.def` | the working kitchen: white tile, range and hood, prep benches, the swing door |
 | Forbidden Hall | `stages/forbidden_hall.def` | the guardian corridor: ashlar and vault, bronze statues, iron lanterns, the cold door |
+| Outside Dragon of the Black Pool Restaurant | `stages/dragon_street.def` | the street: wet pavement, neon, the lit window, the steps up to the door |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model

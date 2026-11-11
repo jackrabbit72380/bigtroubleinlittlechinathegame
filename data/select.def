@@ -111,6 +111,7 @@ stages/buddha_garden.def  ; The Buddha Garden - the temple garden at night
 stages/dragon_restaurant.def  ; Inside Dragon of the Black Pool Restaurant - the dining room
 stages/dragon_kitchen.def  ; Dragon of the Black Pool Restaurant Kitchen - the working kitchen
 stages/forbidden_hall.def  ; Forbidden Hall - the guardian corridor under the palace
+stages/dragon_street.def  ; Outside the Dragon of the Black Pool Restaurant - the street at closing time
 
 ;-------------------------------------------------------------------------------
 [Options]
