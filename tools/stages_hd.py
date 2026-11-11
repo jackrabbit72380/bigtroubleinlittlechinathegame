@@ -1240,6 +1240,7 @@ MUSIC = {
     "hell_sinners": "sound/LoPansDemise.ogg",
     "airport_terminal": "sound/Airport.ogg",
     "buddha_garden": "sound/Big Trouble in Little China OST Movie Version/10 - Lo Pans Domain - Looking For A Girl.ogg",
+    "dragon_restaurant": "sound/Big Trouble in Little China OST Movie Version/14 - Call the Police.ogg",
 }
 
 STAGES = {

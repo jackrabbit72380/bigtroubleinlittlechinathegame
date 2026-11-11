@@ -36,8 +36,8 @@ a change here without opening the engine.
 | **Wing Kong Exchange** | **Chinatown Back Alley** | **Pork Chop Express** |
 | ![The Upside Down](artifacts/the_upside_down_card.png) | ![The Upside Down](artifacts/hell_sinners_card.png) | ![Airport Terminal](artifacts/airport_terminal_card.png) |
 | **The Sewer** | **The Upside Down** | **Airport Terminal** |
-| ![The Buddha Garden](artifacts/buddha_garden_card.png) | | |
-| **The Buddha Garden** | | |
+| ![The Buddha Garden](artifacts/buddha_garden_card.png) | ![Dragon of the Black Pool](artifacts/dragon_restaurant_card.png) | |
+| **The Buddha Garden** | **Inside Dragon of the Black Pool Restaurant** | |
 
 ## Play it
 

@@ -108,6 +108,7 @@ stages/stage3d_outline.def ; Third Heights, drawn as an outline pass
 stages/stage3d_rain.def   ; Third Heights Rainfall - stage3d's island reframed
                           ; (rain's stage in the arcade ladder)
 stages/buddha_garden.def  ; The Buddha Garden - the temple garden at night
+stages/dragon_restaurant.def  ; Inside Dragon of the Black Pool Restaurant - the dining room
 
 ;-------------------------------------------------------------------------------
 [Options]
