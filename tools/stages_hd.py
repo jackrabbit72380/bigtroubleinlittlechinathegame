@@ -1250,6 +1250,7 @@ MUSIC = {
     "lopan_office": "sound/Big Trouble in Little China OST Movie Version/1 - Prologue.ogg",
     "shadow_alleys": "sound/Big Trouble in Little China OST Movie Version/4 - The Alley (Procession).ogg",
     "gracies_apartment": "sound/Big Trouble in Little China OST Movie Version/19 - GoodBye Jack.ogg",
+    "fish_market": "sound/Big Trouble in Little China OST Movie Version/8 - Here Come the Storms.ogg",
 }
 
 STAGES = {

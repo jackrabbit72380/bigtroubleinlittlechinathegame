@@ -50,6 +50,8 @@ a change here without opening the engine.
 | **Shadow Alleys** | | |
 | ![Gracie's Apartment](artifacts/gracies_apartment_card.png) | | |
 | **Gracie's Apartment** | | |
+| ![Fish Market](artifacts/fish_market_card.png) | | |
+| **Fish Market** | | |
 
 ## Play it
 

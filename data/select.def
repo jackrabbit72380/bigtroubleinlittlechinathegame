@@ -118,6 +118,7 @@ stages/wingkong_prison.def  ; Wing Kong Prison - the cage, the barred windows an
 stages/lopan_office.def  ; Lo Pan's Office - lacquer panelling, gilt panels and the red bar
 stages/shadow_alleys.def  ; Shadow Alleys - awnings, lanterns, the doorway and the wet brick lane
 stages/gracies_apartment.def  ; Gracie's Apartment - the living room, its books and sofa, the kitchen end
+stages/fish_market.def  ; Fish Market - the tiled back room, its pipes, the steel door and the catch
 
 ;-------------------------------------------------------------------------------
 [Options]

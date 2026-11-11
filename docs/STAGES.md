@@ -1,6 +1,6 @@
 # The arenas
 
-Twenty stages, all drawn procedurally — no bitmaps are committed as source — packed
+Twenty-one stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -25,6 +25,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Lo Pan's Office | `stages/lopan_office.def` | the lacquer room: gilt panelling and niches, velvet chairs, the landscape panel, the red bar |
 | Shadow Alleys | `stages/shadow_alleys.def` | the back lane: awnings and lanterns, the doorway, crates and a handcart, wet bricks |
 | Gracie's Apartment | `stages/gracies_apartment.def` | the living room: blinds and books, the sofa and the television, the kitchen end |
+| Fish Market | `stages/fish_market.def` | the back room: glazed tile, pipework, the steel door, the catch heaped on its sheet |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model
