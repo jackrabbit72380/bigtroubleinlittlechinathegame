@@ -1242,6 +1242,7 @@ MUSIC = {
     "buddha_garden": "sound/Big Trouble in Little China OST Movie Version/10 - Lo Pans Domain - Looking For A Girl.ogg",
     "dragon_restaurant": "sound/Big Trouble in Little China OST Movie Version/14 - Call the Police.ogg",
     "dragon_kitchen": "sound/Big Trouble in Little China OST Movie Version/17 - The Great Arcade.ogg",
+    "forbidden_hall": "sound/Big Trouble in Little China OST Movie Version/15 - Dragon Eyes.ogg",
 }
 
 STAGES = {
