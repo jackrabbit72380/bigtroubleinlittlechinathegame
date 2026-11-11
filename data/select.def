@@ -117,6 +117,7 @@ stages/wingkong_lobby.def  ; Wing Kong Trading Co Lobby - the reception, its saf
 stages/wingkong_prison.def  ; Wing Kong Prison - the cage, the barred windows and the stair
 stages/lopan_office.def  ; Lo Pan's Office - lacquer panelling, gilt panels and the red bar
 stages/shadow_alleys.def  ; Shadow Alleys - awnings, lanterns, the doorway and the wet brick lane
+stages/gracies_apartment.def  ; Gracie's Apartment - the living room, its books and sofa, the kitchen end
 
 ;-------------------------------------------------------------------------------
 [Options]

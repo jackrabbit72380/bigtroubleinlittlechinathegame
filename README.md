@@ -48,6 +48,8 @@ a change here without opening the engine.
 | **Lo Pan's Office** | | |
 | ![Shadow Alleys](artifacts/shadow_alleys_card.png) | | |
 | **Shadow Alleys** | | |
+| ![Gracie's Apartment](artifacts/gracies_apartment_card.png) | | |
+| **Gracie's Apartment** | | |
 
 ## Play it
 
