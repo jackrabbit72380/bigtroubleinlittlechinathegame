@@ -40,7 +40,7 @@ def main():
                "stage_upside_down.py", "stage_airport.py", "stage_sinners.py",
                "stage_buddha_garden.py", "stage_dragon_restaurant.py",
                "stage_dragon_kitchen.py", "stage_forbidden_hall.py",
-               "stage_dragon_street.py",
+               "stage_dragon_street.py", "stage_white_tiger_bar.py",
                "build_hd_stage.py",
                "readme_cards.py",
                "build_chars.py", "build_music.py"]

@@ -1244,6 +1244,7 @@ MUSIC = {
     "dragon_kitchen": "sound/Big Trouble in Little China OST Movie Version/17 - The Great Arcade.ogg",
     "forbidden_hall": "sound/Big Trouble in Little China OST Movie Version/15 - Dragon Eyes.ogg",
     "dragon_street": "sound/Big Trouble in Little China OST Movie Version/12 - Escape From Wing Kong.ogg",
+    "white_tiger_bar": "sound/Big Trouble in Little China OST Movie Version/7 - Tenement - White Tiger.ogg",
 }
 
 STAGES = {

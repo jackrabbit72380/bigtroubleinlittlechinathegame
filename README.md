@@ -38,8 +38,8 @@ a change here without opening the engine.
 | **The Sewer** | **The Upside Down** | **Airport Terminal** |
 | ![The Buddha Garden](artifacts/buddha_garden_card.png) | ![Dragon of the Black Pool](artifacts/dragon_restaurant_card.png) | ![The Kitchen](artifacts/dragon_kitchen_card.png) |
 | **The Buddha Garden** | **Inside Dragon of the Black Pool Restaurant** | **Dragon of the Black Pool Restaurant Kitchen** |
-| ![Forbidden Hall](artifacts/forbidden_hall_card.png) | ![Outside the Dragon](artifacts/dragon_street_card.png) | |
-| **Forbidden Hall** | **Outside Dragon of the Black Pool Restaurant** | |
+| ![Forbidden Hall](artifacts/forbidden_hall_card.png) | ![Outside the Dragon](artifacts/dragon_street_card.png) | ![White Tiger Bar](artifacts/white_tiger_bar_card.png) |
+| **Forbidden Hall** | **Outside Dragon of the Black Pool Restaurant** | **White Tiger Bar** |
 
 ## Play it
 
