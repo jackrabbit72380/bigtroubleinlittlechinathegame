@@ -1,6 +1,6 @@
 # The arenas
 
-Twenty-two stages, all drawn procedurally — no bitmaps are committed as source — packed
+Twenty-three stages, all drawn procedurally — no bitmaps are committed as source — packed
 into SFF v2 and named for the film's locations, plus the engine's training room.
 
 | Stage | File | Setting |
@@ -27,6 +27,7 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Gracie's Apartment | `stages/gracies_apartment.def` | the living room: blinds and books, the sofa and the television, the kitchen end |
 | Fish Market | `stages/fish_market.def` | the back room: glazed tile, pipework, the steel door, the catch heaped on its sheet |
 | Shadow Alley | `stages/shadow_alley.def` | the lane at night: neon boards, scaffold poles, the pedicab, lit paving |
+| House of Fire | `stages/house_of_fire.def` | the old shop: jar cabinets, the work counter, the timber gate, the yellow car |
 | Training Room | `stages/stage0.def` | the engine's training stage |
 
 ## The HD stage model

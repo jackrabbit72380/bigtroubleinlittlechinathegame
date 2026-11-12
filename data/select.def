@@ -120,6 +120,7 @@ stages/shadow_alleys.def  ; Shadow Alleys - awnings, lanterns, the doorway and t
 stages/gracies_apartment.def  ; Gracie's Apartment - the living room, its books and sofa, the kitchen end
 stages/fish_market.def  ; Fish Market - the tiled back room, its pipes, the steel door and the catch
 stages/shadow_alley.def  ; Shadow Alley - the lane at night, the neon, the scaffold poles, the pedicab
+stages/house_of_fire.def  ; House of Fire - the old shop, its cabinets and counter, the car kept in it
 
 ;-------------------------------------------------------------------------------
 [Options]

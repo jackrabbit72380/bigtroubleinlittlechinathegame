@@ -54,6 +54,8 @@ a change here without opening the engine.
 | **Fish Market** | | |
 | ![Shadow Alley](artifacts/shadow_alley_card.png) | | |
 | **Shadow Alley** | | |
+| ![House of Fire](artifacts/house_of_fire_card.png) | | |
+| **House of Fire** | | |
 
 ## Play it
 
