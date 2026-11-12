@@ -44,6 +44,7 @@ def main():
                "stage_wingkong_lobby.py", "stage_wingkong_prison.py",
                "stage_lopan_office.py", "stage_shadow_alleys.py",
                "stage_gracies_apartment.py", "stage_fish_market.py",
+               "stage_shadow_alley.py",
                "build_hd_stage.py",
                "readme_cards.py",
                "build_chars.py", "build_music.py"]
