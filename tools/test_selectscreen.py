@@ -396,6 +396,37 @@ def check_stage_wall(problems):
                     problems.append("the wall preview disagrees with the screen at %d cards"
                                     % count)
                     break
+    # The wall is paged: twelve maps to a grid, the first with an arrow on its
+    # right, every grid after it with an arrow on both sides, and the cards on
+    # every page at the size they have always been drawn at.
+    pages_of = lua.eval("start.f_stagePages")
+    page_of = lua.eval("start.f_stagePage")
+    total = 26
+    if int(pages_of(total)) != 3:
+        problems.append("26 maps do not make three grids of twelve")
+    first_page, last_page = page_of(total, 1), page_of(total, 3)
+    if int(first_page["count"]) != 12 or int(last_page["count"]) != 2:
+        problems.append("the grids do not hold twelve maps each")
+    if int(first_page["first"]) != 1 or int(last_page["last"]) != total:
+        problems.append("a grid's range of cursor stops is wrong")
+    arrow_at = lua.eval("start.f_stageArrowCell")
+    awin = lua.eval("start.stageGrid.window")
+    for side_name in ("left", "right"):
+        acell = arrow_at(side_name)
+        half = float(lua.eval("start.stageGrid.arrow[1]")) / 2.0
+        if (float(acell["x"]) - half < float(awin[1]) - 0.5
+                or float(acell["x"]) + half > float(awin[3]) + 0.5):
+            problems.append("the %s page arrow sits outside the wall's window" % side_name)
+        if (float(acell["y"]) - 75 < float(awin[2]) - 0.5
+                or float(acell["y"]) + 75 > float(awin[4]) + 0.5):
+            problems.append("the %s page arrow sits outside the wall's window" % side_name)
+    for needle, why in (("start.stageArrow = nil", "the page arrow has no cursor state"),
+                        ("f_stageArrowSprite", "the page arrows are not drawn"),
+                        ("f_stagePageNo(stageListNo", "the wall does not know its page"),
+                        ("start.f_stageArrowCell(", "the arrows have no place on the wall")):
+        if needle not in text:
+            problems.append(why)
+
     step = lua.eval("start.f_stageCursorStep")
     if step is None:
         problems.append("the stage wall has no cursor step")

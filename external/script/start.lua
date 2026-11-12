@@ -110,6 +110,10 @@ local stageEnd = false
 local stageRandom = false
 local stageListNo = 0
 start.stageSide = 1
+-- 'left' / 'right' while the cursor stands on a page arrow, nil while it
+-- is on a map's card. A grid holds twelve maps; the arrow at the side of
+-- the window turns to the next grid.
+start.stageArrow = nil
 local t_aiRamp = {}
 local t_reservedChars = {{}, {}}
 local t_portraitPriority = {1, 1}
@@ -1541,6 +1545,24 @@ function start.f_stageCard(index)
 	return stageCardAnims[number] or nil
 end
 
+-- The page arrows are baked like everything else on this wall: 243,0 and 243,1
+-- are the left arrow at rest and lit, 243,2 and 243,3 the right one.
+-- tools/build_stage_wall.py paints them into system.sff at their drawn size.
+local stageArrowAnims = {}
+local ARROW_SPR = { left = { base = 0, lit = 1 }, right = { base = 2, lit = 3 } }
+
+function start.f_stageArrowSprite(dir, lit)
+	dir = (dir == 'left') and 'left' or 'right'
+	local number = ARROW_SPR[dir][lit and 'lit' or 'base']
+	local key = dir .. (lit and 'lit' or 'base')
+	if stageArrowAnims[key] == nil then
+		stageArrowAnims[key] = motifSprite(
+			string.format('243,%d, 0,0, -1', number), 243, number) or false
+	end
+	return stageArrowAnims[key] or nil
+end
+
+
 local stageFrameSprites = {}
 
 function start.f_stageFrameSprite(side)
@@ -1866,7 +1888,14 @@ start.stageGrid = {
 	-- the size of a baked card sprite, in motif pixels
 	card = { 457, 150 },
 	-- 0 = as many whole cards as the window fits across; a number pins the count
-	cols = 0,
+	-- 3 = three whole cards across, which is what the window holds; a page is
+	-- twelve of them, four rows down, and every page keeps its cards at the
+	-- size they have always been drawn at
+	cols = 3,
+	-- how many maps one grid holds before the arrow turns to the next
+	pageSize = 12,
+	-- the page arrow's baked sprite size, in motif pixels
+	arrow = { 110, 150 },
 	pad = 14,
 	-- The wall's own window: clear of the PLAYER captions above it and of the two
 	-- fighter names on y=1005 below it. The pool this theme ships is twelve stages,
@@ -1890,7 +1919,10 @@ function start.f_stageGrid(count, cols, pad, window)
 	local availW, availH = x2 - x1, y2 - y1
 	local maxCols = math.max(1, math.floor((availW + pad) / (cardW + pad)))
 	if cols == nil or cols <= 0 then
-		cols = math.min(count, maxCols)
+		-- the screen's own column count when it has one, otherwise as many whole
+		-- cards as the window fits
+		cols = (grid.cols ~= nil and grid.cols > 0) and grid.cols or maxCols
+		cols = math.min(count, cols)
 	end
 	cols = math.max(1, math.min(cols, count))
 	local rows = math.ceil(count / cols)
@@ -1934,6 +1966,59 @@ function start.f_stageGridCols(count)
 	local maxCols = math.max(1, math.floor((availW + pad) / (grid.card[1] + pad)))
 	return math.max(1, math.min(count or 0, maxCols))
 end
+
+-- ------------------------------------------------------------------ the pages
+-- A grid holds twelve maps: three across, four down - the 642px the window was
+-- built for. The pool is bigger than one grid, so the wall is a set of them: page
+-- 1 with an arrow on its right, every page after it with an arrow on both sides,
+-- the last with the left arrow only. The arrows are cursor stops: walk off the
+-- side of the cards and the arrow takes the cursor, and the next press of that way
+-- (or confirm) turns the page. Every page draws its cards at the same size; only
+-- their places differ, and a short last page centres what it has.
+function start.f_stagePages(count)
+	local size = start.stageGrid.pageSize
+	count = count or 0
+	if count <= 0 then
+		return 1
+	end
+	return math.max(1, math.ceil(count / size))
+end
+
+-- Which page a cursor stop lives on. 0 is the RANDOM stop and stands on page 1.
+function start.f_stagePageNo(no, count)
+	local size = start.stageGrid.pageSize
+	if no == nil or no <= 0 then
+		return 1
+	end
+	local page = math.floor((no - 1) / size) + 1
+	return math.max(1, math.min(page, start.f_stagePages(count)))
+end
+
+-- One page: the cursor stops it covers and the card boxes they are drawn in.
+function start.f_stagePage(count, page)
+	local size = start.stageGrid.pageSize
+	local pages = start.f_stagePages(count)
+	page = math.max(1, math.min(page or 1, pages))
+	local first = (page - 1) * size + 1
+	local last = math.min(count or 0, page * size)
+	local n = math.max(0, last - first + 1)
+	return { page = page, pages = pages, first = first, last = last, count = n,
+		cells = start.f_stageGrid(n) }
+end
+
+-- Where the page arrows sit: centred in the band of the window the cards leave
+-- free, one at each end.
+function start.f_stageArrowCell(dir)
+	local grid = start.stageGrid
+	local w, h = grid.arrow[1], grid.arrow[2]
+	local x1, y1, x2, y2 = grid.window[1], grid.window[2], grid.window[3], grid.window[4]
+	local y = math.floor((y1 + y2) / 2 + 0.5)
+	if dir == 'left' then
+		return { x = x1 + math.floor(w / 2) + 16, y = y, w = w, h = h }
+	end
+	return { x = x2 - math.floor(w / 2) - 16, y = y, w = w, h = h }
+end
+
 
 -- One step of the stage cursor, on the grid the cards are drawn on. The wall is
 -- cols cards across, so left and right keep the card's row and up and down keep
@@ -2655,6 +2740,7 @@ function start.f_selectReset(hardReset, preserveProgress)
 	end
 	selScreenEnd = false
 	stageEnd = false
+	start.stageArrow = nil
 	t_reservedChars = {{}, {}}
 	cursorActive = {}
 	cursorDone = {}
@@ -3883,20 +3969,16 @@ function start.f_selectScreen()
 				-- opens on RANDOM, and drawing the cards only in the other case is why it
 				-- opened as an empty green field.
 				stageRef = start.f_stageMenuRef()
-				local stCount = #main.t_selectableStages
+				-- The grid on screen holds twelve maps; the pool is bigger than that, so
+				-- this draws the page the cursor is on, and the arrows beside it.
+				local pageInfo = start.f_stagePage(#main.t_selectableStageSlots,
+					start.f_stagePageNo(stageListNo, #main.t_selectableStageSlots))
+				local stCount = pageInfo.count
 				local cards = start.f_stageGrid(stCount)
-				local pick = nil
-				if stageListNo > 0 then
-					for i = 1, stCount do
-						if main.t_selectableStages[i] == stageRef then
-							pick = i
-							break
-						end
-					end
-				end
 				for i = 1, stCount do
 					local cell = cards[i]
-					local card = start.f_stageCard(i)
+					-- the cursor stop on this page, turned into the card it holds
+					local card = start.f_stageCard(start.f_stageCardOf(pageInfo.first + i - 1))
 					if stagePhase and cell ~= nil and card ~= nil then
 						spriteDraw(card, cell.x, cell.y)
 					end
@@ -3904,10 +3986,27 @@ function start.f_selectScreen()
 				-- the picked map is outlined in the colour of the player who moved the
 				-- stage cursor; the frame is the card's own size, so it sits on the card
 				-- instead of being stretched over it
-				local frame = pick ~= nil and start.f_stageFrameSprite(start.stageSide or 1) or nil
-				local picked = pick ~= nil and cards[pick] or nil
+				local frame = start.f_stageFrameSprite(start.stageSide or 1)
+				local picked = nil
+				if stageListNo >= pageInfo.first and stageListNo <= pageInfo.last then
+					picked = cards[stageListNo - pageInfo.first + 1]
+				end
 				if stagePhase and frame ~= nil and picked ~= nil then
 					spriteDraw(frame, picked.x, picked.y)
+				end
+				-- the page arrows: one on the right when another grid follows, one on
+				-- the left when one came before, lit while the cursor stands on it
+				if stagePhase and pageInfo.pages > 1 then
+					if pageInfo.page > 1 then
+						local acell = start.f_stageArrowCell('left')
+						local arrow = start.f_stageArrowSprite('left', start.stageArrow == 'left')
+						if arrow ~= nil then spriteDraw(arrow, acell.x, acell.y) end
+					end
+					if pageInfo.page < pageInfo.pages then
+						local acell = start.f_stageArrowCell('right')
+						local arrow = start.f_stageArrowSprite('right', start.stageArrow == 'right')
+						if arrow ~= nil then spriteDraw(arrow, acell.x, acell.y) end
+					end
 				end
 				-- RANDOM is a position on this wall with no card of its own, so its
 				-- word is what marks it: at the foot of the screen, under the wall,
@@ -5100,21 +5199,68 @@ function start.f_stageMenu()
 	-- The cursor walks the wall the way it is drawn: one stop per card, cols
 	-- across, with RANDOM as the row underneath. Left and right keep the row, up
 	-- and down keep the column, and a short last row clamps to its own end.
+	local slotCount = #main.t_selectableStageSlots
+	local function moveStageSound()
+		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
+	end
 	local cardCount = #main.t_selectableStages
 	local cols = start.f_stageGridCols(cardCount)
 	local hasRandom = stageListMinIdx == 0
 	local function stepStage(dir)
-		if cardCount <= 0 then
+		if slotCount <= 0 then
 			return
 		end
-		local card = start.f_stageCursorStep(
-			start.f_stageCardOf(stageListNo), dir, cardCount, cols, hasRandom)
-		local nextNo = start.f_stageStopOf(card)
+		-- The cursor can be standing on a page arrow: the arrow is a stop of its
+		-- own, and pressing that way again - or confirm - turns the grid.
+		if start.stageArrow ~= nil then
+			local page = start.f_stagePageNo(stageListNo, slotCount)
+			if start.stageArrow == 'right' then
+				if (dir == 'R' or dir == 'D') and page < start.f_stagePages(slotCount) then
+					stageListNo = page * start.stageGrid.pageSize + 1
+				end
+			elseif (dir == 'L' or dir == 'U') and page > 1 then
+				stageListNo = (page - 1) * start.stageGrid.pageSize
+			end
+			start.stageArrow = nil
+			moveStageSound()
+			return
+		end
+		if stageListNo == 0 then
+			local card = start.f_stageCursorStep(0, dir, cardCount, cols, hasRandom)
+			local nextNo = start.f_stageStopOf(card)
+			if nextNo ~= stageListNo then
+				stageListNo = nextNo
+				moveStageSound()
+			end
+			return
+		end
+		local size = start.stageGrid.pageSize
+		local page = start.f_stagePageNo(stageListNo, slotCount)
+		local first = (page - 1) * size + 1
+		local last = math.min(slotCount, page * size)
+		local localNo = stageListNo - first + 1
+		local localCount = last - first + 1
+		local pageCols = math.max(1, math.min(cols, localCount))
+		local row = math.floor((localNo - 1) / pageCols) + 1
+		local col = (localNo - 1) % pageCols + 1
+		local rowWidth = math.min(pageCols, localCount - (row - 1) * pageCols)
+		-- walk off the side of the cards and the side arrow takes the cursor
+		if dir == 'R' and col >= rowWidth and page < start.f_stagePages(slotCount) then
+			start.stageArrow = 'right'
+			moveStageSound()
+			return
+		elseif dir == 'L' and col == 1 and page > 1 then
+			start.stageArrow = 'left'
+			moveStageSound()
+			return
+		end
+		local card = start.f_stageCursorStep(localNo, dir, localCount, pageCols, false)
+		local nextNo = math.max(1, math.min(slotCount, first + card - 1))
 		if nextNo == stageListNo then
 			return
 		end
 		stageListNo = nextNo
-		sndPlay(motif.Snd, motif.select_info.stage.move.snd[1], motif.select_info.stage.move.snd[2])
+		moveStageSound()
 	end
 	-- The wall moves on the same key tables the character grid moves on. The grid
 	-- hands getInput the motif's own objects - cell.up.key and friends - and it does
@@ -5318,6 +5464,14 @@ function start.f_stageMenu()
 			stepStage(directions[heldIndex].dir)
 			start.stageRepeat = firstPress and 16 or 5
 		end
+	end
+	-- An arrow is not a map: confirm on it turns the grid rather than picking.
+	if start.stageArrow ~= nil then
+		local okArrow, hitArrow = pcall(getInput, -1, { 's' })
+		if okArrow and hitArrow then
+			stepStage(start.stageArrow == 'right' and 'R' or 'L')
+		end
+		return false, true
 	end
 	local selected, handled = start.f_stageSlotSelected(main.t_selectableStageSlots[stageListNo])
 	local ref = start.f_stageMenuRef()

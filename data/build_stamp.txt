@@ -2,11 +2,11 @@
 # Update and Play.bat compares this file with main's copy: a difference means
 # the folder needs an update, whatever the recorded commit says.
 312e354c33e8703de403a0d530f7dbe96a4b567554912696fa694e060039df3f  data/ikemen1/system.def
-47e3e022cc4ea8c57261013350f9ed1ee489bb0a99766fc139f608f3f12cba1c  data/ikemen1/system.sff
+79c0983894ae7e1b94732273e4a777e5eb5116b86a60c363de23cd88045d21ba  data/ikemen1/system.sff
 ad0660810bd839fdac27855e031e57e69ee47fa1442fcef40f7c926599870999  data/system.base.def
 239dad4181b5c662689376937cec53163ce60acad81ebb7c4b4360d7b3f4a9ab  data/fight.def
 b1e3f0d2f5458d3fc4653fba38fd7bed859630b89b2b36b3774f52d2ea1e023a  data/system.snd
-3e9cf212ad5277226901eac0efbd0b42d58895e1be9c1b07c06c351f3dcee85d  data/select.def
+41df1771e634a7e9137e5004dea81edf77745ed8ae1a6e84b95ee54a1ac327d1  data/select.def
 ea09f5ecebca9bc359fcbbf361898ba90d31a40853bdb6ba73e286222cb9293c  data/music.json
 97cdd130e95ea187a0979f68bb708b684a4f1b78a56af718aafe64fe076221eb  data/retired.txt
 da0f5fad7f25ffdaab27b16e64499a1e664d66d25131016b6960a95f49faed4c  data/albums.sff

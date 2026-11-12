@@ -48,7 +48,19 @@ FRAME_SPRITES = {1: 241, 2: 242}
 # screen again. WINDOW is the last known value, used only if start.lua cannot be read.
 WINDOW = (80, 300, 1840, 970)
 PAD = 14
-COLS = 0
+# Three cards across is what the window holds, and a page is twelve of them -
+# four rows, 642px - which is the size the wall was designed for. The pool is
+# bigger than one page, so start.lua draws one page at a time with an arrow at
+# the side of the window to turn it.
+COLS = 3
+PAGE_SIZE = 12
+# the page arrow, and the four sprites it is baked as: left/right, at rest/lit
+ARROW = (110, 150)
+ARROW_SPRITE = 243
+ARROW_STATES = {(False, "left"): 0, (True, "left"): 1,
+                (False, "right"): 2, (True, "right"): 3}
+ARROW_GOLD = (206, 168, 86)
+ARROW_LIT = (255, 226, 150)
 # The band a block bigger than the window may borrow: below the caption row and
 # above the fighter names. start.f_stageGrid uses the same numbers.
 BAND = (72, 1000)
@@ -195,6 +207,41 @@ def paint_card(def_path):
     return card
 
 
+def paint_arrow(direction, lit):
+    """One page arrow: a chevron on its plate, at the size the screen draws it.
+
+    Two states, like every other control on this screen: the plate is dark and
+    the chevron dim gold at rest, and both lift when the cursor stands on it -
+    the same pairing the RANDOM word uses.
+    """
+    w, h = ARROW
+    img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    plate = (56, 46, 26, 240) if lit else (22, 22, 24, 210)
+    draw.rounded_rectangle([2, 2, w - 3, h - 3], radius=10, fill=plate,
+                           outline=(ARROW_LIT if lit else ARROW_GOLD) + (255,), width=2)
+    col = (ARROW_LIT if lit else ARROW_GOLD) + (255,)
+    cx, cy = w / 2.0, h / 2.0
+    step = 12 if direction == "right" else -12
+    for k in (0, 1):
+        base = cx + step * k - (6 if direction == "right" else -6)
+        tip = base + (18 if direction == "right" else -18)
+        draw.line([(base, cy - 30), (tip, cy)], fill=col, width=9)
+        draw.line([(tip, cy), (base, cy + 30)], fill=col, width=9)
+    return img
+
+
+def arrow_cell(direction, window=None):
+    """Where the screen puts a page arrow, in the same terms start.lua uses."""
+    window = window or screen_window()
+    w, h = ARROW
+    x1, y1, x2, y2 = window
+    cy = int(round((y1 + y2) / 2.0))
+    if direction == "left":
+        return {"cx": x1 + w // 2 + 16, "cy": cy}
+    return {"cx": x2 - w // 2 - 16, "cy": cy}
+
+
 def frame_sprite(colour, dim, reach=5, width=4):
     """The picked card's frame, in the player's own cursor colours.
 
@@ -224,7 +271,7 @@ def rewrite_system_sff(images):
     leave a stale card behind at the end of the wall.
     """
     _data, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    mine = {CARD_SPRITE} | set(FRAME_SPRITES.values())
+    mine = {CARD_SPRITE, ARROW_SPRITE} | set(FRAME_SPRITES.values())
     out = []
     for sp in sprites:
         if sp["group"] in mine:
@@ -251,16 +298,28 @@ def main():
         raise SystemExit("stage wall: [ExtraStages] is empty")
 
     images = {}
-    wall = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
-    cards, cols, rows = layout(len(refs))
-    for i, (ref, cell) in enumerate(zip(refs, cards)):
-        card = paint_card(ref)
-        images[(CARD_SPRITE, i)] = card
-        wall.alpha_composite(card, (int(round(cell["cx"] - CARD[0] / 2.0)),
-                                    int(round(cell["cy"] - CARD[1] / 2.0))))
+    for i, ref in enumerate(refs):
+        images[(CARD_SPRITE, i)] = paint_card(ref)
     for side, group in FRAME_GROUPS_ITEMS():
         colour, dim = FRAME_COLOURS[side]
         images[(group, 0)] = frame_sprite(colour, dim)
+    for (lit, direction), number in ARROW_STATES.items():
+        images[(ARROW_SPRITE, number)] = paint_arrow(direction, lit)
+
+    # The preview is what the screen shows: the first page, twelve cards, with its
+    # page arrow on the right when there is a second page to turn to.
+    wall = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
+    page = refs[:PAGE_SIZE]
+    cards, cols, rows = layout(len(page))
+    for i, cell in enumerate(cards):
+        wall.alpha_composite(images[(CARD_SPRITE, i)],
+                             (int(round(cell["cx"] - CARD[0] / 2.0)),
+                              int(round(cell["cy"] - CARD[1] / 2.0))))
+    if len(refs) > PAGE_SIZE:
+        cell = arrow_cell("right")
+        wall.alpha_composite(paint_arrow("right", False),
+                             (int(round(cell["cx"] - ARROW[0] / 2.0)),
+                              int(round(cell["cy"] - ARROW[1] / 2.0))))
 
     total = rewrite_system_sff(images)
     os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
@@ -268,11 +327,14 @@ def main():
     flat.paste(wall, (0, 0), wall)
     flat.save(PREVIEW)
 
-    print("  stage cards: %d painted, %d card + %d frame sprites, system.sff now %d sprites"
-          % (len(refs), len(refs), len(FRAME_SPRITES), total))
-    print("  card %dx%d, layout preview at %dx%d cards (%d across)"
-          % (CARD[0], CARD[1], cols, rows, cols))
+    pages = max(1, -(-len(refs) // PAGE_SIZE))
+    print("  stage cards: %d painted, %d card + %d frame + %d arrow sprites,"
+          " system.sff now %d sprites"
+          % (len(refs), len(refs), len(FRAME_SPRITES), len(ARROW_STATES), total))
+    print("  card %dx%d, %d pages of %d (%d across, %d down)"
+          % (CARD[0], CARD[1], pages, PAGE_SIZE, cols, rows))
     print("  preview: %s" % os.path.relpath(PREVIEW, ROOT))
+
 
 
 def FRAME_GROUPS_ITEMS():
