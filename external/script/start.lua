@@ -1739,10 +1739,11 @@ local labelAnims = {}
 -- from the edge and x=1544 lands the right one 62px from the other edge. y=0 is
 -- the title's own row: title.offset = 960,0.
 local LABEL_ART = {205, 47}
--- The right caption is mirrored off the screen edge, not placed by a number: the
--- canvas is 205 wide now, so x=1657 puts its ink 58px from the right edge, the
--- same inset the left one has.
-local LABEL_X = {58, 1657}
+-- The left caption sits this far in from the frame's edge, and the right one
+-- mirrors it off the other edge. Both are measured at draw time from the motif's
+-- own localcoord and the art's own width, so neither is a number that has to be
+-- kept in step with the frame width or a repaint: 1657 was both at once.
+local LABEL_INSET = 58
 local WORD_Y = 0
 
 local function labelAnim(pn)
@@ -1757,10 +1758,21 @@ local function labelAnim(pn)
 end
 
 function start.f_drawPlayerLabels()
+	local sw = 1920
+	pcall(function()
+		local lc = motif.info.localcoord
+		if lc ~= nil and lc[1] ~= nil and lc[1] > 0 then
+			sw = lc[1]
+		end
+	end)
 	for pn = 1, 2 do
 		local a = labelAnim(pn)
 		if a ~= nil then
-			spriteDraw(a, LABEL_X[pn], WORD_Y)
+			local x = LABEL_INSET
+			if pn == 2 then
+				x = sw - LABEL_INSET - LABEL_ART[1]
+			end
+			spriteDraw(a, x, WORD_Y)
 		end
 	end
 end
@@ -4012,9 +4024,12 @@ function start.f_selectScreen()
 				-- is left to the map you are on, so the word is never written twice.
 				local rndWord = randomStopAnim(stageListNo == 0)
 				if rndWord ~= nil then
-					local sh = 1080
+					local sw, sh = 1920, 1080
 					pcall(function()
 						local lc = motif.info.localcoord
+						if lc ~= nil and lc[1] ~= nil and lc[1] > 0 then
+							sw = lc[1]
+						end
 						if lc ~= nil and lc[2] ~= nil and lc[2] > 0 then
 							sh = lc[2]
 						end
@@ -4023,7 +4038,7 @@ function start.f_selectScreen()
 					-- is set at, so it needs no scaling here. It is placed by its own
 					-- canvas width so it stays centred on the screen.
 					local w, h = RANDOM_ART[1], RANDOM_ART[2]
-					spriteDraw(rndWord, 960 - math.floor(w / 2),
+					spriteDraw(rndWord, math.floor(sw / 2) - math.floor(w / 2),
 						sh - math.floor(h) - 8)
 				end
 				-- The fighters are not drawn here. This screen is the map wall and the

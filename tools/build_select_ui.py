@@ -224,7 +224,11 @@ def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
 # frames. The stock motif sets that to 2 and gives all three a different gold,
 # which is a 30Hz strobe. One colour and a switchtime longer than anyone will
 # sit on this screen makes the name hold still.
-NAME_SCALE = "1.5, 1.5"
+# 43.2 units - the menu's own line - on the 40px cell of the face above, so a run
+# of this tool on its own already puts the stage name where tools/build_fonts.py
+# will leave it. It was 1.5, which is 60 units on that cell: another copy of the
+# size the menu stopped using, and 1.39x the name when this tool ran alone.
+NAME_SCALE = "1.08, 1.08"
 NAME_GOLD = "236, 200, 120"
 SELECT_TEXT = (
     ("stage.font", f"{NAME_FONT}, 0, 0, {NAME_GOLD}"),

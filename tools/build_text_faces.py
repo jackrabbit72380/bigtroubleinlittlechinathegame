@@ -38,13 +38,14 @@ MOTIF = os.path.join(ROOT, "data", "ikemen1", "system.def")
 
 FACE = "10"          # Display
 FACE_LIT = "12"      # DisplayActive: the same face, in its lit bank
-# The caption size, in the motif's own 1920x1080 space. The fight screen's
-# captions are 67.5 units tall on a 1080p screen, which used to be 1.5 of the
-# Display cell (45px). tools/build_fonts.py bakes that cell at twice the pixels
-# now so 4K gets real detail instead of stretched art, so the scale is measured
-# off the shipped face rather than written down: 67.5 / cell. One size on paper,
-# one size on the glass, whatever the face is baked at.
-CAPTION_UNITS = 67.5
+# The caption size, in the motif's own 1920x1080 space: the main menu's own line,
+# 43.2 units - the 90px Display cell at 0.48, which is what [Title Info] and every
+# other menu uses. It was 67.5, the size of a face baked at 45px, and it stopped
+# being true when the face was rebaked at 90px: this tool then wrote 0.75 into 111
+# scale lines, including the main menu's own, so a run without tools/build_fonts.py
+# afterwards shipped every screen's text half again too large. The scale is still
+# measured off the shipped face rather than written down: units / cell.
+CAPTION_UNITS = 43.2
 
 
 def caption_size():
@@ -65,7 +66,10 @@ def caption_size():
 
 
 SIZE = caption_size()
-ROW = "0, 74"        # row pitch: the 67.5 cell plus air, or the rows collide
+# Row pitch: the line the caption face draws, plus the 6.5 units of air the old
+# 67.5-unit line was given. It was the literal "0, 74", which was that old line
+# written down a second time and left 30 units of air over a 43.2-unit row.
+ROW = "0, %d" % round(CAPTION_UNITS + 6.5)
 
 # namespace.font = face, bank, alignment, r, g, b[, extra...]
 FONT = re.compile(r"^(\s*)([A-Za-z0-9_*.]+)\.font(\s*=\s*)(-?\d+)(\s*,[^\r\n]*)?$")
@@ -218,8 +222,9 @@ def place_bottom_row(text):
 # draws the same face at 37px with ~3px between rows, which is what lets the list
 # sit inside that hole instead of printing across the fighters. Written here
 # because patch() has already forced every text scale to the caption size by the
-# time the screens are fitted.
-TITLE_SCALE = "0.48, 0.48"
+# time the screens are fitted - and it is the caption size it means, so it reads
+# that rather than repeating the number.
+TITLE_SCALE = SIZE
 
 FIT = {
     "[Pause Menu]": {"title.offset": "960, 118", "menu.pos": "960, 190"},
