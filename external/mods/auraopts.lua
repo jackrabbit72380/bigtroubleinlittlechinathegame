@@ -605,6 +605,22 @@ local function key(sec, name, fallback)
 	return fallback
 end
 
+-- The pause list's own text scale: the size every menu in this game is set at,
+-- and the sprite these screens borrow. Their offsets were written in multiples of
+-- the face's own size, which was the menu's size only while the face was baked at
+-- 45px - it is 90px now, so a bare 1 drew a row twice the height of the menus
+-- around it. The 0.48 here is used only if the motif cannot be read.
+local function menuScale()
+	local s = nil
+	pcall(function()
+		local v = motif.pause_menu.movelist.text.scale
+		if v ~= nil and v[1] ~= nil and v[1] > 0 then
+			s = v[1]
+		end
+	end)
+	return s or 0.48
+end
+
 local function drawRow(txt, text, x, y, colour, scale)
 	pcall(function()
 		textImgReset(txt)
@@ -630,7 +646,7 @@ local function drawGlowRow(txt, text, x, y, colour, got)
 		pcall(function()
 			textImgReset(txt)
 			textImgSetAlign(txt, 1)
-			pcall(textImgSetScale, txt, 1, 1)
+			pcall(textImgSetScale, txt, 0.8 * menuScale(), 0.8 * menuScale())
 			textImgSetColor(txt, colour[1], colour[2], colour[3], base)
 			textImgSetText(txt, text)
 			textImgSetPos(txt, x + dx, y + dy)
@@ -644,11 +660,11 @@ end
 -- The fight blends additively and this does not, so brightness is only a guide.
 local function drawSample(txt, sw, sh)
 	local cx, cy = sw * 0.78, sh * 0.40
-	drawRow(txt, 'LIVE SAMPLE', cx - 120, cy - 170, DIMC, 0.8)
-	drawRow(txt, 'for ' .. TARGET.label, cx - 120, cy - 142, DIMC, 0.8)
+	drawRow(txt, 'LIVE SAMPLE', cx - 120, cy - 170, DIMC, 0.8 * menuScale())
+	drawRow(txt, 'for ' .. TARGET.label, cx - 120, cy - 142, DIMC, 0.8 * menuScale())
 
 	if DRAFT.type == 0 then
-		drawRow(txt, 'nothing drawn', cx - 120, cy, DIMC, 0.8)
+		drawRow(txt, 'nothing drawn', cx - 120, cy, DIMC, 0.8 * menuScale())
 		return
 	end
 
@@ -667,7 +683,7 @@ local function drawSample(txt, sw, sh)
 			pcall(function()
 				textImgReset(txt)
 				textImgSetAlign(txt, 0)            -- 0 = centred on the point
-				pcall(textImgSetScale, txt, 1, 1)
+				pcall(textImgSetScale, txt, menuScale(), menuScale())
 				textImgSetColor(txt, colour[1], colour[2], colour[3], base)
 				textImgSetText(txt, 'GLOW')
 				textImgSetPos(txt, cx + (h - (n - 1) / 2) * step,
@@ -678,12 +694,12 @@ local function drawSample(txt, sw, sh)
 	end
 
 	drawRow(txt, string.format('%d copies at %d each', n * n, base),
-		cx - 120, cy + 100, DIMC, 0.8)
+		cx - 120, cy + 100, DIMC, 0.8 * menuScale())
 	drawRow(txt, string.format('%.0f opacity per copy in the fight',
-		got.alpha / (got.quality * 0.25)), cx - 120, cy + 134, DIMC, 0.8)
+		got.alpha / (got.quality * 0.25)), cx - 120, cy + 134, DIMC, 0.8 * menuScale())
 	if got.minpower > 0 then
 		drawRow(txt, string.format('only from %d power', got.minpower),
-			cx - 120, cy + 168, DIMC, 0.8)
+			cx - 120, cy + 168, DIMC, 0.8 * menuScale())
 	end
 end
 
@@ -734,8 +750,8 @@ local function auraDraw(sec)
 	drawSample(txt, sw, sh)
 
 	y = y + (#ROWS) * pitch + 18
-	drawRow(txt, 'UP / DOWN  ROW      LEFT / RIGHT  CHANGE', x, y, DIMC, 0.8)
-	drawRow(txt, 'Z  APPLY AND CLOSE      ESC  CLOSE', x, y + 32, DIMC, 0.8)
+	drawRow(txt, 'UP / DOWN  ROW      LEFT / RIGHT  CHANGE', x, y, DIMC, 0.8 * menuScale())
+	drawRow(txt, 'Z  APPLY AND CLOSE      ESC  CLOSE', x, y + 32, DIMC, 0.8 * menuScale())
 
 	local status = notice
 	if status == nil then
@@ -749,7 +765,7 @@ local function auraDraw(sec)
 			status = 'saved for ' .. TARGET.label
 		end
 	end
-	drawRow(txt, status, x, y + 70, DIMC, 0.8)
+	drawRow(txt, status, x, y + 70, DIMC, 0.8 * menuScale())
 
 	-- leave the shared sprite as the pause menu expects it
 	pcall(textImgReset, txt)

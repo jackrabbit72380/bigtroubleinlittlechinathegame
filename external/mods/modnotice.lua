@@ -46,6 +46,22 @@ local function noticeSprite()
 	return nil
 end
 
+-- The pause list's own text scale: the size every menu in this game is set at,
+-- and the sprite these screens borrow. Their offsets were written in multiples of
+-- the face's own size, which was the menu's size only while the face was baked at
+-- 45px - it is 90px now, so a bare 1 drew a row twice the height of the menus
+-- around it. The 0.48 here is used only if the motif cannot be read.
+local function menuScale()
+	local s = nil
+	pcall(function()
+		local v = motif.pause_menu.movelist.text.scale
+		if v ~= nil and v[1] ~= nil and v[1] > 0 then
+			s = v[1]
+		end
+	end)
+	return s or 0.48
+end
+
 function modNotice(consoleText, screenText)
 	print(consoleText or '')
 	local txt = noticeSprite()
@@ -56,7 +72,10 @@ function modNotice(consoleText, screenText)
 		local sw, sh = screenSize()
 		textImgReset(txt)
 		textImgSetAlign(txt, 0)      -- 0 = centred, the engine's font convention
-		pcall(textImgSetScale, txt, 1.5, 1.5)   -- optional on older builds
+		-- 1.5 rows above the menu's own size, and that size comes from the
+		-- motif: 1.5 alone was 1.5 x the face, three menu rows tall
+		local noticeScale = 1.5 * menuScale()
+		pcall(textImgSetScale, txt, noticeScale, noticeScale)   -- optional on older builds
 		textImgSetColor(txt, 255, 228, 140, 255)
 		textImgSetText(txt, screenText or consoleText or '')
 		textImgSetPos(txt, sw / 2, sh / 2)

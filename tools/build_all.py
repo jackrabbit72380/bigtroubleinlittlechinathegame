@@ -206,6 +206,11 @@ def main():
     # which is how the album art, the controller database and the shaders were
     # found missing from it.
     scripts.append("check_stamp_coverage.py")
+    # Every menu's text against the menu's own line: the motif's 112 rows and the
+    # Lua screens that borrow the pause sprite. Three of those had kept their own
+    # copy of the size and drew at 0.8, 1 and 1.5 of the face instead of reading
+    # it, which put them a half to three times the size of the menus around them.
+    scripts.append("check_menu_text.py")
     scripts.append("validate.py")
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry

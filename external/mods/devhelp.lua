@@ -174,6 +174,22 @@ local function anchor(sec)
 	return cx, cy
 end
 
+-- The pause list's own text scale: the size every menu in this game is set at,
+-- and the sprite these screens borrow. Their offsets were written in multiples of
+-- the face's own size, which was the menu's size only while the face was baked at
+-- 45px - it is 90px now, so a bare 1 drew a row twice the height of the menus
+-- around it. The 0.48 here is used only if the motif cannot be read.
+local function menuScale()
+	local s = nil
+	pcall(function()
+		local v = motif.pause_menu.movelist.text.scale
+		if v ~= nil and v[1] ~= nil and v[1] > 0 then
+			s = v[1]
+		end
+	end)
+	return s or 0.48
+end
+
 -- Each row is two cells drawn from their measured widths - the left one starts
 -- half the block left of the anchor, the right one exactly past the left column
 -- and the gap - so the two cannot print through each other whatever the face
@@ -211,8 +227,11 @@ local function drawPlain(sec)
 		end
 	end
 	local total = lw + COL_GAP + rw
-	local scale = 1
-	if total > avail then scale = avail / total end
+	-- the rows are the menu's size, and shrink only if the block outgrows
+	-- the screen: the ceiling is the menu scale, not the face's own 1.0
+	local base = menuScale()
+	local scale = base
+	if total > avail then scale = base * avail / total end
 	local xl = cx - total * scale / 2
 	local xr = xl + (lw + COL_GAP) * scale
 	for i = 1, ROWS do
