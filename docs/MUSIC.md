@@ -29,9 +29,11 @@ music when the filename changes.
 
 Stage fight music is separate, per stage: the `[Music] bgmusic =` line of each
 `stages/*.def`, filled from the `MUSIC` table in `tools/stages_hd.py` — for example
-`bgmusic = sound/LoPansDemise.ogg` on Lo Pan's Throne and Lo Pan's Hallway. Lo Pan's
-Ceremony is the one arena still blank there, so it falls back to whatever the menu
-is playing; the training room is deliberately silent.
+`bgmusic = sound/LoPansDemise.ogg` on Lo Pan's Throne and Lo Pan's Hallway, and
+`12 - Lopan's Wedding Arrival` from the game-version OST on Lo Pan's Ceremony, which
+is the one ceremony cue in the score. Every arena has a track of its own there now;
+the training room is deliberately silent, and Lo Pan's Office keeps `1 - Prologue`
+for the quiet before the fight.
 
 ## Music select
 

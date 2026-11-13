@@ -1233,6 +1233,9 @@ def _scene(sid, layers):
 MUSIC = {
     "lopans_throne": "sound/LoPansDemise.ogg",
     "lopans_hallway": "sound/LoPansDemise.ogg",
+    # The wedding itself: the one ceremony cue in the score, and the only stage
+    # that was left relying on a hand-edited def until it lived here.
+    "lopans_ceremony": "sound/Big Trouble in Little China OST Game Version/12 - Lopan's Wedding Arrival.ogg",
     "wingkong_exchange": "sound/WingKongExchange.ogg",
     "chinatown_alley": "sound/AlleyWar.ogg",
     "porkchop_express": "sound/PorkChopExpress.ogg",
