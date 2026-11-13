@@ -52,7 +52,7 @@ PRELUDE = r"""
 local MODE = ...
 draws, logs, frames, texts, WRITES = {}, {}, 0, {}, {}
 INPUT_DOWN, ESC_READY, RIGHT_FRAMES = false, false, 0
-FILE_TEXT, SAVED_TEXT, STAGE_TEXT, JSON = '', '', '', {}
+FILE_TEXT, SAVED_TEXT, STAGE_TEXT, STAGE_PATH, JSON = '', '', '', '', {}
 
 local function sprite(tag) return { tag = tag } end
 
@@ -142,9 +142,21 @@ getInput = function(player, keys)
 end
 -- the music the game was playing when the browser opened
 bgmStop = function() BG_STOPPED = (BG_STOPPED or 0) + 1 end
--- and what the browser asked the engine to play
+stopBgm = function() BG_STOPPED = (BG_STOPPED or 0) + 1; return true end
+-- The engine's documented call takes a table: { bgm = path } plays a track and
+-- { source = 'stagedef' } hands playback back to the stage's def, so the stub
+-- answers both the way the engine would.
 PLAYED = ''
-playBGM = function(file) PLAYED = tostring(file); return true end
+STAGE_BGM = ''
+playBgm = function(params)
+    if type(params) ~= 'table' then PLAYED = tostring(params); return true end
+    if params.source ~= nil then
+        if params.source == 'stagedef' then PLAYED = tostring(STAGE_BGM) end
+        return true
+    end
+    PLAYED = tostring(params.bgm)
+    return true
+end
 
 -- The engine hands the browser motif.optionbgdef; the shipped one has no
 -- bgclearcolor, which is the shape that used to kill the screen.
@@ -190,7 +202,10 @@ main = {
     t_itemname = {},
     f_fileRead = function(path)
         if path == 'save/music_now.cfg' and SAVED_TEXT ~= '' then return SAVED_TEXT end
-        if STAGE_TEXT ~= '' and path ~= 'data/music.json' then return STAGE_TEXT end
+        if STAGE_TEXT ~= '' and path ~= 'data/music.json' then
+            if STAGE_PATH == '' or path == STAGE_PATH then return STAGE_TEXT end
+            return ''
+        end
         return FILE_TEXT
     end,
     f_itemnameUpper = function(text) return text end,
@@ -429,6 +444,8 @@ def engine_for(mode: str, raw: str, saved: str = ""):
     lua.execute(PRELUDE, mode)
     g.FILE_TEXT = raw
     g.SAVED_TEXT = saved
+    g.STAGE_PATH = ''
+    g.STAGE_BGM = ''
     if raw:
         lua.execute("JSON = " + lua_literal(json.loads(raw)))
     with open(NOTICE, encoding="utf-8") as handle:
@@ -507,6 +524,7 @@ def remembered_cases(raw: str):
              "[StageInfo]\r\nzoffset = 960\r\n")
     lua, g = engine_for("nobgclearcolor", raw, saved=state)
     g.STAGE_TEXT = stage
+    g.STAGE_BGM = "sound/AlleyWar.ogg"
     g.ESC_AFTER = 6
     g.LEFT_FRAMES = 1
     g.INPUT_DOWN = True
@@ -525,6 +543,40 @@ def remembered_cases(raw: str):
     if "AlleyWar.ogg" not in str(g.PLAYED):
         problems.append(f"page one does not play the stage's own track (played {g.PLAYED!r})")
     cases.append(("page one is the game's music again and clears the override", problems))
+
+    # a stage can arrive as a bare name, which is how some modes write it
+    lua, g = engine_for("nobgclearcolor", raw, saved=state)
+    g.STAGE_TEXT = stage
+    g.STAGE_BGM = "sound/AlleyWar.ogg"
+    g.STAGE_PATH = "stages/white_tiger_bar.def"
+    g.ESC_AFTER = 6
+    g.LEFT_FRAMES = 1
+    g.INPUT_DOWN = True
+    lua.execute("main.t_musicSelect.stage = 'white_tiger_bar'")
+    lua.execute("main.t_musicSelect.open()")
+    problems = []
+    if "AlleyWar.ogg" not in str(g.PLAYED):
+        problems.append(f"a stage named without a path is not found (played {g.PLAYED!r})")
+    cases.append(("a stage named without a path still yields its own track", problems))
+
+    # and a stage whose music cannot be identified must not silence the fight
+    lua, g = engine_for("nobgclearcolor", raw)
+    g.ESC_AFTER = 6
+    g.INPUT_DOWN = True
+    lua.execute("main.t_musicSelect.open()")
+    problems = []
+    if g.main.t_musicSelect.params is not None:
+        problems.append("page one keeps an override it no longer has")
+    if str(g.PLAYED) != "":
+        problems.append(f"page one plays a track it could not identify: {g.PLAYED!r}")
+    written = ""
+    try:
+        written = str(g.WRITES["save/music_now.cfg"])
+    except Exception:
+        written = ""
+    if "override=0" not in written:
+        problems.append("page one does not record that nothing is overridden")
+    cases.append(("page one with an unknown stage leaves the music playing", problems))
     return cases
 
 

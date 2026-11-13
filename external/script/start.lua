@@ -5511,8 +5511,12 @@ function start.f_buildLoadStartParams(arg, doSelectMissing, t_orderRemap)
 		parts[#parts + 1] = main.t_musicSelect.params
 	end
 	-- Music select needs to know which stage is loading: page one of its browser
-	-- hands playback back to that stage's own bgmusic.
-	if type(main.t_musicSelect) == "table" and type(t.stage) == "string" then
+	-- hands playback back to that stage's own bgmusic. An empty stage leaves the
+	-- last one recorded in place - a rematch keeps the stage it just fought on,
+	-- and a mode that leaves the stage to its own list is better served by the
+	-- track the browser already knows than by forgetting it.
+	if type(main.t_musicSelect) == "table" and type(t.stage) == "string"
+		and t.stage ~= "" then
 		main.t_musicSelect.stage = t.stage
 	end
 	local function addParam(k, v)

@@ -147,11 +147,27 @@ local function stageMusic()
 	end
 	ms.stageFileFor = ms.stage
 	ms.stageFile = nil
+	-- A stage reaches this screen as whatever select.def or the mode wrote:
+	-- "stages/x.def", "stages/x", or a bare "x". All three are tried, because
+	-- forgetting the first one that fails would leave page one silent for the
+	-- rest of the session.
+	local candidates = { ms.stage }
+	if not ms.stage:find('[/\\]') then
+		candidates[#candidates + 1] = 'stages/' .. ms.stage
+	end
+	for _, path in ipairs(candidates) do
+		if not path:find('%.def$') then
+			candidates[#candidates + 1] = path .. '.def'
+		end
+	end
 	local raw = nil
 	if type(main.f_fileRead) == 'function' then
-		local ok, text = pcall(main.f_fileRead, ms.stage, 'r', true)
-		if ok and type(text) == 'string' then
-			raw = text
+		for _, path in ipairs(candidates) do
+			local ok, text = pcall(main.f_fileRead, path, 'r', true)
+			if ok and type(text) == 'string' and text:find('%[Music%]') then
+				raw = text
+				break
+			end
 		end
 	end
 	if raw == nil then
@@ -521,14 +537,20 @@ end
 -- all, so it is probed like every other engine call in this file - a build
 -- without it browses exactly as before.
 local function stopGameMusic()
-	if type(bgmStop) == 'function' then
-		if pcall(bgmStop) then
+	-- stopBgm is the name the engine documents for Lua. Lua is case-sensitive,
+	-- so bgmStop and musicStop are different functions and only exist in older
+	-- builds; they are tried after it rather than instead of it.
+	if type(stopBgm) == 'function' then
+		if pcall(stopBgm) then
 			return true
 		end
 	end
-	if type(musicStop) == 'function' then
-		if pcall(musicStop) then
-			return true
+	for _, name in ipairs({ 'bgmStop', 'musicStop' }) do
+		local fn = _G[name]
+		if type(fn) == 'function' and fn ~= stopBgm then
+			if pcall(fn) then
+				return true
+			end
 		end
 	end
 	return false
@@ -554,29 +576,45 @@ local function playTrack(file)
 	if file == nil or file == '' then
 		return false
 	end
-	-- playBGM is the engine's own call (the wiki lists it, and main.lua's
-	-- f_resetBG calls it the same way). Some builds want the path on its own and
-	-- some want the {path, volume, loopstart, loopend} table, so both are tried.
-	if type(playBGM) == 'function' then
-		if pcall(playBGM, file) then
-			return true
-		end
-		if pcall(playBGM, { file, 100, 0, 0 }) then
+	-- playBgm is the call the engine documents, and it takes a table: playBgm{
+	-- bgm = path }. Passing the path on its own - or to playBGM, which is a
+	-- different name in a case-sensitive language - does nothing at all, so the
+	-- table form is tried first and the older spellings only after it.
+	if type(playBgm) == 'function' then
+		if pcall(playBgm, { bgm = file }) then
 			return true
 		end
 	end
-	for _, name in ipairs({ 'bgmPlay', 'playBgm', 'musicPlay' }) do
+	for _, name in ipairs({ 'playBGM', 'bgmPlay', 'musicPlay' }) do
 		local fn = _G[name]
-		if type(fn) == 'function' then
+		if type(fn) == 'function' and fn ~= playBgm then
 			if pcall(fn, file) then
 				return true
 			end
-			if pcall(fn, file, true) then
+			if pcall(fn, { file }) then
 				return true
 			end
 		end
 	end
 	return false
+end
+
+-- Playback back on the stage's own track. The engine can restore that itself
+-- from the stage's def - which also brings back its volume and loop points -
+-- but a def that names no music leaves the fight silent, so nothing is done
+-- unless the def actually names a track.
+local function playGameMusic()
+	local file = stageMusic()
+	if file == nil then
+		return false
+	end
+	if type(playBgm) == 'function' then
+		if pcall(playBgm, { source = 'stagedef' }) then
+			return true
+		end
+	end
+	stopGameMusic()
+	return playTrack(file)
 end
 
 -- data/albums.sff holds every boxFront.png; sffNew is the engine call that opens
@@ -715,11 +753,9 @@ function ms.open()
 	-- game's music and starts the track under the cursor.
 	local function preview(album, song)
 		if album == nil or album.name == '' then
-			local file = stageMusic()
-			stopGameMusic()
-			if file ~= nil then
-				playTrack(file)
-			end
+			-- No stage track to hand back to (an unassigned stage, or a def that
+			-- names none): leave whatever is playing rather than fall silent.
+			playGameMusic()
 			ms.playing = nil
 			return
 		end
@@ -865,11 +901,7 @@ function ms.open()
 				-- remembers that nothing is overridden any more.
 				ms.params = nil
 				ms.chosen = nil
-				stopGameMusic()
-				local stageFile = stageMusic()
-				if stageFile ~= nil then
-					playTrack(stageFile)
-				end
+				playGameMusic()
 				writeState('', '', '', false)
 			end
 			resetKey()
