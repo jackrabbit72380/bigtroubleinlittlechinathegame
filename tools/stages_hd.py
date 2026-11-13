@@ -1253,6 +1253,7 @@ MUSIC = {
     "fish_market": "sound/Big Trouble in Little China OST Movie Version/8 - Here Come the Storms.ogg",
     "shadow_alley": "sound/Big Trouble in Little China OST Movie Version/5 - The Alley (War).ogg",
     "house_of_fire": "sound/Big Trouble in Little China OST Movie Version/2 - Pork Chop Express (Main Title).ogg",
+    "chinatown_market": "sound/Big Trouble in Little China OST Movie Version/9 - Wing Kong Exchange.ogg",
 }
 
 STAGES = {

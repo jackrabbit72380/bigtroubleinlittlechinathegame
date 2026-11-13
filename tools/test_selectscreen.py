@@ -401,11 +401,11 @@ def check_stage_wall(problems):
     # every page at the size they have always been drawn at.
     pages_of = lua.eval("start.f_stagePages")
     page_of = lua.eval("start.f_stagePage")
-    total = 26
+    total = 27
     if int(pages_of(total)) != 2:
-        problems.append("26 maps do not make two grids of fifteen")
+        problems.append("27 maps do not make two grids of fifteen")
     first_page, last_page = page_of(total, 1), page_of(total, 2)
-    if int(first_page["count"]) != 15 or int(last_page["count"]) != 11:
+    if int(first_page["count"]) != 15 or int(last_page["count"]) != 12:
         problems.append("the grids do not hold fifteen maps each")
     if int(first_page["size"]) != int(last_page["size"]):
         problems.append("the grids are not the same size from page to page")

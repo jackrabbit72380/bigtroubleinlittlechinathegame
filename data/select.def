@@ -121,6 +121,7 @@ stages/gracies_apartment.def  ; Gracie's Apartment - the living room, its books 
 stages/fish_market.def  ; Fish Market - the tiled back room, its pipes, the steel door and the catch
 stages/shadow_alley.def  ; Shadow Alley - the lane at night, the neon, the scaffold poles, the pedicab
 stages/house_of_fire.def  ; House of Fire - the old shop, its cabinets and counter, the car kept in it
+stages/chinatown_market.def  ; Chinatown Market - the stalls at night, their produce, the red banner and the fish tubs
 
 ;-------------------------------------------------------------------------------
 [Options]
