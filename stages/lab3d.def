@@ -1,0 +1,121 @@
+;This stage's model and environment come from Violin Ken's "Seth lab" 3D scene
+;(lab.glb and lab.hdr in concept_art/stages/lab3dstage); the def is wired for
+;this roster.
+;--------------------------------------------------------
+[Info]
+name = "The 3-D Lab"
+displayname = "The 3-D Lab"
+author = "Violin Ken; wired for this roster"
+
+;--------------------------------------------------------
+[Camera]
+startx = 0
+starty = 0
+boundleft = -900
+boundright = 900
+boundhigh = -600
+boundlow = 0
+
+verticalfollow = .6
+floortension = 200
+tension = 200
+
+overdrawhigh = 120
+overdrawlow = 120
+cuthigh = 0
+cutlow = 0
+
+; The scene's own framing: a little closer in than the Storms stages, and its
+; camera starts zoomed (startzoom 1.2) so the bench and the wall of monitors
+; fill the frame before the fighters move apart.
+startzoom = 1.2
+zoomout = .75
+zoomin = 1.0
+zoomindelay = 40
+
+;Field of view. 40 here, against the Storms stages' 30: the room is small and
+;the walls close in, so a wider lens keeps the floor and the ceiling in shot.
+fov = 40
+
+yshift = -.35
+
+;--------------------------------------------------------
+[PlayerInfo]
+;--- Player 1 ---
+p1startx = -280
+p1starty = 0
+p1facing = 1
+
+;--- Player 2 ---
+p2startx = 280
+p2starty = 0
+p2facing = -1
+
+;--- Common ---
+leftbound  = -700
+rightbound =  700
+
+;--------------------------------------------------------
+[Bound]
+screenleft = 35
+screenright = 35
+
+;--------------------------------------------------------
+[StageInfo]
+zoffset = 660
+
+autoturn = 1
+resetBG = 1
+
+localcoord = 1280, 720
+xscale = 1
+yscale = 1
+
+portraitscale = 1
+
+;--------------------------------------------------------
+[Shadow]
+intensity = 100
+color = 0,0,0
+yscale = .25
+fade.range = -100,0
+
+;--------------------------------------------------------
+[Reflection]
+intensity = 0
+yscale = 1
+fade.range = -100,0
+
+;--------------------------------------------------------
+[Music]
+bgmusic = sound/Big Trouble in Little China OST Game Version/03 - Abduction At Airport.ogg
+bgmvolume = 100
+
+;========================================================
+[BGdef]
+
+;Filename of 3D model file
+;Supported file types are gltf and glb; supported by most modern 3D model programs.
+;It is recommended to use PNG/JPEG/embedded image format for textures. Compressed DDS textures are not supported.
+;Make sure the world origin of the model is at the camera's starting point.
+model = lab3d.glb
+
+;Filename of .sff file, required by spec (and for stage portraits)
+spr = lab3d.sff
+
+;-------------------------------------
+; Model element definition
+[Model]
+environment = lab3d.hdr
+environmentintensity = .5
+
+; X, Y, and Z coordinates of the model
+offset = 0,-.08,-.5
+
+; Scale of the model
+scale = 0.09, 0.09, 0.09
+
+;-------------------------------------
+; Stage portrait data
+[Begin Action 9000]
+9000,1, 0,0,-1

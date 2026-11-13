@@ -124,6 +124,7 @@ stages/house_of_fire.def  ; House of Fire - the old shop, its cabinets and count
 stages/chinatown_market.def  ; Chinatown Market - the stalls at night, their produce, the red banner and the fish tubs
 stages/waterfront_docks.def  ; Waterfront Docks - the harbour quay, the moored junk, the containers and the wet planks
 stages/lost_souls_cemetery.def  ; Lost Souls Cemetery - the vault, the iron fence, the leaning stones and the moon
+stages/lab3d.def  ; The 3-D Lab - a 3D model stage: the bench, the monitors and the lab's work lights
 
 ;-------------------------------------------------------------------------------
 [Options]
