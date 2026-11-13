@@ -2500,11 +2500,11 @@ fadein.time = 0
 fadein.col = 0, 0, 0
 fadeout.time = 0
 fadeout.col = 0, 0, 0
-title.offset = 960, 160
+title.offset = 960, 310
 title.font = 10,0,0, 255, 228, 140
 title.scale = 0.48, 0.48
 title.text = PAUSE
-menu.pos = 960, 300
+menu.pos = 960, 410
 menu.item.offset = 0, 0
 menu.item.font = 10,0,0, 240, 196, 88
 menu.item.scale = 0.48, 0.48
@@ -2525,7 +2525,7 @@ menu.item.value.active.font = 11,0,-1, 255, 228, 140
 menu.item.value.active.scale = 1.08, 1.08
 menu.item.spacing = 0, 40
 ;menu.window.margins.y = 0, 0
-menu.window.visibleitems = 10
+menu.window.visibleitems = 9
 menu.boxcursor.visible = 0   ;rows already highlight, so no box to flash
 menu.boxcursor.coords = -254, 0, 254, 39
 menu.boxcursor.col = 255, 228, 140
@@ -2598,7 +2598,7 @@ menu.itemname.aura = Aura
 ;Training menu screen definition
 [Training Pause Menu]
 movelist.text.offset = 0, 54
-title.offset = 960, 160
+title.offset = 960, 310
 movelist.pos = 210, 90
 movelist.glyphs.offset = 0, 0
 movelist.title.text = Command List - %s
@@ -2619,9 +2619,9 @@ menu.item.font = 10,0,0, 240, 196, 88
 menu.item.scale = 0.48, 0.48
 menu.boxcursor.visible = 0   ;rows already highlight, so no box to flash
 menu.boxcursor.coords = -254, 0, 254, 39
-menu.window.visibleitems = 10
+menu.window.visibleitems = 9
 menu.item.spacing = 0, 40
-menu.pos = 960, 300
+menu.pos = 960, 410
 
 ; If not overridden, values used for [Menu Info] are shared with this group.
 ; Refer to system.base.def for an example how to modify pause screen menus.

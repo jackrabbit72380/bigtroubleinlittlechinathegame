@@ -231,26 +231,44 @@ def drop_keys(text, prefixes):
 # Every "[* Pause Menu]" section is a separate motif block, and the engine tops
 # derived ones up from its own default motif instead of from our [Pause Menu].
 # Anything not written here renders with the stock layout, so they all share it.
+# The menu's own line and pitch, in the motif's 1920x1080 space. Every caption is
+# settled on these, and the pause block below is built from them, so they live
+# here rather than beside that pass.
+MENU_INK = 43.2                # the main menu's letters: 90px cell x 0.48
+MENU_PITCH = 40                # the main menu's own row pitch
+FRAME_W, FRAME_H = 1920, 1080  # [Info] localcoord
+# The pause list is centred as one block - heading, the air under it, and the rows
+# the window shows - and every offset below is derived from the frame and the
+# pitch instead of being written down. It used to be a literal 160/300 with a
+# 60-unit pitch: when the pitch was settled on the menu's own 40 nothing recentred
+# it, so the list ended 200 units above the bottom of the frame with the heading
+# 380 below the top - the screen read as a list floating in the upper third.
+PAUSE_ROWS = 9                 # the pause menu's own entries, the most it shows
+PAUSE_GAP = 100                # air between the heading's line and the first row
+PAUSE_BLOCK = PAUSE_GAP + PAUSE_ROWS * MENU_PITCH
+PAUSE_TOP = (FRAME_H - PAUSE_BLOCK) // 2
+PAUSE_FIRST = PAUSE_TOP + PAUSE_GAP
+
 PAUSE_LAYOUT = (
     # The list is centred on the frame both ways: labels are centre-aligned (0)
-    # on 1920/2 = 960 and the rows start at 300 on a 60px pitch, so the ten rows
-    # the window can show end at 891 on a 1080-tall frame. It used to be a
-    # left-aligned block at 736,140, which read as top-left rather than centred -
+    # on 1920/2 = 960 and the block above centres heading and rows together. It
+    # used to be a left-aligned block at 736,140, which read as top-left rather
+    # than centred -
     # and the row text was not even drawn from menu.pos: this engine bakes the
     # stock 320x240 [Menu Info] anchor into the pause item sprites, which put the
     # list at the bottom of the screen, off the edge, while the cursor band drew
     # at menu.pos. main.f_menuItemPos now places every row from menu.pos.
-    ("menu.pos", "960, 300"),
+    ("menu.pos", "%d, %d" % (FRAME_W // 2, PAUSE_FIRST)),
     # No dark plate behind the pause list.
     ("menu.boxbg.visible", "0"),
-    ("menu.item.spacing", "0, 60"),
-    ("menu.window.visibleitems", "10"),
+    ("menu.item.spacing", "0, %d" % MENU_PITCH),
+    ("menu.window.visibleitems", "%d" % PAUSE_ROWS),
     # The heading sits over the centred column, not a third of the way across.
-    ("title.offset", "960, 160"),
-    # The band is centred on the same column as the rows and covers the 51px row
-    # the 1.5x face draws: it is drawn from pos.y + coords[2] with height
-    # coords[4]-coords[2]+1, so 0..50 sits on the row it marks.
-    ("menu.boxcursor.coords", "-254, 0, 254, 50"),
+    ("title.offset", "%d, %d" % (FRAME_W // 2, PAUSE_TOP)),
+    # The band is centred on the same column as the rows and covers exactly one
+    # row of the menu pitch: it is drawn from pos.y + coords[2] with height
+    # coords[4]-coords[2]+1, so it sits on the row it marks.
+    ("menu.boxcursor.coords", "-254, 0, 254, %d" % (MENU_PITCH - 1)),
     # Centre-aligned: every row centres on 960, so a long label cannot hang off
     # one side of the band the way the old left-aligned column did.
     ("menu.item.font", f"{D},0,0, {GOLD}"),
@@ -1788,8 +1806,6 @@ def halve_paired_scales(text):
 # column. Each family gets the scale that puts its own face on 43px, so Display
 # stays at 0.48 and Body comes up from 0.75 to 1.08 - both land on the same
 # letter height, which is the point.
-MENU_INK = 43.2                # the main menu's letters: 90px cell x 0.48
-MENU_PITCH = 40                # the main menu's own row pitch
 # fontN -> the cell height that face draws, for the families this pass sizes
 FACE_INK = {"10": 90.0, "11": 40.0, "12": 90.0}
 MIDDLE_X = 960                 # the middle of the 1920 frame

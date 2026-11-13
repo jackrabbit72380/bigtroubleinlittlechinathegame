@@ -115,6 +115,21 @@ def check_section(label, values, frame_w, frame_h):
     centre = (pos[1] + last) / 2.0
     if abs(centre - frame_h / 2) > 100:
         problems.append(f"{label}: the block centres on y={centre:.0f}, not the middle")
+    # ...and the heading belongs to that block: a list can sit centred on its own
+    # while the whole screen reads high, which is exactly what a heading at 160
+    # with rows from 300 did once the pitch came down to the menu's own 40.
+    try:
+        title_y = numbers(values["title.offset"])[1]
+    except (KeyError, ValueError, IndexError):
+        problems.append(f"{label}: the section has no heading offset")
+    else:
+        mid = (title_y + last) / 2.0
+        if abs(mid - frame_h / 2) > 40:
+            problems.append(f"{label}: heading and rows centre on y={mid:.0f}, "
+                            "not the middle")
+        if last > numbers(values.get("menu.arrow.down.offset", "0, 1080"))[1] - 8:
+            problems.append(f"{label}: the last row ends at y={last:.0f}, on the "
+                            "scroll arrow")
 
     # the baked base must be ignored: a sprite already sitting at the stock
     # anchor still lands where the section says. The sprite is a name so the
