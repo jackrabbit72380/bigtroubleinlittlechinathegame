@@ -10,7 +10,12 @@ So the pack's own picture comes back, written into all three sheets because the
 rain pass is the same island under a different sky. The card the wall draws is
 baked from this sprite by tools/build_stage_wall.py, so run that afterwards.
 
-Run: python3 tools/build_stage3d_previews.py && python3 tools/build_stage_wall.py
+Run: python3 tools/build_stage3d_previews.py && python3 tools/fit_stage_previews.py
+     && python3 tools/build_stage_wall.py
+
+The fitter is not optional: this writes the pack's 240x100 picture back, which is
+the wrong shape for the VS screen's 1215x398 card, and the fitter is what refits
+it. tools/build_all.py runs both.
 """
 
 from __future__ import annotations

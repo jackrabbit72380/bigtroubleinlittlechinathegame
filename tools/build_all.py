@@ -171,6 +171,11 @@ def main():
     # file the Developer Keys entry goes into, so it runs straight after it.
     if devhelp_motif and os.path.isfile(devhelp_motif):
         scripts.append("build_text_faces.py")
+        # Sizes every stage's own preview so the VS screen draws it on the
+        # roster's card: it reads that sprite straight from the stage's sheet and
+        # multiplies it by localcoord and portraitscale, so a sheet holding
+        # another shape lands at another size and is cropped by the window.
+        scripts.append("fit_stage_previews.py")
         # bakes the stage wall from the preview sprites the stage builds just made
         scripts.append("build_stage_wall.py")
     # The menu's confirm sample is a struck bell rather than the stock beep.
@@ -211,6 +216,9 @@ def main():
     # copy of the size and drew at 0.8, 1 and 1.5 of the face instead of reading
     # it, which put them a half to three times the size of the menus around them.
     scripts.append("check_menu_text.py")
+    # ...and the VS screen's two pictures: every roster stage on its 1215x398
+    # card and every fighter's portrait inside the 360x420 art box.
+    scripts.append("check_vs_previews.py")
     scripts.append("validate.py")
     for entry in scripts:
         script, *args = (entry,) if isinstance(entry, str) else entry
