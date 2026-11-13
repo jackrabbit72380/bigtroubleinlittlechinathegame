@@ -40,22 +40,22 @@ SELECT_DEF = os.path.join(ROOT, "data", "select.def")
 
 # The card's own size in motif pixels, and the number the screen draws it at. A
 # different size here means a rebuild; where the cards sit does not.
-CARD = (457, 150)
+CARD = (510, 166)
 CARD_SPRITE = 240
 FRAME_SPRITES = {1: 241, 2: 242}
 
 # The layout below comes from start.stageGrid so the preview cannot drift from the
 # screen again. WINDOW is the last known value, used only if start.lua cannot be read.
-WINDOW = (80, 300, 1840, 970)
+WINDOW = (80, 72, 1840, 1000)
 PAD = 14
-# Three cards across is what the window holds, and a page is twelve of them -
-# four rows, 642px - which is the size the wall was designed for. The pool is
-# bigger than one page, so start.lua draws one page at a time with an arrow at
-# the side of the window to turn it.
+# Three cards across is what the window holds, and a grid is fifteen of them -
+# five rows, 926px of the screen's own band - which fills the screen. The pool is
+# bigger than one grid, so start.lua draws one grid at a time with a small arrow
+# at the side of the window to turn it.
 COLS = 3
-PAGE_SIZE = 12
+PAGE_SIZE = 15
 # the page arrow, and the four sprites it is baked as: left/right, at rest/lit
-ARROW = (110, 150)
+ARROW = (84, 112)
 ARROW_SPRITE = 243
 ARROW_STATES = {(False, "left"): 0, (True, "left"): 1,
                 (False, "right"): 2, (True, "right"): 3}
@@ -222,12 +222,12 @@ def paint_arrow(direction, lit):
                            outline=(ARROW_LIT if lit else ARROW_GOLD) + (255,), width=2)
     col = (ARROW_LIT if lit else ARROW_GOLD) + (255,)
     cx, cy = w / 2.0, h / 2.0
-    step = 12 if direction == "right" else -12
+    step = 10 if direction == "right" else -10
     for k in (0, 1):
-        base = cx + step * k - (6 if direction == "right" else -6)
-        tip = base + (18 if direction == "right" else -18)
-        draw.line([(base, cy - 30), (tip, cy)], fill=col, width=9)
-        draw.line([(tip, cy), (base, cy + 30)], fill=col, width=9)
+        base = cx + step * k - (5 if direction == "right" else -5)
+        tip = base + (15 if direction == "right" else -15)
+        draw.line([(base, cy - 22), (tip, cy)], fill=col, width=7)
+        draw.line([(tip, cy), (base, cy + 22)], fill=col, width=7)
     return img
 
 

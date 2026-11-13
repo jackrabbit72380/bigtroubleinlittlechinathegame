@@ -1886,23 +1886,23 @@ end
 -- reserved for them, with the picked card's frame out in the gap beside the card.
 start.stageGrid = {
 	-- the size of a baked card sprite, in motif pixels
-	card = { 457, 150 },
+	card = { 510, 166 },
 	-- 0 = as many whole cards as the window fits across; a number pins the count
-	-- 3 = three whole cards across, which is what the window holds; a page is
-	-- twelve of them, four rows down, and every page keeps its cards at the
-	-- size they have always been drawn at
+	-- 3 = three whole cards across, which is what the window holds; a grid is
+	-- fifteen of them, five rows down, and it is the same size on every page
 	cols = 3,
 	-- how many maps one grid holds before the arrow turns to the next
-	pageSize = 12,
-	-- the page arrow's baked sprite size, in motif pixels
-	arrow = { 110, 150 },
+	pageSize = 15,
+	-- the page arrow's baked sprite size, in motif pixels: small enough to sit
+	-- beside the cards without taking a column of their own
+	arrow = { 84, 112 },
 	pad = 14,
 	-- The wall's own window: clear of the PLAYER captions above it and of the two
 	-- fighter names on y=1005 below it. The pool this theme ships is twelve stages,
 	-- four rows of this card - 642px - so it sits in here comfortably. A pool that
 	-- outgrows the window borrows the band around it instead of clipping its last
 	-- row (start.f_stageGrid), so this stays the height the wall was designed for.
-	window = { 80, 300, 1840, 970 },
+	window = { 80, 72, 1840, 1000 },
 }
 
 function start.f_stageGrid(count, cols, pad, window)
@@ -2002,8 +2002,11 @@ function start.f_stagePage(count, page)
 	local first = (page - 1) * size + 1
 	local last = math.min(count or 0, page * size)
 	local n = math.max(0, last - first + 1)
+	-- The cells are laid out for a full grid whatever this page holds, so the
+	-- grid is the same size on every page and a short page leaves its empty
+	-- places at the end rather than shrinking and centring what it has.
 	return { page = page, pages = pages, first = first, last = last, count = n,
-		cells = start.f_stageGrid(n) }
+		size = size, cells = start.f_stageGrid(size) }
 end
 
 -- Where the page arrows sit: centred in the band of the window the cards leave
@@ -2014,9 +2017,9 @@ function start.f_stageArrowCell(dir)
 	local x1, y1, x2, y2 = grid.window[1], grid.window[2], grid.window[3], grid.window[4]
 	local y = math.floor((y1 + y2) / 2 + 0.5)
 	if dir == 'left' then
-		return { x = x1 + math.floor(w / 2) + 16, y = y, w = w, h = h }
+		return { x = x1 + math.floor(w / 2) + 8, y = y, w = w, h = h }
 	end
-	return { x = x2 - math.floor(w / 2) - 16, y = y, w = w, h = h }
+	return { x = x2 - math.floor(w / 2) - 8, y = y, w = w, h = h }
 end
 
 
@@ -3973,9 +3976,9 @@ function start.f_selectScreen()
 				-- this draws the page the cursor is on, and the arrows beside it.
 				local pageInfo = start.f_stagePage(#main.t_selectableStageSlots,
 					start.f_stagePageNo(stageListNo, #main.t_selectableStageSlots))
-				local stCount = pageInfo.count
+				local stCount = pageInfo.size
 				local cards = start.f_stageGrid(stCount)
-				for i = 1, stCount do
+				for i = 1, pageInfo.count do
 					local cell = cards[i]
 					-- the cursor stop on this page, turned into the card it holds
 					local card = start.f_stageCard(start.f_stageCardOf(pageInfo.first + i - 1))

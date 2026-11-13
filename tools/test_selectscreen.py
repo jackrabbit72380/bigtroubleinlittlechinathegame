@@ -283,7 +283,7 @@ def check_stage_wall(problems):
         problems.append("nothing bakes the stage cards into the screenpack")
     else:
         bake = read(wall_tool)
-        for needle, why in (("CARD = (457, 150)", "the card size is not fixed"),
+        for needle, why in (("CARD = (510, 166)", "the card size is not fixed"),
                             ("def frame_sprite(", "the pick has no baked frame"),
                             ("[ExtraStages]", "the cards are not baked from the stage pool")):
             if needle not in bake:
@@ -396,17 +396,19 @@ def check_stage_wall(problems):
                     problems.append("the wall preview disagrees with the screen at %d cards"
                                     % count)
                     break
-    # The wall is paged: twelve maps to a grid, the first with an arrow on its
+    # The wall is paged: fifteen maps to a grid, the first with an arrow on its
     # right, every grid after it with an arrow on both sides, and the cards on
     # every page at the size they have always been drawn at.
     pages_of = lua.eval("start.f_stagePages")
     page_of = lua.eval("start.f_stagePage")
     total = 26
-    if int(pages_of(total)) != 3:
-        problems.append("26 maps do not make three grids of twelve")
-    first_page, last_page = page_of(total, 1), page_of(total, 3)
-    if int(first_page["count"]) != 12 or int(last_page["count"]) != 2:
-        problems.append("the grids do not hold twelve maps each")
+    if int(pages_of(total)) != 2:
+        problems.append("26 maps do not make two grids of fifteen")
+    first_page, last_page = page_of(total, 1), page_of(total, 2)
+    if int(first_page["count"]) != 15 or int(last_page["count"]) != 11:
+        problems.append("the grids do not hold fifteen maps each")
+    if int(first_page["size"]) != int(last_page["size"]):
+        problems.append("the grids are not the same size from page to page")
     if int(first_page["first"]) != 1 or int(last_page["last"]) != total:
         problems.append("a grid's range of cursor stops is wrong")
     arrow_at = lua.eval("start.f_stageArrowCell")
