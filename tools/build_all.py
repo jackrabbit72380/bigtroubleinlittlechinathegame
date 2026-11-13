@@ -171,13 +171,6 @@ def main():
     # file the Developer Keys entry goes into, so it runs straight after it.
     if devhelp_motif and os.path.isfile(devhelp_motif):
         scripts.append("build_text_faces.py")
-        # Sizes every stage's own preview so the VS screen draws it on the
-        # roster's card: it reads that sprite straight from the stage's sheet and
-        # multiplies it by localcoord and portraitscale, so a sheet holding
-        # another shape lands at another size and is cropped by the window.
-        scripts.append("fit_stage_previews.py")
-        # bakes the stage wall from the preview sprites the stage builds just made
-        scripts.append("build_stage_wall.py")
     # The menu's confirm sample is a struck bell rather than the stock beep.
     # It lives in data/system.snd, which the engine copy above resets.
     scripts.append("build_ui_sounds.py")
@@ -197,6 +190,18 @@ def main():
     scripts.append("build_camera.py")
     scripts.append("build_stage3d_rain.py")
     scripts.append("build_stage3d_models.py")
+    # The previews and the wall come after the 3D stages, because those stages
+    # paint their own card - day, night and storm, one each - into their sheets.
+    # Running the wall first baked cards from the picture that was there before,
+    # and running the fitter first meant the rain pass wrote the pack's 240x100
+    # shape back over a card that had already been sized.
+    # Sizes every stage's own preview so the VS screen draws it on the roster's
+    # card: that screen reads the sprite straight from the stage's sheet and
+    # multiplies it by localcoord and portraitscale, so a sheet holding another
+    # shape lands at another size and is cropped by the window.
+    scripts.append("fit_stage_previews.py")
+    # bakes the stage wall's cards from those previews
+    scripts.append("build_stage_wall.py")
     # build_fonts.py runs at the top of this list to install the menu face, but it
     # is also the pass that settles every caption's size, pitch and centre - and
     # build_select_grid.py, build_select_ui.py and build_text_faces.py all rewrite

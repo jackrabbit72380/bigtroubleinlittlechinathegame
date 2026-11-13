@@ -39,11 +39,18 @@ import sys
 from PIL import Image, ImageDraw, ImageEnhance
 
 import sff
+import fit_stage_previews as fit
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STAGES = os.path.join(ROOT, "stages")
 BASE = os.path.join(STAGES, "stage3d.sff")
-SIZE = (240, 100)          # the pack's portrait
+# The card is written at the size this stage's def lands on the VS screen's
+# 1215x398 card - 240x79 for these three - rather than at the pack's 240x100
+# portrait. At 100 the sheet picture drew 1215x506 and the screen's window
+# cropped it, and refitting that picture elsewhere cut the gold rule off its
+# top and bottom. tools/fit_stage_previews.py then leaves these alone, because
+# they already measure the card.
+SIZE = (240, 79)           # overwritten per stage from its def
 FRAME = (1280, 720)        # the stages' localcoord: BG sprites draw 1:1
 CARDS = ("stage3d", "stage3d_outline", "stage3d_rain")
 
@@ -540,8 +547,14 @@ def main(argv=()):
         # showed for all three of these stages while the arenas themselves were
         # the painted terrace.
         mode = {"stage3d": "day", "stage3d_outline": "night"}.get(name, "storm")
-        picture = island_layer(mode).resize(SIZE, Image.LANCZOS)
-        axis = (SIZE[0] // 2, SIZE[1] // 2)
+        # the sheet size that measures the VS card for this stage's own
+        # localcoord and portraitscale
+        _factor, size = fit.drawn_size(os.path.join(STAGES, name + ".def"))
+        # the layer is painted at the stage's 1280x720 frame and the card is 3:1:
+        # a bottom-anchored cover crop keeps the ground, the water and the horizon
+        # instead of squashing all 720 rows into 79
+        picture = fit.cover(island_layer(mode), size, anchor="bottom")
+        axis = (size[0] // 2, size[1] // 2)
         weather = sprites_for(name) + [island_sprite(name), lip_sprite(name)]
         write_sheet(path, picture, axis, weather)
         print("  stages/%s.sff: %dx%d card at %d,%d + %d weather sprite(s)"

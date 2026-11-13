@@ -71,14 +71,22 @@ def drawn_size(def_path):
     return factor, want
 
 
-def cover(image, size):
-    """Scale to cover ``size`` and centre-crop - no distortion, no letterbox."""
+def cover(image, size, anchor="center"):
+    """Scale to cover ``size`` and crop - no distortion, no letterbox.
+
+    ``anchor`` is where the crop sits: "center" keeps the middle of the picture,
+    "bottom" keeps its foot. A stage layer is painted at the stage's own frame
+    (1280x720 for the 3D arenas) and the card is 3:1, so the band has to be
+    chosen: squashing the frame into the card is what made those three previews
+    read flat, and a centred crop would cut the ground off them.
+    """
     width, height = image.size
     scale = max(size[0] / float(width), size[1] / float(height))
     scaled = image.resize((max(1, int(round(width * scale))),
                            max(1, int(round(height * scale)))), Image.LANCZOS)
     left = (scaled.size[0] - size[0]) // 2
-    top = (scaled.size[1] - size[1]) // 2
+    top = (scaled.size[1] - size[1]) if anchor == "bottom" \
+        else (scaled.size[1] - size[1]) // 2
     return scaled.crop((left, top, left + size[0], top + size[1]))
 
 
