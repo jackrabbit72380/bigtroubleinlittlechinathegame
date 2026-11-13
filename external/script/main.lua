@@ -721,7 +721,20 @@ end
 --to be measured: textImgGetTextWidth is not dependable in this build, and a
 --caption left on its motif offset whenever it failed is what kept it in the
 --corner. A build without the align call still gets the measured fallback.
-local LOADING_SCALE = 0.75
+--The caption's size is the motif's, not a literal: it is the [Title Info] loading
+--row, 0.48 in this screenpack, and this was pinned at 0.75 - the size that row had
+--before the face was rebaked at twice the pixels - so the caption drew half again
+--as large as the menus it sits between.
+local function loadingScale()
+	local s = nil
+	pcall(function()
+		local v = motif.title_info.loading.scale
+		if v ~= nil and v[1] ~= nil and v[1] > 0 then
+			s = v[1]
+		end
+	end)
+	return s or 1
+end
 local LOADING_SPINNER_Y = 0.40   -- of the frame's height, above the caption
 local LOADING_CAPTION_Y = 0.55
 
@@ -759,18 +772,19 @@ function main.f_loadingDraw()
 	loadingDrawAnim(spinner, w / 2, h * LOADING_SPINNER_Y)
 
 	local text = motif.title_info.loading.TextSpriteData
+	local scale = loadingScale()
 	local caption = main.f_loadingCaption()
 	local drawn = false
 	if text ~= nil then
 		drawn = pcall(function()
 			textImgSetText(text, caption)
-			pcall(textImgSetScale, text, LOADING_SCALE, LOADING_SCALE)
+			pcall(textImgSetScale, text, scale, scale)
 			local x = w / 2
 			local centred = pcall(textImgSetAlign, text, 0)
 			if not centred then
 				local got, width = pcall(textImgGetTextWidth, text)
 				if got and type(width) == 'number' and width > 0 then
-					x = w / 2 - width * LOADING_SCALE / 2
+					x = w / 2 - width * scale / 2
 				end
 			end
 			textImgSetPos(text, x, h * LOADING_CAPTION_Y)

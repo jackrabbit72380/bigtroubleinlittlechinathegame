@@ -39,30 +39,43 @@ local ms = main.t_musicSelect
 -- sprite in a smaller space of its own, which drew every line on this screen
 -- about twice its size and twice as far apart: the track list overlapped
 -- itself and ran off the right of the frame.
-local SPRITE_W, SPRITE_H = 1920, 1080
+-- The motif's own coordinate space, read once a frame: every position below is
+-- in these units, so a screenpack that changes [Info] localcoord carries this
+-- screen with it instead of leaving it on a 1920x1080 frame. The value here is
+-- only what is used before a motif has been read.
+local FRAME = {w = 1920, h = 1080}
 local COVER = {x = 470, y = 470, w = 660, h = 680}
 local LIST = {x = 880, y = 290, pitch = 40, rows = 13}
-local HEAD = {x = 960, y = 105}
-local HINT = {x = 960, y = 990}
-local CHOICE = {x = 960, y = 1030}
+-- The three centred lines below take their x from the frame's own middle.
+local HEAD_Y = 105
+local HINT_Y = 990
+local CHOICE_Y = 1030
 
--- One size for the whole game. Every text row in the title, pause and options
--- menus is the Display face at 0.75 (system.def, menu.item.scale), so this
--- screen draws at 0.75 too: it was the only place in the game at 1.0, a third
--- larger than the menus around it. The album title is the same size as the
--- list under it, and the two lines that can outgrow the frame - the title and
--- the key hints - scale further down to fit instead of clipping.
-local ROWSCALE = 0.75
-local SMALLSCALE = 0.6
-local HEADSCALE = 0.75
--- The two lines that can outgrow the frame: an album name (the longest in
--- sound/ is 44 characters) and a track title at the end of a row, plus the
--- now-playing line, which carries an album name and a track name at once. All
--- three are measured and scaled to fit instead of being clipped, leaving 60px
--- clear at the frame's edges.
-local MAXHEAD = 1800
--- A row is drawn from LIST.x, so this is what is left of the 1920 frame for it.
-local MAXROW = 1920 - LIST.x - 60
+local function readFrame()
+	pcall(function()
+		local lc = motif.info.localcoord
+		if lc ~= nil and lc[1] ~= nil and lc[2] ~= nil and lc[1] > 0 and lc[2] > 0 then
+			FRAME.w, FRAME.h = lc[1], lc[2]
+		end
+	end)
+	return FRAME.w, FRAME.h
+end
+
+-- One size for the whole game, and it is the motif's own menu size rather than a
+-- number kept here: this screen was pinned at 0.75, the size the menus used
+-- before the face was rebaked, so every line in it drew half again as large as
+-- the menus it opens from. The small lines are 0.8 of it, which keeps their
+-- relationship to the rows when the menu changes.
+local function menuScale()
+	local s = nil
+	pcall(function()
+		local v = motif.option_info.menu.item.scale
+		if v ~= nil and v[1] ~= nil and v[1] > 0 then
+			s = v[1]
+		end
+	end)
+	return s or 1
+end
 
 ms.params = nil
 ms.chosen = nil
@@ -420,7 +433,7 @@ local function drawLine(spr, text, x, y, align, scale)
 	end
 	return pcall(function()
 		textImgReset(spr)
-		pcall(textImgSetLocalcoord, spr, SPRITE_W, SPRITE_H)
+		pcall(textImgSetLocalcoord, spr, FRAME.w, FRAME.h)
 		pcall(textImgSetAlign, spr, align or 0)
 		pcall(textImgSetScale, spr, scale or 1, scale or 1)
 		pcall(textImgSetColor, spr, 255, 255, 255, 255)
@@ -440,7 +453,7 @@ local function drawFitted(spr, text, x, y, align, ceiling, maxWidth)
 	end
 	return pcall(function()
 		textImgReset(spr)
-		pcall(textImgSetLocalcoord, spr, SPRITE_W, SPRITE_H)
+		pcall(textImgSetLocalcoord, spr, FRAME.w, FRAME.h)
 		pcall(textImgSetAlign, spr, align or 0)
 		pcall(textImgSetColor, spr, 255, 255, 255, 255)
 		textImgSetText(spr, text or '')
@@ -807,13 +820,27 @@ function ms.open()
 		end
 		drawAlbumArt(albumData, album)
 
+		-- Everything below is placed from the motif's space: the frame's middle for
+		-- the centred lines, its width for how far a row may run, and its menu size
+		-- for the text. The lines that can outgrow the frame - an album name (the
+		-- longest in sound/ is 44 characters), a track title at the end of a row and
+		-- the now-playing line, which carries an album and a track at once - are
+		-- measured and scaled to fit instead of clipping, leaving 60 units clear at
+		-- the frame's edges.
+		local fw = readFrame()
+		local cx = fw / 2
+		local rowScale = menuScale()
+		local smallScale = rowScale * 0.8
+		local maxHead = fw - 120
+		local maxRow = fw - LIST.x - 60
+
 		drawFitted(spr,
 			main.f_itemnameUpper(album.name ~= '' and album.name or 'Game music', true),
-			HEAD.x, HEAD.y, 0, HEADSCALE, MAXHEAD)
+			cx, HEAD_Y, 0, rowScale, maxHead)
 		-- which of the three pages this is, so the game's music and the albums can
 		-- be told apart at a glance
-		drawFitted(spr, 'PAGE ' .. albumNo .. ' OF ' .. #albums, HEAD.x, HEAD.y + 46, 0,
-			SMALLSCALE, MAXHEAD)
+		drawFitted(spr, 'PAGE ' .. albumNo .. ' OF ' .. #albums, cx, HEAD_Y + 46, 0,
+			smallScale, maxHead)
 
 		if songNo < scroll then
 			scroll = songNo
@@ -829,16 +856,16 @@ function ms.open()
 			-- it is drawn with the active item sprite and carries no marker.
 			local use = (index == songNo and rowActive ~= nil) and rowActive or rowSpr
 			drawFitted(use, s ~= nil and s.title or '', LIST.x,
-				LIST.y + (i - 1) * LIST.pitch, 1, ROWSCALE, MAXROW)
+				LIST.y + (i - 1) * LIST.pitch, 1, rowScale, maxRow)
 		end
 
 		-- Centred on the screen and measured, so a chosen track's long
 		-- "album - title" keeps the line centred instead of running past the
 		-- frame; the short line and the long one sit in the same place.
 		drawFitted(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: game music',
-			CHOICE.x, CHOICE.y, 0, SMALLSCALE, MAXHEAD)
+			cx, CHOICE_Y, 0, smallScale, maxHead)
 		drawLine(spr, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER / Z  use      ESC  back',
-			HINT.x, HINT.y, 0, SMALLSCALE)
+			cx, HINT_Y, 0, smallScale)
 
 		refresh()
 

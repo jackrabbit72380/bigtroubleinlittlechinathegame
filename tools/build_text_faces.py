@@ -226,9 +226,12 @@ def place_bottom_row(text):
 # that rather than repeating the number.
 TITLE_SCALE = SIZE
 
+# The pause menus are not here. Their heading and their first row are
+# PAUSE_LAYOUT in tools/build_fonts.py, which settles both on the menu's own line
+# and centre; this block used to re-seat them on 118/190, the offsets that layout
+# had for the old 67.5-unit row, so running this tool alone moved the list 110
+# units up the frame.
 FIT = {
-    "[Pause Menu]": {"title.offset": "960, 118", "menu.pos": "960, 190"},
-    "[Training Pause Menu]": {"title.offset": "960, 118", "menu.pos": "960, 190"},
     "[Option Info]": {"menu.pos": "945, 96"},
     # The pitch is restated here because patch_spacing() has already forced the
     # caption pitch on this block; title rows are 35px of ink, not 67.5.

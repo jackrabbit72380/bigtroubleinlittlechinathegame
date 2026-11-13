@@ -192,6 +192,15 @@ def main():
     scripts.append("build_camera.py")
     scripts.append("build_stage3d_rain.py")
     scripts.append("build_stage3d_models.py")
+    # build_fonts.py runs at the top of this list to install the menu face, but it
+    # is also the pass that settles every caption's size, pitch and centre - and
+    # build_select_grid.py, build_select_ui.py and build_text_faces.py all rewrite
+    # those same lines afterwards. Running it only at the top meant a rebuild
+    # produced a different motif from the committed one: Body text at half its
+    # size, the stage name 80 units low, the pause list re-seated for a row height
+    # nothing draws at. It runs again here, after every other writer of
+    # data/ikemen1/system.def, so the build ends where the shipped file is.
+    scripts.append("build_fonts.py")
     scripts.append("build_stamp.py")
     # ...and this fails if a file the Lua reads has fallen out of that stamp,
     # which is how the album art, the controller database and the shaders were

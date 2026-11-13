@@ -163,7 +163,8 @@ NAME_FONT = 11                           # Body, a 13px cell: the face the
                                          # engine sets VERSUS in
 
 
-def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
+def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W,
+          sprite="9000,1"):
     """The stage card, and the point its name is drawn from.
 
     Everything the .def measures from ``stage.pos`` hangs off the name, and the
@@ -196,7 +197,7 @@ def _card(bottom_y, text_y=NAME_ROW_Y, portrait=True, card_w=CARD_W):
     # with the card or a wide card shows a small frame around a big photo
     plate_scale = card_w / float(CARD_W)
     return (
-        ("stage.portrait.spr", "9000,1"),
+        ("stage.portrait.spr", sprite),
         ("stage.portrait.offset", "0, %d" % int(round(art_centre - text_y))),
         ("stage.portrait.scale", "%.4f, %.4f" % (scale, scale)),
         ("stage.portrait.window", window),
@@ -258,7 +259,12 @@ SELECT_TEXT = (
 # (341 tall, so 711 at the bottom puts its centre on 540) instead of hanging from
 # the name row: the screen carries one picture, and it belongs in the middle of
 # it with the name underneath.
-STAGE_PORTRAIT = _card(711, portrait=True, card_w=VS_CARD_W)   # [Select Info]: the stage screen
+# The stage screen has no picture of its own: build_stage_wall.py composes the wall
+# into that screen's backdrop, so the card's geometry stays written out and its
+# sprite is off. It pointed at 9000,1 and at the portrait grid's own backdrop
+# (220,0), which put a second wall under the first and left
+# tools/test_selectscreen.py reporting that the stage screen had no backdrop.
+STAGE_PORTRAIT = _card(711, portrait=True, card_w=VS_CARD_W, sprite="-1")   # [Select Info]: the stage screen
 def _stage_backdrop():
     """The screen the stage card sits on: the select grid's own background.
 
@@ -269,7 +275,9 @@ def _stage_backdrop():
     the way every other stage key is (stage.pos = 960, 1035).
     """
     frame = (1920, 1080)          # the motif's localcoord
-    grid_spr = (220, 0)           # [SelectBG Portrait Grid]
+    # 225,0 is [SelectBG]'s backdrop without the wall baked into it - the wall is
+    # drawn in its own layer - so it is the one this screen can sit on.
+    grid_spr = (225, 0)
     _d, sprites, _p = sff.read_sff(SYSTEM_SFF)
     grid = next((sp for sp in sprites
                  if (sp["group"], sp["number"]) == grid_spr), None)
@@ -277,7 +285,7 @@ def _stage_backdrop():
         raise SystemExit("system.sff has no grid background %d,%d" % grid_spr)
     return (
         ("stage.portrait.bg.anim", "-1"),
-        ("stage.portrait.bg.spr", "%d,%d" % grid_spr),
+        ("stage.portrait.bg.spr", "%d, %d" % grid_spr),
         ("stage.portrait.bg.offset", "%d, %d" % (-frame[0] // 2, -NAME_ROW_Y)),
         ("stage.portrait.bg.scale", "%.4f, %.4f" % (
             frame[0] / float(grid["w"]), frame[1] / float(grid["h"]))),
