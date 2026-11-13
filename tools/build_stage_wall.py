@@ -89,6 +89,15 @@ GOLD = (206, 168, 86)
 GOLD_DIM = (126, 96, 42)
 INK = (10, 12, 16)
 
+# A picture that is taller than a card - a 4:3 render in a roster of 3:1 cards - is
+# cut to a band before it is scaled. Cropping its middle band puts the card's centre
+# on the far wall and its bottom edge through whatever stands on the floor: the 3-D
+# Lab's concept render carries two scale figures at 72% of its height, and the middle
+# band sliced them across the shoulders. The band starts at 29% instead, above them,
+# and keeps the tanks, the reactor and the ceiling panels. 0.29 is the whole of this
+# rule: change it and the lab's card moves, everything else is untouched.
+TALL_BAND = 0.29
+
 PREVIEW = os.path.join(ROOT, "artifacts", "stage_wall.png")
 
 
@@ -150,12 +159,28 @@ def stage_name(def_path, fallback):
     return hit.group(1).strip() if hit else fallback
 
 
+def cut_band(img):
+    """A picture taller than a card, cut down to the band the card shows.
+
+    Pictures that are already wide - every painted stage's, at 1215x398, and the
+    3D stages' 240x100 - come back untouched, so the middle crop below still
+    decides where the arena sits on their card. Only a tall picture is re-cut:
+    its band starts at TALL_BAND of its height rather than at its middle.
+    """
+    if img.height * 3 <= img.width * 1.02:
+        return img
+    band = img.width // 3
+    top = max(0, min(int(round(img.height * TALL_BAND)), img.height - band))
+    return img.crop((0, top, img.width, top + band))
+
+
 def preview_art(def_path):
     """The stage's own preview sprite, scaled once to cover the card and centred.
 
     Cover rather than fit: a 1215x398 card and a 240x100 one are meant to read at
     the same size, and the 720p stages' previews are a different aspect. The crop
-    comes from the middle, where the arena is.
+    comes from the middle, where the arena is - of a picture the band above has
+    already made wide enough to have a middle worth cutting to.
     """
     w, h = CARD
     sff_path = os.path.join(ROOT, def_path[:-4] + ".sff")
@@ -174,7 +199,7 @@ def preview_art(def_path):
             break
     if chosen is None:
         return blank
-    img = sff.decode_sprite(data, chosen, pals).convert("RGBA")
+    img = cut_band(sff.decode_sprite(data, chosen, pals).convert("RGBA"))
     scale = max(w / float(img.width), h / float(img.height))
     nw = max(w, int(round(img.width * scale)))
     nh = max(h, int(round(img.height * scale)))

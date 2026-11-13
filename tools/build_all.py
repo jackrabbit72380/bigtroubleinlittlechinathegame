@@ -172,7 +172,6 @@ def main():
     if devhelp_motif and os.path.isfile(devhelp_motif):
         scripts.append("build_text_faces.py")
         # bakes the stage wall from the preview sprites the stage builds just made
-        scripts.append("build_lab3d_preview.py")
         scripts.append("build_stage_wall.py")
     # The menu's confirm sample is a struck bell rather than the stock beep.
     # It lives in data/system.snd, which the engine copy above resets.
