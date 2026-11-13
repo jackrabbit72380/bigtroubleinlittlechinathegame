@@ -4112,8 +4112,13 @@ function start.f_selectScreen()
 					local timedOut = timerSelect == -1 and not main.stageMenu
 					local canConfirmStage = ((confirmPressed and not screenDelayInterrupted) or timedOut) and #main.t_selectableStages > 0
 					if canConfirmStage then
+						-- The shipped config turns preloading off (BootLoadingMode = 0), and a
+						-- stage that was never queued has no 'ready' status to wait for: the
+						-- wall then refused every map while RANDOM still worked, which reads
+						-- as a dead screen. With preloading off the engine loads the stage
+						-- when the match starts, so there is nothing to wait for here.
 						local preloadReady = true
-						if stageListNo > 0 then
+						if stageListNo > 0 and gameOption('Config.BootLoadingMode') > 0 then
 							local stageRef = start.f_stageMenuRef()
 							local state = getStagePreloadStatus(stageRef)
 							preloadReady = state == 'ready'
@@ -5296,14 +5301,16 @@ function start.f_stageMenu()
 		return list
 	end
 	-- The motif's cell keys are asked for first, then this screenpack's stage keys.
-	-- After those, every spelling a hand could be on: arrow names, WASD and IJKL, in
-	-- both cases. One list that happens to be spelled differently in this build can
-	-- no longer make the whole wall deaf.
+	-- After those, only the direction names this build answers to. Bare letters are
+	-- not among them: in this engine the key name 'a' is the punch button on Z and
+	-- 's' is the start button on Enter, so asking for them read a confirm press as
+	-- a walk - the cursor moved, the wall never saw the map being taken, and a
+	-- player pressing Z to pick a stage got nothing at all.
 	local spelling = {
-		L = { 'left', 'LEFT', 'a', 'A', 'j', 'J', 'L' },
-		R = { 'right', 'RIGHT', 'd', 'D', 'l', 'L', 'R' },
-		U = { 'up', 'UP', 'w', 'W', 'i', 'I', 'U' },
-		D = { 'down', 'DOWN', 's', 'S', 'k', 'K', 'D' },
+		L = { 'left', 'LEFT', 'L' },
+		R = { 'right', 'RIGHT', 'R' },
+		U = { 'up', 'UP', 'U' },
+		D = { 'down', 'DOWN', 'D' },
 	}
 	-- The engine answers U and D for up and down but not L and R for left and right:
 	-- the classic tokens are B (back) and F (forward). Up and down working while
@@ -5311,10 +5318,10 @@ function start.f_stageMenu()
 	-- own, after the grid's own table, so one name the build does not know cannot
 	-- hide the rest of a read.
 	local directions = {
-		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), { 'B' }, { 'L' }, { 'a' }, { 'j' }, keyTable(skip.previous)), keys = spelling.L },
-		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), { 'F' }, { 'R' }, { 'd' }, { 'l' }, keyTable(skip.next)), keys = spelling.R },
-		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), { 'U' }, { 'w' }, { 'i' }, keyTable(stageKeys.previous)), keys = spelling.U },
-		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), { 'D' }, { 's' }, { 'k' }, keyTable(stageKeys.next)), keys = spelling.D },
+		{ dir = 'L', name = 'left', sources = sourcesOf(keyTable(cell.left), { 'B' }, { 'L' }, keyTable(skip.previous)), keys = spelling.L },
+		{ dir = 'R', name = 'right', sources = sourcesOf(keyTable(cell.right), { 'F' }, { 'R' }, keyTable(skip.next)), keys = spelling.R },
+		{ dir = 'U', name = 'up', sources = sourcesOf(keyTable(cell.up), { 'U' }, keyTable(stageKeys.previous)), keys = spelling.U },
+		{ dir = 'D', name = 'down', sources = sourcesOf(keyTable(cell.down), { 'D' }, keyTable(stageKeys.next)), keys = spelling.D },
 	}
 	-- One read, guarded: a name this engine does not know raises inside getInput,
 	-- and one bad source must not take the screen down with it. Each player is
