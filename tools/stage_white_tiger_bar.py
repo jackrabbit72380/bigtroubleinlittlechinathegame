@@ -3,8 +3,11 @@
 Painted from the plan reference: jade striped wallpaper over a red lacquer
 wainscot, brass candle sconces, a back bar of mirrors and bottles with the sign
 hung low over the counter, a bead curtain onto a room with the red bed standing
-in it, and the lounge's velvet chairs and round table at the other end. The
-floor is polished boards carrying the warm light of the room.
+in it, and the lounge's velvet chairs and round table at the other end. That end
+is the bar's own front wall: stone, four arched windows burning red under a
+striped canvas awning, and the corner entrance beside them under its brushed
+steel hood. A long patterned runner lies across the polished boards in front of
+the counter, carrying the room's warm light.
 
 A stage is seen across the play plane, so the bar is painted as a wall
 wall-to-wall: the counter runs against the back wall, its foot rail and front
@@ -62,6 +65,25 @@ VELVET_D = (62, 18, 20)
 PAPER = (236, 214, 170)            # lantern paper
 RED = (156, 34, 26)
 WARM = (255, 202, 138)
+
+STONE = (56, 51, 48)               # the bar's own front wall
+STONE_L = (88, 81, 74)
+STONE_D = (32, 28, 26)
+STEEL = (146, 150, 154)            # the hood over the corner door
+STEEL_L = (206, 212, 214)
+STEEL_D = (82, 86, 90)
+GLOW = (255, 122, 74)              # the red light behind the front windows
+NIGHT = (26, 40, 64)               # the street beyond the corner door
+RUG = (104, 34, 28)                # the runner on the boards
+RUG_L = (152, 62, 44)
+RUG_D = (60, 16, 14)
+
+FRONT_X = (BAY_C[0] + px(6), W)     # the front wall runs to the stage's right end
+WIN_W, WIN_GAP = px(38), px(16)     # four windows, three gaps between them
+WIN_Y = (px(84), px(148))           # 378..666: the arch's springing and the sill
+PORCH_W = px(56)                    # the corner entrance
+PORCH_C = BAY_C[1] + px(30)         # its centre, right at the stage's edge
+RUG_X = (px(556), px(1264))         # the runner lies in front of the counter
 
 LIGHTS = []
 
@@ -530,12 +552,273 @@ def table(base, cx, top=px(136)):
 
 
 def lounge(base, x0, x1):
-    """The far end: two chairs, a table, sconces over them."""
-    sconce(base, x0 + (x1 - x0) * 0.10, px(104))
-    sconce(base, x0 + (x1 - x0) * 0.92, px(104))
-    chair(base, x0 + (x1 - x0) * 0.24)
-    table(base, x0 + (x1 - x0) * 0.55)
-    chair(base, x0 + (x1 - x0) * 0.84)
+    """The far end: two chairs and a table, standing in the windows' red light."""
+    chair(base, x0 + (x1 - x0) * 0.20)
+    table(base, x0 + (x1 - x0) * 0.46)
+    chair(base, x0 + (x1 - x0) * 0.66)
+    sconce(base, x0 + (x1 - x0) * 0.88, px(92))
+
+
+# --------------------------------------------------------------- the front wall
+def window_centres():
+    """Where the four front windows stand, so the floor can take their light."""
+    span = 4 * WIN_W + 3 * WIN_GAP
+    x0 = FRONT_X[0]
+    door_left = PORCH_C - PORCH_W / 2.0 - px(20)
+    cx0 = x0 + (door_left - x0 - span) / 2.0
+    return [cx0 + WIN_W / 2.0 + k * (WIN_W + WIN_GAP) for k in range(4)]
+
+
+def stone_wall(base, x0, x1, seed):
+    """Dark stone courses: the bar's own front wall, where the windows are."""
+    d = ImageDraw.Draw(base)
+    rnd = random.Random(seed)
+    d.rectangle(box(x0, CEIL, x1, FLOOR_Y), fill=STONE_D)
+    row_h = px(13)
+    row = 0
+    y = CEIL
+    while y < FLOOR_Y:
+        off = px(17) if row % 2 else 0
+        x = x0 - off
+        while x < x1:
+            bw = px(34)
+            c = tint(mix(STONE, rnd.choice((STONE_L, STONE_D, (76, 68, 62))),
+                         rnd.uniform(0.10, 0.45)), rnd, 0.05)
+            d.rectangle(box(x + px(1), y + px(1), x + bw - px(1), y + row_h - px(1)), fill=c)
+            d.line([(x + px(1), y + px(1)), (x + bw - px(1), y + px(1))],
+                   fill=mix(c, (146, 134, 122), 0.22), width=max(1, int(px(0.7))))
+            d.line([(x + px(1), y + row_h - px(1)), (x + bw - px(1), y + row_h - px(1))],
+                   fill=mix(c, (16, 12, 10), 0.55), width=max(1, int(px(0.9))))
+            x += bw
+        y += row_h
+        row += 1
+    # soot under the ceiling, damp at the foot
+    for i in range(px(30)):
+        d.line([(x0, CEIL + i), (x1, CEIL + i)],
+               fill=mix(STONE_D, (10, 8, 7), 0.55 * (1 - i / float(px(30)))))
+    for i in range(px(26)):
+        d.line([(x0, PLINTH - i), (x1, PLINTH - i)],
+               fill=mix(STONE_D, (18, 14, 12), 0.45 * (1 - i / float(px(26)))))
+    # a course of dressed stone where the wall meets the boards, in place of
+    # the lacquer skirting the rest of the room has
+    d.rectangle(box(x0, PLINTH, x1, FLOOR_Y), fill=mix(STONE, (74, 66, 58), 0.40))
+    d.line([(x0, PLINTH), (x1, PLINTH)], fill=mix(STONE_L, (126, 114, 100), 0.40),
+           width=max(1, int(px(0.9))))
+    d.line([(x0, FLOOR_Y - px(1)), (x1, FLOOR_Y - px(1))], fill=(12, 10, 9),
+           width=max(2, int(px(1.4))))
+
+
+def red_window(base, cx, w, y0, y1):
+    """One front window: a deep stone reveal, red light behind, dark glazing bars.
+
+    Drawn on its own small canvas and laid in, because a full-canvas mask for
+    each of four windows is 8.8M pixels of mask four times over for nothing.
+    """
+    half = w / 2.0
+    arch = half
+    pad = px(10)
+    lx0, ly0 = int(cx - half - pad), int(y0 - pad)
+    lw, lh = int(2 * (half + pad)), int(y1 - y0 + 2 * pad) + int(px(12))
+    win = Image.new("RGBA", (lw, lh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(win)
+    ox = cx - half - lx0
+    oy = y0 - ly0
+    h = y1 - y0
+    # the reveal: stone standing a little proud of the wall
+    d.rectangle(box(ox - px(5), oy + arch, ox + w + px(5), oy + h + px(5)), fill=STONE_D)
+    d.pieslice(box(ox - px(5), oy - px(5), ox + w + px(5), oy + 2 * arch + px(3)),
+               180, 360, fill=STONE_D)
+    # the light behind the glass: pale under the arch, deep red at the sill
+    glass = Image.new("RGB", (lw, lh))
+    gd = ImageDraw.Draw(glass)
+    for i in range(lh):
+        tt = max(0.0, min(1.0, (i - oy) / max(1.0, h)))
+        gd.line([(0, i), (lw, i)], fill=mix((214, 66, 42), (104, 12, 10), tt))
+    mask = Image.new("L", (lw, lh), 0)
+    md = ImageDraw.Draw(mask)
+    md.rectangle(box(ox, oy + arch, ox + w, oy + h), fill=255)
+    md.ellipse(box(ox, oy, ox + w, oy + 2 * arch), fill=255)
+    win.paste(glass, (0, 0), mask)
+    # the glazing: two uprights, a transom, and the fanlight's spokes
+    bar = (46, 16, 12, 255)
+    d.line([(ox + w / 2.0, oy + px(3)), (ox + w / 2.0, oy + h)], fill=bar,
+           width=max(2, int(px(2.2))))
+    for fy in (0.52, 1.06):
+        d.line([(ox + px(2), oy + arch * fy), (ox + w - px(2), oy + arch * fy)],
+               fill=bar, width=max(2, int(px(2.0))))
+    # the frame, and the sill it stands on
+    d.rectangle(box(ox - px(1), oy + arch, ox + w + px(1), oy + h),
+                outline=(38, 14, 10), width=max(2, int(px(1.6))))
+    d.arc(box(ox, oy, ox + w, oy + 2 * arch), 180, 360, fill=(38, 14, 10),
+          width=max(2, int(px(1.8))))
+    d.rectangle(box(ox - px(7), oy + h, ox + w + px(7), oy + h + px(8)),
+                fill=mix(STONE_L, (150, 142, 130), 0.35))
+    d.line([(ox - px(7), oy + h), (ox + w + px(7), oy + h)], fill=(166, 158, 144),
+           width=max(1, int(px(1.0))))
+    base.alpha_composite(win, (lx0, ly0))
+    lamp(cx, (y0 + y1) / 2.0, px(200), (255, 78, 46), 96)
+
+
+def awning(base, x0, x1, y0, y1):
+    """The red canvas awning over the front windows, with its scalloped hem."""
+    d = ImageDraw.Draw(base)
+    tilt = px(9)
+    d.polygon([(x0, y0), (x1, y0), (x1 + tilt, y1), (x0 - tilt, y1)], fill=(120, 26, 22))
+    n = 11
+    for k in range(0, n, 2):
+        f0, f1 = k / float(n), (k + 1) / float(n)
+        t0, t1 = x0 + (x1 - x0) * f0, x0 + (x1 - x0) * f1
+        b0, b1 = t0 - tilt + 2 * tilt * f0, t1 - tilt + 2 * tilt * f1
+        d.polygon([(t0, y0), (t1, y0), (b1, y1), (b0, y1)], fill=(206, 92, 70))
+    d.line([(x0, y0), (x1, y0)], fill=(218, 126, 98), width=max(2, int(px(1.6))))
+    step = (x1 - x0 + 2 * tilt) / 8.0
+    for k in range(8):
+        hx = x0 - tilt + step * (k + 0.5)
+        d.pieslice(box(hx - step / 2.0, y1 - px(4), hx + step / 2.0, y1 + px(4)),
+                   0, 180, fill=(120, 26, 22))
+        d.arc(box(hx - step / 2.0, y1 - px(4), hx + step / 2.0, y1 + px(4)),
+              0, 180, fill=(198, 102, 78), width=max(1, int(px(1.0))))
+    # the shadow the awning drops on the stone under it
+    for i in range(px(8)):
+        d.line([(x0 - tilt, y1 + i), (x1 + tilt, y1 + i)],
+               fill=mix((120, 26, 22), (20, 14, 12), 0.6 * (1 - i / float(px(8)))))
+
+
+def shopfront(base, x0, x1):
+    """The bar's front: stone, four red-lit windows, and the awning over them."""
+    stone_wall(base, x0, x1, 91)
+    span = 4 * WIN_W + 3 * WIN_GAP
+    win = window_centres()
+    # a lintel course over the windows, and the awning hung from it
+    d = ImageDraw.Draw(base)
+    d.rectangle(box(win[0] - WIN_W / 2.0 - px(16), WIN_Y[0] - arch_margin(),
+                    win[-1] + WIN_W / 2.0 + px(16), WIN_Y[0] + px(4)),
+                fill=mix(STONE_L, (110, 100, 90), 0.30))
+    awning(base, win[0] - WIN_W / 2.0 - px(16), win[-1] + WIN_W / 2.0 + px(16),
+           px(50), px(76))
+    for cx in win:
+        red_window(base, cx, WIN_W, WIN_Y[0], WIN_Y[1])
+
+
+def arch_margin():
+    """How far above the arch the lintel course has to start to clear it."""
+    return WIN_W / 2.0 + px(12)
+
+
+def porch(base, cx):
+    """The corner entrance: steel hood, glass door, and the night street behind."""
+    d = ImageDraw.Draw(base)
+    half = PORCH_W / 2.0
+    # the door surround, standing proud of the stone
+    d.rectangle(box(cx - half - px(7), px(70), cx + half + px(7), FLOOR_Y), fill=STONE_D)
+    # the glass, and the wet street's light smeared down it
+    gx0, gx1 = cx - half + px(5), cx + half - px(5)
+    gy0, gy1 = px(112), PLINTH - px(4)
+    for i in range(int(gy1 - gy0)):
+        tt = i / max(1.0, gy1 - gy0)
+        d.line([(gx0, gy0 + i), (gx1, gy0 + i)], fill=mix((16, 28, 52), (70, 44, 44), tt))
+    for gxx, col, wdt in ((gx0 + px(9), (138, 44, 36), px(3)),
+                          (gx1 - px(12), (54, 116, 86), px(2))):
+        d.line([(gxx, gy0 + px(34)), (gxx + px(2), gy1 - px(34))], fill=col,
+               width=max(2, int(wdt)))
+    d.line([(gx0 + px(4), gy1 - px(8)), (gx0 + px(15), gy0 + px(10))],
+           fill=(104, 128, 148), width=max(2, int(px(1.8))))
+    # the steel frame: stiles, rails, and the brass handle
+    for fx in (gx0 - px(4), cx - px(3), gx1 - px(1)):
+        d.rectangle(box(fx, gy0, fx + px(6), gy1), fill=mix(STEEL_D, STEEL, 0.55))
+        d.line([(fx + px(1), gy0), (fx + px(1), gy1)], fill=STEEL_L, width=max(1, int(px(0.9))))
+    for fy in (gy0, gy1 - px(5)):
+        d.rectangle(box(gx0, fy, gx1, fy + px(6)), fill=mix(STEEL_D, STEEL, 0.55))
+    d.rectangle(box(cx - px(12), gy0 + (gy1 - gy0) * 0.48, cx - px(7),
+                    gy0 + (gy1 - gy0) * 0.60), fill=mix(GOLD, GOLD_L, 0.4))
+    # the hood: brushed steel, curved over the door on a fascia with rivets
+    cy0, cy1 = px(68), px(96)
+    d.pieslice(box(cx - half - px(16), cy0, cx + half + px(16), cy1 + px(10)),
+               180, 360, fill=mix(STEEL, STEEL_D, 0.30))
+    for i in range(7):
+        d.arc(box(cx - half - px(16) + i * px(2), cy0 + i * px(1.2),
+                  cx + half + px(16) - i * px(2), cy1 + px(10) - i * px(2)),
+              184, 356, fill=mix(STEEL, STEEL_L, 0.34 - i * 0.045), width=max(1, int(px(1.3))))
+    d.rectangle(box(cx - half - px(16), cy1 + px(4), cx + half + px(16), cy1 + px(14)),
+                fill=mix(STEEL, STEEL_D, 0.45))
+    for rx in range(int(cx - half - px(10)), int(cx + half + px(10)), int(px(11))):
+        d.ellipse(box(rx, cy1 + px(7), rx + px(3), cy1 + px(11)), fill=STEEL_L)
+    # the light under the hood: a lit soffit over the door, not a bulb in the glass
+    d.rectangle(box(gx0, cy1 + px(15), gx1, cy1 + px(21)), fill=(255, 214, 150))
+    d.rectangle(box(gx0, cy1 + px(14), gx1, cy1 + px(15)), fill=(120, 82, 46))
+    lamp(cx, cy1 + px(20), px(230), (255, 148, 74), 118)
+    d.rectangle(box(cx - half - px(11), PLINTH - px(6), cx + half + px(11), PLINTH),
+                fill=mix(STONE, (152, 148, 140), 0.35))
+    d.line([(cx - half - px(11), PLINTH - px(6)), (cx + half + px(11), PLINTH - px(6))],
+           fill=(184, 180, 172), width=max(1, int(px(1.0))))
+    lamp(cx, PLINTH + px(16), px(170), (255, 148, 78), 46)
+
+
+def runner(base, x0, x1):
+    """The bar's long runner: a patterned rug lying across the boards.
+
+    It is drawn in perspective - narrow at the wall, wider at the front edge -
+    because a rug lying on a floor the fighters stand on has to agree with the
+    floor's own vanishing, not sit on it like a poster.
+    """
+    top, near = FLOOR_Y + px(2), H - px(1)
+    tx = px(26)                                   # how far it leans back at the wall
+    pad = int(px(30))
+    lx, ly = int(x0 - pad), int(top) - 2
+    lw, lh = int((x1 - x0) + 2 * pad), int(near - top) + 4
+    rug = Image.new("RGBA", (lw, lh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(rug)
+
+    def xl(t):
+        return x0 + tx * (1 - t) - lx
+
+    def xr(t):
+        return x1 - tx * (1 - t) - lx
+
+    def yy(t):
+        return (near - top) * t
+
+    def band(t0, t1, col):
+        d.polygon([(xl(t0), yy(t0)), (xr(t0), yy(t0)),
+                   (xr(t1), yy(t1)), (xl(t1), yy(t1))], fill=col)
+
+    band(0.0, 1.0, RUG_D)
+    band(0.10, 0.90, RUG)
+    band(0.14, 0.20, RUG_L)
+    band(0.80, 0.86, RUG_L)
+    # the end borders, running in from each short edge
+    for inset, col, wdt in ((0.030, RUG_L, 0.012), (0.048, RUG_D, 0.014)):
+        for edge in (xl, xr):
+            s0 = inset * (x1 - x0)
+            d.polygon([(edge(0) + s0, yy(0)), (edge(1) + s0, yy(1)),
+                       (edge(1) + s0 + wdt * (x1 - x0), yy(1)),
+                       (edge(0) + s0 + wdt * (x1 - x0), yy(0))], fill=col)
+    # the field: rows of lozenges, growing as they come toward the viewer
+    for t in (0.30, 0.48, 0.66):
+        r = px(9) + t * px(12)
+        span = (xr(t) - xl(t)) - r * 2.4
+        n = max(3, int(span / (r * 2.9)))
+        for k in range(n):
+            mx = xl(t) + r * 1.2 + span * (k + 0.5) / n
+            my = yy(t) + (yy(1) - yy(0)) * 0.0
+            d.polygon([(mx, my - r), (mx + r * 0.72, my), (mx, my + r), (mx - r * 0.72, my)],
+                      fill=RUG_L)
+            d.polygon([(mx, my - r * 0.52), (mx + r * 0.36, my), (mx, my + r * 0.52),
+                       (mx - r * 0.36, my)], fill=(176, 118, 74))
+            d.ellipse(box(mx - r * 0.16, my - r * 0.16, mx + r * 0.16, my + r * 0.16),
+                      fill=RUG_D)
+    base.alpha_composite(rug, (lx, ly))
+    # the light of the room lying on the wool, and its shadow at the wall edge
+    sheen = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(sheen)
+    sd.polygon([(x0 + tx, top), (x1 - tx, top), (x1, near), (x0, near)],
+               fill=(255, 188, 132, 20))
+    base.alpha_composite(sheen.filter(ImageFilter.GaussianBlur(px(18))))
+    for i in range(px(7)):
+        a = int(90 * (1 - i / float(px(7))))
+        d2 = ImageDraw.Draw(base)
+        d2.line([(x0 + tx - px(6), top + i), (x1 - tx + px(6), top + i)],
+                fill=mix(RUG_D, (10, 6, 5), a / 255.0), width=1)
 
 
 # ----------------------------------------------------------------- the floor
@@ -571,11 +854,15 @@ def floor(base):
 
     refl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     rd = ImageDraw.Draw(refl)
-    for cx0, col, wdt, a in (((BAY_B[0] + BAY_B[1]) / 2.0, (255, 168, 96), px(320), 54),
-                             ((SIGN[0] + SIGN[1]) / 2.0, (255, 96, 52), px(240), 46),
-                             ((BAY_A[0] + BAY_A[1]) / 2.0, (255, 138, 92), px(220), 44),
-                             (BAY_C[0] + (BAY_C[1] - BAY_C[0]) * 0.24, (255, 190, 126), px(120), 38),
-                             (BAY_C[0] + (BAY_C[1] - BAY_C[0]) * 0.84, (255, 190, 126), px(120), 38)):
+    spills = [((BAY_B[0] + BAY_B[1]) / 2.0, (255, 168, 96), px(320), 54),
+              ((SIGN[0] + SIGN[1]) / 2.0, (255, 96, 52), px(240), 46),
+              ((BAY_A[0] + BAY_A[1]) / 2.0, (255, 138, 92), px(220), 44),
+              (BAY_C[0] + (BAY_C[1] - BAY_C[0]) * 0.20, (255, 190, 126), px(120), 34),
+              (BAY_C[0] + (BAY_C[1] - BAY_C[0]) * 0.66, (255, 190, 126), px(120), 34)]
+    # the front windows lay their red along the boards, and so does the corner lamp
+    spills += [(wx, (255, 90, 54), px(210), 58) for wx in window_centres()]
+    spills.append((PORCH_C, (255, 150, 78), px(180), 48))
+    for cx0, col, wdt, a in spills:
         rd.polygon([(cx0 - wdt / 2.0, FLOOR_Y + px(4)), (cx0 + wdt / 2.0, FLOOR_Y + px(4)),
                     (cx0 + wdt * 1.3, H), (cx0 - wdt * 1.3, H)], fill=col + (a,))
     base.alpha_composite(refl.filter(ImageFilter.GaussianBlur(px(26))))
@@ -622,21 +909,17 @@ def paint():
     ceiling(base)
 
     # the wall, bay by bay: paper above, lacquer below
-    for x0, x1, sd in ((0, PIER_A - px(30), 1), (BAY_B[0] - px(20), BAY_B[1] + px(20), 2),
-                       (BAY_C[1] + px(20), W, 3)):
+    for x0, x1, sd in ((0, PIER_A - px(30), 1), (BAY_B[0] - px(20), BAY_B[1] + px(20), 2)):
         wallpaper(base, x0, x1, sd)
         wainscot(base, x0, x1)
     wallpaper(base, BAY_A[0], BAY_A[1], 4)
-    wallpaper(base, BAY_C[0], BAY_C[1], 5)
     wainscot(base, BAY_A[0], BAY_A[1])
-    wainscot(base, BAY_C[0], BAY_C[1])
     pilaster(base, PIER_A)
     pilaster(base, PIER_B)
     skirting(base)
 
-    # the room behind the beads, and the lounge at the far end
+    # the room behind the beads
     alcove(base, BAY_A[0] + px(46), BAY_A[1] - px(46))
-    lounge(base, BAY_C[0], BAY_C[1])
 
     # the bar: back bar, counter, and the sign over it
     back_bar(base, BAY_B[0] + px(26), BAY_B[1] - px(26))
@@ -645,7 +928,14 @@ def paint():
     lantern(base, BAY_B[0] + px(64), px(74))
     lantern(base, BAY_B[1] - px(64), px(74))
 
+    # the bar's own front - stone, four red-lit windows under their awning and
+    # the corner door under its hood - with the lounge chairs in front of it
+    shopfront(base, FRONT_X[0], FRONT_X[1])
+    porch(base, PORCH_C)
+    lounge(base, BAY_C[0], BAY_C[1])
+
     floor(base)
+    runner(base, RUG_X[0], RUG_X[1])
 
     base = hd.shade(base, [(hd.light(cx, cy, r, col, int(peak * 0.82)),
                             max(8, int(r * 0.30)), 1.05)

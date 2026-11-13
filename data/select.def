@@ -112,7 +112,7 @@ stages/dragon_restaurant.def  ; Inside Dragon of the Black Pool Restaurant - the
 stages/dragon_kitchen.def  ; Dragon of the Black Pool Restaurant Kitchen - the working kitchen
 stages/forbidden_hall.def  ; Forbidden Hall - the guardian corridor under the palace
 stages/dragon_street.def  ; Outside the Dragon of the Black Pool Restaurant - the street at closing time
-stages/white_tiger_bar.def  ; White Tiger Bar - the bar, its rooms and the red bed behind the beads
+stages/white_tiger_bar.def  ; White Tiger Bar - the bar, the red bed behind the beads, its red-lit front windows
 stages/wingkong_lobby.def  ; Wing Kong Trading Co Lobby - the reception, its safe and the studded doors
 stages/wingkong_prison.def  ; Wing Kong Prison - the cage, the barred windows and the stair
 stages/lopan_office.def  ; Lo Pan's Office - lacquer panelling, gilt panels and the red bar
