@@ -25,6 +25,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import art
 import sff
 
+# The four arenas below are also in tools/stages_hd.py's STAGES, which is what
+# repaints them straight after this script in tools/build_all.py. Their music
+# lives in that tool's MUSIC table - this template used to write a blank
+# bgmusic, so running this script on its own silenced all four.
+from stages_hd import MUSIC
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 VIEW_W, H = 320, 240                 # one screen, in stage pixels
@@ -580,7 +586,7 @@ fade.range = -400,-100
 intensity = 0
 
 [Music]
-bgmusic =
+bgmusic = {bgmusic}
 bgmvolume = 100
 
 [BGdef]
@@ -637,7 +643,8 @@ def build(sid, spec):
         f.write(sff_data)
 
     out = DEF_HEAD.format(name=spec["name"], display=spec["display"], sff=f"{sid}.sff",
-                          scroll=SCROLL, playerbound=PLAYER_BOUND)
+                          scroll=SCROLL, playerbound=PLAYER_BOUND,
+                          bgmusic=MUSIC.get(sid, ""))
     for key, group, number, img, start, delta, layerno in layers:
         out += DEF_BG.format(key=key, group=group, number=number,
                              layerno=layerno, sx=start[0], sy=start[1],

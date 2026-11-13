@@ -1279,6 +1279,66 @@ def check_fight_hud():
     notes.append("fight HUD: gold cells in both corners, clock between the yin-yang dots")
 
 
+def check_stage_music():
+    """A stage's def and the stage table must agree on its fight music.
+
+    tools/stages_hd.py writes [Music] bgmusic from its MUSIC table, so a def
+    that names a track the table does not is a hand edit: the next rebuild of
+    that stage writes the line back out empty and the arena falls back to the
+    menu's music. Lo Pan's Ceremony shipped that way for a while. This compares
+    the two directly instead of trusting that a rebuild has been run since.
+    """
+    import ast as _ast
+    import glob as _glob
+    import re as _re
+
+    hd = os.path.join(ROOT, "tools", "stages_hd.py")
+    if not os.path.isfile(hd):
+        err("tools/stages_hd.py is missing, so no stage's music can be checked")
+        return
+    music = None
+    for node in _ast.parse(read(hd)).body:
+        targets = getattr(node, "targets", ())
+        if targets and getattr(targets[0], "id", "") == "MUSIC":
+            music = _ast.literal_eval(node.value)
+            break
+    if not isinstance(music, dict) or not music:
+        err("tools/stages_hd.py has no MUSIC table to check the stage defs against")
+        return
+
+    for sid, track in sorted(music.items()):
+        if track and not os.path.isfile(os.path.join(ROOT, track)):
+            err("stage %s: MUSIC names %s, which is not in the game" % (sid, track))
+
+    checked = 0
+    for path in sorted(_glob.glob(os.path.join(ROOT, "stages", "*.def"))):
+        text = read(path)
+        # only the arenas tools/stages_hd.py generates; the stock stages and the
+        # training room keep their own defs
+        if "by tools/stages_hd.py" not in text:
+            continue
+        name = os.path.basename(path)[:-4]
+        m = _re.search(r"(?im)^\[Music\][ \t]*$", text)
+        if not m:
+            err("stage %s: no [Music] section, so a rebuild would blank its music" % name)
+            continue
+        body = text[m.end():].split("\n[", 1)[0]
+        have = _re.search(r"(?im)^[ \t]*bgmusic[ \t]*=[ \t]*([^;\r\n]*)", body)
+        have = have.group(1).strip() if have else ""
+        want = music.get(name)
+        if want is None:
+            err("stage %s: built by tools/stages_hd.py but has no MUSIC entry, so a "
+                "rebuild would blank its music" % name)
+            continue
+        if have != want:
+            err("stage %s: def says bgmusic = %r but MUSIC says %r - the def was hand "
+                "edited and a rebuild will overwrite it" % (name, have, want))
+            continue
+        checked += 1
+    notes.append("stage music: %d generated stage defs name the track in the stage "
+                 "table" % checked)
+
+
 def check_stage_camera():
     """Every stage must let the camera pull back when the fighters separate.
 
@@ -1927,6 +1987,7 @@ def main():
     check_select_screen(chars)
     check_team_screen()
     check_fight_hud()
+    check_stage_music()
     check_stage_camera()
     for name, _stage in chars:
         def_path, folder = resolve_char(name)

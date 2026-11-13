@@ -35,6 +35,12 @@ is the one ceremony cue in the score. Every arena has a track of its own there n
 the training room is deliberately silent, and Lo Pan's Office keeps `1 - Prologue`
 for the quiet before the fight.
 
+The table is the only place a stage's music is set. Editing `bgmusic` in a
+generated `stages/*.def` by hand looks like it works until that stage is rebuilt,
+which writes the line back from the table, so `tools/validate.py` compares every
+generated def against `MUSIC` and fails on any difference - a def naming a track
+the table does not, or a table entry whose file is not in `sound/`.
+
 ## Music select
 
 The Music screen — reached from the title menu's options and from the pause menu —
