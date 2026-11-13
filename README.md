@@ -2,14 +2,15 @@
 
 A fan-made 2D fighting game for [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO) —
 truckers, sorcerers, the Three Storms, and an emperor who has waited two thousand
-years for a wedding. Twelve fighters, nine arenas painted at 1920×1080, and a HUD
-where the dragons *are* the meters.
+years for a wedding. Twelve fighters, thirty maps — twenty-six painted at 1920×1080,
+four played as 3-D scenes in the engine itself — and a HUD where the dragons *are*
+the meters.
 
 [![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/Bn2kABJsK5)
 [![Latest release](https://img.shields.io/github/v/release/jackrabbit72380/bigtroubleinlittlechinathegame?label=latest%20release&color=brightgreen)](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
 ![Engine](https://img.shields.io/badge/engine-Ikemen%20GO-blue)
-![Roster](https://img.shields.io/badge/roster-9%20fighters-red)
-![Stages](https://img.shields.io/badge/stages-9%20arenas-orange)
+![Roster](https://img.shields.io/badge/roster-12%20fighters-red)
+![Stages](https://img.shields.io/badge/stages-30%20maps-orange)
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 
 > **We are looking for people to build this with.** Coders, pixel and HD artists,
@@ -29,33 +30,41 @@ a change here without opening the engine.
 
 ## The arenas
 
+The stage screen is a wall of these cards, fifteen to a page over two pages, and every picture
+below is baked from the stage itself by `tools/build_stage_wall.py` — so the gallery *is* the
+wall the game shows, in the order it lists the maps, not a second set of pictures drawn for
+the README.
+
+| ![Chinatown Back Alley](artifacts/chinatown_alley_card.png) | ![Wing Kong Exchange](artifacts/wingkong_exchange_card.png) | ![Pork Chop Express](artifacts/porkchop_express_card.png) |
+|:---:|:---:|:---:|
+| **Chinatown Back Alley** | **Wing Kong Exchange** | **Pork Chop Express** |
 | ![Lo Pan's Throne](artifacts/lopans_throne_card.png) | ![Lo Pan's Ceremony](artifacts/lopans_ceremony_card.png) | ![Lo Pan's Hallway](artifacts/lopans_hallway_card.png) |
 |:---:|:---:|:---:|
 | **Lo Pan's Throne** | **Lo Pan's Ceremony** | **Lo Pan's Hallway** |
-| ![Wing Kong Exchange](artifacts/wingkong_exchange_card.png) | ![Chinatown Back Alley](artifacts/chinatown_alley_card.png) | ![Pork Chop Express](artifacts/porkchop_express_card.png) |
-| **Wing Kong Exchange** | **Chinatown Back Alley** | **Pork Chop Express** |
-| ![The Upside Down](artifacts/the_upside_down_card.png) | ![The Upside Down](artifacts/hell_sinners_card.png) | ![Airport Terminal](artifacts/airport_terminal_card.png) |
-| **The Sewer** | **The Upside Down** | **Airport Terminal** |
-| ![The Buddha Garden](artifacts/buddha_garden_card.png) | ![Dragon of the Black Pool](artifacts/dragon_restaurant_card.png) | ![The Kitchen](artifacts/dragon_kitchen_card.png) |
+| ![The Sewer](artifacts/the_upside_down_card.png) | ![The Upside Down](artifacts/hell_sinners_card.png) | ![Training Room](artifacts/stage0_card.png) |
+|:---:|:---:|:---:|
+| **The Sewer** | **The Upside Down** | **Training Room** |
+| ![Third Heights](artifacts/stage3d_card.png) | ![Third Heights Outline](artifacts/stage3d_outline_card.png) | ![Third Heights Rainfall](artifacts/stage3d_rain_card.png) |
+|:---:|:---:|:---:|
+| **Third Heights** | **Third Heights Outline** | **Third Heights Rainfall** |
+| ![The Buddha Garden](artifacts/buddha_garden_card.png) | ![Inside Dragon of the Black Pool Restaurant](artifacts/dragon_restaurant_card.png) | ![Dragon of the Black Pool Restaurant Kitchen](artifacts/dragon_kitchen_card.png) |
+|:---:|:---:|:---:|
 | **The Buddha Garden** | **Inside Dragon of the Black Pool Restaurant** | **Dragon of the Black Pool Restaurant Kitchen** |
-| ![Forbidden Hall](artifacts/forbidden_hall_card.png) | ![Outside the Dragon](artifacts/dragon_street_card.png) | ![White Tiger Bar](artifacts/white_tiger_bar_card.png) |
+| ![Forbidden Hall](artifacts/forbidden_hall_card.png) | ![Outside Dragon of the Black Pool Restaurant](artifacts/dragon_street_card.png) | ![White Tiger Bar](artifacts/white_tiger_bar_card.png) |
+|:---:|:---:|:---:|
 | **Forbidden Hall** | **Outside Dragon of the Black Pool Restaurant** | **White Tiger Bar** |
-| ![Wing Kong Trading Co Lobby](artifacts/wingkong_lobby_card.png) | | |
-| **Wing Kong Trading Co Lobby** | | |
-| ![Wing Kong Prison](artifacts/wingkong_prison_card.png) | | |
-| **Wing Kong Prison** | | |
-| ![Lo Pan's Office](artifacts/lopan_office_card.png) | | |
-| **Lo Pan's Office** | | |
-| ![Shadow Alleys](artifacts/shadow_alleys_card.png) | | |
-| **Shadow Alleys** | | |
-| ![Gracie's Apartment](artifacts/gracies_apartment_card.png) | | |
-| **Gracie's Apartment** | | |
-| ![Fish Market](artifacts/fish_market_card.png) | | |
-| **Fish Market** | | |
-| ![Shadow Alley](artifacts/shadow_alley_card.png) | | |
-| **Shadow Alley** | | |
-| ![House of Fire](artifacts/house_of_fire_card.png) | | |
-| **House of Fire** | | |
+| ![Wing Kong Trading Co Lobby](artifacts/wingkong_lobby_card.png) | ![Wing Kong Prison](artifacts/wingkong_prison_card.png) | ![Lo Pan's Office](artifacts/lopan_office_card.png) |
+|:---:|:---:|:---:|
+| **Wing Kong Trading Co Lobby** | **Wing Kong Prison** | **Lo Pan's Office** |
+| ![Shadow Alleys](artifacts/shadow_alleys_card.png) | ![Gracie's Apartment](artifacts/gracies_apartment_card.png) | ![Fish Market](artifacts/fish_market_card.png) |
+|:---:|:---:|:---:|
+| **Shadow Alleys** | **Gracie's Apartment** | **Fish Market** |
+| ![Shadow Alley](artifacts/shadow_alley_card.png) | ![House of Fire](artifacts/house_of_fire_card.png) | ![Chinatown Market](artifacts/chinatown_market_card.png) |
+|:---:|:---:|:---:|
+| **Shadow Alley** | **House of Fire** | **Chinatown Market** |
+| ![Waterfront Docks](artifacts/waterfront_docks_card.png) | ![Lost Souls Cemetery](artifacts/lost_souls_cemetery_card.png) | ![The 3-D Lab](artifacts/lab3d_card.png) |
+|:---:|:---:|:---:|
+| **Waterfront Docks** | **Lost Souls Cemetery** | **The 3-D Lab** |
 
 ## Play it
 
@@ -109,8 +118,9 @@ run **Update and Play.bat** on the same day before playing.
 ## What is in the build
 
 - **Twelve fighters** with their own stats, palettes, movelists and victory quotes.
-- **Nine arenas**, procedurally painted at **1920×1080** and packed into SFF v2,
-  plus the engine's training room. Custom art drops straight in.
+- **Thirty maps**: twenty-six painted at **1920×1080** and packed into SFF v2 — the
+  training room among them — plus four **3-D model stages**, whose rooms, furniture
+  and lights are a `.glb` scene the engine draws itself. Custom art drops straight in.
 - **A custom screenpack** with a dragon HUD: the health bar is the dragon's back
   and the audacity meter is its underside, with the round timer on a glowing
   green and red yin-yang.
@@ -158,7 +168,7 @@ for the pipeline, the art rules and the review expectations, and
 | Path | What lives there |
 |---|---|
 | `chars/` | twelve fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
-| `stages/` | nine arena definitions and their SFF art |
+| `stages/` | thirty arena definitions, their SFF art, and the 3-D stages’ `.glb` scenes and environment maps |
 | `data/` | screenpack, `fight.def` HUD, motif, system and select definitions |
 | `tools/` | every asset generator plus `validate.py` |
 | `art_src/` | source art and drop-in folders for stages and characters |
