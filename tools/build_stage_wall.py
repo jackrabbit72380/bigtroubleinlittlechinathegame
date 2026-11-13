@@ -292,6 +292,44 @@ def rewrite_system_sff(images):
     return len(out)
 
 
+def preview_sheet(refs, images):
+    """Every page of the wall on one sheet, so the picture shows every map.
+
+    The screen draws one grid of fifteen at a time, and this preview used to draw
+    only the first of them - so the maps on the second page were never in the
+    picture, and a new map could not be seen there at all. Each page is laid out
+    exactly as the screen lays it out, with the page arrows the screen draws: both
+    on a middle page, the way back on the last.
+    """
+    pages = [refs[i:i + PAGE_SIZE] for i in range(0, len(refs), PAGE_SIZE)]
+    gap = 30
+    sheet = Image.new("RGBA", (1920, 1080 * len(pages) + gap * (len(pages) - 1)),
+                      (0, 0, 0, 0))
+    draw = ImageDraw.Draw(sheet)
+    for p, page in enumerate(pages):
+        top = p * (1080 + gap)
+        cards, _cols, _rows = layout(len(page))
+        for i, cell in enumerate(cards):
+            sheet.alpha_composite(images[(CARD_SPRITE, p * PAGE_SIZE + i)],
+                                  (int(round(cell["cx"] - CARD[0] / 2.0)),
+                                   top + int(round(cell["cy"] - CARD[1] / 2.0))))
+        for side, wanted in (("left", p > 0), ("right", p < len(pages) - 1)):
+            if not wanted:
+                continue
+            cell = arrow_cell(side)
+            sheet.alpha_composite(
+                images[(ARROW_SPRITE, ARROW_STATES[(False, side)])],
+                (int(round(cell["cx"] - ARROW[0] / 2.0)),
+                 top + int(round(cell["cy"] - ARROW[1] / 2.0))))
+        if p < len(pages) - 1:
+            # the rule between sheets: a page break, not part of the screen
+            draw.rectangle([0, top + 1080, 1920, top + 1080 + gap - 1],
+                           fill=(10, 11, 14, 255))
+            draw.line([(0, top + 1080 + gap // 2), (1919, top + 1080 + gap // 2)],
+                      fill=GOLD + (255,), width=2)
+    return sheet
+
+
 def main():
     refs = pool()
     if not refs:
@@ -306,20 +344,8 @@ def main():
     for (lit, direction), number in ARROW_STATES.items():
         images[(ARROW_SPRITE, number)] = paint_arrow(direction, lit)
 
-    # The preview is what the screen shows: the first page, twelve cards, with its
-    # page arrow on the right when there is a second page to turn to.
-    wall = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
-    page = refs[:PAGE_SIZE]
-    cards, cols, rows = layout(len(page))
-    for i, cell in enumerate(cards):
-        wall.alpha_composite(images[(CARD_SPRITE, i)],
-                             (int(round(cell["cx"] - CARD[0] / 2.0)),
-                              int(round(cell["cy"] - CARD[1] / 2.0))))
-    if len(refs) > PAGE_SIZE:
-        cell = arrow_cell("right")
-        wall.alpha_composite(paint_arrow("right", False),
-                             (int(round(cell["cx"] - ARROW[0] / 2.0)),
-                              int(round(cell["cy"] - ARROW[1] / 2.0))))
+    wall = preview_sheet(refs, images)
+    _cards, cols, rows = layout(min(len(refs), PAGE_SIZE))
 
     total = rewrite_system_sff(images)
     os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
@@ -333,7 +359,8 @@ def main():
           % (len(refs), len(refs), len(FRAME_SPRITES), len(ARROW_STATES), total))
     print("  card %dx%d, %d pages of %d (%d across, %d down)"
           % (CARD[0], CARD[1], pages, PAGE_SIZE, cols, rows))
-    print("  preview: %s" % os.path.relpath(PREVIEW, ROOT))
+    print("  preview: %s (%d page(s), all %d maps)"
+          % (os.path.relpath(PREVIEW, ROOT), pages, len(refs)))
 
 
 
