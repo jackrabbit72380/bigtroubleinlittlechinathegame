@@ -128,7 +128,7 @@ CURSOR_FLASH = 6
 # The stage wall's lit card. The character cell's cursor art is 4:5, so stretching
 # it over a 3:1 stage card gave the frame 14px sides and 4px top and bottom rules.
 # These are painted at the card's own aspect instead - 1215x398, the size
-# tools/build_stages.py bakes the card art at - so every side carries the same
+# tools/stages_hd.py bakes the card art at - so every side carries the same
 # weight whatever the wall's cards are. start.lua builds them with animNew, the
 # way it builds the RANDOM word, and draws the picked card's one in that
 # player's colour.

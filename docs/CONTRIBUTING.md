@@ -39,7 +39,6 @@ files they produce are outputs, not places to hand-edit.
 | Generator | Writes |
 |---|---|
 | `tools/build_chars.py` | the roster folders in `chars/` from the `ROSTER` table |
-| `tools/build_stages.py` | arcade-resolution stages |
 | `tools/stages_hd.py` | the nine arenas at 1920×1080 (what ships) |
 | `tools/build_hd_stage.py` | replaces any stage that has `art_src/` art |
 | `tools/women_art.py`, `tools/bake_char.py`, `tools/jackburton.py` | painted fighters |

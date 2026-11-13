@@ -1,10 +1,8 @@
 """Turn high-resolution backdrop art into native 1920x1080 (HD) Ikemen stages.
 
-The procedural painters in tools/build_stages.py draw at arcade resolution
-(localcoord 320x240), which the engine has to stretch to fill a 1080p window.
-This script is the HD path: give it real backdrop art and it writes a stage that
-is authored at 1920x1080, so a 1080p display shows real pixels instead of an
-upscaled 240-line image.
+This is the path for a stage that has real backdrop art: hand it art and it
+writes a stage authored at 1920x1080 on the same geometry the procedural painters
+in tools/stages_hd.py use, so a 1080p display shows real pixels.
 
 Layout - one folder per stage under art_src/:
 
@@ -44,8 +42,8 @@ Wide layers are cut into columns of at most MAX_TEX pixels, one sprite and one
 [BG] block each, for the same reason stages_hd.py does it: an 8192-wide texture
 is refused by the driver.
 
-tools/build_stages.py skips any stage that has an art_src/ folder, so an HD
-backdrop replaces the procedural one without editing code.
+Running after the procedural pass in tools/build_all.py, an art_src/ backdrop
+replaces the painted version of that stage without editing code.
 
 Run:  python3 tools/build_hd_stage.py        (also part of tools/build_all.py)
 """

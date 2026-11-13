@@ -127,21 +127,21 @@ art for one fighter and leave the rest alone:
 
 ## HD stage pipeline (shipped)
 
-The arenas are painted twice: `tools/build_stages.py` keeps the arcade version
-(1000×240 art, `localcoord = 320, 240`) for the four film locations, and
-`tools/stages_hd.py` paints the shipped one at arcade resolution ×4.5 (1920×1080).
-Same layout, real pixels at 1080p. The Sewer ships from the HD pass only — it has no
-arcade-resolution counterpart.
+The arenas are painted by `tools/stages_hd.py` at arcade resolution ×4.5
+(1920×1080): the layout the film locations were roughed out on, with real pixels at
+1080p. There is no arcade-resolution pass any more — it painted the same four ids
+and `stages_hd.py` overwrote every one of them further down `tools/build_all.py`,
+so it was deleted rather than kept in step.
 
-| | arcade (`build_stages.py`) | HD (`stages_hd.py`) |
-|---|---|---|
-| localcoord | 320, 240 | **1920, 1080** |
-| canvas | 1000 × 240 | **8192 × 1080** (two 4096-wide halves) |
-| camera travel | ±260 | ±3136 |
-| player bounds | ±405 | ±4028 |
-| ground (`zoffset`) | 200 | 900 |
-| screen at 4:3 | 320 × 240 units | 1440 × 1080 units |
-| screen at 16:9 | ~427 × 240 units | **1920 × 1080 units** |
+| | `stages_hd.py` |
+|---|---|
+| localcoord | **1920, 1080** |
+| canvas | **8192 × 1080** (two 4096-wide halves) |
+| camera travel | ±3136 |
+| player bounds | ±4028 |
+| ground (`zoffset`) | 900 |
+| screen at 4:3 | 1440 × 1080 units |
+| screen at 16:9 | **1920 × 1080 units** |
 
 **Why `localcoord` height is 1080 and not 720.** Ikemen derives the vertical
 framing from it. `src/camera.go` does:
@@ -151,8 +151,7 @@ cutlow = (localcoord[1] - zoffset) - localcoord[1] * 0.05
 ```
 
 With a 1080-row canvas, `zoffset = 900` and `localcoord[1] = 1080`, that resolves
-to `126` — consistent, and the same relationship as the arcade stages
-(`(240-200) - 12 = 28`). With `localcoord = 1920, 720` it resolves *negative*: the
+to `126`. With `localcoord = 1920, 720` it resolves *negative*: the
 floor sits past the bottom of the coordinate space and the backdrop is framed
 wrong no matter how the art is drawn. Any future stage must keep
 `localcoord[1] == canvas height`.
@@ -165,9 +164,8 @@ half ends where the screen edge does.
 
 Precedence, in `tools/build_all.py` order:
 
-1. `build_stages.py` — arcade stages
-2. `stages_hd.py` — overwrites the same four ids at 1920×1080, and paints
-The Sewer
+1. `stages_hd.py` — the four film arenas at 1920×1080
+2. the `stage_*.py` scripts — the rest of the pool, on the same geometry
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`,
    on the same 8192×1080 / ±3136 geometry and split at 4096 like the rest
 
@@ -178,36 +176,6 @@ vector shapes: `texture()` multiplies a soft noise so masonry has surface,
 `bloom()` screens the brightest pixels back over the frame for lantern and neon
 glow, `seam()` adds contact shading where walls meet the floor, then vignette and
 grain.
-
-## Stage art pipeline (arcade fallback)
-
-`tools/build_stages.py` draws each stage with Pillow on a 1000×240 canvas. The
-camera travels ±260 px and one screen is 320 px wide, so the canvas is the
-camera's travel (520 px) plus 240 px of overpaint past each end — 1.5 screens of
-margin per side. Ikemen normalises the visible width to one screen whatever the
-window aspect (it scales stage art by `gameWidth / localcoord`), and these stages
-also set `zoomout = 1`, but the extra paint means the art cannot run out if that
-ever changes. Players are clamped to ±405 px via `leftbound`/`rightbound`, i.e.
-15 px inside the *camera's* painted edge and matching `[Bound]
-screenleft/screenright`, so a fighter can be pushed against the screen border but
-can never walk off the art. Focal elements are centred on the canvas midpoint,
-which is what the match-start camera shows; the rest is pan scenery.
-
-The geometry lives in one place — the `SCROLL` constant at the top of the
-script. Changing it re-derives the canvas width, every layer's `start =` offset,
-`boundleft`/`boundright` and the player bounds, so widening the arena is a
-one-line change.
-
-Layers are written as SFF v2 PNG32 sprites:
-
-* `0,0` — the backdrop, `delta = 1,1`
-* `3,0` — a foreground rail/prop layer, `layerno = 1`
-* `9000,1` — the 320×240 select-screen preview
-
-Compositing gotcha worth remembering: `ImageChops.screen` ignores alpha. Every
-layer is premultiplied by its own alpha before screening (`tools/art.py`,
-`premultiplied()`), otherwise mask-built layers flood the whole frame with their
-colour.
 
 ## Arcade ladder
 

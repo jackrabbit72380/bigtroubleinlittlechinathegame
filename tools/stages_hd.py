@@ -1,9 +1,9 @@
 """HD (1920x1080) procedural stages for Big Trouble in Little China.
 
-tools/build_stages.py paints at arcade resolution (localcoord 320x240), so a
-1080p window shows a 240-line image stretched across 1080 rows. This module
-paints the same four arenas at 4.5 times that resolution and writes the same
-stages/<id>.def + .sff pair with localcoord 1920x1080.
+This module paints the four film arenas at 1920x1080 (localcoord 1920x1080) -
+the arcade geometry they were roughed out on, at 4.5 times the resolution - and
+writes the stages/<id>.def + .sff pair the engine loads. The stage scripts in
+tools/ build the rest of the pool on top of it.
 
 Why 1920x1080 and not 1920x720: Ikemen derives the vertical framing from the
 stage's localcoord height. src/camera.go does
@@ -1801,6 +1801,11 @@ def _split_floor(img):
 
 def build(sid):
     name, fn = STAGES[sid]
+    # MUSIC is what writes the def's bgmusic, so a stage without an entry would be
+    # rebuilt silent and only noticed in a match. Stop before painting anything.
+    if not MUSIC.get(sid):
+        raise SystemExit("stages_hd: %s has no MUSIC entry, so it would be rebuilt "
+                         "silent - add its track to MUSIC in tools/stages_hd.py" % sid)
     layers = fn()
 
     sprites = []
@@ -1876,8 +1881,8 @@ def build(sid):
             sky_start=-(SKY_W // 2), sky_delta=SKY_DELTA,
             lip_y=lip_top, half=HALF, wide=wide_blocks(splits, lip_top),
         )))
-    # README preview: the 4:3 match-start view, same path build_stages.py uses so
-    # the docs show what actually ships
+    # README preview: the 4:3 match-start view, at the path the docs read, so the
+    # pictures in them show what actually ships
     arts = os.path.join(ROOT, "artifacts")
     os.makedirs(arts, exist_ok=True)
     view_43 = shown.crop((pcx - LOCAL_W // 2, 0, pcx + LOCAL_W // 2, H))

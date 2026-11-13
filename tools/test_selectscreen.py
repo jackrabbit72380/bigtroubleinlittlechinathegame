@@ -303,7 +303,7 @@ def check_stage_wall(problems):
         problems.append("no 3:1 stage frame set is painted into system.sff")
     if wall_region and "cursor.done" in wall_region:
         problems.append("the wall still stretches the character cursor over the wide card")
-    for tool in ("build_stages.py", "build_training.py", "build_hd_stage.py",
+    for tool in ("build_training.py", "build_hd_stage.py",
                  "build_stage3d_rain.py"):
         if "frame_card(" not in read(os.path.join(ROOT, "tools", tool)):
             problems.append("%s does not put the gold rule on the stage cards" % tool)

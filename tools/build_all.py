@@ -23,8 +23,8 @@ def run(script, *args):
 
 
 def main():
-    # stages_hd paints the same arenas at 1920x1080; stage_throne then repaints
-    # Lo Pan's Throne from the concept art, stage_upside_down adds the cavern,
+    # stages_hd paints the four film arenas at 1920x1080; stage_throne then
+    # repaints Lo Pan's Throne from the concept art, stage_upside_down adds the cavern,
     # and build_hd_stage overlays any stage that has real art in art_src/, so
     # the order matters.
     # The menu face is installed first, so every later step that draws text
@@ -35,7 +35,7 @@ def main():
     # here rather than after ten minutes of painting. validate.py runs both
     # again at the end, because it is also run on its own.
     scripts = ["check_launchers.py", "test_launchers.py", "build_fonts.py"]
-    scripts += ["build_stages.py", "build_training.py", "stages_hd.py", "stage_throne.py",
+    scripts += ["build_training.py", "stages_hd.py", "stage_throne.py",
                "stage_ceremony.py", "stage_hallway.py",
                "stage_upside_down.py", "stage_airport.py", "stage_sinners.py",
                "stage_buddha_garden.py", "stage_dragon_restaurant.py",

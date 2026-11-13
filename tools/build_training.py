@@ -56,7 +56,7 @@ INK = (10, 12, 13)
 
 
 
-# The stage card's own gold rule, the same one tools/build_stages.py bakes, so the
+# The stage card's own gold rule, the same one the HD stage painters bake, so the
 # training room's card is not the one bare tile in the stage wall.
 CARD_GOLD = (240, 196, 88, 255)
 CARD_DARK = (10, 14, 22, 255)

@@ -92,9 +92,8 @@ python3 tools/dump_stage_art.py   # unpack stage sprites back to PNG
 
 On Windows, `Dump Stage Art.bat` does the same from a double-click.
 
-`tools/build_stages.py` accepts `STAGE_DEBUG=1` to dump each layer as PNG into
-`artifacts/`. Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to save
-4:3 and 16:9 crops of each arena for eyeballing.
+Set `STAGES_HD_PREVIEW_DIR` when running `tools/stages_hd.py` to save 4:3 and 16:9
+crops of each arena for eyeballing.
 
 ## The map cards are baked
 

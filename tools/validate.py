@@ -1280,63 +1280,31 @@ def check_fight_hud():
 
 
 def check_stage_music():
-    """A stage's def and the stage table must agree on its fight music.
+    """Every stage's def must name the track its entry in MUSIC gives it.
 
-    tools/stages_hd.py writes [Music] bgmusic from its MUSIC table, so a def
-    that names a track the table does not is a hand edit: the next rebuild of
-    that stage writes the line back out empty and the arena falls back to the
-    menu's music. Lo Pan's Ceremony shipped that way for a while. This compares
-    the two directly instead of trusting that a rebuild has been run since.
+    tools/stages_hd.py writes [Music] bgmusic from its MUSIC table, so a hand edit
+    to a generated def looks right until that stage is rebuilt and the line is
+    written back from the table. Lo Pan's Ceremony shipped that way for a while.
+    Comparing the two here makes the difference fail instead of disappear.
     """
-    import ast as _ast
-    import glob as _glob
-    import re as _re
+    from stages_hd import MUSIC
 
-    hd = os.path.join(ROOT, "tools", "stages_hd.py")
-    if not os.path.isfile(hd):
-        err("tools/stages_hd.py is missing, so no stage's music can be checked")
-        return
-    music = None
-    for node in _ast.parse(read(hd)).body:
-        targets = getattr(node, "targets", ())
-        if targets and getattr(targets[0], "id", "") == "MUSIC":
-            music = _ast.literal_eval(node.value)
-            break
-    if not isinstance(music, dict) or not music:
-        err("tools/stages_hd.py has no MUSIC table to check the stage defs against")
-        return
-
-    for sid, track in sorted(music.items()):
-        if track and not os.path.isfile(os.path.join(ROOT, track)):
-            err("stage %s: MUSIC names %s, which is not in the game" % (sid, track))
-
-    checked = 0
-    for path in sorted(_glob.glob(os.path.join(ROOT, "stages", "*.def"))):
-        text = read(path)
-        # only the arenas tools/stages_hd.py generates; the stock stages and the
-        # training room keep their own defs
-        if "by tools/stages_hd.py" not in text:
+    for sid, track in sorted(MUSIC.items()):
+        path = os.path.join(ROOT, "stages", sid + ".def")
+        if not os.path.isfile(path):
+            err("stage music: MUSIC names %s, but stages/%s.def does not exist"
+                % (sid, sid))
             continue
-        name = os.path.basename(path)[:-4]
-        m = _re.search(r"(?im)^\[Music\][ \t]*$", text)
-        if not m:
-            err("stage %s: no [Music] section, so a rebuild would blank its music" % name)
+        if not os.path.isfile(os.path.join(ROOT, track)):
+            err("stage music: %s names %s, which is not in the game" % (sid, track))
             continue
-        body = text[m.end():].split("\n[", 1)[0]
-        have = _re.search(r"(?im)^[ \t]*bgmusic[ \t]*=[ \t]*([^;\r\n]*)", body)
-        have = have.group(1).strip() if have else ""
-        want = music.get(name)
-        if want is None:
-            err("stage %s: built by tools/stages_hd.py but has no MUSIC entry, so a "
-                "rebuild would blank its music" % name)
-            continue
-        if have != want:
-            err("stage %s: def says bgmusic = %r but MUSIC says %r - the def was hand "
-                "edited and a rebuild will overwrite it" % (name, have, want))
-            continue
-        checked += 1
-    notes.append("stage music: %d generated stage defs name the track in the stage "
-                 "table" % checked)
+        have = dict(ini_sections(read(path)).get("music", [])).get("bgmusic", "")
+        if have != track:
+            err("stage music: stages/%s.def says bgmusic = %r but MUSIC says %r - the "
+                "def was hand edited and a rebuild will overwrite it"
+                % (sid, have, track))
+    notes.append("stage music: %d stage defs name the track in the stage table"
+                 % len(MUSIC))
 
 
 def check_stage_camera():
