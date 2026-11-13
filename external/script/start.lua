@@ -1667,25 +1667,17 @@ end
 
 -- Where the word sits: centred under the painted wall, using the section's own
 -- grid metrics rather than a number typed to fit one layout.
--- The RANDOM canvas, 294x72, painted by tools/build_select_grid.py. It is
--- declared up here, not with the caption constants further down: a local
--- declared after a function is not visible inside it, so f_drawRandomStop
--- would read a nil global and the select screen would stop on the first
--- frame it was drawn.
-local RANDOM_ART = {294, 72}
--- The word is painted into that 294x72 canvas at each face's own size: the gold
--- pair carries 45px of ink and the Karate pair 60px. Every other line on the
--- select screen is set at 43px of ink - the size the menu text was brought to -
--- so the stage screen's word is drawn at the scale that brings its face to that
--- height instead of at the painted size. It was the one thing on the screen
--- larger than the rest of it.
-local RANDOM_INK = 43
-local RANDOM_PAINTED_INK = {original = 45, karate = 60}
-
-local function randomWordScale()
-	local face = selectFace()
-	return RANDOM_INK / (RANDOM_PAINTED_INK[face] or RANDOM_PAINTED_INK.karate)
-end
+-- The RANDOM canvas, 189x47, painted by tools/build_select_grid.py at the
+-- motif's own title scale. It is declared up here, not with the caption
+-- constants further down: a local declared after a function is not visible
+-- inside it, so f_drawRandomStop would read a nil global and the select screen
+-- would stop on the first frame it was drawn.
+local RANDOM_ART = {189, 47}
+-- Both faces are painted into that same box, with the Karate letters scaled to
+-- the gold pair's ink, so the word is drawn 1:1 and cannot come out larger than
+-- PLAYER 1 / PLAYER 2 beside it or the menu text above it. The old 43px-of-ink
+-- target and the per-face rescale went with it: that target was a copy of the
+-- motif's size and went stale when the motif changed.
 
 function start.f_drawRandomStop()
 	local si = motif.select_info
@@ -1746,8 +1738,11 @@ local labelAnims = {}
 -- with the ink 4px in and 10px down, so x=58 lands the left caption's ink 62px
 -- from the edge and x=1544 lands the right one 62px from the other edge. y=0 is
 -- the title's own row: title.offset = 960,0.
-local LABEL_ART = {318, 72}
-local LABEL_X = {58, 1544}
+local LABEL_ART = {205, 47}
+-- The right caption is mirrored off the screen edge, not placed by a number: the
+-- canvas is 205 wide now, so x=1657 puts its ink 58px from the right edge, the
+-- same inset the left one has.
+local LABEL_X = {58, 1657}
 local WORD_Y = 0
 
 local function labelAnim(pn)
@@ -4024,14 +4019,12 @@ function start.f_selectScreen()
 							sh = lc[2]
 						end
 					end)
-					-- Drawn at the screen's text size, not the canvas's. animSetPos
-					-- takes screen pixels and the scale only changes the size drawn
-					-- (fontchoice.lua centres its sample the same way), so the box is
-					-- scaled first and the word is placed by that box's own width.
-					local k = randomWordScale()
-					local w, h = RANDOM_ART[1] * k, RANDOM_ART[2] * k
+					-- Drawn 1:1: the word is painted at the same size the menu text
+					-- is set at, so it needs no scaling here. It is placed by its own
+					-- canvas width so it stays centred on the screen.
+					local w, h = RANDOM_ART[1], RANDOM_ART[2]
 					spriteDraw(rndWord, 960 - math.floor(w / 2),
-						sh - math.floor(h) - 8, k)
+						sh - math.floor(h) - 8)
 				end
 				-- The fighters are not drawn here. This screen is the map wall and the
 				-- map's name: two full-body portraits over the cards, with both fighter

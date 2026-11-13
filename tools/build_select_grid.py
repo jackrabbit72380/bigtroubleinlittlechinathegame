@@ -254,7 +254,29 @@ DISPLAY_DEF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.def")
 DISPLAY_SFF = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.sff")
 KARATE_DEF = os.path.join(ROOT, "data", "ikemen1", "fonts", "DisplayK.def")
 KARATE_SFF = os.path.join(ROOT, "data", "ikemen1", "fonts", "DisplayK.sff")
-TITLE_SCALE = 0.75             # title.scale in [Select Info]
+def motif_title_scale(default=0.48):
+    """title.scale from [Select Info], the size the engine sets these words at.
+
+    The words on this screen are painted art, so the only way they stay the same
+    size as the menu text beside them is to paint them at the motif's own scale.
+    A copy of the number here (0.75) went stale the moment the motif was set to
+    0.48, and PLAYER 1, PLAYER 2 and RANDOM then sat half again as large as every
+    other line on the screen.
+    """
+    try:
+        text = open(SYSTEM_DEF, encoding="utf-8-sig", errors="replace").read()
+    except OSError:
+        return default
+    block = re.search(r"^\[Select Info\][^\n]*\n(.*?)(?=^\[|\Z)",
+                      text, re.M | re.S | re.I)
+    if not block:
+        return default
+    hit = re.search(r"^\s*title\.scale\s*=\s*([0-9.]+)", block.group(1),
+                    re.M | re.I)
+    return float(hit.group(1)) if hit else default
+
+
+TITLE_SCALE = motif_title_scale()   # read from [Select Info], never a copy
 WORD_PAD = 2                   # clear pixels round every word, so no ink on the edge
 
 
@@ -347,6 +369,32 @@ def display_word(text, scale=TITLE_SCALE, tint=None, face="original",
     if tint is not None:
         img = tint_word(img, tint)
     return img
+
+def ink_height(img):
+    """Height of the painted letters in a word image, ignoring padding."""
+    box = img.getchannel("A").point(lambda a: 255 if a > 16 else 0).getbbox()
+    return (box[3] - box[1]) if box else 0
+
+
+def match_ink(img, ref):
+    """Scale a word so its letters are the same height as `ref`'s letters.
+
+    The two faces fill the same box differently - the Karate glyphs are drawn
+    taller - so fitting both to the same canvas still left one face half again as
+    large as the other. The box is kept so the screen's own placement still
+    holds, and only the letters inside it are scaled.
+    """
+    want, have = ink_height(ref), ink_height(img)
+    if have <= 0 or want <= 0 or want == have:
+        return img
+    k = want / float(have)
+    scaled = img.resize((max(1, int(round(img.width * k))),
+                         max(1, int(round(img.height * k)))), Image.LANCZOS)
+    out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    out.alpha_composite(scaled, ((img.width - scaled.width) // 2,
+                                 (img.height - scaled.height) // 2))
+    return out
+
 
 def grid_overlay():
     """The wall of portrait cells on its own, for start.lua to draw."""
@@ -545,17 +593,18 @@ def repaint_random_mark():
     per-cell offset to undo that with.
     """
     d, sprites, palettes = sff.read_sff(SYSTEM_SFF)
-    here = {(sp["group"], sp["number"]): sp for sp in sprites}
-    gold = here.get(RANDOM_CELL)
-    if gold is None:
-        raise SystemExit("select screen: 151,0 is missing, so Karate's RANDOM "
-                         "has no box to fit")
-    box = (gold["w"], gold["h"])
     wanted = {RANDOM_CELL: random_label(),
               RANDOM_MARK: random_label(lit=True),
               RANDOM_PORTRAIT: random_card(RANDOM_PANEL),
-              KARATE_RANDOM: random_label(face="karate", canvas=box),
-              KARATE_RANDOM_MARK: random_label(lit=True, face="karate", canvas=box)}
+              }
+    # The Karate pair fits the box this run paints the gold word into, not the
+    # box the file carried in - a stale box left them half again as large.
+    gold_box_size = wanted[RANDOM_CELL].size
+    wanted[KARATE_RANDOM] = match_ink(
+        random_label(face="karate", canvas=gold_box_size), wanted[RANDOM_CELL])
+    wanted[KARATE_RANDOM_MARK] = match_ink(
+        random_label(lit=True, face="karate", canvas=gold_box_size),
+        wanted[RANDOM_MARK])
     out, done = [], set()
     for sp in sprites:
         key = (sp["group"], sp["number"])
@@ -941,11 +990,14 @@ def main():
               CELL_SPR: cell_frame()}
     for spr, word in zip(LABEL_SPR, ("PLAYER 1", "PLAYER 2")):
         images[spr] = label_word(word)
-    # The captions again in Karate, fitted to the box the gold ones already sit in.
-    _d, _now, _p = sff.read_sff(SYSTEM_SFF)
+    # The captions again in Karate, fitted to the box the gold ones were just
+    # painted into. Read from `images`, not from system.sff: the file still holds
+    # the previous run's box, which is how the Karate pair stayed at the old,
+    # larger size while the gold pair shrank.
     for gold, karate, word in zip(LABEL_SPR, KARATE_LABEL, LABEL_WORDS):
-        images[karate] = label_word(word, face="karate",
-                                    canvas=gold_box(gold, _now))
+        images[karate] = match_ink(
+            label_word(word, face="karate", canvas=images[gold].size),
+            images[gold])
     for spr, colour in zip(CURSOR, PLAYER_COLOURS):
         images[spr] = cursor_frame(colour)
     for spr in CURSOR_WHITE:

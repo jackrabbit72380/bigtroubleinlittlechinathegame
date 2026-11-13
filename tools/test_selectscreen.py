@@ -508,53 +508,74 @@ def check_stage_wall(problems):
             problems.append("the stage wall does not read %s" % why)
 
 
-def check_random_word_size(problems):
-    """The stage screen's RANDOM word is menu type, not a poster.
+def ink_rows(img):
+    """The painted letter height of a word image, ignoring its padding."""
+    w, h = img.size
+    px = img.load()
+    rows = [y for y in range(h) if any(px[x, y][3] > 24 for x in range(w))]
+    return (rows[-1] - rows[0] + 1) if rows else 0
 
-    The word is a painted sprite: the gold pair carries 45px of ink in its 294x72
-    canvas and the Karate pair 60px, while every other line on the screen is set
-    at 43px of ink. start.lua brings the word down to that height with a draw
-    scale, so the numbers it divides by are read here against the sprites
-    themselves - a repaint that changes the ink without the constants would put
-    the word back a size larger than the rest of the screen.
+
+def menu_ink():
+    """The ink height the motif's own menu text is drawn at, in screen pixels.
+
+    Every word on the select screen has to be the size of the menu text beside
+    it, and the menu text is the motif's face at the motif's own scale. Measured
+    from the face art instead of copied as a number: 0.75 was copied once and
+    went stale when the motif was set to 0.48, which is how PLAYER 1, PLAYER 2
+    and RANDOM ended up half again as large as the menu.
     """
-    text = read(START)
-    ink = re.search(r"local RANDOM_INK = (\d+)", text)
-    painted = re.search(r"local RANDOM_PAINTED_INK = \{original = (\d+), karate = (\d+)\}",
-                        text)
-    if not ink or not painted:
-        problems.append("start.lua no longer sets the RANDOM word's drawn height")
-        return
-    if int(ink.group(1)) != 43:
-        problems.append("the RANDOM word is drawn at %spx of ink, not the screen's 43"
-                        % ink.group(1))
-    scale_at = text.find("local function randomWordScale")
-    if scale_at < 0:
-        problems.append("the RANDOM word is drawn at its painted size again")
-    else:
-        call_at = text.find("spriteDraw(rndWord,", scale_at)
-        drawn = text[scale_at:call_at + 200] if call_at > 0 else ""
-        if "randomWordScale()" not in drawn:
-            problems.append("the stage screen draws the RANDOM word without "
-                            "scaling it to the screen's text")
-    _d, sprites, _p = sff.read_sff(SFF)
-    have = {(s["group"], s["number"]): s for s in sprites}
-    for key, want, label in (((151, 0), int(painted.group(1)), "gold"),
-                             ((151, 12), int(painted.group(2)), "Karate")):
-        sp = have.get(key)
+    si = block(read(DEF), "Select Info")
+    scale = float((key(si, "title.scale") or "0.48").split(",")[0])
+    fonts = os.path.join(ROOT, "data", "ikemen1", "fonts")
+    data, sprites, palettes = sff.read_sff(os.path.join(fonts, "Display.sff"))
+    # A plain capital is the reference, not the tallest capital: Q carries a tail
+    # below the baseline and would measure a word as taller than it looks.
+    by_char = {sp["number"]: sp for sp in sprites if sp["group"] == 0}
+    for number in (ord("O"), ord("H"), ord("E")):
+        sp = by_char.get(number)
         if sp is None:
             continue
-        img = sff.decode_sprite(_d, sp, _p).convert("RGBA")
-        w, h = img.size
-        px = img.load()
-        rows = [y for y in range(h) if any(px[x, y][3] > 24 for x in range(w))]
-        if not rows:
-            problems.append("RANDOM word sprite %d,%d is blank" % key)
+        img = sff.decode_sprite(data, sp, palettes, sp["pal"]).convert("RGBA")
+        height = ink_rows(img)
+        if height:
+            return height * scale
+    return 0
+
+
+def check_random_word_size(problems):
+    """PLAYER 1, PLAYER 2 and RANDOM are the menu's size, not a poster's.
+
+    They are painted art, so nothing at run time rescales them any more: the
+    generator paints them at the motif's own title scale and start.lua draws them
+    1:1. That makes the sprites themselves the thing to check - a repaint that
+    lets them drift from the menu text is the bug this caught.
+    """
+    text = read(START)
+    if "randomWordScale" in text:
+        problems.append("the select screen rescales the painted words again")
+    want = menu_ink()
+    if want <= 0:
+        problems.append("the menu face has no glyphs to measure")
+        return
+    data, sprites, palettes = sff.read_sff(SFF)
+    have = {(sp["group"], sp["number"]): sp for sp in sprites}
+    for group, number, label in ((151, 20, "PLAYER 1"), (151, 21, "PLAYER 2"),
+                                 (151, 0, "RANDOM"),
+                                 (151, 22, "PLAYER 1 in the Karate face"),
+                                 (151, 23, "PLAYER 2 in the Karate face"),
+                                 (151, 13, "RANDOM in the Karate face")):
+        sp = have.get((group, number))
+        if sp is None:
+            problems.append("%s is missing from system.sff" % label)
             continue
-        measured = rows[-1] - rows[0] + 1
-        if measured != want:
-            problems.append("the %s RANDOM word paints %dpx of ink but start.lua "
-                            "divides by %d" % (label, measured, want))
+        img = sff.decode_sprite(data, sp, palettes).convert("RGBA")
+        measured = ink_rows(img)
+        if measured == 0:
+            problems.append("%s is blank" % label)
+        elif abs(measured - want) > 2:
+            problems.append("%s is painted %dpx tall but the menu text is %.0fpx"
+                            % (label, measured, want))
 
 
 def main():
