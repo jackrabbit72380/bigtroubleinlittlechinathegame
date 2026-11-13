@@ -4059,28 +4059,34 @@ function start.f_selectScreen()
 						end
 						return owners
 					end
-					-- The wall is picked with the start button, and nothing else. The
-					-- punch buttons sit on the A, S and D keys on a default keyboard, so any
-					-- of them could start a match on a key a player walks with; none of them
-					-- picks the stage here. One press of the start button takes the map - a
-					-- single press, like picking a character - and D cannot start a match on
-					-- this screen whatever it is bound to.
-					local doneKeys = { 's' }
+					-- The wall is picked with the same button that picks a character,
+					-- Z on a default keyboard, and with the start button as well. The A, S
+					-- and D keys are walk keys as well as punch buttons, so a press only
+					-- counts while no direction is held: walking the wall with a key that
+					-- is also a button cannot take a map on the way past, and one press
+					-- still takes the map, exactly like picking a fighter.
+					local doneKeys = (motif.select_info.done and motif.select_info.done.key)
+						or { 'a', 'b', 'c', 'x', 'y', 'z' }
+					local function confirmHit(owner)
+						for _, keys in ipairs({ doneKeys, { 's' } }) do
+							local ok, hit = pcall(getInput, owner, keys)
+							if ok and hit then
+								return true
+							end
+						end
+						return false
+					end
 					local rawConfirm = false
 					if not slotHandled then
 						for side = 1, 2 do
 							local owners = sideOwners(side)
-							if #owners > 0 then
-								local ok, hit = pcall(getInput, owners, doneKeys)
-								if ok and hit then
-									rawConfirm = true
-									break
-								end
+							if #owners > 0 and confirmHit(owners) then
+								rawConfirm = true
+								break
 							end
 						end
 						if not rawConfirm then
-							local ok, hit = pcall(getInput, -1, doneKeys)
-							rawConfirm = ok and hit and true or false
+							rawConfirm = confirmHit(-1)
 						end
 					end
 					-- A button already down cannot pick anything: it has to be released
