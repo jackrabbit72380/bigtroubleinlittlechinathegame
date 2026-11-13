@@ -5510,6 +5510,11 @@ function start.f_buildLoadStartParams(arg, doSelectMissing, t_orderRemap)
 		and main.t_musicSelect.params ~= "" then
 		parts[#parts + 1] = main.t_musicSelect.params
 	end
+	-- Music select needs to know which stage is loading: page one of its browser
+	-- hands playback back to that stage's own bgmusic.
+	if type(main.t_musicSelect) == "table" and type(t.stage) == "string" then
+		main.t_musicSelect.stage = t.stage
+	end
 	local function addParam(k, v)
 		if v == nil or v == "" then
 			return

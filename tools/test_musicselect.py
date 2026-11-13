@@ -9,6 +9,12 @@ without a bgdef at all, and refusing to draw entirely - and asserts that the
 browser opens, draws its albums and hands the menu back in every one, so a motif
 change that loses a key fails here instead of in a menu.
 
+It also covers what the browser remembers. Page one is the game's own music and
+pages two and three are the albums, so choosing a track writes the page, the
+track and the override to save/music_now.cfg, and a new session opens on that
+track with it playing - while picking on page one clears the override and hands
+playback back to the stage's own bgmusic.
+
 It is not a substitute for running Ikemen itself - tools/engine_linux.sh does
 that. It runs in a second and needs data/music.json, which ships.
 
@@ -46,7 +52,7 @@ PRELUDE = r"""
 local MODE = ...
 draws, logs, frames, texts, WRITES = {}, {}, 0, {}, {}
 INPUT_DOWN, ESC_READY, RIGHT_FRAMES = false, false, 0
-FILE_TEXT, JSON = '', {}
+FILE_TEXT, SAVED_TEXT, STAGE_TEXT, JSON = '', '', '', {}
 
 local function sprite(tag) return { tag = tag } end
 
@@ -108,7 +114,7 @@ getKey = function() return '' end
 -- Escape stays down for the first frames: when the stub answered it on frame
 -- one the browser left before a single key was read, so no test could ever get
 -- past the "Default" album or see the artwork.
-refresh = function() frames = frames + 1; if frames > 2 then ESC_READY = true end end
+refresh = function() frames = frames + 1; if frames > (ESC_AFTER or 2) then ESC_READY = true end end
 esc = function(clear) if clear == false then ESC_READY = false; return false end return ESC_READY end
 getInput = function(player, keys)
     if type(keys) == 'table' then
@@ -117,6 +123,10 @@ getInput = function(player, keys)
         -- "Default" option album, which has no cover art to draw
         if first == 'R' and RIGHT_FRAMES > 0 then
             RIGHT_FRAMES = RIGHT_FRAMES - 1
+            return true
+        end
+        if first == 'L' and LEFT_FRAMES > 0 then
+            LEFT_FRAMES = LEFT_FRAMES - 1
             return true
         end
         if first == 'U' or first == 'D' or first == 'L' or first == 'R' then return false end
@@ -132,6 +142,9 @@ getInput = function(player, keys)
 end
 -- the music the game was playing when the browser opened
 bgmStop = function() BG_STOPPED = (BG_STOPPED or 0) + 1 end
+-- and what the browser asked the engine to play
+PLAYED = ''
+playBGM = function(file) PLAYED = tostring(file); return true end
 
 -- The engine hands the browser motif.optionbgdef; the shipped one has no
 -- bgclearcolor, which is the shape that used to kill the screen.
@@ -175,7 +188,11 @@ end
 main = {
     pauseMenuActive = true,
     t_itemname = {},
-    f_fileRead = function(path) return FILE_TEXT end,
+    f_fileRead = function(path)
+        if path == 'save/music_now.cfg' and SAVED_TEXT ~= '' then return SAVED_TEXT end
+        if STAGE_TEXT ~= '' and path ~= 'data/music.json' then return STAGE_TEXT end
+        return FILE_TEXT
+    end,
     f_itemnameUpper = function(text) return text end,
     f_animPosDraw = function() end,
     appendCalls = {},
@@ -372,6 +389,16 @@ def check(mode: str) -> list[str]:
     drawn = [str(v) for v in g.texts.values()] if g.texts else []
     if not any("ENTER / Z" in d for d in drawn):
         problems.append("the hint line does not mention Z")
+    # and it is remembered, so the screen reopens where it was left
+    state = ""
+    try:
+        state = str(g.WRITES["save/music_now.cfg"])
+    except Exception:
+        state = ""
+    if "override=1" not in state:
+        problems.append("the pick is not remembered in save/music_now.cfg")
+    elif "file=sound/" not in state:
+        problems.append("the remembered state does not carry the track's file")
     g.Z_ONLY = False
 
     g.INPUT_DOWN = False
@@ -396,11 +423,12 @@ def notice_problems(g, screen: str, console: str) -> list[str]:
     return problems
 
 
-def engine_for(mode: str, raw: str):
+def engine_for(mode: str, raw: str, saved: str = ""):
     lua = LuaRuntime(unpack_returned_tuples=True)
     g = lua.globals()
     lua.execute(PRELUDE, mode)
     g.FILE_TEXT = raw
+    g.SAVED_TEXT = saved
     if raw:
         lua.execute("JSON = " + lua_literal(json.loads(raw)))
     with open(NOTICE, encoding="utf-8") as handle:
@@ -444,6 +472,62 @@ def failure_cases():
     return cases
 
 
+def remembered_cases(raw: str):
+    """The page, the track and the override survive closing the browser."""
+    cases = []
+    state = ("page=Big Trouble in Little China OST Game Version\r\n"
+             "track=05 - Lo Pan's Domain\r\n"
+             "file=sound/Big Trouble in Little China OST Game Version/"
+             "05 - Lo Pan's Domain.ogg\r\n"
+             "override=1\r\n")
+
+    # a new session starts on the track chosen last time, and the screen shows it
+    lua, g = engine_for("nobgclearcolor", raw, saved=state)
+    problems = []
+    params = g.main.t_musicSelect.params
+    if not (isinstance(params, str) and params.startswith("bgmusic=")
+            and "05 - Lo Pan's Domain" in params):
+        problems.append(f"the remembered track is not restored at load: {params!r}")
+    g.INPUT_DOWN = False
+    lua.execute("main.t_musicSelect.open()")
+    drawn = [str(v) for v in g.texts.values()] if g.texts else []
+    if not any("NOW:" in d and "05 - Lo Pan's Domain" in d for d in drawn):
+        problems.append("the NOW line does not name the track that is playing")
+    if not any("PAGE 2 OF 3" in d for d in drawn):
+        problems.append("the browser does not reopen on the remembered page")
+    sprited = {str(k): str(v) for k, v in (g.SPRITED or {}).items()}
+    if sprited.get("05 - Lo Pan's Domain") != "rowon":
+        problems.append("the cursor is not on the remembered track")
+    cases.append(("a remembered track is restored and shown when the browser reopens",
+                  problems))
+
+    # page one is the game's music: picking there clears the override and hands
+    # playback back to the stage's own bgmusic, read out of the stage's .def
+    stage = ("[Music]\r\nbgmusic = sound/AlleyWar.ogg\r\n\r\n"
+             "[StageInfo]\r\nzoffset = 960\r\n")
+    lua, g = engine_for("nobgclearcolor", raw, saved=state)
+    g.STAGE_TEXT = stage
+    g.ESC_AFTER = 6
+    g.LEFT_FRAMES = 1
+    g.INPUT_DOWN = True
+    lua.execute("main.t_musicSelect.stage = 'stages/white_tiger_bar.def'")
+    lua.execute("main.t_musicSelect.open()")
+    problems = []
+    if g.main.t_musicSelect.params is not None:
+        problems.append("picking on page one leaves a bgmusic override behind")
+    written = ""
+    try:
+        written = str(g.WRITES["save/music_now.cfg"])
+    except Exception:
+        written = ""
+    if "override=0" not in written:
+        problems.append("page one does not clear the remembered override")
+    if "AlleyWar.ogg" not in str(g.PLAYED):
+        problems.append(f"page one does not play the stage's own track (played {g.PLAYED!r})")
+    cases.append(("page one is the game's music again and clears the override", problems))
+    return cases
+
+
 def main() -> int:
     failures = []
     for label, mode in MODES:
@@ -452,7 +536,9 @@ def main() -> int:
               + ("" if not problems else f": {'; '.join(problems)}"))
         if problems:
             failures.append((label, problems))
-    for label, problems in failure_cases():
+    with open(MUSIC, encoding="utf-8") as handle:
+        music_raw = handle.read()
+    for label, problems in remembered_cases(music_raw):
         print(f"  {'ok ' if not problems else 'FAIL'} {label}"
               + ("" if not problems else f": {'; '.join(problems)}"))
         if problems:

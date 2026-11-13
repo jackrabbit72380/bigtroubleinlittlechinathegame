@@ -6,10 +6,20 @@
 --   data/music.json   albums -> songs, with the title shown on screen
 --   data/albums.sff   each album's boxFront.png, at group = the album's number
 --
--- This file draws the browser and hands the chosen track to the engine through
--- main.t_musicSelect.params, which start.f_buildLoadStartParams appends to the
--- next match's params. Nothing else in the game changes: leaving the browser
--- without picking a track leaves the mode's own music alone.
+-- There are three pages. Page one is the game's own music - the track each
+-- stage names in its [Music] bgmusic - and pages two and three are the albums:
+-- moving onto them stops the game's music and starts the track under the
+-- cursor, so an album can be heard as it is browsed. Picking on page one hands
+-- the match back to the stage's music; picking on an album hands the track to
+-- the engine through main.t_musicSelect.params, which
+-- start.f_buildLoadStartParams appends to the next match's params, and plays it
+-- at once so a browser opened from the pause menu changes the music in the
+-- fight that is running.
+--
+-- The page, the track and whether anything is overridden are written to
+-- save/music_now.cfg on every pick and read back at load and on open, so the
+-- screen reopens where it was left with the playing track on its NOW line, and
+-- the game starts with the track that was chosen last session.
 --
 -- How it draws. With the pause menu's own command-list text sprite, the same
 -- one modnotice.lua and devhelp.lua draw with: it already carries the motif's
@@ -56,6 +66,114 @@ local MAXROW = 1920 - LIST.x - 60
 
 ms.params = nil
 ms.chosen = nil
+
+-- What the game is playing, remembered between sessions. The browser used to
+-- forget everything when it closed: it reopened on page one, with the stage's
+-- music, no idea that a track had been picked, so a pick only lasted until the
+-- next match. The page, the track and whether anything is overridden are
+-- written here when a pick is made and read back at load and on open.
+local STATE_FILE = 'save/music_now.cfg'
+ms.stage = nil          -- the stage the match is on, recorded by start.lua
+ms.stageFileFor = nil   -- the stage the cached music below belongs to
+ms.stageFile = nil      -- that stage's own bgmusic, read out of its .def
+
+local function trim(s)
+	return (tostring(s or ''):gsub('^%s+', ''):gsub('%s+$', ''))
+end
+
+local function readState()
+	local raw = nil
+	if type(main.f_fileRead) == 'function' then
+		local ok, text = pcall(main.f_fileRead, STATE_FILE, 'r', true)
+		if ok and type(text) == 'string' and text ~= '' then
+			raw = text
+		end
+	end
+	if raw == nil and type(io) == 'table' and io.open ~= nil then
+		local ok, f = pcall(io.open, STATE_FILE, 'r')
+		if ok and f ~= nil then
+			raw = f:read('*a')
+			f:close()
+		end
+	end
+	if type(raw) ~= 'string' or raw == '' then
+		return nil
+	end
+	local t = {}
+	for line in raw:gmatch('[^\r\n]+') do
+		local k, v = line:match('^([%w_]+)%s*=%s*(.*)$')
+		if k ~= nil then
+			t[k] = trim(v)
+		end
+	end
+	-- a reader that hands back some other file must not invent a page
+	if t.page == nil and t.override == nil then
+		return nil
+	end
+	return t
+end
+
+local function writeState(page, track, file, override)
+	local body = 'page=' .. tostring(page or '') .. '\r\n'
+		.. 'track=' .. tostring(track or '') .. '\r\n'
+		.. 'file=' .. tostring(file or '') .. '\r\n'
+		.. 'override=' .. (override and '1' or '0') .. '\r\n'
+	local written = false
+	if type(main.f_fileWrite) == 'function' then
+		written = pcall(main.f_fileWrite, STATE_FILE, body, 'w')
+	end
+	if not written and type(io) == 'table' and io.open ~= nil then
+		written = pcall(function()
+			local f = io.open(STATE_FILE, 'w')
+			if f == nil then
+				error('cannot write ' .. STATE_FILE)
+			end
+			f:write(body)
+			f:close()
+		end)
+	end
+	return written
+end
+
+-- The stage's own fight music, read out of its .def. This is what page one hands
+-- playback back to, and start.lua records the stage on every match it builds so
+-- a browser opened from the pause menu knows it too.
+local function stageMusic()
+	if ms.stage == nil or ms.stage == '' then
+		return nil
+	end
+	if ms.stageFileFor == ms.stage then
+		return ms.stageFile
+	end
+	ms.stageFileFor = ms.stage
+	ms.stageFile = nil
+	local raw = nil
+	if type(main.f_fileRead) == 'function' then
+		local ok, text = pcall(main.f_fileRead, ms.stage, 'r', true)
+		if ok and type(text) == 'string' then
+			raw = text
+		end
+	end
+	if raw == nil then
+		return nil
+	end
+	local music = raw:match('%[Music%](.-)%[') or raw
+	local file = music:match('bgmusic%s*=%s*([^%s;]+)')
+	if file ~= nil and file ~= '' then
+		ms.stageFile = file
+	end
+	return ms.stageFile
+end
+
+-- The remembered pick, restored when the game starts, so the track chosen last
+-- session is the one the next match takes with it.
+local savedNow = readState()
+if savedNow ~= nil and savedNow.override == '1' and savedNow.file ~= nil
+	and savedNow.file ~= '' then
+	ms.params = 'bgmusic=' .. savedNow.file
+	ms.chosen = (savedNow.page ~= '' and savedNow.page or 'Music') .. ' - '
+		.. tostring(savedNow.track or '')
+end
 
 -- A JSON reader small enough to keep here. data/music.json is written by
 -- tools/build_music.py and is plain JSON - objects, arrays, strings, numbers,
@@ -561,7 +679,29 @@ function ms.open()
 		return (ok and res ~= nil and res ~= false) and true or false
 	end
 
+	-- Where the browser was left: the page and the track on it, so opening it
+	-- again shows what is playing instead of snapping back to page one.
+	local saved = readState()
 	local albumNo, songNo, scroll = 1, 1, 1
+	if saved ~= nil then
+		for i, a in ipairs(albums) do
+			local wantGame = (saved.page == nil or saved.page == '')
+			if (wantGame and a.name == '') or (not wantGame and a.name == saved.page) then
+				albumNo = i
+				break
+			end
+		end
+		local picked = albums[albumNo]
+		if picked ~= nil and (saved.track ~= nil or saved.file ~= nil) then
+			for i, track in ipairs(picked.songs) do
+				if track.title == saved.track or (saved.file ~= nil and track.file == saved.file) then
+					songNo = i
+					break
+				end
+			end
+		end
+		scroll = math.max(1, math.min(songNo, #albums[albumNo].songs - LIST.rows + 1))
+	end
 	-- Accept is edge-triggered. The list stays open after a pick now, and an
 	-- engine that reports a held key on every frame would otherwise re-pick
 	-- the same row each time.
@@ -569,10 +709,24 @@ function ms.open()
 	-- Switching album or track silences whatever is playing and starts the
 	-- track now under the cursor: the browser is the player too, so an album
 	-- can be heard as it is browsed instead of only after a confirm.
-	local function preview(song)
+	-- Page one is the game's own music, pages two and three are the albums.
+	-- Moving the cursor on page one hands playback back to the stage's track
+	-- instead of leaving an album playing under it; moving on an album stops the
+	-- game's music and starts the track under the cursor.
+	local function preview(album, song)
+		if album == nil or album.name == '' then
+			local file = stageMusic()
+			stopGameMusic()
+			if file ~= nil then
+				playTrack(file)
+			end
+			ms.playing = nil
+			return
+		end
 		stopGameMusic()
 		if song ~= nil and song.file ~= nil then
 			playTrack(song.file)
+			ms.playing = { album = album.name, title = song.title, file = song.file }
 		end
 	end
 	-- Z picks a track exactly like Enter. The motif's own done keys are added to
@@ -618,8 +772,12 @@ function ms.open()
 		drawAlbumArt(albumData, album)
 
 		drawFitted(spr,
-			main.f_itemnameUpper(album.name ~= '' and album.name or 'Default (stage music)', true),
+			main.f_itemnameUpper(album.name ~= '' and album.name or 'Game music', true),
 			HEAD.x, HEAD.y, 0, HEADSCALE, MAXHEAD)
+		-- which of the three pages this is, so the game's music and the albums can
+		-- be told apart at a glance
+		drawFitted(spr, 'PAGE ' .. albumNo .. ' OF ' .. #albums, HEAD.x, HEAD.y + 46, 0,
+			SMALLSCALE, MAXHEAD)
 
 		if songNo < scroll then
 			scroll = songNo
@@ -641,7 +799,7 @@ function ms.open()
 		-- Centred on the screen and measured, so a chosen track's long
 		-- "album - title" keeps the line centred instead of running past the
 		-- frame; the short line and the long one sit in the same place.
-		drawFitted(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: stage music',
+		drawFitted(spr, ms.chosen and ('NOW: ' .. ms.chosen) or 'NOW: game music',
 			CHOICE.x, CHOICE.y, 0, SMALLSCALE, MAXHEAD)
 		drawLine(spr, 'UP / DOWN  track      LEFT / RIGHT  album      ENTER / Z  use      ESC  back',
 			HINT.x, HINT.y, 0, SMALLSCALE)
@@ -664,7 +822,7 @@ function ms.open()
 				end
 				songNo = #albums[albumNo].songs
 			end
-			preview(albums[albumNo].songs[songNo])
+			preview(albums[albumNo], albums[albumNo].songs[songNo])
 		elseif hit(DOWN) then
 			moveSnd()
 			songNo = songNo + 1
@@ -675,7 +833,7 @@ function ms.open()
 				end
 				songNo = 1
 			end
-			preview(albums[albumNo].songs[songNo])
+			preview(albums[albumNo], albums[albumNo].songs[songNo])
 		elseif hit(LEFT) then
 			moveSnd()
 			albumNo = albumNo - 1
@@ -683,7 +841,7 @@ function ms.open()
 				albumNo = #albums
 			end
 			songNo, scroll = 1, 1
-			preview(albums[albumNo].songs[1])
+			preview(albums[albumNo], albums[albumNo].songs[1])
 		elseif hit(RIGHT) then
 			moveSnd()
 			albumNo = albumNo + 1
@@ -691,26 +849,29 @@ function ms.open()
 				albumNo = 1
 			end
 			songNo, scroll = 1, 1
-			preview(albums[albumNo].songs[1])
+			preview(albums[albumNo], albums[albumNo].songs[1])
 		elseif acceptNow and not acceptHeld then
 			doneSnd()
-			if song ~= nil and song.file ~= nil then
+			if album.name ~= '' and song ~= nil and song.file ~= nil then
 				-- the engine's own param form: key=value, no spaces around the =
 				ms.params = 'bgmusic=' .. song.file
 				ms.chosen = album.name .. ' - ' .. song.title
-				-- The pick is already playing from the preview; this keeps it
-				-- playing when Z lands on the row the cursor is on.
+				-- Playing it now is what makes the pick live: the browser can be
+				-- opened from the pause menu over a fight already in progress.
 				playTrack(song.file)
+				writeState(album.name, song.title, song.file, true)
 			else
-				-- The option album's rows ("Default") hand the match back to the
-				-- mode's own music.
+				-- Page one hands the match back to the mode's own music, and
+				-- remembers that nothing is overridden any more.
 				ms.params = nil
 				ms.chosen = nil
+				stopGameMusic()
+				local stageFile = stageMusic()
+				if stageFile ~= nil then
+					playTrack(stageFile)
+				end
+				writeState('', '', '', false)
 			end
-			-- Picking used to close the list, which from the title menu looked
-			-- like being dropped back on the main menu with nothing to show for
-			-- it. The list stays up now, with the choice on the "NOW:" line and
-			-- the track playing; ESC is the way out, and the hint line says so.
 			resetKey()
 			acceptHeld = true
 		end

@@ -33,6 +33,25 @@ Stage fight music is separate, per stage: the `[Music] bgmusic =` line of each
 Ceremony is the one arena still blank there, so it falls back to whatever the menu
 is playing; the training room is deliberately silent.
 
+## Music select
+
+The Music screen — reached from the title menu's options and from the pause menu —
+has three pages. **Page one is the game's music**: the track the stage you are
+fighting on names in its `[Music] bgmusic`. **Pages two and three are the two
+albums** in `sound/`, with their covers.
+
+Moving the cursor onto an album stops the game's music and starts the track under
+the cursor, so an album can be heard as it is browsed. Picking a track on page one
+clears any override and hands playback back to the stage's own music; picking one
+on an album plays it immediately — which is what makes a change from the pause menu
+take effect in the fight that is running — and carries it into the next match.
+
+The page you were on and the track you picked are written to `save/music_now.cfg`
+and read back when the game starts and when the screen is opened again, so the
+screen reopens where you left it with the playing track on its `NOW:` line, and the
+next session starts on that track. Deleting that file returns the game to the
+stage's own music.
+
 ## Shipping
 
 The tracks in `sound/` are part of this repository, and every release bundle copies
