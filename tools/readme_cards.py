@@ -103,8 +103,17 @@ def build():
         if not entry.endswith(".def"):
             continue
         sid = entry[:-4]
-        preview = os.path.join(ARTS, f"{sid}_preview.png")
-        if not os.path.isfile(preview):
+        # The card artist's own picture first: build_stage_wall writes each
+        # stage's 3:1 art from its sprite sheet, so a README card is rebuilt from
+        # the stage itself. The match-start view is the older source, kept as a
+        # fallback for a stage whose picture has not been written yet.
+        preview = None
+        for name in (f"{sid}_art.png", f"{sid}_preview.png"):
+            candidate = os.path.join(ARTS, name)
+            if os.path.isfile(candidate):
+                preview = candidate
+                break
+        if preview is None:
             continue
         name = stage_name(sid)
         if not name:

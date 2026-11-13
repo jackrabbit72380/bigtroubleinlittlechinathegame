@@ -174,21 +174,20 @@ def cut_band(img):
     return img.crop((0, top, img.width, top + band))
 
 
-def preview_art(def_path):
-    """The stage's own preview sprite, scaled once to cover the card and centred.
+def preview_picture(def_path):
+    """The stage's own picture at 3:1, straight out of its sprite sheet.
 
-    Cover rather than fit: a 1215x398 card and a 240x100 one are meant to read at
-    the same size, and the 720p stages' previews are a different aspect. The crop
-    comes from the middle, where the arena is - of a picture the band above has
-    already made wide enough to have a middle worth cutting to.
+    This is the picture both things below are made from: the card the screen
+    shows, and the copy the README cards are cut from. Writing that copy here is
+    what makes a stage's card rebuildable from its sprite sheet alone - the 3-D
+    Lab has no painter to hand it a picture, and one saved by hand could not be
+    rebuilt at all. Returns None if the sheet has no preview sprite.
     """
-    w, h = CARD
     sff_path = os.path.join(ROOT, def_path[:-4] + ".sff")
-    blank = Image.new("RGBA", CARD, (18, 20, 24, 255))
     try:
         data, sprites, pals = sff.read_sff(sff_path)
     except Exception:
-        return blank
+        return None
     chosen = None
     for want in ((9000, 1), (9000, 0)):
         for sp in sprites:
@@ -198,8 +197,22 @@ def preview_art(def_path):
         if chosen is not None:
             break
     if chosen is None:
-        return blank
-    img = cut_band(sff.decode_sprite(data, chosen, pals).convert("RGBA"))
+        return None
+    return cut_band(sff.decode_sprite(data, chosen, pals).convert("RGBA"))
+
+
+def preview_art(def_path):
+    """The stage's own preview sprite, scaled once to cover the card and centred.
+
+    Cover rather than fit: a 1215x398 card and a 240x100 one are meant to read at
+    the same size, and the 720p stages' previews are a different aspect. The crop
+    comes from the middle, where the arena is - of a picture the band above has
+    already made wide enough to have a middle worth cutting to.
+    """
+    w, h = CARD
+    img = preview_picture(def_path)
+    if img is None:
+        return Image.new("RGBA", CARD, (18, 20, 24, 255))
     scale = max(w / float(img.width), h / float(img.height))
     nw = max(w, int(round(img.width * scale)))
     nh = max(h, int(round(img.height * scale)))
@@ -372,6 +385,20 @@ def main():
     wall = preview_sheet(refs, images)
     _cards, cols, rows = layout(min(len(refs), PAGE_SIZE))
 
+    # Every stage's picture, at 3:1, at the path the README cards are cut from:
+    # written here, from the same sprite sheet and through the same band cut as
+    # the card above, so no picture in the docs is one somebody saved by hand.
+    arts_dir = os.path.join(ROOT, "artifacts")
+    os.makedirs(arts_dir, exist_ok=True)
+    pictures = 0
+    for ref in refs:
+        picture = preview_picture(ref)
+        if picture is None:
+            continue
+        sid = os.path.basename(ref)[:-4]
+        picture.convert("RGB").save(os.path.join(arts_dir, sid + "_art.png"))
+        pictures += 1
+
     total = rewrite_system_sff(images)
     os.makedirs(os.path.dirname(PREVIEW), exist_ok=True)
     flat = Image.new("RGB", wall.size, (0, 0, 0))
@@ -386,6 +413,7 @@ def main():
           % (CARD[0], CARD[1], pages, PAGE_SIZE, cols, rows))
     print("  preview: %s (%d page(s), all %d maps)"
           % (os.path.relpath(PREVIEW, ROOT), pages, len(refs)))
+    print("  pictures: %d stage pictures at artifacts/<stage>_art.png" % pictures)
 
 
 
