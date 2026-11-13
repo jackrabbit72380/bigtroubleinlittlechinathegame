@@ -1257,6 +1257,9 @@ MUSIC = {
     "shadow_alley": "sound/Big Trouble in Little China OST Movie Version/5 - The Alley (War).ogg",
     "house_of_fire": "sound/Big Trouble in Little China OST Movie Version/2 - Pork Chop Express (Main Title).ogg",
     "chinatown_market": "sound/Big Trouble in Little China OST Movie Version/9 - Wing Kong Exchange.ogg",
+    # the harbour chase through the storm, and the domain the graves belong to
+    "waterfront_docks": "sound/Big Trouble in Little China OST Movie Version/6 - The Storms.ogg",
+    "lost_souls_cemetery": "sound/Big Trouble in Little China OST Game Version/05 - Lo Pan's Domain.ogg",
 }
 
 STAGES = {
@@ -1324,6 +1327,8 @@ FX = {
     "wingkong_exchange": ("rain", (168, 200, 234), 1500),
     "chinatown_alley": ("dust", (232, 200, 148), 1800),
     "porkchop_express": ("rain", (188, 216, 248), 1800),
+    "waterfront_docks": ("rain", (178, 202, 232), 1500),
+    "lost_souls_cemetery": ("dust", (170, 196, 216), 1100),
 }
 
 

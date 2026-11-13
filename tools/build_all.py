@@ -45,7 +45,8 @@ def main():
                "stage_lopan_office.py", "stage_shadow_alleys.py",
                "stage_gracies_apartment.py", "stage_fish_market.py",
                "stage_shadow_alley.py", "stage_house_of_fire.py",
-               "stage_chinatown_market.py",
+               "stage_chinatown_market.py", "stage_waterfront_docks.py",
+               "stage_lost_souls_cemetery.py",
                "build_hd_stage.py",
                "readme_cards.py",
                "build_chars.py", "build_music.py"]

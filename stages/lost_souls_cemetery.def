@@ -1,0 +1,219 @@
+;---------------------------------------------------------------------------
+; Lost Souls Cemetery
+; Part of Big Trouble in Little China: The Game (Ikemen GO)
+; HD stage: painted at 1920x1080 by tools/stages_hd.py.
+;---------------------------------------------------------------------------
+[Info]
+name = "Lost Souls Cemetery"
+displayname = "Lost Souls Cemetery"
+versiondate = 10,28,2026
+mugenversion = 1.0
+author = "Big Trouble in Little China: The Game"
+
+[Camera]
+startx = 0
+starty = 0
+boundleft = -3136
+boundright = 3136
+boundhigh = -112
+boundlow = 0
+verticalfollow = .2
+floortension = 0
+tension = 270
+overdrawhigh = 0
+overdrawlow = 0
+cuthigh = 157
+cutlow = 112
+zoomout = 0.75
+zoomin = 1
+
+[PlayerInfo]
+p1startx = -315
+p1starty = 0
+p1facing = 1
+p2startx = 315
+p2starty = 0
+p2facing = -1
+leftbound = -4028
+rightbound = 4028
+
+[Bound]
+screenleft = 68
+screenright = 68
+
+[StageInfo]
+zoffset = 960
+autoturn = 1
+resetBG = 1
+localcoord = 1920, 1080
+xscale = 1
+yscale = 1
+
+; no ground shadow: the engine's per-fighter blob read as a
+; pill-shaped bubble around the feet
+[Shadow]
+intensity = 0
+color = 0,0,0
+yscale = -.1
+fade.range = -400,-100
+
+[Reflection]
+intensity = 0
+
+[Music]
+bgmusic = sound/Big Trouble in Little China OST Game Version/05 - Lo Pan's Domain.ogg
+bgmvolume = 100
+
+[BGdef]
+spr = lost_souls_cemetery.sff
+debugbg = 0
+
+; IKEMEN GO select-screen preview
+[Begin Action 9000]
+9000,1, 0,0, -1
+
+; far parallax: a softened crop of the backdrop, travelling at 0.35 speed
+[BG sky]
+type = normal
+spriteno = 10,0
+layerno = 0
+start = -2057,0
+delta = 0.35,1
+scale = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+[BG sky 1]
+type = normal
+spriteno = 10,1
+layerno = 0
+start = 2039,0
+delta = 0.35,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the lip plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG bg]
+type = normal
+spriteno = 0,0
+layerno = 0
+start = -4096,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+
+; the floor: its own bitmap, cut from the backdrop at the ground line
+[BG bg 1]
+type = normal
+spriteno = 0,1
+layerno = 0
+start = 0,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the fg plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG floor]
+type = normal
+spriteno = 15,0
+layerno = 0
+start = -4096,900
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+[BG floor 1]
+type = normal
+spriteno = 15,1
+layerno = 0
+start = 0,900
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the sky plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG fg]
+type = normal
+spriteno = 3,0
+layerno = 1
+start = -4096,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; foreground floor lip: the bottom of the backdrop drawn in FRONT of the
+; fighters, so their feet sit in the floor rather than on top of it
+[BG fg 1]
+type = normal
+spriteno = 3,1
+layerno = 1
+start = 0,0
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the floor plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG lip]
+type = normal
+spriteno = 11,0
+layerno = 1
+start = -4096,960
+delta = 1,1
+scale = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; air: embers, dust or rain on its own plane, drifting faster than the wall
+[BG lip 1]
+type = normal
+spriteno = 11,1
+layerno = 1
+start = 0,960
+delta = 1,1
+trans = none
+mask = 1
+tile = 0,0
+
+; column 2 of the fx plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG fx]
+type = normal
+spriteno = 12,0
+layerno = 1
+start = -4096,0
+delta = 1.02,1
+scale = 1,1
+trans = add
+mask = 1
+tile = 0,0
+
+; column 2 of the bg plate: 8192 px wide, past the 4096 px a
+; single texture may be on some GPUs, so it ships in abutting
+; columns that line up with the first one
+[BG fx 1]
+type = normal
+spriteno = 12,1
+layerno = 1
+start = 0,0
+delta = 1.02,1
+trans = add
+mask = 1
+tile = 0,0

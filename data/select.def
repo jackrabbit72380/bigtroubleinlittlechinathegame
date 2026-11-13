@@ -122,6 +122,8 @@ stages/fish_market.def  ; Fish Market - the tiled back room, its pipes, the stee
 stages/shadow_alley.def  ; Shadow Alley - the lane at night, the neon, the scaffold poles, the pedicab
 stages/house_of_fire.def  ; House of Fire - the old shop, its cabinets and counter, the car kept in it
 stages/chinatown_market.def  ; Chinatown Market - the stalls at night, their produce, the red banner and the fish tubs
+stages/waterfront_docks.def  ; Waterfront Docks - the harbour quay, the moored junk, the containers and the wet planks
+stages/lost_souls_cemetery.def  ; Lost Souls Cemetery - the vault, the iron fence, the leaning stones and the moon
 
 ;-------------------------------------------------------------------------------
 [Options]
