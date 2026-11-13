@@ -21,6 +21,7 @@ Run:  python3 tools/check_vs_previews.py
 """
 
 import glob
+import hashlib
 import os
 import re
 import sys
@@ -77,6 +78,35 @@ def sprite_9000(def_path):
     return None if hit is None else (hit["w"], hit["h"])
 
 
+# The three stages built from the same island layer (tools/build_stage3d_rain.py)
+# are meant to be told apart by the hour painted around the island - day, night,
+# storm - so a shared picture is the failure that has already shipped twice: they
+# have to resolve to three different cards.
+SHARED_ISLAND = ("stages/stage3d.def", "stages/stage3d_outline.def",
+                 "stages/stage3d_rain.def")
+
+
+def card_pixels(def_path):
+    """md5 of the 9000,1 picture's pixels, or None if it cannot be decoded."""
+    text = open(def_path, encoding="utf-8", errors="replace").read()
+    name = setting(text, "sprite", None) or setting(text, "spr", None)
+    if not name:
+        name = os.path.basename(def_path)[:-4] + ".sff"
+    path = os.path.join(os.path.dirname(def_path), name)
+    if not os.path.isfile(path):
+        return None
+    raw, sprites, pals = sff.read_sff(path)
+    hit = next((sp for sp in sprites
+                if (sp["group"], sp["number"]) == (9000, 1)), None)
+    if hit is None:
+        return None
+    try:
+        return hashlib.md5(sff.decode_sprite(raw, hit, pals, hit["pal"])
+                           .convert("RGBA").tobytes()).hexdigest()
+    except Exception:
+        return None
+
+
 def main():
     problems = []
     stages = checked = 0
@@ -125,6 +155,25 @@ def main():
                             "%dx%d art" % (ref, box[0], box[1],
                                            PORTRAIT[0], PORTRAIT[1]))
 
+    # the shared-island stages: three stages, three pictures
+    cards = 0
+    seen = {}
+    for ref in SHARED_ISLAND:
+        def_path = os.path.join(ROOT, ref.replace("/", os.sep))
+        if not os.path.isfile(def_path):
+            problems.append("%s: no such stage" % ref)
+            continue
+        digest = card_pixels(def_path)
+        if digest is None:
+            problems.append("%s: 9000,1 could not be decoded" % ref)
+            continue
+        cards += 1
+        for other, other_digest in seen.items():
+            if other_digest == digest:
+                problems.append("%s and %s draw the same preview picture"
+                                % (ref, other))
+        seen[ref] = digest
+
     print("vs previews: %d stage(s) and %d fighter(s) measured against the %dx%d "
           "card and the %dx%d art box"
           % (stages, portraits, CARD[0], CARD[1], PORTRAIT[0], PORTRAIT[1]))
@@ -133,6 +182,8 @@ def main():
             print("  FAIL " + line)
         return 1
     print("  ok  every VS preview and portrait lands on its size")
+    print("  ok  the %d shared-island stage(s) draw %d different card(s)"
+          % (cards, len(seen)))
     return 0
 
 

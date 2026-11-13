@@ -36,7 +36,7 @@ import os
 import random
 import sys
 
-from PIL import Image, ImageDraw, ImageEnhance
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 import sff
 import fit_stage_previews as fit
@@ -456,6 +456,102 @@ def island_layer(mode):
     return img
 
 
+# The island's own landmarks in the layer above, in its 1280x720 frame.
+ORB_TOP = 88        # just above the highest of the three orbs (108)
+HORIZON = 448       # where the sea starts
+GROUND = 604        # the terrace surface the fight is on
+
+CARD_SCALE = 3      # the card is composed at 3x and sampled down at the end
+
+# (slice of the island layer, width as a fraction of the card, where its
+# top-left sits) - the terrace the fight is on, then two distant platforms.
+CARD_ISLANDS = (
+    ((812, GROUND - 62, 1172, GROUND + 104), 0.340, (0.245, 0.150)),
+    ((296, GROUND - 40, 508, GROUND + 58), 0.130, (0.020, 0.360)),
+    ((1044, GROUND - 30, 1204, GROUND + 46), 0.105, (0.845, 0.430)),
+)
+
+
+def island_piece(layer, box, width, shoulder=0.42):
+    """A stretch of the terrace, cut out of the layer as a mass in the air.
+
+    The layer draws its terrace across the whole 1280 span with the rock under it
+    running off the bottom of the frame, which is right for an arena backdrop and
+    wrong for a picture of the island: any rectangular crop of it ends on a
+    straight edge and reads as the bottom of a sea-and-horizon strip.
+
+    So the slice is masked - full width along the shelf, then narrowing under it
+    to a blunt point - and pasted over the card, which leaves water and sky
+    visible either side of the rock. The mask is softened so the narrowing reads
+    as rock rather than as a cut, and the shelf's own top edge keeps its painted
+    rim.
+    """
+    slice_w = box[2] - box[0]
+    height = max(1, int(round(width * (box[3] - box[1]) / float(slice_w))))
+    piece = layer.crop(box).convert("RGBA").resize((width, height), Image.LANCZOS)
+    mask = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+    shelf = int(round(height * shoulder))
+    # the rock under the shelf comes to a point, not a straight foot
+    draw.polygon([(0, 0), (width - 1, 0), (width - 1, shelf),
+                  (int(width * 0.57), height - 1), (int(width * 0.43), height - 1),
+                  (0, shelf)], fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(max(1.0, width / 70.0)))
+    out = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    out.paste(piece, (0, 0), mask)
+    return out
+
+
+def card_picture(mode, size):
+    """The stage card: the island the fight happens on, in its hour of the day.
+
+    The card used to be a 3:1 slice of the arena layer, which put the horizon
+    across the middle of it and the island along the bottom edge - three cards
+    that read as a strip of sea. The picture is composed instead: the layer's sky
+    and water without its terrace are the backdrop, and the terrace itself is cut
+    out and set down over them as the subject, big, with two distant platforms
+    for depth and the layer's own mist along the rock.
+
+    The composition is painted at CARD_SCALE and sampled down, so the island's
+    edges and the gold rule stay clean at 240x79.
+    """
+    layer = island_layer(mode)
+    width, height = size
+    cw, ch = width * CARD_SCALE, height * CARD_SCALE
+    # sky and water: the layer above its terrace, so the card's own island is not
+    # drawn twice - the arena's terrace would otherwise show behind it
+    card = layer.crop((0, ORB_TOP, FRAME[0], GROUND)).resize((cw, ch), Image.LANCZOS)
+    card = card.convert("RGBA")
+
+    mist = {"day": (214, 226, 228), "night": (116, 98, 164),
+            "storm": (144, 158, 172)}[mode]
+    for box, frac, at in CARD_ISLANDS:
+        piece = island_piece(layer, box, max(2, int(cw * frac)))
+        card.alpha_composite(piece, (int(cw * at[0]), int(ch * at[1])))
+
+    # the mist the layer lies along the terrace, put under the island's rock so
+    # the mass fades into the water instead of ending on its mask
+    under = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+    ud = ImageDraw.Draw(under)
+    main_w = int(cw * CARD_ISLANDS[0][1])
+    main_top = int(ch * CARD_ISLANDS[0][2][1])
+    main_h = int(round(main_w * (CARD_ISLANDS[0][0][3] - CARD_ISLANDS[0][0][1])
+                       / float(CARD_ISLANDS[0][0][2] - CARD_ISLANDS[0][0][0])))
+    cx = int(cw * CARD_ISLANDS[0][2][0]) + main_w // 2
+    for i in range(3):
+        y = main_top + int(main_h * (0.72 + i * 0.09))
+        alpha = 66 - i * 18
+        ud.ellipse([cx - int(main_w * (0.62 - i * 0.12)), y - int(ch * 0.035),
+                    cx + int(main_w * (0.62 - i * 0.12)), y + int(ch * 0.035)],
+                   fill=mist + (max(0, alpha),))
+    card = Image.alpha_composite(card, under.filter(ImageFilter.GaussianBlur(ch / 28.0)))
+
+    if mode == "storm":
+        # the storm's own weather, so its card is as much rain as its stage is
+        card = draw_rain(card, 110, (16, 38), (-5, -2), (206, 226, 244), (30, 78), 4411)
+    return card.resize(size, Image.LANCZOS)
+
+
 def lip_layer(mode):
     """A dark foreground edge at the foot of the frame, drawn over the fighters.
 
@@ -550,10 +646,9 @@ def main(argv=()):
         # the sheet size that measures the VS card for this stage's own
         # localcoord and portraitscale
         _factor, size = fit.drawn_size(os.path.join(STAGES, name + ".def"))
-        # the layer is painted at the stage's 1280x720 frame and the card is 3:1:
-        # a bottom-anchored cover crop keeps the ground, the water and the horizon
-        # instead of squashing all 720 rows into 79
-        picture = fit.cover(island_layer(mode), size, anchor="bottom")
+        # the card is composed: the island cut out of the layer and set over its
+        # sky and water, rather than a band cut out of the arena's 1280x720 frame
+        picture = card_picture(mode, size)
         axis = (size[0] // 2, size[1] // 2)
         weather = sprites_for(name) + [island_sprite(name), lip_sprite(name)]
         write_sheet(path, picture, axis, weather)
