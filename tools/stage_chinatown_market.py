@@ -39,7 +39,9 @@ W, H = hd.W, hd.H
 CX, FLOOR_Y, px = hd.CX, hd.FLOOR_Y, hd.px
 
 SKY = px(58)                       # 261: the roofline, where the lane's wall starts
-PLINTH = FLOOR_Y - px(14)          # 837: the counters and crates stand on this
+PLINTH = FLOOR_Y - px(2)           # 891: the line the counters and crates stand on
+COUNTER_FACE = px(9)               # the counter's top slab is this thick, so a
+                                   # crate standing on it is based this much higher
 
 STALL_A = (px(120), px(392))       # the crate stall
 STALL_B = (px(400), px(672))       # the produce stall under the big awning
@@ -49,36 +51,36 @@ TANK_X = px(1232)                  # the green water tub
 FENCE_X = (px(1560), W)            # the chain-link end of the lane
 BANNER_C = px(56)                  # the red banner at the other end
 
-NIGHT_T = (6, 7, 12)
-NIGHT_B = (20, 22, 32)
-WALL = (44, 42, 40)                # damp plaster behind the stalls
-WALL_L = (60, 56, 54)
-WALL_D = (23, 22, 22)
-PIPE = (86, 88, 86)
-PINE = (132, 94, 52)               # slatted crates
-PINE_L = (176, 132, 80)
-PINE_D = (82, 55, 29)
-CARD = (152, 132, 96)              # cardboard cartons
-CARD_L = (182, 162, 122)
-CARD_D = (108, 92, 66)
-FOAM = (226, 228, 222)             # foam fish boxes
-FOAM_D = (172, 176, 172)
+NIGHT_T = (4, 5, 9)
+NIGHT_B = (14, 16, 26)
+WALL = (38, 35, 34)                # damp plaster behind the stalls
+WALL_L = (52, 48, 46)
+WALL_D = (18, 17, 18)
+PIPE = (74, 76, 74)
+PINE = (152, 98, 46)               # slatted crates, warm pine
+PINE_L = (206, 148, 84)
+PINE_D = (86, 52, 24)
+CARD = (172, 130, 82)              # cardboard cartons
+CARD_L = (208, 166, 112)
+CARD_D = (108, 78, 44)
+FOAM = (236, 228, 210)             # foam fish boxes
+FOAM_D = (176, 168, 152)
 WIRE = (152, 154, 150)
-TOMATO = (172, 40, 28)
-ORANGE = (212, 120, 34)
-LEAF = (62, 100, 42)
-LEAF_L = (118, 148, 78)
+TOMATO = (202, 40, 24)
+ORANGE = (238, 124, 22)
+LEAF = (76, 122, 40)
+LEAF_L = (152, 184, 88)
 TANK = (54, 188, 114)              # the green water in the fish tub
-CANVAS = (102, 104, 92)            # the awning over the produce
-CANVAS_L = (134, 136, 122)
-CANVAS_D = (66, 68, 60)
+CANVAS = (116, 106, 88)            # the awning over the produce
+CANVAS_L = (150, 138, 114)
+CANVAS_D = (70, 64, 52)
 STEEL = (150, 154, 158)
 BULB = (255, 240, 202)
 LANTERN = (228, 68, 46)
 VIOLET = (104, 92, 200)
-ASPH = (38, 40, 46)                # the wet ground
-ASPH_L = (62, 66, 76)
-ASPH_D = (22, 24, 28)
+ASPH = (28, 30, 36)                # the wet ground
+ASPH_L = (46, 50, 60)
+ASPH_D = (12, 13, 16)
 BANNER = (154, 24, 28)             # the red banner
 BANNER_L = (198, 46, 42)
 GOLD_B = (214, 170, 76)
@@ -103,6 +105,24 @@ def box(x0, y0, x1, y1):
 
 def lamp(cx, cy, r, color=WARM, peak=150):
     LIGHTS.append((cx, cy, r, color, peak))
+
+
+def contact(base, cx, base_y, w, alpha=170, depth=None):
+    """The soft shadow a prop drops where its base meets what it stands on.
+
+    Drawn before the prop, so its own body covers the middle of the shadow and
+    what is left is the dark rim round its foot. Without it a crate is a card
+    laid on a counter: every edge is lit, nothing sits on anything.
+    """
+    depth = px(9) if depth is None else depth
+    bw = w * 1.30
+    pad = int(px(14))
+    lw, lh = int(bw) + 2 * pad, int(depth * 4) + 2 * pad
+    sh = Image.new("RGBA", (lw, lh), (0, 0, 0, 0))
+    d = ImageDraw.Draw(sh)
+    d.ellipse(box(pad, pad + lh * 0.22, lw - pad, pad + lh * 0.78), fill=(7, 5, 4, alpha))
+    base.alpha_composite(sh.filter(ImageFilter.GaussianBlur(px(5))),
+                         (int(cx - bw / 2.0 - pad), int(base_y - pad - lh * 0.5)))
 
 
 # --------------------------------------------------------------------- the lane
@@ -305,26 +325,39 @@ def awning(base, x0, x1, y_top, y_front, col=CANVAS):
 def counter(base, x0, x1, top):
     """A rough timber stall counter: a thick top, plank front, and its legs."""
     d = ImageDraw.Draw(base)
-    d.rectangle(box(x0, top, x1, PLINTH), fill=mix(PINE, PINE_D, 0.35))
-    # the front planks
+    contact(base, (x0 + x1) / 2.0, PLINTH, (x1 - x0) * 1.03, alpha=200, depth=px(16))
+    d.rectangle(box(x0, top, x1, PLINTH), fill=mix(PINE, PINE_D, 0.45))
+    # the front planks, each lit along its top edge, over a vertical shade
     y = top + px(8)
     k = 0
     while y < PLINTH - px(4):
-        c = mix(PINE, PINE_D, 0.20 + 0.18 * (k % 2))
+        depth = (y - top) / max(1.0, PLINTH - top)
+        c = mix(PINE, PINE_D, 0.28 + 0.30 * depth + 0.12 * (k % 2))
         d.rectangle(box(x0 + px(2), y, x1 - px(2), y + px(16)), fill=tint(c, random.Random(k + int(x0))))
-        d.line([(x0 + px(2), y), (x1 - px(2), y)], fill=mix(c, PINE_L, 0.35),
-               width=max(1, int(px(1.0))))
-        d.line([(x0 + px(2), y + px(16)), (x1 - px(2), y + px(16))], fill=PINE_D,
-               width=max(1, int(px(1.2))))
+        d.line([(x0 + px(2), y), (x1 - px(2), y)], fill=mix(c, PINE_L, 0.45),
+               width=max(1, int(px(1.1))))
+        d.line([(x0 + px(2), y + px(16)), (x1 - px(2), y + px(16))], fill=(24, 13, 6),
+               width=max(2, int(px(1.6))))
         y += px(18)
         k += 1
+    # the shadow the slab throws down its own front, and the plank joints
+    for i in range(px(16)):
+        d.line([(x0 + px(2), top + px(6) + i), (x1 - px(2), top + px(6) + i)],
+               fill=mix(PINE_D, (10, 6, 3), 0.85 * (1 - i / float(px(16)))))
+    rnd = random.Random(int(x0) + 3)
+    for jx in range(int(x0) + int(px(30)), int(x1) - int(px(20)), int(px(60))):
+        d.line([(jx, top + px(24)), (jx + rnd.uniform(-px(3), px(3)), PLINTH)],
+               fill=(40, 22, 10), width=max(1, int(px(1.2))))
     # the top slab, standing proud
     d.rectangle(box(x0 - px(8), top - px(10), x1 + px(8), top + px(6)),
-                fill=mix(PINE, PINE_L, 0.30))
-    d.line([(x0 - px(8), top - px(10)), (x1 + px(8), top - px(10))], fill=(226, 196, 150),
+                fill=mix(PINE, PINE_L, 0.12))
+    for i in range(px(10)):
+        d.line([(x0 - px(8), top - px(10) + i), (x1 + px(8), top - px(10) + i)],
+               fill=mix(PINE_L, PINE, 0.35 + 0.5 * (i / float(px(10)))))
+    d.line([(x0 - px(8), top - px(10)), (x1 + px(8), top - px(10))], fill=(232, 200, 152),
+           width=max(2, int(px(2.0))))
+    d.line([(x0 - px(8), top + px(6)), (x1 + px(8), top + px(6))], fill=(22, 12, 6),
            width=max(2, int(px(1.8))))
-    d.line([(x0 - px(8), top + px(6)), (x1 + px(8), top + px(6))], fill=(56, 36, 18),
-           width=max(2, int(px(1.6))))
     lamp((x0 + x1) / 2.0, top - px(6), px(260), (255, 196, 140), 38)
 
 
@@ -335,17 +368,23 @@ def crate(base, cx, base_y, w, h, seed=0):
     x0, x1 = cx - w / 2.0, cx + w / 2.0
     y1 = base_y
     y0 = base_y - h
-    d.rectangle(box(x0, y0, x1, y1), fill=mix(PINE_D, (44, 30, 18), 0.35))
-    # the slats, with the gaps showing the dark behind
+    contact(base, cx, base_y, w)
+    d.rectangle(box(x0, y0, x1, y1), fill=(26, 14, 6))
+    # the slats, with the gaps showing the dark behind. Each slat is lit along
+    # its top edge only and goes dark toward its foot, which is what makes a
+    # stack of them read as boards rather than as a printed card.
     n = 4
+    slat = (h - px(8)) / n
     for k in range(n):
-        sy = y0 + (h - px(3)) * k / n
-        c = tint(mix(PINE, PINE_L, rnd.uniform(0.05, 0.45)), rnd, 0.05)
-        d.rectangle(box(x0 + px(2), sy, x1 - px(2), sy + (h - px(6)) / n - px(2)), fill=c)
-        d.line([(x0 + px(2), sy), (x1 - px(2), sy)], fill=mix(c, (236, 206, 158), 0.30),
-               width=max(1, int(px(0.9))))
-        d.line([(x0 + px(2), sy + (h - px(6)) / n - px(2)), (x1 - px(2), sy + (h - px(6)) / n - px(2))],
-               fill=mix(c, (40, 26, 14), 0.5), width=max(1, int(px(0.9))))
+        sy = y0 + px(3) + k * (slat + px(2))
+        base_c = mix(PINE, PINE_D, 0.30 + 0.22 * (k / float(n)))
+        c = tint(mix(base_c, PINE_L, rnd.uniform(0.0, 0.22)), rnd, 0.04)
+        d.rectangle(box(x0 + px(2), sy, x1 - px(2), sy + slat), fill=c)
+        for i in range(int(slat)):
+            d.line([(x0 + px(2), sy + i), (x1 - px(2), sy + i)],
+                   fill=mix(c, PINE_D, 0.55 * (i / max(1.0, slat))))
+        d.line([(x0 + px(2), sy), (x1 - px(2), sy)], fill=mix(c, (240, 206, 152), 0.42),
+               width=max(1, int(px(1.0))))
     # the corner posts, the diagonal brace, and a stencilled mark
     for bxx in (x0 + px(2), x1 - px(8)):
         d.rectangle(box(bxx, y0, bxx + px(6), y1), fill=mix(PINE, PINE_D, 0.30))
@@ -354,7 +393,15 @@ def crate(base, cx, base_y, w, h, seed=0):
     d.rectangle(box(x0 + px(10), y0 + px(8), x0 + px(34), y0 + px(20)), fill=(196, 176, 132))
     d.line([(x0 + px(13), y0 + px(14)), (x0 + px(31), y0 + px(14))], fill=(96, 76, 50),
            width=max(1, int(px(1.2))))
-    d.rectangle(box(x0, y0, x1, y1), outline=(38, 24, 12), width=max(1, int(px(1.4))))
+    # the shade under the crate's own lip, and the dark where it meets the
+    # crate or the counter it stands on
+    for i in range(px(7)):
+        d.line([(x0 + px(2), y0 + i), (x1 - px(2), y0 + i)],
+               fill=mix(PINE_D, (18, 10, 5), 0.55 * (1 - i / float(px(7)))))
+    for i in range(px(5)):
+        d.line([(x0 + px(2), y1 - i), (x1 - px(2), y1 - i)],
+               fill=mix(PINE_D, (14, 8, 4), 0.6 * (1 - i / float(px(5)))))
+    d.rectangle(box(x0, y0, x1, y1), outline=(30, 18, 8), width=max(1, int(px(1.4))))
 
 
 def crate_stack(base, cx, base_y, w, h, n, seed=0):
@@ -372,6 +419,7 @@ def carton(base, cx, base_y, w, h, seed=0):
     x0, x1 = cx - w / 2.0, cx + w / 2.0
     y0 = base_y - h
     c = tint(CARD, rnd, 0.07)
+    contact(base, cx, base_y, w)
     d.rectangle(box(x0, y0, x1, base_y), fill=c)
     d.rectangle(box(x0, y0, x1, y0 + px(6)), fill=mix(c, CARD_L, 0.45))
     d.line([(x0, y0 + px(6)), (x1, y0 + px(6))], fill=mix(c, CARD_D, 0.5),
@@ -389,6 +437,7 @@ def foam_box(base, cx, base_y, w, h):
     d = ImageDraw.Draw(base)
     x0, x1 = cx - w / 2.0, cx + w / 2.0
     y0 = base_y - h
+    contact(base, cx, base_y, w)
     d.rectangle(box(x0, y0, x1, base_y), fill=FOAM)
     d.rectangle(box(x0, y0, x1, y0 + px(7)), fill=mix(FOAM, (255, 255, 252), 0.5))
     d.line([(x0, y0 + px(7)), (x1, y0 + px(7))], fill=FOAM_D, width=max(1, int(px(1.2))))
@@ -404,7 +453,8 @@ def mesh_basket(base, cx, base_y, w, h):
     d = ImageDraw.Draw(base)
     x0, x1 = cx - w / 2.0, cx + w / 2.0
     y0 = base_y - h
-    d.rectangle(box(x0, y0, x1, base_y), fill=(42, 44, 46))
+    contact(base, cx, base_y, w)
+    d.rectangle(box(x0, y0, x1, base_y), fill=(34, 36, 38))
     for gx in range(int(x0), int(x1), int(px(6))):
         d.line([(gx, y0), (gx, base_y)], fill=WIRE, width=max(1, int(px(0.9))))
     for gy in range(int(y0), int(base_y), int(px(6))):
@@ -427,11 +477,11 @@ def produce(base, x0, x1, y, kind, seed=0):
     while yy > y - px(22):
         x = x0 + r * (1.0 if row % 2 else 1.6)
         while x < x1 - r:
-            c = tint(mix(base_col, (250, 226, 186) if kind != "green" else LEAF_L,
-                         rnd.uniform(0.0, 0.45)), rnd, 0.07)
+            c = tint(mix(base_col, (252, 214, 150) if kind != "green" else LEAF_L,
+                         rnd.uniform(0.0, 0.20)), rnd, 0.05)
             d.ellipse(box(x - r, yy - r, x + r, yy + r), fill=c)
-            d.ellipse(box(x - r * 0.4, yy - r * 0.7, x + r * 0.2, yy - r * 0.1),
-                      fill=mix(c, (255, 250, 226), 0.5))
+            d.ellipse(box(x - r * 0.42, yy - r * 0.78, x + r * 0.06, yy - r * 0.3),
+                      fill=mix(c, (255, 248, 220), 0.66))
             x += r * 2.05
         yy -= r * 1.5
         row += 1
@@ -448,6 +498,7 @@ def barrel(base, cx, base_y, h, tipped=False):
     d = ImageDraw.Draw(base)
     w = px(44)
     rnd = random.Random(int(cx))
+    contact(base, cx, base_y, w * (1.15 if not tipped else 1.1))
     if not tipped:
         x0, x1 = cx - w / 2.0, cx + w / 2.0
         y0 = base_y - h
@@ -480,7 +531,8 @@ def sack(base, cx, base_y, w, h, seed=0):
     """A slumped sack leaning against the stack."""
     d = ImageDraw.Draw(base)
     rnd = random.Random(seed)
-    c = tint((164, 148, 116), rnd, 0.08)
+    c = tint((178, 152, 108), rnd, 0.08)
+    contact(base, cx, base_y, w)
     d.polygon([(cx - w * 0.34, base_y), (cx - w * 0.50, base_y - h * 0.55),
                (cx - w * 0.22, base_y - h), (cx + w * 0.26, base_y - h * 0.96),
                (cx + w * 0.50, base_y - h * 0.50), (cx + w * 0.34, base_y)], fill=c)
@@ -533,6 +585,7 @@ def tank(base, cx):
     d = ImageDraw.Draw(base)
     r = px(30)
     top = PLINTH - px(24)
+    contact(base, cx, PLINTH - px(2), r * 2.05, alpha=190, depth=px(12))
     d.ellipse(box(cx - r, top - px(9), cx + r, top + px(10)), fill=mix(STEEL, (70, 74, 76), 0.4))
     d.rectangle(box(cx - r, top, cx + r, PLINTH - px(3)), fill=mix(STEEL, (92, 96, 96), 0.35))
     d.ellipse(box(cx - r, PLINTH - px(11), cx + r, PLINTH), fill=mix(STEEL, (58, 62, 64), 0.5))
@@ -558,6 +611,7 @@ def tank(base, cx):
 def bench(base, x0, x1, top=PLINTH - px(64)):
     """A long timber bench, its boards laid side by side."""
     d = ImageDraw.Draw(base)
+    contact(base, (x0 + x1) / 2.0, PLINTH, (x1 - x0) * 1.02, alpha=185, depth=px(13))
     d.rectangle(box(x0, top, x1, top + px(12)), fill=mix(PINE, PINE_L, 0.25))
     for k in range(4):
         bx = x0 + (x1 - x0) * (k + 0.5) / 4.0
@@ -667,6 +721,17 @@ def foreground():
 
 
 # ------------------------------------------------------------------- the arena
+def night_veil(base):
+    """The dark the stalls are lit against: the wall goes down behind them."""
+    veil = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(veil)
+    for i in range(0, int(px(230)), int(px(3))):
+        a = int(165 * (1 - i / float(px(230))) ** 1.05)
+        d.rectangle(box(0, SKY + i, W, SKY + i + px(3)), fill=(3, 4, 7, a))
+    d.rectangle(box(0, 0, W, SKY), fill=(2, 3, 5, 96))
+    base.alpha_composite(veil.filter(ImageFilter.GaussianBlur(px(18))))
+
+
 def stall_a(base):
     """The crate stall: a counter with produce boxes and a wall of crates behind.
 
@@ -681,18 +746,19 @@ def stall_a(base):
            col=mix(CANVAS, (88, 86, 76), 0.35))
     counter(base, x0, x1, top)
     # behind the counter, crates and cartons stacked up to the awning
-    crate_stack(base, x0 + px(26), top, px(22), px(14), 3, seed=1)
-    crate_stack(base, x0 + px(56), top, px(20), px(13), 2, seed=5)
-    carton(base, x0 + px(86), top, px(22), px(16), seed=2)
-    crate_stack(base, x0 + px(118), top, px(22), px(14), 3, seed=3)
-    carton(base, x0 + px(150), top, px(22), px(15), seed=4)
-    foam_box(base, x0 + px(180), top, px(20), px(13))
+    surf = top - COUNTER_FACE
+    crate_stack(base, x0 + px(26), surf, px(22), px(14), 3, seed=1)
+    crate_stack(base, x0 + px(56), surf, px(20), px(13), 2, seed=5)
+    carton(base, x0 + px(86), surf, px(22), px(16), seed=2)
+    crate_stack(base, x0 + px(118), surf, px(22), px(14), 3, seed=3)
+    carton(base, x0 + px(150), surf, px(22), px(15), seed=4)
+    foam_box(base, x0 + px(180), surf, px(20), px(13))
     # on the counter: open crates of produce, a foam box, wire baskets
-    produce_crate(base, x0 + px(32), top, px(30), px(13), "tomato", seed=11)
-    produce_crate(base, x0 + px(72), top, px(28), px(12), "orange", seed=12)
-    foam_box(base, x0 + px(110), top, px(24), px(14))
-    mesh_basket(base, x0 + px(146), top, px(26), px(15))
-    crate(base, x0 + px(184), top, px(26), px(14), seed=13)
+    produce_crate(base, x0 + px(32), surf, px(30), px(13), "tomato", seed=11)
+    produce_crate(base, x0 + px(72), surf, px(28), px(12), "orange", seed=12)
+    foam_box(base, x0 + px(110), surf, px(24), px(14))
+    mesh_basket(base, x0 + px(146), surf, px(26), px(15))
+    crate(base, x0 + px(184), surf, px(26), px(14), seed=13)
     # the basin stack beside the counter
     d = ImageDraw.Draw(base)
     for k in range(3):
@@ -712,8 +778,9 @@ def stall_b(base):
     kinds = ("orange", "tomato", "green")
     for k, kind in enumerate(kinds):
         cx = x0 + px(40) + k * px(58)
-        crate(base, cx, top, px(52), px(14), seed=20 + k)
-        produce(base, cx - px(25), cx + px(25), top - px(15), kind, seed=24 + k)
+        surf = top - COUNTER_FACE
+        crate(base, cx, surf, px(52), px(14), seed=20 + k)
+        produce(base, cx - px(25), cx + px(25), surf - px(15), kind, seed=24 + k)
     # boxes stacked along the foot of the counter
     crate_stack(base, x0 + px(16), PLINTH, px(24), px(14), 2, seed=31)
     carton(base, x0 + px(52), PLINTH, px(26), px(18), seed=32)
@@ -745,12 +812,13 @@ def stall_c(base):
     awning(base, x0 - px(4), x1 + px(4), SKY + px(6), SKY + px(44),
            col=mix(CANVAS, (78, 82, 74), 0.45))
     bench(base, x0 + px(6), x1 - px(6), top)
-    crate(base, x0 + px(40), top, px(54), px(12), seed=52)
-    produce(base, x0 + px(14), x0 + px(66), top - px(13), "green", seed=51)
-    crate(base, x0 + px(102), top, px(50), px(12), seed=54)
-    produce(base, x0 + px(78), x0 + px(126), top - px(13), "pale", seed=53)
-    foam_box(base, x0 + px(148), top, px(24), px(13))
-    mesh_basket(base, x0 + px(178), top, px(24), px(14))
+    surf = top + px(1)
+    crate(base, x0 + px(40), surf, px(54), px(12), seed=52)
+    produce(base, x0 + px(14), x0 + px(66), surf - px(13), "green", seed=51)
+    crate(base, x0 + px(102), surf, px(50), px(12), seed=54)
+    produce(base, x0 + px(78), x0 + px(126), surf - px(13), "pale", seed=53)
+    foam_box(base, x0 + px(148), surf, px(24), px(13))
+    mesh_basket(base, x0 + px(178), surf, px(24), px(14))
     crate_stack(base, x0 + px(24), PLINTH, px(24), px(14), 2, seed=55)
     carton(base, x1 - px(46), PLINTH, px(26), px(20), seed=56)
     crate_stack(base, x1 - px(24), PLINTH - px(30), px(20), px(13), 2, seed=57)
@@ -813,6 +881,7 @@ def paint():
     back_wall(base)
     fence(base, FENCE_X[0], FENCE_X[1])
     banner(base, BANNER_C)
+    night_veil(base)
 
     stall_a(base)
     stall_b(base)
@@ -826,8 +895,8 @@ def paint():
     base = hd.shade(base, [(hd.light(cx, cy, r, col, int(peak * 0.84)),
                             max(8, int(r * 0.30)), 1.05)
                            for cx, cy, r, col, peak in LIGHTS])
-    base = hd.bloom(base, 198, px(4), 0.40)
-    base = art.vignette(base, 0.52)
+    base = hd.bloom(base, 204, px(4), 0.34)
+    base = art.vignette(base, 0.60)
     base = art.grain(base, 3, seed=29)
     return [("bg", 0, 0, base, 0),
             ("fg", 3, 0, foreground(), 1)]
