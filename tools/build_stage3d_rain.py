@@ -463,13 +463,17 @@ HORIZON = 448       # where the sea starts
 GROUND = 604        # the terrace surface the fight is on
 
 # The card is the stage itself - the pack's model rendered - so the camera is
-# the stage's: standing back over the platform the fight is on, looking at the
-# gong between the islands, from the eye height a 3-D stage sets for it. The
-# vertical field of view is the one the defs give it ([Camera] fov = 30, zoomed
-# out to the 34 the start camera's 0.75 zoomout draws), and the card is rendered
-# at twice its size and sampled down, which is where its edges come from.
-CARD_CAMERA = (0.0, 2.8, 5.0)
-CARD_FOV = 34.0
+# the stage's, and the defs say where that is. A stage's world origin sits at its
+# camera ([BGdef] model / [Model] offset), the model is drawn at
+#       world = offset + scale * model_point
+# with offset 0,-0.2,-0.9 and scale 0.05, so the camera sits at
+#       ((0,0,0) - offset) / scale = (0, 4, 18)
+# in the model's own units: four units above the platform, standing back of it.
+# The vertical field of view is the one the defs give it, [Camera] fov = 30. A
+# camera closer than this is a zoomed-in crop of the stage, not the stage - the
+# first attempt sat at (0, 2.8, 5) and filled the card with the gong.
+CARD_CAMERA = (0.0, 4.0, 18.0)
+CARD_FOV = 30.0
 CARD_SUPERSAMPLE = 2
 
 # which model each stage draws, exactly as its def's [BGdef] has it
