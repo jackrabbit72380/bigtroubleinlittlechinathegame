@@ -118,6 +118,12 @@ official Ikemen GO **nightly** is pointed at this checkout by symlink. Use the
 nightly, not a tagged release: a tagged build starts the attract demo and dies
 with `Invalid data: inrunstate`, which has nothing to do with this game.
 
+That nightly is a rolling tag, rebuilt whenever the engine changes, so the build
+this project is tested and released against is pinned in `engine.lock.json`
+(`python3 tools/pin_engine.py --show`). If the nightly has been rebuilt since,
+`tools/test_local.py` says so and the release build refuses to run until someone
+plays the new engine and re-pins it with `python3 tools/pin_engine.py`.
+
 ```sh
 bash tools/engine_linux.sh --script tools/engine_drive/devkeys-pause.txt --out artifacts/engine
 ```

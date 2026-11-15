@@ -17,6 +17,8 @@ On Windows run it from a command prompt in this folder: python tools\\test_local
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
 import platform
 import shutil
 import subprocess
@@ -31,6 +33,7 @@ ENGINE_DIR = CACHE / "engine"
 ENGINE_ZIP = CACHE / "engine.zip"
 
 DOWNLOAD = "https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/{}"
+LOCK = ROOT / "engine.lock.json"
 ASSETS = {
     "Windows": "Ikemen_GO-dev-windows.zip",
     "Linux": "Ikemen_GO-dev-linux.zip",
@@ -132,6 +135,44 @@ def download_engine(asset: str) -> None:
     die(f"could not download the engine build ({last}).")
 
 
+def pinned_engine(asset: str) -> tuple[str | None, str | None]:
+    """(sha256, pinned date) this project records for ``asset``, if it can be read."""
+    try:
+        lock = json.loads(LOCK.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, None
+    entry = (lock.get("assets") or {}).get(asset) or {}
+    return entry.get("sha256"), lock.get("pinned")
+
+
+def check_engine_pin(asset: str) -> None:
+    """Say whether the engine zip is the build this project was tested against.
+
+    The nightly tag is rebuilt whenever the engine's develop branch is, so the zip
+    that arrives today need not be the one pinned here. Playing is never blocked -
+    a developer wants to run the newest engine - but a release is cut only from the
+    pinned build, so say plainly which build arrived.
+    """
+    want, date = pinned_engine(asset)
+    if not want or not ENGINE_ZIP.is_file():
+        return
+    digest = hashlib.sha256()
+    with open(ENGINE_ZIP, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    got = digest.hexdigest()
+    if got == want:
+        say(f"engine build: the pinned nightly ({want[:12]}, pinned {date})")
+        return
+    say("")
+    say("engine build: NOT the pinned one.")
+    say(f"  this project pins {want[:12]} ({date}); the nightly now serves {got[:12]}.")
+    say("  The engine has moved since this game was tested against it. Playing it is")
+    say("  fine - a release is only cut from the pinned build. Once the new engine")
+    say("  plays correctly, re-pin it:  python3 tools/pin_engine.py")
+    say("")
+
+
 def ensure_engine(explicit: str | None) -> Path:
     if explicit:
         root = Path(explicit).expanduser().resolve()
@@ -142,6 +183,11 @@ def ensure_engine(explicit: str | None) -> Path:
     if ENGINE_DIR.is_dir():
         cached = find_engine_root(ENGINE_DIR)
         if cached:
+            # the cached engine can outlive a re-pin, so say which build it is
+            # rather than letting a stale one look like the pinned one
+            system = platform.system()
+            if ASSETS.get(system):
+                check_engine_pin(ASSETS[system])
             return cached
 
     system = platform.system()
@@ -150,6 +196,7 @@ def ensure_engine(explicit: str | None) -> Path:
         die(f"no engine build is published for {system}. Pass --engine-dir with one.")
     if not ENGINE_ZIP.is_file():
         download_engine(asset)
+    check_engine_pin(asset)
 
     say("unpacking the engine ...")
     if ENGINE_DIR.exists():

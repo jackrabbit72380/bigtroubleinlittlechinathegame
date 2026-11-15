@@ -970,6 +970,38 @@ def check_launchers():
         err("launchers: " + problem)
     notes.append("launchers: no stray operators, labels and variables resolve")
 
+def check_engine_pin():
+    """The engine this project builds and releases against has to be pinned.
+
+    The engine is Ikemen GO's `nightly` tag, and that tag is rebuilt whenever the
+    engine's develop branch is - the same commit of this repository could ship two
+    different engines, and the engine's own data/ and font/ (which the asset build
+    imports) could change with nothing here changing. tools/pin_engine.py holds the
+    hashes and every pipeline download is verified against them, so the pin has to
+    be present and complete before any of that can be trusted.
+    """
+    path = os.path.join(ROOT, "tools", "pin_engine.py")
+    if not os.path.isfile(path):
+        err("engine: tools/pin_engine.py is missing")
+        return
+    with open(path, encoding="utf-8") as fh:
+        source = fh.read()
+    namespace = {"__name__": "pin_engine", "__file__": path}
+    exec(compile(source, path, "exec"), namespace)
+    try:
+        lock = namespace["load_lock"]()
+    except SystemExit as exc:
+        err("engine pin: %s" % exc)
+        return
+    problems = namespace["local_problems"](lock)
+    for problem in problems:
+        err("engine pin: " + problem)
+    if not problems:
+        notes.append("engine pinned: %s %s as of %s, %d platform(s) hashed"
+                     % (lock.get("engine", "Ikemen GO"), lock.get("tag"),
+                        lock.get("pinned"), len(lock.get("assets") or {})))
+
+
 def check_launcher_checks():
     """The launcher rules must still catch what they exist for.
 
@@ -1949,6 +1981,7 @@ def main():
     check_stage_models()
     check_launchers()
     check_launcher_checks()
+    check_engine_pin()
     check_motif_ints()
     check_powerbar_fonts()
     check_hud_fonts()

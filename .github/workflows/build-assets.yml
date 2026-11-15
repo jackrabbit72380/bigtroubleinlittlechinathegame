@@ -37,8 +37,15 @@ jobs:
 
       - name: Fetch Ikemen GO build
         run: |
-          curl -sSL -o /tmp/ikemen.zip \
+          set -euo pipefail
+          curl -fsSL -o /tmp/ikemen.zip \
             https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/Ikemen_GO-dev-linux.zip
+          # This build copies the engine's own data/, font/ and external/ into the
+          # repository, so an engine that changed under us would rewrite committed
+          # files with nothing in this repository claiming it. The pin is what stops
+          # that: only the build this game was tested on gets imported. Re-pin with
+          # tools/pin_engine.py after playing the new one.
+          python3 tools/pin_engine.py --verify /tmp/ikemen.zip Ikemen_GO-dev-linux.zip
           mkdir -p /tmp/ikemen
           unzip -q /tmp/ikemen.zip -d /tmp/ikemen
           ROOT=$(dirname "$(find /tmp/ikemen -maxdepth 2 -type d -name data | head -1)")

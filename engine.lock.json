@@ -1,0 +1,21 @@
+{
+  "assets": {
+    "Ikemen_GO-dev-linux.zip": {
+      "bytes": 62993852,
+      "sha256": "c826b470bbc625a99e3ac66f9a4071ab5a9e55682ab4273d16b494c9a4e3aa47"
+    },
+    "Ikemen_GO-dev-macos.zip": {
+      "bytes": 61463513,
+      "sha256": "e1b7d7a1f8b730785bc25dd3fd364602de887d1f911ab1f1abbec8f4ddaaf876"
+    },
+    "Ikemen_GO-dev-windows.zip": {
+      "bytes": 57244932,
+      "sha256": "36c0ebdebb8b9a4dcf419a6b58ba2eed77dfbc3688592e9da5d56a905176ef21"
+    }
+  },
+  "engine": "Ikemen GO",
+  "note": "The build pipeline refuses to use any other engine: every download is checked against these hashes. Re-pin with tools/pin_engine.py after the new build has been played and tested.",
+  "pinned": "2026-11-15",
+  "source": "https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/",
+  "tag": "nightly"
+}

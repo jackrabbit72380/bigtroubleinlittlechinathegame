@@ -172,6 +172,21 @@ Everything below is for editing the game. If you only want to play, use a releas
 1. Download an Ikemen GO build (Windows/Linux/macOS) from the
    [engine releases page](https://github.com/ikemen-engine/Ikemen-GO/releases) —
    the nightly is what the bundled screenpack targets.
+
+   The nightly tag is rebuilt every time the engine changes, so **the engine this
+   project is built and released against is pinned**: `engine.lock.json` holds the
+   SHA-256 of each platform's zip, and every download in the build pipeline is
+   checked against it. A release therefore can only ship an engine that has been
+   played. To look at the pin, or to see whether the nightly has moved:
+
+   ```sh
+   python3 tools/pin_engine.py --show     # the build this project is pinned to
+   python3 tools/pin_engine.py --check    # has the nightly been rebuilt since?
+   ```
+
+   `tools/test_local.py` says which build it fetched. Running a newer engine is
+   fine; re-pinning it (`python3 tools/pin_engine.py`) is not — do that only after
+   playing it, or the next release ships an engine nobody has run.
 2. Copy the engine executable into this folder, next to `data/`.
 
    ```

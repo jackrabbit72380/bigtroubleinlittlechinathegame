@@ -49,6 +49,13 @@ jobs:
           mkdir -p dl stage
           curl -fL --retry 3 -o dl/engine.zip \
             "https://github.com/ikemen-engine/Ikemen-GO/releases/download/nightly/${{ matrix.asset }}"
+          # The nightly tag is rebuilt whenever the engine's develop branch is, so
+          # the bytes behind that URL change from one day to the next: the same
+          # commit of this repository could ship two different engines. The pin in
+          # engine.lock.json names the build this game was tested against, and a
+          # release only goes out with that one. Re-pin deliberately, after playing
+          # it: python3 tools/pin_engine.py
+          python3 tools/pin_engine.py --verify dl/engine.zip "${{ matrix.asset }}"
           unzip -q dl/engine.zip -d stage
           # Some platform archives ship without the engine licence; ship it ourselves so
           # redistribution always carries the MIT notice.
@@ -203,6 +210,13 @@ jobs:
           printf 'Big Trouble in Little China: The Game\nversion: %s\ncommit: %s\nbuilt: %s\n' \
             "${{ github.event.inputs.tag || github.ref_name }}" \
             "$(git rev-parse --short HEAD)" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/VERSION.txt"
+          # Which engine this build ships, taken from the pin. A bug report that is
+          # really an engine bug needs this line, and the player has no other way to
+          # say which build they are on.
+          engine=$(python3 -c "import json;d=json.load(open('engine.lock.json'));e=d['assets']['${{ matrix.asset }}'];print('%s %s, pinned %s, sha256 %s' % (d['engine'],d['tag'],d['pinned'],e['sha256']))")
+          printf 'engine: %s\n' "$engine" >> "$out/VERSION.txt"
+          test -s "$out/VERSION.txt" || { echo "VERSION.txt was not written"; exit 1; }
+          grep -q '^engine: ' "$out/VERSION.txt" || { echo "VERSION.txt does not name the engine build"; exit 1; }
 
       - name: Verify the bundle is playable
         run: |
@@ -361,7 +375,14 @@ jobs:
 
             Ready-to-run builds. Download the zip for your platform, unzip it, and launch —
             the Ikemen GO engine is already inside, so there is nothing else to install.
-            `VERSION.txt` in the game folder names the build you are running.
+            `VERSION.txt` in the game folder names the build you are running, and the
+            engine build it ships.
+
+            Engine: the Ikemen GO `nightly` that this project pins in
+            [`engine.lock.json`](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/blob/main/engine.lock.json).
+            The nightly tag is rebuilt every time the engine changes, so every download the
+            build pipeline makes is checked against that pin — the engine in these zips is
+            the one this game was tested on, not whatever was newest that day.
 
             Questions, bug reports or a fight to pick? Join the Discord: https://discord.gg/Bn2kABJsK5
 
