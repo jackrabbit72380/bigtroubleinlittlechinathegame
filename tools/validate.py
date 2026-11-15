@@ -970,6 +970,117 @@ def check_launchers():
         err("launchers: " + problem)
     notes.append("launchers: no stray operators, labels and variables resolve")
 
+def _select_entries(text, section):
+    """The def paths listed under one section of select.def, in order."""
+    match = re.search(r"\[%s\](.*?)(\n\s*\[|\Z)" % re.escape(section), text, re.S | re.I)
+    if not match:
+        return []
+    out = []
+    for line in match.group(1).splitlines():
+        line = line.split(";")[0].strip()
+        if not line:
+            continue
+        # the entry is the first comma field, and a roster entry is a def: that
+        # skips the option lines (order=, randomselect) without guessing at them
+        ref = line.split(",")[0].strip().replace("\\", "/")
+        if ref.lower().endswith(".def"):
+            out.append(ref)
+    return out
+
+
+def check_copy_counts():
+    """The numbers the copy states about fighters and stages come from select.def.
+
+    README, docs/ROSTER.md, docs/STAGES.md and the release notes each tell a player
+    how big the game is, and all four had drifted from the game itself: "Twelve
+    fighters" against 48 selectable, "Twenty-three stages" against 30, and a release
+    note that named eight stages and twenty fighters. Nothing here invents a number:
+    the counts are read out of data/select.def and out of the stages' own defs (a def
+    with a `model =` is a 3-D stage), and every stated number has to agree with them,
+    so the copy cannot drift again without failing the build.
+    """
+    text = read(os.path.join(ROOT, "data", "select.def"))
+    fighters = sorted(set(_select_entries(text, "Characters")))
+    stages = sorted(set(_select_entries(text, "ExtraStages")))
+    if not fighters or not stages:
+        err("copy counts: data/select.def lists no fighters or no extra stages")
+        return
+    gang = [f for f in fighters
+            if os.path.basename(f).split(".")[0].startswith(("changsing_", "wingkong_"))]
+    three_d, painted = [], []
+    for ref in stages:
+        path = os.path.join(ROOT, ref.replace("/", os.sep))
+        body = read(path) if os.path.isfile(path) else ""
+        if not body:
+            err("copy counts: %s is in select.def but there is no such def" % ref)
+            continue
+        (three_d if re.search(r"^\s*model\s*=", body, re.M) else painted).append(ref)
+    truth = {"fighters": len(fighters), "stages": len(stages),
+             "painted": len(painted), "3-D": len(three_d), "gang": len(gang)}
+    if truth["painted"] + truth["3-D"] != truth["stages"]:
+        err("copy counts: %d painted and %d 3-D do not add up to %d stages"
+            % (truth["painted"], truth["3-D"], truth["stages"]))
+
+    claims = (
+        ("README.md", r"badge/roster-(\d+)%20fighters", ("fighters",)),
+        ("README.md", r"badge/stages-(\d+)%20maps", ("stages",)),
+        ("README.md", r"(\d+) fighters, (\d+) maps", ("fighters", "stages")),
+        ("README.md", r"(\d+) painted at 1920", ("painted",)),
+        ("README.md", r"(\d+) played as 3-D", ("3-D",)),
+        ("README.md", r"\*\*(\d+) fighters\*\*", ("fighters",)),
+        ("README.md", r"(\d+) of them Wing Kong", ("gang",)),
+        ("README.md", r"\*\*(\d+) maps\*\*", ("stages",)),
+        ("README.md", r"(\d+) painted at \*\*1920", ("painted",)),
+        ("README.md", r"plus (\d+) \*\*3-D model stages\*\*", ("3-D",)),
+        ("README.md", r"\| `chars/` \| (\d+) fighters", ("fighters",)),
+        ("README.md", r"\| `stages/` \| (\d+) arena", ("stages",)),
+        ("docs/ROSTER.md", r"^(\d+) fighters are selectable", ("fighters",)),
+        ("docs/STAGES.md", r"^(\d+) stages: (\d+) painted", ("stages", "painted")),
+        ("docs/STAGES.md", r"plus (\d+) 3-D model stages", ("3-D",)),
+        (".github/workflows/release.yml", r"Roster: (\d+) fighters", ("fighters",)),
+        (".github/workflows/release.yml", r"Stages: (\d+) maps", ("stages",)),
+        (".github/workflows/release.yml", r"(\d+) of them are 3-D", ("3-D",)),
+    )
+    for rel, pattern, keys in claims:
+        path = os.path.join(ROOT, rel.replace("/", os.sep))
+        if not os.path.isfile(path):
+            err("copy counts: %s is missing" % rel)
+            continue
+        found = re.search(pattern, read(path), re.M)
+        if not found:
+            err("%s no longer states the %s count" % (rel, " and ".join(keys)))
+            continue
+        for index, key in enumerate(keys):
+            stated = int(found.group(index + 1))
+            if stated != truth[key]:
+                err("%s states %d %s; data/select.def has %d"
+                    % (rel, stated, key, truth[key]))
+
+    # the stat tables have to account for the rest of the roster
+    roster = read(os.path.join(ROOT, "docs", "ROSTER.md"))
+    rows = [line for line in roster.splitlines() if line.startswith("|")]
+    table = [line for line in rows if "---" not in line][1:]
+    listed = re.search(r"The (\d+) below", roster)
+    if listed and int(listed.group(1)) != len(table):
+        err("docs/ROSTER.md says %d fighters have stat tables, its table has %d rows"
+            % (int(listed.group(1)), len(table)))
+    rest = re.search(r"other (\d+) are", roster)
+    if rest and int(rest.group(1)) != truth["fighters"] - len(table):
+        err("docs/ROSTER.md says %d more fighters, but %d are listed and %d exist"
+            % (int(rest.group(1)), len(table), truth["fighters"]))
+
+    # every stage in the pool has to be written up
+    stages_doc = read(os.path.join(ROOT, "docs", "STAGES.md"))
+    for ref in stages:
+        if os.path.basename(ref) not in stages_doc:
+            err("docs/STAGES.md does not list %s, which is in select.def" % ref)
+
+    notes.append("copy counts: %d fighters (%d gang) and %d stages (%d painted, %d 3-D) "
+                 "agree in README, ROSTER.md, STAGES.md and the release notes"
+                 % (truth["fighters"], truth["gang"], truth["stages"],
+                    truth["painted"], truth["3-D"]))
+
+
 def check_engine_pin():
     """The engine this project builds and releases against has to be pinned.
 
@@ -1982,6 +2093,7 @@ def main():
     check_launchers()
     check_launcher_checks()
     check_engine_pin()
+    check_copy_counts()
     check_motif_ints()
     check_powerbar_fonts()
     check_hud_fonts()

@@ -2,14 +2,14 @@
 
 A fan-made 2D fighting game for [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO) —
 truckers, sorcerers, the Three Storms, and an emperor who has waited two thousand
-years for a wedding. Twelve fighters, thirty maps — twenty-six painted at 1920×1080,
-four played as 3-D scenes in the engine itself — and a HUD where the dragons *are*
+years for a wedding. 48 fighters, 30 maps — 26 painted at 1920×1080,
+4 played as 3-D scenes in the engine itself — and a HUD where the dragons *are*
 the meters.
 
 [![Join the Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/Bn2kABJsK5)
 [![Latest release](https://img.shields.io/github/v/release/jackrabbit72380/bigtroubleinlittlechinathegame?label=latest%20release&color=brightgreen)](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
 ![Engine](https://img.shields.io/badge/engine-Ikemen%20GO-blue)
-![Roster](https://img.shields.io/badge/roster-12%20fighters-red)
+![Roster](https://img.shields.io/badge/roster-48%20fighters-red)
 ![Stages](https://img.shields.io/badge/stages-30%20maps-orange)
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 
@@ -117,9 +117,11 @@ run **Update and Play.bat** on the same day before playing.
 
 ## What is in the build
 
-- **Twelve fighters** with their own stats, palettes, movelists and victory quotes.
-- **Thirty maps**: twenty-six painted at **1920×1080** and packed into SFF v2 — the
-  training room among them — plus four **3-D model stages**, whose rooms, furniture
+- **48 fighters**, 20 of them Wing Kong and Chang Sing gang rigs, each with its own
+  palette set, movelist and victory quotes. The 24 with their own stat tables are in
+  [docs/ROSTER.md](docs/ROSTER.md).
+- **30 maps**: 26 painted at **1920×1080** and packed into SFF v2 — the
+  training room among them — plus 4 **3-D model stages**, whose rooms, furniture
   and lights are a `.glb` scene the engine draws itself. Custom art drops straight in.
 - **A custom screenpack** with a dragon HUD: the health bar is the dragon's back
   and the audacity meter is its underside, with the round timer on a glowing
@@ -167,8 +169,8 @@ for the pipeline, the art rules and the review expectations, and
 
 | Path | What lives there |
 |---|---|
-| `chars/` | twelve fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
-| `stages/` | thirty arena definitions, their SFF art, and the 3-D stages’ `.glb` scenes and environment maps |
+| `chars/` | 48 fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
+| `stages/` | 30 arena definitions, their SFF art, and the 3-D stages’ `.glb` scenes and environment maps |
 | `data/` | screenpack, `fight.def` HUD, motif, system and select definitions |
 | `tools/` | every asset generator plus `validate.py` |
 | `art_src/` | source art and drop-in folders for stages and characters |

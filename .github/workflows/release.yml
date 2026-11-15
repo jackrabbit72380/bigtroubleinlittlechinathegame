@@ -396,11 +396,11 @@ jobs:
             `D` heavy, `Enter` to start, `Esc` to pause. Full move list per fighter is on the
             in-game pause menu.
 
-            Roster: Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning, Thunder, Lo Pan,
-            plus twelve Wing Kong and Chang Sing gang fighters.
-            Stages: Lo Pan's Throne, Wing Kong Exchange, Chinatown Back Alley, Pork Chop Express,
-            The Sewer, The Buddha Garden, Inside Dragon of the Black Pool Restaurant,
-            Airport Terminal.
+            Roster: 48 fighters — Jack Burton, Wang Chi, Gracie Law, Egg Shen, Rain, Lightning,
+            Thunder, Lo Pan and the rest of the named leads, plus the Wing Kong and Chang Sing
+            gang rigs.
+            Stages: 30 maps, from Lo Pan's Throne and the Wing Kong Exchange to the Third Heights
+            islands and the 3-D Lab; 4 of them are 3-D scenes the engine draws itself.
 
             Jack Burton and Lightning are drawn and animated by the project's own puppet rigs
             (`chars/jackburton_rig`, `chars/lightning_rig`); the other fighters use recoloured

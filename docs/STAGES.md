@@ -1,7 +1,9 @@
 # The arenas
 
-Twenty-three stages, all drawn procedurally — no bitmaps are committed as source — packed
-into SFF v2 and named for the film's locations, plus the engine's training room.
+30 stages: 26 painted at 1920×1080 by `tools/stages_hd.py` — no bitmaps are committed
+as source — packed into SFF v2 and named for the film's locations, the engine's
+training room among them, plus 4 3-D model stages whose rooms and lights the engine
+draws from their own `.glb` scenes.
 
 | Stage | File | Setting |
 |---|---|---|
@@ -28,7 +30,11 @@ into SFF v2 and named for the film's locations, plus the engine's training room.
 | Fish Market | `stages/fish_market.def` | the back room: glazed tile, pipework, the steel door, the catch heaped on its sheet |
 | Shadow Alley | `stages/shadow_alley.def` | the lane at night: neon boards, scaffold poles, the pedicab, lit paving |
 | House of Fire | `stages/house_of_fire.def` | the old shop: jar cabinets, the work counter, the timber gate, the yellow car |
+| Chinatown Market | `stages/chinatown_market.def` | the market's back wall at night: stalls under grey awnings, crates of produce, the brass scale, bare bulbs, the red banner, the fish tub glowing green on wet asphalt |
+| Waterfront Docks | `stages/waterfront_docks.def` | the harbour quay at night: towers across the water, a junk at her mooring, the stone quay, the corrugated shed, containers, dock lamps on wet planks |
+| Lost Souls Cemetery | `stages/lost_souls_cemetery.def` | the burial ground behind the Wing Kong compound: a moon over the cypress row, the family vault, iron railings, leaning stones, an angel on her plinth, cold green lanterns in mist |
 | Training Room | `stages/stage0.def` | the engine's training stage |
+| The 3-D Lab | `stages/lab3d.def` | 3-D: the bench and the wall of monitors, from Violin Ken's "Seth lab" scene |
 
 ## The HD stage model
 

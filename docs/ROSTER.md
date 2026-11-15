@@ -1,8 +1,9 @@
 # The roster
 
-Twelve fighters, each in their own folder with a `.def`, `.cmd`, `.cns`, `.air`,
-`.sff`, `.snd` and a themed `movelist.dat`, plus movie-flavoured victory quotes in
-the CNS `[Quotes]` section.
+48 fighters are selectable in `data/select.def`. The 24 below have their own stats,
+palettes and themed `movelist.dat`, plus movie-flavoured victory quotes in the CNS
+`[Quotes]` section; the other 24 are the Wing Kong and Chang Sing gang rigs and the
+supporting cast, built from the same pipeline in `tools/build_chars.py`.
 
 | Fighter | Life | ATK | DEF | Scale | Notes |
 |---|---|---|---|---|---|
