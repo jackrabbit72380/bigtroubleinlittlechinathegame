@@ -970,6 +970,25 @@ def check_launchers():
         err("launchers: " + problem)
     notes.append("launchers: no stray operators, labels and variables resolve")
 
+_NUMBER_WORDS = {}
+
+
+def _number_words():
+    """English number words up to ninety-nine, so "twelve fighters" is caught too."""
+    if _NUMBER_WORDS:
+        return _NUMBER_WORDS
+    units = ("zero one two three four five six seven eight nine ten eleven twelve "
+             "thirteen fourteen fifteen sixteen seventeen eighteen nineteen").split()
+    for value, word in enumerate(units):
+        _NUMBER_WORDS[word] = value
+    for index, word in enumerate(
+            "twenty thirty forty fifty sixty seventy eighty ninety".split(), start=2):
+        _NUMBER_WORDS[word] = index * 10
+        for unit in range(1, 10):
+            _NUMBER_WORDS["%s-%s" % (word, units[unit])] = index * 10 + unit
+    return _NUMBER_WORDS
+
+
 def _select_entries(text, section):
     """The def paths listed under one section of select.def, in order."""
     match = re.search(r"\[%s\](.*?)(\n\s*\[|\Z)" % re.escape(section), text, re.S | re.I)
@@ -991,8 +1010,8 @@ def _select_entries(text, section):
 def check_copy_counts():
     """The numbers the copy states about fighters and stages come from select.def.
 
-    README, docs/ROSTER.md, docs/STAGES.md and the release notes each tell a player
-    how big the game is, and all four had drifted from the game itself: "Twelve
+    README, the release notes and every doc in docs/ tell a player how big the game
+    is, and they had drifted from the game itself in several places at once: "Twelve
     fighters" against 48 selectable, "Twenty-three stages" against 30, and a release
     note that named eight stages and twenty fighters. Nothing here invents a number:
     the counts are read out of data/select.def and out of the stages' own defs (a def
@@ -1037,10 +1056,15 @@ def check_copy_counts():
         ("docs/ROSTER.md", r"^(\d+) fighters are selectable", ("fighters",)),
         ("docs/STAGES.md", r"^(\d+) stages: (\d+) painted", ("stages", "painted")),
         ("docs/STAGES.md", r"plus (\d+) 3-D model stages", ("3-D",)),
+        ("docs/DESIGN.md", r"Drawing all (\d+) fighters", ("fighters",)),
+        ("docs/DESIGN.md", r"the (\d+) painted stages build on", ("painted",)),
+        ("docs/CONTRIBUTING.md", r"the (\d+) painted stages build on", ("painted",)),
+        ("docs/CONTRIBUTING.md", r"the (\d+) 3-D stages are scenes", ("3-D",)),
         (".github/workflows/release.yml", r"Roster: (\d+) fighters", ("fighters",)),
         (".github/workflows/release.yml", r"Stages: (\d+) maps", ("stages",)),
         (".github/workflows/release.yml", r"(\d+) of them are 3-D", ("3-D",)),
     )
+    claimed = {}
     for rel, pattern, keys in claims:
         path = os.path.join(ROOT, rel.replace("/", os.sep))
         if not os.path.isfile(path):
@@ -1050,11 +1074,37 @@ def check_copy_counts():
         if not found:
             err("%s no longer states the %s count" % (rel, " and ".join(keys)))
             continue
+        claimed.setdefault(rel, []).append(found.span())
         for index, key in enumerate(keys):
             stated = int(found.group(index + 1))
             if stated != truth[key]:
                 err("%s states %d %s; data/select.def has %d"
                     % (rel, stated, key, truth[key]))
+
+    # A document can grow a count of its own - that is how the old "Twelve
+    # fighters" survived three rounds of fixes. Every roster or stage total in the
+    # copy has to be one of the claims above, so anything the sweep finds outside
+    # them is either a new claim to add or a number that has drifted.
+    words = _number_words()
+    sweep = re.compile(r"\b(\d{1,3}|%s)[ ]+(fighters|stages|maps)\b"
+                       % "|".join(sorted(words, key=len, reverse=True)), re.I)
+    documents = ["README.md", ".github/workflows/release.yml"]
+    documents += ["docs/" + name for name in sorted(
+        os.listdir(os.path.join(ROOT, "docs"))) if name.endswith(".md")]
+    for rel in documents:
+        path = os.path.join(ROOT, rel.replace("/", os.sep))
+        if not os.path.isfile(path):
+            continue
+        body = read(path)
+        spans = claimed.get(rel, ())
+        for hit in sweep.finditer(body):
+            if any(start <= hit.start() and hit.end() <= end for start, end in spans):
+                continue
+            written, noun = hit.group(1), hit.group(2).lower()
+            stated = int(written) if written.isdigit() else words[written.lower()]
+            key = "fighters" if noun == "fighters" else "stages"
+            err("%s states %d %s; data/select.def has %d"
+                % (rel, stated, noun, truth[key]))
 
     # the stat tables have to account for the rest of the roster
     roster = read(os.path.join(ROOT, "docs", "ROSTER.md"))
@@ -1076,7 +1126,7 @@ def check_copy_counts():
             err("docs/STAGES.md does not list %s, which is in select.def" % ref)
 
     notes.append("copy counts: %d fighters (%d gang) and %d stages (%d painted, %d 3-D) "
-                 "agree in README, ROSTER.md, STAGES.md and the release notes"
+                 "agree across README, the release notes and every doc in docs/"
                  % (truth["fighters"], truth["gang"], truth["stages"],
                     truth["painted"], truth["3-D"]))
 

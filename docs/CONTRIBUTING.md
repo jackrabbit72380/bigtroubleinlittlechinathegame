@@ -39,7 +39,7 @@ files they produce are outputs, not places to hand-edit.
 | Generator | Writes |
 |---|---|
 | `tools/build_chars.py` | the roster folders in `chars/` from the `ROSTER` table |
-| `tools/stages_hd.py` | the nine arenas at 1920×1080 (what ships) |
+| `tools/stages_hd.py` | the base painter the 26 painted stages build on (the 4 3-D stages are scenes) |
 | `tools/build_hd_stage.py` | replaces any stage that has `art_src/` art |
 | `tools/women_art.py`, `tools/bake_char.py`, `tools/jackburton.py` | painted fighters |
 | `tools/build_banner.py`, `tools/build_timer.py` | the dragon HUD in `data/fight.sff` |

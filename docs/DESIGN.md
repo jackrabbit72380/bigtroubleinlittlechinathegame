@@ -2,10 +2,10 @@
 
 ## Why the fighters are recoloured Kung Fu Man
 
-Kung Fu Man ships with Ikemen GO as the sample character. Reproducing eight
-distinct movie characters as original sprite art is weeks of pixel work, so the
-repo starts from a working, animatable fighter and changes everything that is
-data: identity, stats, scale, colour, move names, victory quotes.
+Kung Fu Man ships with Ikemen GO as the sample character. Drawing all 48 fighters
+as original sprite art is weeks of pixel work per fighter, so most of the roster
+starts from a working, animatable fighter and changes everything that is data:
+identity, stats, scale, colour, move names, victory quotes.
 
 Two approaches were tried; only one works with this asset:
 
@@ -46,7 +46,7 @@ other fifteen slots are grades of it, so alternate colours stay available.
 ## Jack Burton: the pistol and the knife
 
 Jack is the only fighter with weapon moves, so his `.air`, `.cmd` and `.cns`
-carry extra sections that the other seven do not. `tools/build_chars.py` appends
+carry extra sections that no other fighter has. `tools/build_chars.py` appends
 them from `tools/jackburton.py` during a build, which keeps them out of the
 shared base files:
 
@@ -164,7 +164,7 @@ half ends where the screen edge does.
 
 Precedence, in `tools/build_all.py` order:
 
-1. `stages_hd.py` — the four film arenas at 1920×1080
+1. `stages_hd.py` — the base painter the 26 painted stages build on
 2. the `stage_*.py` scripts — the rest of the pool, on the same geometry
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`,
    on the same 8192×1080 / ±3136 geometry and split at 4096 like the rest
