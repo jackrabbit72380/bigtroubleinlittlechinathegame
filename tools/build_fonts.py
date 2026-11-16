@@ -593,9 +593,14 @@ FONTS = (("Display", 34, 3, FACE), ("DisplayActive", 34, 3, FACE_ACTIVE),
 # the sprite width), and every centred and right-aligned string in the motif
 # would drift, which is the trap stock_cells() already exists to avoid.
 KARATE_TTF = os.path.join(ROOT, "font", "Karate", "Karate.ttf")
-KARATE_FONTS = (("Display", "DisplayK", FACE),
-                ("DisplayActive", "DisplayActiveK", FACE_ACTIVE),
-                ("Body", "BodyK", FACE))
+# The third face is picked the same way: font/ChineseDragon/ChineseDragon.ttf.
+# Nothing about it is special - it is baked into the gold face's cells, because
+# a menu row's size and length come from those cells, not from the typeface.
+DRAGON_TTF = os.path.join(ROOT, "font", "ChineseDragon", "ChineseDragon.ttf")
+# The three faces every menu and HUD caption is drawn in, with the palette each
+# is baked in. A pickable typeface is baked into all of them, at every size stop.
+FACE_BASES = (("Display", FACE), ("DisplayActive", FACE_ACTIVE), ("Body", FACE))
+KARATE_FONTS = tuple((base, base + "K", stops) for base, stops in FACE_BASES)
 FACE_DEPTH = {name: depth for name, _px, depth, _stops in FONTS}
 
 # The size stops Options > Font can step through. M is the face the game ships
@@ -831,10 +836,13 @@ def write_step_def(base_name, tag, base_h, cell_h, scale):
         fh.write(body)
 
 
-HUD_METRICS = (("display", "DisplayK"), ("body", "BodyK"), ("names", "Menu2"),
+HUD_METRICS = (("display", "Display"), ("body", "Body"), ("names", "Menu2"),
                ("wins", "Menu2Small"), ("info", "Pixel"), ("timer", "Timer"),
                ("combo", "ComboCounter"), ("hits", "HitNum"),
                ("power", "PowerbarNum"), ("round", "Round"))
+# The faces the Font screen prints heights for: key, the letter its menu faces
+# carry, the letter its scoreboard copies carry ("" = the shipped set).
+METRIC_FACES = (("karate", "K", ""), ("dragon", "D", "D"))
 
 
 def write_metrics():
@@ -845,20 +853,22 @@ def write_metrics():
     pixels, and the ink height is what the player actually sees.
     """
     rows = []
-    for group, face in HUD_METRICS:
-        for label, _scale in SIZE_STEPS:
-            tag = face + ("" if label == "M" else "_" + label)
-            path = os.path.join(FONT_DIR, tag + ".sff")
-            if not os.path.isfile(path):
-                continue
-            data, sprites, palettes = sff.read_sff(path)
-            ink = 0
-            for sp in sprites:
-                if sp["group"] == 0 and sp["number"] == ord("0"):
-                    box = sff.decode_sprite(data, sp, palettes, sp["pal"]).getchannel("A").getbbox()
-                    ink = (box[3] - box[1]) if box else 0
-                    break
-            rows.append("%-8s %s %d" % (group, label, ink))
+    for key, letter, stock_letter in METRIC_FACES:
+        for group, base in HUD_METRICS:
+            prefix = base + (letter if group in ("display", "body") else stock_letter)
+            for label, _scale in SIZE_STEPS:
+                tag = prefix + ("" if label == "M" else "_" + label)
+                path = os.path.join(FONT_DIR, tag + ".sff")
+                if not os.path.isfile(path):
+                    continue
+                data, sprites, palettes = sff.read_sff(path)
+                ink = 0
+                for sp in sprites:
+                    if sp["group"] == 0 and sp["number"] == ord("0"):
+                        box = sff.decode_sprite(data, sp, palettes, sp["pal"]).getchannel("A").getbbox()
+                        ink = (box[3] - box[1]) if box else 0
+                        break
+                rows.append("%s %-8s %s %d" % (key, group, label, ink))
     with open(os.path.join(FONT_DIR, "metrics.txt"), "w", encoding="utf-8",
               newline="\n") as fh:
         fh.write("; letter height in pixels, per face and size step\n")
@@ -875,7 +885,8 @@ SAMPLE_TEXT = "Chinatown 1-2-3"
 SAMPLE_CANVAS = (1600, 120)     # one canvas for every sheet, so it centres blind
 #                  face          sprite number on the sheet
 SAMPLE_SETS = (("DisplayK_S", 1), ("DisplayK", 0), ("DisplayK_L", 2),
-               ("Display", 3))
+               ("Display", 3),
+               ("DisplayD_S", 4), ("DisplayD", 5), ("DisplayD_L", 6))
 
 
 def space_advance(face):
@@ -935,8 +946,9 @@ def sample_sheet(face, text=SAMPLE_TEXT, canvas=SAMPLE_CANVAS):
 def write_sample():
     """Bake Sample.sff: the live sample at each face and size step.
 
-    Sprite numbers 0/1/2 are the Karate face at M/S/L and 3 is the gold face at
-    M; external/mods/fontchoice.lua picks one by the current setting.
+    Sprite numbers 0/1/2 are the Karate face at M/S/L, 3 is the gold face at M
+    and 4/5/6 are the Dragon face at S/M/L; external/mods/fontchoice.lua picks
+    one by the current setting.
     """
     sprites = []
     for face, number in SAMPLE_SETS:
@@ -967,7 +979,8 @@ def bake_size_steps():
                 continue
             total += write_stock(name, cell_h, depth, KARATE_TTF,
                                  scale=scale, suffix=suffix)
-        for base, name, stops in KARATE_FONTS:
+        for base, stops in FACE_BASES:
+            name = base + "K"
             size_x, cell_h = face_metrics(base)
             if cell_h <= 1:
                 continue
@@ -1025,23 +1038,69 @@ def fit_px(ttf, cell_h, depth):
     return best
 
 
-def bake_karate():
-    """Bake the second pickable typeface into cells the gold face already owns."""
-    if not os.path.isfile(KARATE_TTF):
-        print(f"  no {os.path.relpath(KARATE_TTF, ROOT)}: leaving the font "
-              f"choice on one face", file=sys.stderr)
+# The typefaces Options > Font can pick, in the order the Face row steps through
+# them: (key the mod and metrics.txt use, the letter in its baked file names, the
+# typeface, the letter its scoreboard copies carry). An empty scoreboard letter
+# means the face rides on the shipped set - Menu2, Menu2_S, Menu2_L - which is
+# what Karate does, so picking Karate or the gold face costs no extra art.
+PICKABLE = (("karate", "K", KARATE_TTF, ""),
+            ("dragon", "D", DRAGON_TTF, "D"))
+# The scoreboard faces the Font screen actually resizes, so a face that gets its
+# own copies only bakes them: Menu1, PixelFlat and Action draw elsewhere and are
+# only worth rebaking in the shipped set.
+STOCK_PICKS = ("Menu2", "Menu2Small", "Pixel", "Timer", "ComboCounter",
+               "HitNum", "PowerbarNum", "Round")
+
+
+def bake_face(key, letter, ttf, stock_letter):
+    """Bake one pickable typeface into the cells the gold face already owns.
+
+    ``letter`` names its menu faces (DisplayK, BodyK_S, ...) and ``stock_letter``
+    its copies of the scoreboard faces: fighter names, win quote, time and stage
+    text, round timer, combo, hit and power readouts, round banner. A face keeps
+    the cell heights and per-character widths of the face it replaces, so a row
+    keeps its size and its length and only the letterforms change.
+    """
+    if not os.path.isfile(ttf):
+        print(f"  no {os.path.relpath(ttf, ROOT)}: Options > Font will not "
+              f"offer the {key} face", file=sys.stderr)
         return 0
     total = 0
-    for base, name, face_stops in KARATE_FONTS:
-        size_x, cell_h = face_metrics(base)
-        if size_x <= 1 or cell_h <= 1:
-            print(f"  warning: {base}.def has no usable Size, skipping {name}")
+    for label, scale in SIZE_STEPS:
+        suffix = "" if scale == 1.0 else "_" + label
+        for base, face_stops in FACE_BASES:
+            size_x, cell_h = face_metrics(base)
+            name = base + letter + suffix
+            if size_x <= 1 or cell_h <= 1:
+                print(f"  warning: {base}.def has no usable Size, skipping {name}")
+                continue
+            h = cell_h if scale == 1.0 else max(6, int(round(cell_h * scale)))
+            depth = FACE_DEPTH[base] * SUPERSAMPLE
+            px = fit_px(ttf, h, depth)
+            cells = baked_cells(base)
+            if scale != 1.0:
+                cells = {ch: max(2, int(round(w * scale)))
+                         for ch, w in cells.items()}
+            total += write_font(name, px, depth, ttf, face_stops, cell_h=h,
+                                cells=cells,
+                                space_w=size_x if scale == 1.0
+                                else max(1, int(round(size_x * scale))))
+            print(f"  {key} {name}: fitted at {px}px into the {h}px cell")
+        if not stock_letter:
             continue
-        depth = FACE_DEPTH[base] * SUPERSAMPLE
-        px = fit_px(KARATE_TTF, cell_h, depth)
-        total += write_font(name, px, depth, KARATE_TTF, face_stops,
-                            cell_h=cell_h, cells=baked_cells(base), space_w=size_x)
-        print(f"  karate {name}: fitted at {px}px into the {cell_h}px cell")
+        for name, cell_h, depth in STOCK_FONTS:
+            if name not in STOCK_PICKS:
+                continue
+            total += write_stock(name, cell_h, depth, ttf, scale=scale,
+                                 suffix=stock_letter + suffix)
+    return total
+
+
+def bake_faces():
+    """Bake every face Options > Font can pick."""
+    total = 0
+    for key, letter, ttf, stock_letter in PICKABLE:
+        total += bake_face(key, letter, ttf, stock_letter)
     return total
 
 
@@ -1115,7 +1174,7 @@ def install_ttf():
     hud_ttf = KARATE_TTF if os.path.isfile(KARATE_TTF) else dst
     for name, cell_h, depth in STOCK_FONTS:
         write_stock(name, cell_h, depth, hud_ttf)
-    bake_karate()
+    bake_faces()
     bake_size_steps()
     write_metrics()
     write_sample()

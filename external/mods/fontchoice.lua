@@ -6,10 +6,10 @@
 -- counters - is pre-painted art, baked by tools/build_fonts.py. That is why this
 -- screen cannot simply change a point size: it picks one of the baked sets.
 --
--- Options > Font opens the list below. Face steps between the gold logo face
--- and the Karate face; each size row steps between three baked sizes (S, M, L)
--- for that one face; Save writes the pick to save/font.cfg and points the motif
--- and the HUD at the matching files. Both files are read once, at startup, so a
+-- Options > Font opens the list below. Face steps through KARATE, DRAGON and
+-- ORIGINAL (the gold logo face); each size row steps between three baked sizes
+-- (S, M, L) for that one face; Save writes the pick to save/font.cfg and points
+-- the motif and the HUD at the matching files. Both files are read once, at startup, so a
 -- saved change lands on the next launch - the Save row says so.
 --
 -- Nothing is written until Save is pressed, so backing out of the screen leaves
@@ -29,11 +29,13 @@ local STEPS = {'S', 'M', 'L'}
 local INK = {
 	karate = {display = 77, body = 32, names = 25, wins = 14, info = 13,
 		timer = 31, combo = 38, hits = 25, power = 20, round = 110},
+	dragon = {display = 59, body = 24, names = 21, wins = 13, info = 11,
+		timer = 27, combo = 33, hits = 21, power = 18, round = 94},
 	original = {display = 58, body = 23, names = 25, wins = 14, info = 13,
 		timer = 31, combo = 38, hits = 25, power = 20, round = 110},
 }
-local FACE_NAME = {karate = 'KARATE', original = 'ORIGINAL'}
-local ORDER = {'karate', 'original'}
+local FACE_NAME = {karate = 'KARATE', dragon = 'DRAGON', original = 'ORIGINAL'}
+local ORDER = {'karate', 'dragon', 'original'}
 -- %s is the size suffix: '' for M, '_S' or '_L' for the baked variants.
 local KARATE = {
 	display = 'ikemen1/fonts/DisplayK%s.def',
@@ -47,6 +49,22 @@ local KARATE = {
 	hits = 'ikemen1/fonts/HitNum%s.def',
 	power = 'ikemen1/fonts/PowerbarNum%s.def',
 	round = 'ikemen1/fonts/Round%s.def',
+}
+-- The dragon pick, baked from font/ChineseDragon/ChineseDragon.ttf into the same
+-- cells. It is the one face that also owns its scoreboard letterforms, so every
+-- size row below steps for it.
+local DRAGON = {
+	display = 'ikemen1/fonts/DisplayD%s.def',
+	active = 'ikemen1/fonts/DisplayActiveD%s.def',
+	body = 'ikemen1/fonts/BodyD%s.def',
+	names = 'ikemen1/fonts/Menu2D%s.def',
+	wins = 'ikemen1/fonts/Menu2SmallD%s.def',
+	info = 'ikemen1/fonts/PixelD%s.def',
+	timer = 'ikemen1/fonts/TimerD%s.def',
+	combo = 'ikemen1/fonts/ComboCounterD%s.def',
+	hits = 'ikemen1/fonts/HitNumD%s.def',
+	power = 'ikemen1/fonts/PowerbarNumD%s.def',
+	round = 'ikemen1/fonts/RoundD%s.def',
 }
 -- The original pick restores the two menu faces. The HUD's numbers were never
 -- engraved in both typefaces, so they keep the shipped art whatever this says.
@@ -68,6 +86,10 @@ local SYSTEM_INDEX = {{10, 'display'}, {11, 'body'}, {12, 'active'}}
 local HUD_INDEX = {{1, 'names'}, {2, 'timer'}, {3, 'wins'}, {4, 'power'},
 	{6, 'combo'}, {7, 'hits'}, {8, 'info'}, {9, 'round'}, {10, 'display'},
 	{11, 'body'}}
+-- The faces the game baked at all three sizes, so their size rows do something.
+-- The gold pick rides on the shipped art at whatever size it already had.
+local FACES = {karate = KARATE, dragon = DRAGON, original = ORIGINAL}
+local HAS_STEPS = {karate = true, dragon = true}
 -- Groups whose sizes only exist in the Karate set.
 local KARATE_ONLY = {names = true, wins = true, info = true, timer = true,
 	combo = true, hits = true, power = true, round = true}
@@ -79,7 +101,8 @@ local DEFAULT_STEP = 'M'
 -- here, and a textImgNew sprite given a font draws nothing at all), so the words
 -- are baked as art by tools/build_fonts.py and drawn over the menu.
 local SAMPLE = 'data/ikemen1/fonts/Sample.sff'
-local SAMPLE_NUMBER = {karate = {S = 1, M = 0, L = 2}, original = {M = 3}}
+local SAMPLE_NUMBER = {karate = {S = 1, M = 0, L = 2}, dragon = {S = 4, M = 5, L = 6},
+	original = {M = 3}}
 local SAMPLE_CANVAS_W = 1600        -- the width every baked sheet is centred on
 local SAMPLE_Y = 880                -- clear of the last row (748) and the footer
 
@@ -160,22 +183,23 @@ end
 
 local function paths()
 	local out = {}
-	local base = state.face == 'karate' and KARATE or ORIGINAL
+	local base = FACES[state.face] or ORIGINAL
+	local stepped = HAS_STEPS[state.face] == true
 	for _, group in ipairs(GROUPS) do
 		local tmpl = base[group]
-		if state.face == 'karate' then
+		if stepped then
 			local step = state.steps[group] or DEFAULT_STEP
 			out[group] = tmpl:format(step == 'M' and '' or ('_' .. step))
 		else
 			out[group] = tmpl
 		end
 	end
-	if state.face == 'karate' then
+	local active = base.active
+	if stepped then
 		local step = state.steps.display or DEFAULT_STEP
-		out.active = KARATE.active:format(step == 'M' and '' or ('_' .. step))
-	else
-		out.active = ORIGINAL.active
+		active = active:format(step == 'M' and '' or ('_' .. step))
 	end
+	out.active = active
 	return out
 end
 
@@ -230,9 +254,11 @@ local function loadMetrics()
 	if type(text) ~= 'string' then
 		return
 	end
-	for group, step, px in text:gmatch('(%a+)%s+([SML])%s+(%d+)') do
-		HEIGHT[group] = HEIGHT[group] or {}
-		HEIGHT[group][step] = tonumber(px)
+	-- one row per face, group and size step: "dragon names M 21"
+	for face, group, step, px in text:gmatch('(%a+)%s+(%a+)%s+([SML])%s+(%d+)') do
+		HEIGHT[face] = HEIGHT[face] or {}
+		HEIGHT[face][group] = HEIGHT[face][group] or {}
+		HEIGHT[face][group][step] = tonumber(px)
 	end
 end
 
@@ -335,8 +361,9 @@ function fontchoice.label(group)
 	end
 	local step = state.steps[group] or DEFAULT_STEP
 	local px = nil
-	if state.face == 'karate' and HEIGHT[group] ~= nil then
-		px = HEIGHT[group][step]
+	local heights = HEIGHT[state.face]
+	if heights ~= nil and heights[group] ~= nil then
+		px = heights[group][step]
 	end
 	if px == nil then
 		local factor = (step == 'S' and 0.9) or (step == 'L' and 1.15) or 1.0

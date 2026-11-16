@@ -1,31 +1,61 @@
 ; letter height in pixels, per face and size step
-display  S 67
-display  M 77
-display  L 86
-body     S 28
-body     M 32
-body     L 39
-names    S 23
-names    M 25
-names    L 29
-wins     S 13
-wins     M 14
-wins     L 16
-info     S 12
-info     M 13
-info     L 15
-timer    S 29
-timer    M 31
-timer    L 35
-combo    S 34
-combo    M 38
-combo    L 43
-hits     S 23
-hits     M 25
-hits     L 29
-power    S 18
-power    M 20
-power    L 22
-round    S 100
-round    M 110
-round    L 127
+karate display  S 67
+karate display  M 77
+karate display  L 86
+karate body     S 28
+karate body     M 32
+karate body     L 39
+karate names    S 23
+karate names    M 25
+karate names    L 29
+karate wins     S 13
+karate wins     M 14
+karate wins     L 16
+karate info     S 12
+karate info     M 13
+karate info     L 15
+karate timer    S 29
+karate timer    M 31
+karate timer    L 35
+karate combo    S 34
+karate combo    M 38
+karate combo    L 43
+karate hits     S 23
+karate hits     M 25
+karate hits     L 29
+karate power    S 18
+karate power    M 20
+karate power    L 22
+karate round    S 100
+karate round    M 110
+karate round    L 127
+dragon display  S 53
+dragon display  M 59
+dragon display  L 67
+dragon body     S 22
+dragon body     M 24
+dragon body     L 29
+dragon names    S 21
+dragon names    M 21
+dragon names    L 25
+dragon wins     S 11
+dragon wins     M 13
+dragon wins     L 14
+dragon info     S 11
+dragon info     M 11
+dragon info     L 14
+dragon timer    S 25
+dragon timer    M 27
+dragon timer    L 30
+dragon combo    S 29
+dragon combo    M 33
+dragon combo    L 37
+dragon hits     S 21
+dragon hits     M 21
+dragon hits     L 25
+dragon power    S 16
+dragon power    M 18
+dragon power    L 20
+dragon round    S 86
+dragon round    M 94
+dragon round    L 107

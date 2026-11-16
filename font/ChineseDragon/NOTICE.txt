@@ -1,0 +1,9 @@
+Chinese Dragon
+  Font family: Chinese Dragon Regular, version 1.000
+  Copyright (c) 2019 by Vladimir Nikolic. All rights reserved.
+
+This file is the source typeface for the DRAGON face in Options > Font.
+tools/build_fonts.py bakes it into data/ikemen1/fonts/*D*.sff, because the
+engine draws its menus from bitmap fonts and cannot restyle a TrueType face
+while the game runs. Keep this notice beside the font: the baked art and this
+TTF are the same work.

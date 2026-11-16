@@ -1131,6 +1131,77 @@ def check_copy_counts():
                     truth["painted"], truth["3-D"]))
 
 
+def check_font_faces():
+    """Every face Options > Font offers has all of its art.
+
+    The mod repoints the motif and the HUD at file names it builds from three
+    tables, so a face added to the Face row without its baked files - or a group
+    that maps to a step nothing baked - is a menu that draws no text at all. This
+    reads those same tables and checks every path, at every size step.
+    """
+    path = os.path.join(ROOT, "external", "mods", "fontchoice.lua")
+    if not os.path.isfile(path):
+        err("font faces: external/mods/fontchoice.lua is missing")
+        return
+    text = read(path)
+
+    def listed(name):
+        m = re.search(r"^local %s = \{([^}]*)\}" % name, text, re.M)
+        return re.findall(r"'([\w]+)'", m.group(1)) if m else []
+
+    def table(name):
+        m = re.search(r"^local %s = \{(.*?)^\}" % name, text, re.M | re.S)
+        return dict(re.findall(r"(\w+)\s*=\s*'([^']+)'", m.group(1))) if m else {}
+
+    order, steps = listed("ORDER"), listed("STEPS")
+    labelled = set(re.findall(r"(\w+)\s*=\s*'", re.search(
+        r"^local FACE_NAME = \{([^}]*)\}", text, re.M).group(1)))
+    stepped = set(re.findall(r"(\w+)\s*=\s*true", re.search(
+        r"^local HAS_STEPS = \{([^}]*)\}", text, re.M).group(1)))
+    if not order or not steps:
+        err("font faces: fontchoice.lua lists no face in ORDER or no STEPS")
+        return
+    metrics = read(os.path.join("data", "ikemen1", "fonts", "metrics.txt"))
+    missing = 0
+    for face in order:
+        if face not in labelled:
+            err("font faces: %s is in ORDER but has no FACE_NAME label" % face)
+        groups = table(face.upper())
+        if not groups:
+            err("font faces: fontchoice.lua has no table for the %s face" % face)
+            continue
+        if face in stepped and (" " + face + " ") not in (" " + metrics.replace("\n", " ") + " "):
+            err("font faces: %s steps its sizes but metrics.txt has no %s rows"
+                % (face, face))
+        for group, tmpl in sorted(groups.items()):
+            targets = [tmpl] if "%s" not in tmpl else [
+                tmpl % ("" if step == "M" else "_" + step) for step in steps]
+            for target in targets:
+                for end in (".def", ".sff"):
+                    art = os.path.join(ROOT, "data", target.replace(".def", end))
+                    if not os.path.isfile(art):
+                        missing += 1
+                        err("font faces: the %s face's %s row wants %s, which is "
+                            "not built" % (face, group, os.path.basename(art)))
+    if not missing:
+        notes.append("font faces: %s each have art at %s, with every size step"
+                     % (", ".join(order), ", ".join(steps)))
+    # the live sample is picked by the same face key, so it is checked the same
+    # way: every face needs its middle-size sheet, and a face that steps its
+    # sizes needs all three
+    sample = {name: set(re.findall(r"([SML]) = \d+", steps_))
+              for name, steps_ in re.findall(
+                  r"(\w+) = \{([SML] = \d+(?:, [SML] = \d+)*)\}", text)}
+    for face in order:
+        got = sample.get(face, set())
+        if "M" not in got:
+            err("font faces: %s has no middle-size live sample in SAMPLE_NUMBER"
+                % face)
+        elif face in stepped and not set(steps) <= got:
+            err("font faces: %s steps its sizes but its live sample only has %s"
+                % (face, ", ".join(sorted(got))))
+
+
 def check_engine_pin():
     """The engine this project builds and releases against has to be pinned.
 
@@ -2144,6 +2215,7 @@ def main():
     check_launcher_checks()
     check_engine_pin()
     check_copy_counts()
+    check_font_faces()
     check_motif_ints()
     check_powerbar_fonts()
     check_hud_fonts()
