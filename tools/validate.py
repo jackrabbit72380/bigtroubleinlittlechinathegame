@@ -1255,6 +1255,37 @@ def check_web_build():
     except Exception as exc:              # a broken generator is a failed check
         err("web build: could not compare web/files.json: %s" % exc)
         return
+    # Every fighter asks for its common states by name ("stcommon = common1.cns").
+    # The desktop build answers that with Ikemen's ZSS file, which only Ikemen can
+    # read; the browser build answers it with web/game/common1.cns, listed under
+    # that name by web/app.js. A fighter asking for some other common file would
+    # load in the desktop build and stop the browser build dead with "File not
+    # found", so the name is checked here.
+    shim = os.path.join(ROOT, "web", "game", "common1.cns")
+    if not os.path.isfile(shim):
+        err("web build: web/game/common1.cns is missing - it holds the common "
+            "states the browser build loads, because data/common1.cns.zss is ZSS "
+            "and a browser engine cannot read it")
+    else:
+        wanted = set()
+        roster = read(os.path.join(ROOT, "data", "select.def"))
+        body = roster.split("[Characters]")[1].split("[")[0]
+        for line in body.splitlines():
+            if not line.strip() or line.strip().startswith(";"):
+                continue
+            def_path = os.path.join(ROOT, "chars", line.split(",")[0].strip())
+            if not os.path.isfile(def_path):
+                continue
+            for def_line in read(def_path).splitlines():
+                hit = re.match(r"\s*stcommon\s*=\s*(\S+)", def_line, re.I)
+                if hit:
+                    wanted.add(hit.group(1).strip('"').lower())
+        elsewhere = sorted(n for n in wanted if n != "common1.cns")
+        if elsewhere:
+            err("web build: a fighter in data/select.def asks for its common "
+                "states in %s, but the browser build only supplies common1.cns "
+                "(web/game/common1.cns)" % elsewhere[0])
+
     notes.append("web build: mugen-js %s pinned (%d B) and web/files.json lists all "
                  "%d shared file(s)" % (lock.get("release"), lock.get("bytes"),
                                         len(want)))

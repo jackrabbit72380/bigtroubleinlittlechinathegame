@@ -47,9 +47,15 @@ The engines differ, so some content is read by only one of them:
   drive have to exist in the motif itself to appear in the browser.
 - mugen-js targets M.U.G.E.N 1.1. Ikemen-only parameters and triggers are read as
   unknown keys; a character that leans on them will not behave identically.
+- The common states - standing, walking, jumping, being hit, guarding, lying down -
+  are `data/common1.cns.zss` on the desktop, in Ikemen's ZSS dialect (if-blocks,
+  let-bindings, `[Function]` calls), which no M.U.G.E.N engine can read. Fighters ask
+  for them as `common1.cns`, so `game/common1.cns` carries the same states in plain
+  CNS and `app.js` answers every `common1.cns` request with it. The two files
+  describe one set of movements and hits: a change in one belongs in the other.
 
-Both are engine differences, not asset copies, so fixing one never means fixing
-the other twice.
+All three are engine differences, not asset copies, so fixing one never means
+fixing the other twice.
 
 ## Updating the engine
 
