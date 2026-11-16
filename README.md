@@ -175,6 +175,7 @@ for the pipeline, the art rules and the review expectations, and
 | `tools/` | every asset generator plus `validate.py` |
 | `art_src/` | source art and drop-in folders for stages and characters |
 | `sound/` | menu and stage music |
+| `web/` | the browser build: a page that runs the same folders through mugen-js |
 | `docs/` | design, install, roster, stages, music and contribution notes |
 | `artifacts/` | generated previews and screenshots used by this README |
 

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Big Trouble in Little China: The Game</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body {
+        margin: 0; height: 100%; background: #120608; color: #d8c9a8;
+        font: 14px system-ui, sans-serif;
+      }
+      body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+      canvas { image-rendering: pixelated; max-width: 100vw; max-height: calc(100vh - 46px); background: #000; }
+      #status { position: fixed; top: 8px; left: 12px; color: #c8a45a; }
+      #help { color: #8a7d68; font-size: 12px; text-align: center; padding: 0 16px; }
+    </style>
+  </head>
+  <body>
+    <div id="status"></div>
+    <canvas id="screen"></canvas>
+    <div id="help">
+      P1: arrows + A S D / Z X C, Enter = start. P2: I J K L + U O P / M , . &nbsp; Esc = back
+    </div>
+    <!-- absolute: the page is served at / while the app lives in /web/ -->
+    <script type="module" src="/web/app.js"></script>
+  </body>
+</html>

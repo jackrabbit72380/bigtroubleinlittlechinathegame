@@ -1,0 +1,12 @@
+{
+  "name": "mugen-js",
+  "purpose": "The engine the web version runs on: M.U.G.E.N 1.1 rebuilt for the browser in TypeScript and WebGL2.",
+  "source": "https://github.com/yojona/mugen-js",
+  "release": "v0.1.1",
+  "asset": "mugen.min.js",
+  "bytes": 374591,
+  "sha256": "2e410e87a2a93566dc9fc7126e76af4b69fae4f85f2d1c6e30487317fb6e878c",
+  "license": "MIT (see LICENSE and AUTHORS in this folder)",
+  "pinned": "2026-11-16",
+  "note": "Vendored rather than installed: the package has no npm release, building it from source needs its own toolchain, and a pinned bundle is what a browser actually loads. tools/validate.py hashes this file against these numbers, so replacing it is a deliberate act."
+}

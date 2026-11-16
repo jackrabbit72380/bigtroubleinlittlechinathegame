@@ -19,6 +19,8 @@ Run:  python3 tools/validate.py
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 
 import importlib
@@ -1202,6 +1204,62 @@ def check_font_faces():
                 % (face, ", ".join(sorted(got))))
 
 
+def check_web_build():
+    """The web build's engine pin and its file list.
+
+    web/ plays the same checkout through a vendored engine bundle, and two things
+    can drift without a word: the bundle (its hash is the only reason it counts as
+    a pinned engine) and web/files.json (a fighter, stage or sound added to the
+    folders but not to the list is invisible to the browser, and looks like the web
+    build "not supporting" content the desktop build plays).
+    """
+    lock_path = os.path.join(ROOT, "web", "vendor", "mugen-js.lock.json")
+    if not os.path.isfile(lock_path):
+        err("web build: web/vendor/mugen-js.lock.json is missing")
+        return
+    lock = json.loads(read(lock_path))
+    bundle = os.path.join(ROOT, "web", "vendor", lock.get("asset", "mugen.min.js"))
+    if not os.path.isfile(bundle):
+        err("web build: web/vendor/%s is missing" % lock.get("asset"))
+        return
+    with open(bundle, "rb") as fh:
+        data = fh.read()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != lock.get("sha256") or len(data) != lock.get("bytes"):
+        err("web build: web/vendor/%s is %d B sha256 %s, but the pin says %s B %s - "
+            "replacing the engine is a deliberate act, so update "
+            "web/vendor/mugen-js.lock.json with it"
+            % (os.path.basename(bundle), len(data), digest[:16],
+               lock.get("bytes"), str(lock.get("sha256"))[:16]))
+        return
+
+    list_path = os.path.join(ROOT, "web", "files.json")
+    if not os.path.isfile(list_path):
+        err("web build: web/files.json is missing - run tools/build_web_files.py")
+        return
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    try:
+        import build_web_files
+        listed = json.loads(read(list_path))
+        want = build_web_files.collect()
+        gone = [f for f in listed if not os.path.isfile(os.path.join(ROOT, f))]
+        missing = [f for f in want if f not in set(listed)]
+        if gone:
+            err("web build: web/files.json lists %d file(s) that are not on disk, "
+                "starting with %s - run tools/build_web_files.py"
+                % (len(gone), gone[0]))
+        if missing:
+            err("web build: %d file(s) exist but are not in web/files.json, "
+                "starting with %s - the browser cannot read them until "
+                "tools/build_web_files.py runs" % (len(missing), missing[0]))
+    except Exception as exc:              # a broken generator is a failed check
+        err("web build: could not compare web/files.json: %s" % exc)
+        return
+    notes.append("web build: mugen-js %s pinned (%d B) and web/files.json lists all "
+                 "%d shared file(s)" % (lock.get("release"), lock.get("bytes"),
+                                        len(want)))
+
+
 def check_engine_pin():
     """The engine this project builds and releases against has to be pinned.
 
@@ -2216,6 +2274,7 @@ def main():
     check_engine_pin()
     check_copy_counts()
     check_font_faces()
+    check_web_build()
     check_motif_ints()
     check_powerbar_fonts()
     check_hud_fonts()
