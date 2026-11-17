@@ -1514,10 +1514,16 @@ POSE_SETS = {
         # value of 20 was a real 20 degrees of shoulder swing on top of the lean -
         # the arm piece sat 20 degrees off its own drawn upper arm, and the body's
         # copy of that arm showed beside it as a second one.
-        "stance": dict(lean=3, head=-1,
+        # No lean and no head turn in the idle. The art is already leaning, and a
+        # lean turns the torso about the hip while the legs and the waistband hang
+        # from the hip: every one of those pieces then lands a pixel or two off the
+        # others, and the drawing of the jeans is on all of them at once. Standing
+        # exactly as drawn, the pieces are the same pixels in the same place and
+        # there is nothing to see but the drawing.
+        "stance": dict(lean=0, head=0,
                        arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
                        leg_n=(29.85, -6.01, 88), leg_f=(-20.97, -22.62, 92)),
-        "breath": dict(lean=2, head=-2, lift=1,
+        "breath": dict(lean=0, head=0, lift=1,
                        arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
                        leg_n=(29.85, -6.01, 88), leg_f=(-20.97, -22.62, 92)),
         "walk_a": dict(lean=6, head=-3, shift=1,

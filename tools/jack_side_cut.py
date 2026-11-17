@@ -89,7 +89,7 @@ BOXES = {
     # right edge past the whole deltoid: at 628 the box cut the shoulder cap in
     # half, and the arm - which swings around that cap - left the cut showing as
     # a gap of background between his vest and his own bicep.
-    "torso": (208, 0, 895, 695),
+    "torso": (0, 0, 895, 695),
     # THROUGH the shoulder cap, so the piece owns the deltoid it swings from. Cut
     # under the cap the arm had nothing over its socket, and every pose that
     # swung it out left the bicep floating beside a bare shoulder.
@@ -99,7 +99,7 @@ BOXES = {
     # and the piece then has wings that are not his body at all. Cut inside the
     # denim instead, every edge of the piece is a seam on jeans of the same
     # colour, and it cannot stick out of the hip when a leg swings away.
-    "pelvis": (308, 650, 608, 728),
+    "pelvis": (308, 650, 608, 752),
     # Leg boxes lap upwards past their joint. The two drawn legs are not the
     # same length (the stance is three-quarter, so the far one is foreshortened)
     # and the skeleton carries one thigh and one shin for both, so the piece
