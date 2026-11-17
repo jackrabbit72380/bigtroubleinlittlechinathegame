@@ -58,7 +58,12 @@ OUT = os.path.join(ROOT, "art_src", "chars", "jackburton", "parts_side")
 
 # Joints in the cut's own pixels, read off the grid over the cut.
 NECK = (566, 336)
-SHOULDER_N = (716, 352)          # raised arm, image right, drawn right of centre
+# The arm's socket, measured INSIDE the deltoid rather than on its outer edge.
+# The skeleton hangs the arm from this point and the piece pivots on it, so it
+# has to be both a plausible joint and the point the art draws the arm around:
+# taken out on the deltoid's rim it is neither, and the arm then swings its own
+# shoulder away from the body, leaving a wedge of air at the armpit.
+SHOULDER_N = (680, 320)          # raised arm, image right, drawn right of centre
 ELBOW_N = (800, 545)             # its elbow, at the bottom of the biceps
 WRIST_N = (830, 445)             # the crease under the fist, not the knuckles
 SHOULDER_F = (330, 300)          # the arm across the chest, image left
@@ -83,7 +88,12 @@ BOXES = {
     # part stops at the throat.
     "torso": (200, 180, 760, 800),
     "arm_n": (640, 200, 940, 660),
-    "pelvis": (380, 730, 700, 880),
+    # The hip band, kept INSIDE the denim. A box wide enough to take the body's
+    # own outline at this height also takes his fists - they hang at his hips -
+    # and the piece then has wings that are not his body at all. Cut inside the
+    # denim instead, every edge of the piece is a seam on jeans of the same
+    # colour, and it cannot stick out of the hip when a leg swings away.
+    "pelvis": (430, 720, 780, 792),
     # Leg boxes lap upwards past their joint. The two drawn legs are not the
     # same length (the stance is three-quarter, so the far one is foreshortened)
     # and the skeleton carries one thigh and one shin for both, so the piece
@@ -108,8 +118,19 @@ JOINTS = {
 }
 
 # Where the near arm is drawn bent. Part pixels, the same space as the pivots,
-# because ``char_rig`` cuts the arm image at these numbers.
+# because ``char_rig`` cuts the arm image at these numbers. Both points are
+# stated: the elbow is where the knife goes, and the wrist is what tells the rig
+# which way the forearm runs - a cut with no wrist has to guess the direction from
+# the piece's bounding box, and on a bent arm that guess lands on the far corner,
+# which leaves the forearm attached to the bicep and the arm rigid at the
+# shoulder.
 ARM_JOINTS = {"n": [[ELBOW_N, WRIST_N]]}
+
+# The fist is drawn as knuckles on a wrist bone, not as a hand with a silhouette
+# of its own. Cut free at the wrist it hangs in the air ahead of the forearm on
+# every extended punch, so it rides the forearm here and the wrist joint only
+# gives it its direction.
+HAND_PIECES = False
 
 # The far arm is cut by following the skin it is painted with: a seed inside its
 # forearm, then the connected skin around it. The art's outline is dark and the
@@ -204,6 +225,52 @@ def _arm_mask(cut, box):
     return m
 
 
+def _pelvis_mask(cut):
+    """The waistband: the whole hip band, minus the skin in it.
+
+    The band has to reach past the torso's own bottom edge - a cut through the
+    jeans leaves a hard ledge wherever the hips do not cover it - and a box that
+    wide also takes his fists, which hang at his hips in this guard. Skin is warm
+    and jeans are not, so the fists are the only thing that has to go.
+    """
+    x0, y0, x1, y1 = BOXES["pelvis"]
+    m = Image.new("L", cut.size, 0)
+    ImageDraw.Draw(m).rectangle([x0, y0, x1 - 1, y1 - 1], fill=255)
+    px = cut.load()
+    mp = m.load()
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            r, g, b, a = px[x, y]
+            if a > 40 and r > b + 12 and max(r, g, b) - min(r, g, b) > 40:
+                mp[x, y] = 0
+    return m
+
+
+def _torso_mask(cut):
+    """The body down to the waistband, no further.
+
+    The torso box runs to the hip line, so the piece carries a wedge of hip
+    denim below the vest - and the torso LEANS, so that wedge swings out of his
+    waist as a hard edged flap on every step. Below this line the waistband is
+    the piece, cut from the same denim, so the seam has nothing to show.
+    """
+    x0, y0, x1, y1 = BOXES["torso"]
+    cut_at = 772
+    m = Image.new("L", cut.size, 0)
+    ImageDraw.Draw(m).rectangle([x0, y0, x1 - 1, cut_at - 1], fill=255)
+    # Fade the last few rows instead of stopping dead: a hard cut through denim
+    # is a one pixel bright seam across his belt in every pose.
+    feather = 6
+    px = m.load()
+    for i in range(feather):
+        y = cut_at + i
+        if y < m.height:
+            v = int(255 * (1.0 - (i + 1) / float(feather + 1)))
+            for x in range(x0, x1):
+                px[x, y] = v
+    return m
+
+
 def _head_mask(cut):
     """The head, the mullet and the throat - not the shoulder it stands on.
 
@@ -229,16 +296,136 @@ def _thigh_mask(cut, name):
     box = BOXES[name]
     m = Image.new("L", cut.size, 0)
     d = ImageDraw.Draw(m)
-    d.rectangle([box[0], hip[1] + 4, box[2], box[3]], fill=255)
+    # The cut starts well below the joint: a thigh box is 340 art px wide, so a
+    # cut skimming the hip swings out as a slab of denim the moment the leg moves,
+    # and the far one swings it across the near leg. Below the joint the cut is
+    # inside the leg's own silhouette, and at the joint itself only the disc -
+    # whose shape no rotation changes - is ever on show.
+    d.rectangle([box[0], hip[1] + 40, box[2], box[3]], fill=255)
     # the lap: a disc on the joint. A band above the joint turns with the leg
     # and swings a corner of denim out of the hip; a disc is unchanged by any
     # rotation about its own centre, so it can only ever cover the seam.
-    d.ellipse([hip[0] - 30, hip[1] - 30, hip[0] + 30, hip[1] + 30], fill=255)
+    # The near hip is the one the torso's waistband cut runs across, so its lap
+    # is a full palm wide: the band must not be left to cover that seam alone,
+    # or it is the band's static denim that shows when the leg swings.
+    lap = 38 if name == "thigh_n" else 30
+    d.ellipse([hip[0] - lap, hip[1] - lap, hip[0] + lap, hip[1] + lap], fill=255)
     if name == "thigh_n":
         d.rectangle([0, 0, CROTCH_X, cut.height], fill=0)
     else:
         d.rectangle([CROTCH_X, 0, cut.width, cut.height], fill=0)
     return m
+
+
+def _fill_hole(cut, hole, box):
+    """Replace the near arm's pixels in the torso with the body around them.
+
+    The arm is cut out of the body, which is right - the arm is its own part and
+    is drawn back into the hole in every pose - but a hole is not: on a jab the
+    arm leaves the chest and the stage shows THROUGH him. The photo has no chest
+    under that arm, so the fabric around the hole is carried inward: each empty
+    pixel takes the colour of the nearest body pixel beside it, which gives plain
+    vest where the vest runs beside the arm and skin where the armpit does.
+
+    Two things this has to keep out of the result. The arm's silhouette is not
+    the body's: the raised arm sticks out past his ribs, so filling its whole
+    footprint would leave the body bulging into air where the arm used to be -
+    the torso's side is therefore clipped to the edge it has above and below the
+    arm, interpolated across it. And the arm's soft drop shadow is not body
+    either: the hole is grown a few pixels past the mask so that shadow is filled
+    too, instead of surviving as a brown smear on the chest.
+    """
+    img = cut.copy()
+    px = img.load()
+    hp = hole.load()
+    x0, y0, x1, y1 = box
+
+    def solid(x, y):
+        return 0 <= x < img.width and 0 <= y < img.height and px[x, y][3] > 40
+
+    holes = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
+             if hp[x, y] > 127 and px[x, y][3] > 40}
+    if not holes:
+        return img
+
+    # The body's own side, above and below the arm, carried across it.
+    rows = sorted({y for _, y in holes})
+    top, bot = rows[0] - 1, rows[-1] + 1
+    def side(y):
+        for x in range(x1 - 1, x0 - 1, -1):
+            if hp[x, y] < 128 and solid(x, y):
+                return x
+        return None
+    x_top, x_bot = side(max(y0, top)), side(min(y1 - 1, bot))
+    if x_top is None or x_bot is None:
+        x_top = x_bot = None
+
+    # Clip the arm's bulge off the body, and keep the fill inside the same edge.
+    # Only below the armpit: above it the arm IS the shoulder, and his shoulder
+    # cap has to stay part of the body - cut away, a raised arm left a notch of
+    # background between his jaw and his sleeve.
+    clip_from = 470
+    if x_top is not None and bot > top:
+        for y in [r for r in rows if r >= clip_from]:
+            edge = x_top + (x_bot - x_top) * (y - top) / float(bot - top)
+            for x in range(int(edge) + 1, x1):
+                px[x, y] = (0, 0, 0, 0)
+                holes.discard((x, y))
+
+    steps = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1))
+    filled = set()
+
+    def fabric(c):
+        """Tank top: bright and neutral. Skin is warm, denim and the print dark."""
+        r, g, b, a = c
+        return a > 40 and min(r, g, b) > 130 and max(r, g, b) - min(r, g, b) < 55
+
+    def beside(x, y, want_fabric=False):
+        """The first pixel next to this one that already has its colour.
+
+        The vest is preferred even where skin is nearer: the fill is what shows
+        through the arm's own soft edge at rest and what his chest turns into
+        when the arm reaches out, and skin there reads as a bruise over the
+        vest. Skin is still taken where no cloth is within reach at all.
+        """
+        fallback = None
+        for dx, dy in steps:
+            n = (x + dx, y + dy)
+            if n in holes and n not in filled:
+                continue
+            if not solid(*n):
+                continue
+            if fabric(px[n]):
+                return px[n]
+            if fallback is None:
+                fallback = px[n]
+        return None if want_fabric else fallback
+
+    q = deque((x, y) for x, y in holes if beside(x, y, True) or beside(x, y))
+    while q:
+        x, y = q.popleft()
+        if (x, y) in filled:
+            continue
+        src = beside(x, y, True) or beside(x, y)
+        if src is None:
+            continue
+        px[x, y] = (src[0], src[1], src[2], 255)
+        filled.add((x, y))
+        for dx, dy in steps:
+            n = (x + dx, y + dy)
+            if n in holes and n not in filled:
+                q.append(n)
+
+    # Soften it: a nearest-pixel copy leaves streaks that follow the arm's
+    # outline, and streaks read as a smudge on a plain tank top.
+    blur = img.filter(ImageFilter.GaussianBlur(5))
+    bp = blur.load()
+    for x, y in filled:
+        # Colour only: the blur also smooths ALPHA, and the arm's soft edge alpha
+        # carried into the chest makes the fill a translucent band you can see the
+        # stage through - a ghost of the arm across his vest.
+        px[x, y] = (bp[x, y][0], bp[x, y][1], bp[x, y][2], 255)
+    return img
 
 
 def _largest_blob(alpha):
@@ -336,6 +523,10 @@ def build():
     # away, and painting that copy over with cloth only traded it for a pale
     # patch with a hard edge. He has air there, and the arm is drawn into it.
     arm = _arm_mask(cut, BOXES["arm_n"])
+    # The body the arm is drawn over does not exist in the photo, so the torso is
+    # cut from a copy of the art whose arm has been replaced by the fabric around
+    # it. The arm part still covers its own hole exactly at rest.
+    body = _fill_hole(cut, arm.filter(ImageFilter.MaxFilter(7)), BOXES["torso"])
 
     parts, pivots, offsets = {}, {}, {}
     for name in BOXES:
@@ -343,12 +534,15 @@ def build():
         if name == "arm_n":
             mask = arm
         elif name == "torso":
-            mask = ImageChops.invert(arm)
+            mask = _torso_mask(cut)
+        elif name == "pelvis":
+            mask = _pelvis_mask(cut)
         elif name == "head":
             mask = _head_mask(cut)
         elif name in ("thigh_n", "thigh_f"):
             mask = _thigh_mask(cut, name)
-        parts[name], pivots[name], offsets[name] = _part(cut, name, mask)
+        src = body if name == "torso" else cut
+        parts[name], pivots[name], offsets[name] = _part(src, name, mask)
 
     # The knife sprite the old set produced is still drawn by the Knife Toss
     # state; the new art's hands are empty, so there is nothing to re-cut.
@@ -366,7 +560,8 @@ def build():
     # Only the elbow. The fist is drawn as knuckles on the wrist, not as a hand
     # with its own silhouette, so cutting it off at the wrist left a fist hanging
     # in the air ahead of the forearm on every extended punch.
-    arm_joints["n"] = [[round(ELBOW_N[0] - aox, 1), round(ELBOW_N[1] - aoy, 1)]]
+    arm_joints["n"] = [[round(ELBOW_N[0] - aox, 1), round(ELBOW_N[1] - aoy, 1)],
+                       [round(WRIST_N[0] - aox, 1), round(WRIST_N[1] - aoy, 1)]]
 
     metrics = {
         # pivot to the top of the piece: that is the torso bone. Taking the whole
@@ -391,6 +586,12 @@ def build():
         # a distance: the sign would put the near leg on the far hip
         "hip_half": round(abs(HIP_N[0] - HIP_F[0]) * 0.5 * SCALE, 1),
         "shoulder_half": round((SHOULDER_N[0] - HIP_MID[0]) * SCALE, 1),
+        # Where the sleeve hangs, measured from the hip: the skeleton's shoulder
+        # line is the top of the SHORT neck at the collar, and the arm's joint is
+        # a whole deltoid below it. Stating it keeps the head on the neck and the
+        # arm on its own shoulder instead of trading one for the other.
+        "arm_socket": [round((SHOULDER_N[0] - HIP_MID[0]) * SCALE, 1),
+                       round((HIP_MID[1] - SHOULDER_N[1]) * SCALE, 1)],
     }
     metrics["ankle_y"] = round(metrics["ankle_y"], 1)
     metrics["knee_y"] = round(metrics["ankle_y"] - metrics["shin"], 1)
@@ -405,6 +606,14 @@ def build():
         "metrics": metrics,
         "pivots": {k: [round(v[0], 1), round(v[1], 1)] for k, v in pivots.items()},
         "arm_joints": arm_joints,
+        "hand_pieces": HAND_PIECES,
+        # Both thighs are cut with a lap disc on their own hip and the hip band
+        # sits between them, so the hip joints have no air to weld: welded, the
+        # capsule is a dark stripe across the jeans every time he leans. The
+        # shoulder is the same story from the other side: the arm's art already
+        # covers its own socket, so the weld has no air to close and instead
+        # washes a skin tinted sash over the soft edge of his vest.
+        "welds_off": ["thigh_n", "thigh_f", "uarm_n"],
         "order": ORDER,
         "angles": {"head": 0.0, "torso": 0.0, "pelvis": 0.0,
                    "arm_f": 0.0, "arm_n": 0.0,

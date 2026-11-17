@@ -232,7 +232,7 @@ def _lap_of(alpha, y, frac=0.30, lo=3, hi=8):
 # ----------------------------------------------------------------- load/rig
 class Rig:
     def __init__(self, parts, metrics=None, art_angles=None, canvas=None, axis=None,
-                 order=None):
+                 order=None, welds_off=None):
         self.metrics = dict(METRICS)
         if metrics:
             self.metrics.update(metrics)
@@ -250,6 +250,12 @@ class Rig:
         # profile set has no far arm at all (it is painted on his torso), and it
         # states its own order so the set can leave that slot empty.
         self.order = tuple(order) if order else None
+        # Joints this rig does not want welded. A weld is a capsule of the
+        # limb's colour painted into the air around a joint; where the pieces
+        # already lap over that joint - a disc cut into each thigh, a hip band
+        # between them - it has no air to fill at rest and paints a dark band
+        # across the jeans the moment the torso leans.
+        self.welds_off = frozenset(welds_off or ())
 
     @property
     def m(self):
@@ -354,8 +360,15 @@ def load_rig(char_id, view=None):
                                           and 0 < wrist[1] < img.height):
                 continue
             d_up = _unit((elbow[0] - px, elbow[1] - py))
-            hand_cut = wrist is not None
-            if not hand_cut:
+            # The wrist sets the forearm's DIRECTION - without it the cut has to
+            # guess from the piece's bounding box, and on a bent arm that guess
+            # lands on the far corner, so the "forearm" is a corner sliver and the
+            # whole arm stays one rigid piece that swings from the shoulder.
+            # Whether it is also severed into a hand of its own is a rig choice
+            # ("hand_pieces"): the fist of a photo cut is knuckles on a wrist
+            # bone, and cut free it hangs in the air ahead of the forearm.
+            hand_cut = wrist is not None and cfg.get("hand_pieces", True)
+            if not hand_cut and wrist is None:
                 # the far end of the piece stands in for the wrist when the arm is
                 # cut at the elbow only: it sets the forearm's direction and its
                 # bone length, and nothing is cut there
@@ -439,7 +452,8 @@ def load_rig(char_id, view=None):
         parts[name]["image"] = _join_pieces(parts[name]["image"])
 
     rig = Rig(parts, metrics or None, show,
-              cfg.get("canvas"), cfg.get("axis"), cfg.get("order"))
+              cfg.get("canvas"), cfg.get("axis"), cfg.get("order"),
+              cfg.get("welds_off"))
     return rig
 
 
@@ -786,10 +800,23 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     # shoulders ride the torso's perpendicular
     pa = math.radians(torso_dir)
     perp = (math.cos(pa), math.sin(pa))
-    sh_n = (shoulder[0] + perp[0] * m["shoulder_half"] * ss,
-            shoulder[1] + perp[1] * m["shoulder_half"] * ss)
-    sh_f = (shoulder[0] - perp[0] * m["shoulder_half"] * ss * 0.92,
-            shoulder[1] - perp[1] * m["shoulder_half"] * ss * 0.92)
+    # A rig may state the arm's socket in rig units from the hip (side columns,
+    # up the torso) instead of hanging the arm off the shoulder line. The two
+    # are not the same point - the shoulder line is where the neck sits - and an
+    # arm that hangs from the collar puts its deltoid under the jaw and swings
+    # clear of the body behind it.
+    sock = m.get("arm_socket")
+    if sock:
+        sh_base = _seg_up(hip, torso_dir, sock[1] * ss)
+        sh_n = (sh_base[0] + perp[0] * sock[0] * ss,
+                sh_base[1] + perp[1] * sock[0] * ss)
+        sh_f = (sh_base[0] - perp[0] * sock[0] * ss,
+                sh_base[1] - perp[1] * sock[0] * ss)
+    else:
+        sh_n = (shoulder[0] + perp[0] * m["shoulder_half"] * ss,
+                shoulder[1] + perp[1] * m["shoulder_half"] * ss)
+        sh_f = (shoulder[0] - perp[0] * m["shoulder_half"] * ss * 0.92,
+                shoulder[1] - perp[1] * m["shoulder_half"] * ss * 0.92)
     hip_n = (hip[0] + m["hip_half"] * ss, hip[1])
     hip_f = (hip[0] - m["hip_half"] * ss, hip[1])
 
@@ -925,7 +952,7 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         if name.startswith(SOCKETED):
             turned = abs((angles.get(name, 0.0) - part["base"]) % 360.0)
             turned = min(turned, 360.0 - turned)
-            if name.startswith(("uarm_", "arm_")):
+            if name.startswith(("uarm_", "arm_")) and name not in rig.welds_off:
                 # The shoulder is welded for BOTH arm styles. A rig cut as one
                 # bent piece per arm (arm_n / arm_f) never matched this branch
                 # before, so those fighters had no shoulder weld at all and the
@@ -934,8 +961,12 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 if name.endswith("_f"):
                     pending_bridge.append((part, joints[name], elbow))
                 else:
+                    # A cut arm swings its own deltoid clear of the collar, so
+                    # its weld has to be wider than the arm's painted thickness:
+                    # the air it leaves is the shoulder CAP, which is a third of
+                    # the joint's width again on the outside of the pivot.
                     _weld(out, joints[name], shoulder, elbow,
-                          _joint_radius(part, ss),
+                          _joint_radius(part, ss) * 1.6,
                           _near_rgb(part["image"], *part["pivot"]),
                           feather=1.0 * ss)
             elif name == "head":
@@ -948,7 +979,8 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                       _joint_radius(part, ss) + 2,
                       _near_rgb(part["image"], *part["pivot"]),
                       feather=1.0 * ss)
-            elif name in links and not name.startswith("foot"):
+            elif name in links and not name.startswith("foot") \
+                    and name not in rig.welds_off:
                 par, ch = links[name]
                 # The feet are exempt. The shoe is a 44px part at the ankle and
                 # the capsule reaches 48px toward the toe, so its radius is wider

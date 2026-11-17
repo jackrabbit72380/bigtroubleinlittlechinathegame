@@ -11,14 +11,18 @@
   "metrics": {
     "torso_len": 200.3,
     "neck_len": 0.0,
-    "uarm": 78.1,
+    "uarm": 94.6,
     "farm": 38.7,
     "hand": 34.0,
     "thigh": 101.3,
     "shin": 163.4,
     "ankle_y": -37.8,
     "hip_half": 29.3,
-    "shoulder_half": 64.9,
+    "shoulder_half": 51.6,
+    "arm_socket": [
+      51.6,
+      170.7
+    ],
     "knee_y": -201.2,
     "hip_y": -302.5,
     "shoulder_y": -502.8,
@@ -34,16 +38,16 @@
       600
     ],
     "arm_n": [
-      76,
-      66
+      40,
+      34
     ],
     "pelvis": [
-      175,
+      125,
       0
     ],
     "thigh_n": [
       29,
-      30
+      0
     ],
     "shin_n": [
       86,
@@ -51,7 +55,7 @@
     ],
     "thigh_f": [
       216,
-      30
+      0
     ],
     "shin_f": [
       223,
@@ -71,9 +75,19 @@
       [
         160,
         259
+      ],
+      [
+        190,
+        159
       ]
     ]
   },
+  "hand_pieces": false,
+  "welds_off": [
+    "thigh_n",
+    "thigh_f",
+    "uarm_n"
+  ],
   "order": [
     "cape",
     "thigh_f",
