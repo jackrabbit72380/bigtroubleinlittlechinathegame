@@ -306,10 +306,12 @@ def bake(char_id, target_height=TARGET_HEIGHT):
     pose_table = char_rig.poses_for(char_id)
     rig = char_rig.load_rig(char_id)
 
-    # Fight poses are drawn from the profile part set so the two fighters face
-    # each other; only the win pose keeps the front set, because that is the one
-    # time a fighter is supposed to look at the camera. Each set is fitted to
-    # the same on-screen height, since they were cut at different resolutions.
+    # Every pose a fighter can be seen in is drawn from the profile part set, so
+    # he faces the other fighter the whole match - including the win pose, which
+    # used to turn and look at the camera. The front set is the PORTRAIT rig: it
+    # is a different drawing of him and it only ever goes to the select screen,
+    # never into a sprite. Each set is fitted to the same on-screen height, since
+    # they were cut at different resolutions.
     front_rig = rig
     side_rig = None
     if os.path.isdir(os.path.join(ROOT, "art_src", "chars", char_id, "parts_side")):
@@ -361,7 +363,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         for i, ticks in enumerate(frames):
             pose_name = pose_for(number, i)
             if pose_name not in local:
-                side = side_rig is not None and pose_name != "win"
+                side = side_rig is not None
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
                 img = char_rig.render(use, pose_table[pose_name])
@@ -392,7 +394,7 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         local = {}
         for pose, ticks in frames:
             if pose not in local:
-                side = side_rig is not None and pose != "win"
+                side = side_rig is not None
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
                 img = char_rig.render(use, pose_table[pose])

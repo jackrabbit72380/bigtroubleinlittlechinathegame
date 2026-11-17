@@ -24,33 +24,13 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHAR = "jackburton"
-# The FIGURE is no longer cut here: tools/jack_front_cut.py measures the
-# forward-facing render (jack_faceing_farward1.png) for that. This tool stays for
-# the turnaround's props - the only art that has the pistol and the knife - and
-# keeps the measured constants it always had.
 SOURCE = os.path.join(ROOT, "concept_art", "fighters", "jack_burton",
                       "bernardo-mercurio-jack-turnable.jpg")
 OUT = os.path.join(ROOT, "art_src", "chars", CHAR, "parts")
 WORK = os.path.join(ROOT, "art_src", "chars", CHAR, "work")
 
-# Every joint and polygon below was measured in the pixels of this frame, so the
-# art is normalised into it rather than the numbers being re-measured: the figure
-# is scaled to FRAME height and stood on the frame's centreline, which is where
-# the old cutout's own figure stood. That keeps one set of measured joints valid
-# across sources - and the source is now the dedicated forward-facing render
-# (jack_faceing_farward1.png), which is one clean figure on transparency with
-# both arms at his sides, instead of one view cropped out of a four-view
-# turnaround.
-FRAME = (527, 607)
-FRAME_CENTRE_X = 300
-
-# The props are NOT in the forward-facing render - he stands with his hands
-# empty - so the pistol and the knife are still cut from the turnaround, which
-# has them in frame. Only their own grip/muzzle points matter: a prop is drawn
-# from the wrist, not from the body.
-PROP_SOURCE = os.path.join(ROOT, "concept_art", "fighters", "jack_burton",
-                           "bernardo-mercurio-jack-turnable.jpg")
-PROP_CROP = (0.26, 0.56)
+# The front view sits in the second of four equally spaced poses.
+CROP = (0.26, 0.56)
 
 # --- measured joints (cutout pixels) -----------------------------------------
 NECK = (300, 116)
@@ -213,17 +193,13 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     os.makedirs(WORK, exist_ok=True)
 
-    src = Image.open(SOURCE)
-    if src.mode != "RGBA":
-        src = src.convert("RGBA")
-    bbox = src.getbbox()
-    figure = src.crop(bbox)
-    scale = FRAME[1] / float(figure.height)
-    figure = figure.resize((max(1, int(round(figure.width * scale))), FRAME[1]),
-                           Image.LANCZOS)
-    art = Image.new("RGBA", FRAME, (0, 0, 0, 0))
-    art.paste(figure, (int(round(FRAME_CENTRE_X - figure.width / 2.0)), 0))
-    bg = (0, 0, 0)
+    src = Image.open(SOURCE).convert("RGB")
+    W, H = src.size
+    view = src.crop((int(W * CROP[0]), 0, int(W * CROP[1]), H))
+    bg = view.getpixel((3, 3))
+    figure = matte(view, bg)
+    bbox = figure.getbbox()
+    art = figure.crop(bbox)
 
     # CROP slices the turnaround, so the pose beside the front view leaks in.
     # Its hand and knife are disconnected from the figure, which is what showed
@@ -247,8 +223,7 @@ def main():
         if dropped:
             print(f"dropped {dropped} stray component(s) from the crop")
 
-    # its own working copy: jack_front_cut.py owns work/front.png
-    art.save(os.path.join(WORK, "front_turnaround.png"))
+    art.save(os.path.join(WORK, "front.png"))
     print(f"front cutout {art.size}, background {bg}")
 
     parts, pivots, angles = {}, {}, {}
@@ -265,9 +240,8 @@ def main():
             angles[name] = round(angle, 2)
 
     def emit_shape(name, pivot, polygon=None, box=None, ellipse=False,
-                   angle=None, mirror=False, rotate_to=None, source=None):
-        img, off = cut(source if source is not None else art,
-                       polygon=polygon, box=box, ellipse=ellipse)
+                   angle=None, mirror=False, rotate_to=None):
+        img, off = cut(art, polygon=polygon, box=box, ellipse=ellipse)
         piv = (pivot[0] - off[0], pivot[1] - off[1])
         if rotate_to is not None:
             img, piv = rotate_about(img, piv, rotate_to)
@@ -552,18 +526,11 @@ def main():
     # beside each boot in every pose. The shin carries the whole boot.
 
     # --- props --------------------------------------------------------------
-    prop_art = None
-    raw = Image.open(PROP_SOURCE).convert("RGB")
-    pw, _ph = raw.size
-    view = raw.crop((int(pw * PROP_CROP[0]), 0, int(pw * PROP_CROP[1]), _ph))
-    matted = matte(view, view.getpixel((3, 3)))
-    prop_art = matted.crop(matted.getbbox())
     barrel = math.degrees(math.atan2(GUN_MUZZLE[0] - GUN_GRIP[0],
                                      GUN_MUZZLE[1] - GUN_GRIP[1]))
     emit_shape("prop", GUN_GRIP, box=GUN_BOX, angle=0.0,
-               rotate_to=90.0 - barrel, source=prop_art)
-    emit_shape("prop_knife", KNIFE_GRIP, box=KNIFE_BOX, angle=0.0,
-               source=prop_art)
+               rotate_to=90.0 - barrel)
+    emit_shape("prop_knife", KNIFE_GRIP, box=KNIFE_BOX, angle=0.0)
 
     add_neck("head", 28)
 

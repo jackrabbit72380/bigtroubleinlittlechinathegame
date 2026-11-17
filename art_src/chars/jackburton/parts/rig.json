@@ -1,118 +1,54 @@
 {
   "scale": 1.0,
-  "canvas": [
-    640,
-    780
-  ],
-  "axis": [
-    300,
-    700
-  ],
-  "metrics": {
-    "hip_y": -349,
-    "shoulder_y": -496.0,
-    "neck_y": -504.0,
-    "knee_y": -168,
-    "ankle_y": -27,
-    "torso_len": 147.0,
-    "neck_len": 8.0,
-    "uarm": 108.0,
-    "farm": 68.7,
-    "hand": 27.5,
-    "thigh": 181,
-    "shin": 141,
-    "shoulder_half": 78.0,
-    "hip_half": 23.7
-  },
   "pivots": {
-    "head": [
-      36.0,
-      86
-    ],
     "torso": [
-      51.0,
-      170
+      55,
+      91
     ],
     "pelvis": [
-      67.0,
-      -2
+      29,
+      12
     ],
-    "arm_f": [
-      32,
-      9
+    "head": [
+      29,
+      46
     ],
     "arm_n": [
-      5,
-      8
+      22,
+      12
     ],
-    "thigh_f": [
-      86.3,
-      -22
-    ],
-    "shin_f": [
-      86.3,
+    "arm_f": [
+      27,
       12
     ],
     "thigh_n": [
-      25.7,
-      -22
+      19,
+      4
+    ],
+    "thigh_f": [
+      19,
+      4
     ],
     "shin_n": [
-      -13.3,
+      17,
+      3
+    ],
+    "shin_f": [
+      17,
+      3
+    ],
+    "foot_n": [
+      10,
       12
     ],
-    "prop": [
-      26.5,
-      75.2
-    ],
-    "prop_knife": [
-      17,
+    "foot_f": [
+      10,
       12
     ]
   },
   "angles": {
     "head": 0.0,
     "torso": 0.0,
-    "pelvis": 0.0,
-    "arm_f": -6.34,
-    "arm_n": 3.21,
-    "thigh_f": 0.0,
-    "shin_f": 0.0,
-    "thigh_n": 0.0,
-    "shin_n": 0.0,
-    "prop": 0.0,
-    "prop_knife": 0.0
-  },
-  "arm_joints": {
-    "f": [
-      [
-        19.9,
-        117.9
-      ],
-      [
-        12.2,
-        187.2
-      ]
-    ],
-    "n": [
-      [
-        11.1,
-        115.8
-      ],
-      [
-        14.9,
-        184.4
-      ]
-    ]
-  },
-  "hand_pieces": false,
-  "welds_off": [
-    "arm_n",
-    "arm_f",
-    "thigh_n",
-    "thigh_f",
-    "shin_n",
-    "shin_f"
-  ],
-  "_note": "Front set cut from jack_faceing_farward1.png by tools/jack_front_cut.py. The forward render has both arms at his sides and no props, so each arm is its own clean island; the pistol and knife are still cut from the turnaround."
+    "pelvis": 0.0
+  }
 }
