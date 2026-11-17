@@ -165,6 +165,53 @@ except Exception:      # a partial checkout without the gang painter still bakes
     pass
 
 
+# Poses the rig cannot make out of its one drawing, baked from their own art.
+# A punch needs an arm at full extension; the profile set is a guard, and swinging
+# a guard arm out as far as a punch goes tears it off the shoulder. So the punch
+# has its own render and each strike frame is that drawing, whole.
+ART_POSES = {
+    "jackburton": {
+        "jab": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
+        "cross": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
+        "upper": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
+    },
+}
+
+
+def _art_pose(path, ref):
+    """One drawn pose, placed so it stands where the rig's own stance stands.
+
+    Measured off the two silhouettes rather than by numbers: the figure heights
+    are matched, then the feet (the sole row) and the planted legs (the alpha
+    centroid of the lower fifth) are put on the same spot as the reference
+    render's. Those are the things a punch does NOT move - his legs stay where
+    they are while the fist goes out - so the frames line up with the guard
+    poses either side of them.
+    """
+    from PIL import Image
+    import numpy as np
+    img = Image.open(os.path.join(ROOT, path)).convert("RGBA")
+    bb = img.getchannel("A").point(lambda v: 255 if v > 40 else 0).getbbox()
+    img = img.crop(bb)
+
+    def measure(im):
+        a = np.asarray(im.getchannel("A"))
+        rows = np.where(a.any(axis=1))[0]
+        top, bot = rows[0], rows[-1]
+        band = a[int(bot - 0.2 * (bot - top)):bot + 1, :] > 40
+        ys, xs = np.where(band)
+        return float(bot), float(xs.mean()), float(bot - top + 1)
+
+    sole, legs, height = measure(img)
+    r_sole, r_legs, r_height = measure(ref)
+    k = r_height / height
+    im = img.resize((max(1, round(img.width * k)), max(1, round(img.height * k))),
+                    Image.LANCZOS)
+    out = Image.new("RGBA", ref.size, (0, 0, 0, 0))
+    out.alpha_composite(im, (round(r_legs - legs * k), round(r_sole - sole * k)))
+    return out
+
+
 STRIKE_POSES = (
     # first action, last action, wind-up, strike, follow-through
     (200, 209, "stance", "jab", "stance"),       # standing light punch
@@ -325,6 +372,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
         height = (box[3] - box[1]) if box else r.canvas[1]
         fit[key] = TARGET_HEIGHT / float(max(1, height))
 
+    # The drawn poses, placed against this rig's own stance frame.
+    art_poses = {}
+    for name, path in ART_POSES.get(char_id, {}).items():
+        ref = char_rig.render(side_rig or front_rig,
+                              pose_table["stance"])
+        art_poses[name] = _art_pose(path, ref)
+
     sprites = []
 
     # Weapon art is copied through, never rendered - see WEAPON_ACTIONS.
@@ -366,7 +420,10 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                 side = side_rig is not None
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
-                img = char_rig.render(use, pose_table[pose_name])
+                if pose_name in art_poses:
+                    img = art_poses[pose_name].copy()
+                else:
+                    img = char_rig.render(use, pose_table[pose_name])
                 img = img.resize((max(1, round(img.width * kk)),
                                   max(1, round(img.height * kk))), Image.LANCZOS)
                 axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
