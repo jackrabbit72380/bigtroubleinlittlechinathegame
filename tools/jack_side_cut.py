@@ -89,7 +89,7 @@ BOXES = {
     # right edge past the whole deltoid: at 628 the box cut the shoulder cap in
     # half, and the arm - which swings around that cap - left the cut showing as
     # a gap of background between his vest and his own bicep.
-    "torso": (208, 225, 704, 695),
+    "torso": (208, 150, 704, 695),
     # THROUGH the shoulder cap, so the piece owns the deltoid it swings from. Cut
     # under the cap the arm had nothing over its socket, and every pose that
     # swung it out left the bicep floating beside a bare shoulder.
@@ -204,7 +204,12 @@ def _arm_mask(cut, box):
             if a < 40:
                 continue
             warm = r - b >= 18
-            dark = max(r, g, b) < 120 and r >= b - 10
+            # A dark pixel is only the arm's own outline if it is still WARM. The
+            # old test allowed near-neutral darks, and the tank top's shadowed
+            # folds are exactly that: they joined the arm's mask, and because the
+            # mask lives in a box, every one of them dragged the box's straight
+            # edges with it as a slab of chest across the vest when the arm moved.
+            dark = max(r, g, b) < 120 and r > b + 8
             if warm or dark:
                 mp[x, y] = 255
     # Grow over the antialiased outline, then stay inside the box.
@@ -249,18 +254,34 @@ def _pelvis_mask(cut):
     return m
 
 
-def _torso_mask(cut):
-    """The body down to the waistband, no further.
+def _torso_mask(cut, head_mask=None):
+    """The body from the shoulders down to the waistband, no further.
 
-    The torso box runs to the hip line, so the piece carries a wedge of hip
-    denim below the vest - and the torso LEANS, so that wedge swings out of his
-    waist as a hard edged flap on every step. Below this line the waistband is
-    the piece, cut from the same denim, so the seam has nothing to show.
+    The top edge used to be a straight line across the chest at the collar, and
+    that line is the cut the eye finds: it runs across his neck and shoulder,
+    where the body carries on above it, so the moment the torso leans it swings
+    out from under the head as a cut corner on his chest. The piece now starts up
+    at the shoulders and is shaped by the head's own mask instead - the head part
+    draws exactly that shape, so at rest the seam is nothing, and small head
+    angles slide inside its overlap.
+
+    The bottom is cut at the waist for the same reason: the torso LEANS, and a
+    wedge of hip denim below this line swung out of his belt as a hard edged flap
+    on every step. The waistband is the piece there, cut from the same denim.
     """
     x0, y0, x1, y1 = BOXES["torso"]
     cut_at = 738
     m = Image.new("L", cut.size, 0)
     ImageDraw.Draw(m).rectangle([x0, y0, x1 - 1, cut_at - 1], fill=255)
+    if head_mask is not None:
+        # Only the SKULL comes out of the body: the head's face and hair are a
+        # hole the head part fills exactly, so the seam between them is nothing.
+        # The throat is not taken out - it is skin over skin, and the head's own
+        # throat band ends on a straight line, so subtracting all of it left that
+        # line standing on his chest as soon as he turned his head.
+        skull = Image.new("L", cut.size, 0)
+        ImageDraw.Draw(skull).rectangle([0, 0, cut.width - 1, 214], fill=255)
+        m = ImageChops.subtract(m, ImageChops.multiply(head_mask, skull))
     # Fade the last few rows instead of stopping dead: a hard cut through denim
     # is a one pixel bright seam across his belt in every pose.
     feather = 6
@@ -319,58 +340,43 @@ def _close_mask(m):
 
 
 def _head_mask(cut):
-    """The head, the mullet and the throat - not the shoulder it stands on.
+    """The head, the mullet and the throat - and nothing that is cloth.
 
     The box runs left past the jaw to keep the hair, which also takes in the top
-    of the trapezius and the vest strap. Left in, they hung off the side of the
-    skull and turned with it.
+    of the trapezius, the collar and the strap of the vest. Left in, they hung off
+    the skull and turned with it: a slab of shoulder and tank top beside his jaw,
+    which is most of what "his head is cut off" looks like.
     """
     x0, y0, x1, y1 = BOXES["head"]
     m = Image.new("L", cut.size, 0)
     d = ImageDraw.Draw(m)
-    # The bottom edge must reach past the body's own cut at the collar (the torso
-    # is trimmed at NECK[1] - 8), or the strip between the two cuts is a hole, and
-    # whatever fills it - the throat weld - shows as a lump of neck on his chest.
-    # Down the face, under the jaw, down the throat - NOT to the box's bottom
-    # corner. That corner holds his far shoulder and the front of his tank top,
-    # and they swung with his head: a slab of shoulder and vest pivoting beside
-    # his jaw, which is most of what "his head is detached" looks like.
-    # Face, jaw, then DOWN THE NECK COLUMN and back up the mullet. The neck has to
-    # stay with the head - it is the only art that reaches from the jaw to the
-    # chest, and cutting at the jaw line leaves the skull floating over a gap -
-    # but the trapezius behind the neck is shoulder and must not come with it, or
-    # a few degrees of head turn drags the shoulder along and the head looks
-    # pulled off the body.
-    # Down the face, then STRAIGHT down the front of the throat as a column and
-    # back up behind it. The old edge ran to a point at the jaw and tapered away
-    # to nothing, which left the throat as a spike and a wedge of the body's own
-    # neck showing under his chin.
-    # The column stops AT its own pivot (NECK[1]) and fades out above it: any
-    # part of the head that reaches below the joint swings out from under his jaw
-    # the moment the head turns, and that overhang is the skin spike that read as
-    # a cut-off head.
-    # The skull, then a column down the throat that stops inside the body. The
-    # new render draws a smaller head on the same canvas, so the old polygon -
-    # fitted to a jaw a hundred pixels lower - cut through his chest and left the
-    # head as a floating slab over it.
-    d.rectangle([x0, y0, x1 - 1, 214], fill=255)
-    d.rectangle([x0, 214, 528, NECK[1] + 8], fill=255)
-    # The bottom edge fades out over the last rows instead of ending on a line.
-    # That cut runs across the throat, the most visible skin on the figure, and a
-    # straight edge there slides over the body's own neck as a step the moment he
-    # turns his head - which is what reads as the head being a separate piece. The
-    # body behind it is solid (the torso keeps its own neck and collar), so the
-    # fade has something to fade INTO.
-    # Feather the throat's bottom edge over the chest, not over the last rows of
-    # the box: the column now reaches past the box, and fading inside the box
-    # would leave its end a hard line again.
-    px = m.load()
-    for y in range(196, min(NECK[1] + 10, m.height)):
-        v = int(255 * max(0.0, 1.0 - (y - 196) / float(NECK[1] + 10 - 196)))
-        for x in range(x0, min(x1, m.width)):
-            if px[x, y] > v:
-                px[x, y] = v
-    return m
+    # Above the jaw, the whole box: skull, face and the sweep of the mullet.
+    d.rectangle([x0, y0, x1 - 1, 211], fill=255)
+    # Below it, a band that follows the throat back from the chin. The head has to
+    # keep the throat - it is the only art that reaches from the jaw down into the
+    # body, and cutting at the jaw line leaves the skull floating over a gap - but
+    # a full width rectangle here also took the collar and the front of the vest.
+    d.polygon([(x0, 211), (512, 211), (472, NECK[1] + 8), (x0, NECK[1] + 8)],
+              fill=255)
+    # Skin, hair and outline only, over the whole head: the vest is neutral and
+    # passes neither test, so no fabric can swing with his head. Eyes and teeth
+    # fail the test as well, so holes INSIDE that skin-and-hair shape are closed -
+    # but only those. Closing the box shape instead filled the air under his jaw
+    # right across to the shoulder, which came out as a slab of neck on his chest.
+    flesh = Image.new("L", cut.size, 0)
+    px = cut.load()
+    fp = flesh.load()
+    for y in range(y0, min(NECK[1] + 9, cut.height)):
+        for x in range(x0, min(x1, cut.width)):
+            r, g, b, a = px[x, y]
+            if a > 40 and (r - b >= 18 or (max(r, g, b) < 120 and r > b + 8)):
+                fp[x, y] = 255
+    flesh = _close_mask(flesh)
+    # No feather on the bottom edge. It used to fade from y=196 - the MOUTH - so
+    # the chin and the whole throat came out half transparent and his head ended
+    # at the jaw: a hard cut across the neck is exactly what that looked like.
+    # The band stops inside the body's own neck instead, on solid skin.
+    return ImageChops.multiply(m, flesh)
 
 
 def _thigh_mask(cut, name):
@@ -659,6 +665,11 @@ def build():
     pad = ImageChops.multiply(
         pad, _warm_mask(cut, (SHOULDER_N[0] - PAD, SHOULDER_N[1] - PAD,
                               SHOULDER_N[0] + PAD, SHOULDER_N[1] + PAD)))
+    # The piece is not clipped down to the limb. It was, while the arm rotated:
+    # anything above the socket turned with it and dragged a slab of trapezius on
+    # to his chest. The arm is held at its drawn angle now, so the piece is the
+    # arm as drawn - and clipping it here only put a straight edge across his
+    # collar, where the arm's shoulder cap meets the vest.
     arm = ImageChops.lighter(arm, pad)
     # The body the arm is drawn over does not exist in the photo, so the torso is
     # cut from a copy of the art whose arm has been replaced by the fabric around
@@ -677,19 +688,34 @@ def build():
     below = Image.new("L", cut.size, 0)
     ImageDraw.Draw(below).rectangle([ax0, SHOULDER_N[1] + 96, ax1, ay1], fill=255)
     skin = ImageChops.multiply(skin, below)
-    body = cut  # no fill: see NOTE below
+    # And then actually take it out. This said "no fill" and cut the torso from
+    # the untouched art, so the body kept the drawing of the arm underneath the
+    # arm - at rest the two were the same pixels in the same place, and the moment
+    # the arm moved he had one and a half arms: the swinging piece plus its own
+    # sleeve still lying on his chest. Erased with the same mask the arm piece
+    # carries, so the hole and the piece are one shape and the piece fills it
+    # exactly at rest; where the arm swings away, the air that is left is the gap
+    # a punching arm actually has between the bicep and the vest.
+    # Not erased. Erasing the arm out of the body was tried and it cannot be made
+    # to look like anything: the art has no paint behind the arm, so whatever
+    # fills the hole is invented - a blurred smudge, or a hard edged strip of
+    # vest - and it only shows when the arm moves anyway. The arm is drawn as part
+    # of the body instead and the poses hold it still, so the two drawings are
+    # always the same pixels in the same place and there is nothing to ghost.
+    body = cut
 
+    head_cut = _head_mask(cut)
     parts, pivots, offsets = {}, {}, {}
     for name in BOXES:
         mask = None
         if name == "arm_n":
             mask = arm
         elif name == "torso":
-            mask = _torso_mask(cut)
+            mask = _torso_mask(cut, head_cut)
         elif name == "pelvis":
             mask = _pelvis_mask(cut)
         elif name == "head":
-            mask = _head_mask(cut)
+            mask = head_cut
         elif name in ("thigh_n", "thigh_f"):
             mask = _thigh_mask(cut, name)
         src = body if name == "torso" else cut
