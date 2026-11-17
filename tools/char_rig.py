@@ -97,6 +97,13 @@ RELATIVE = ("arm_n", "arm_f")
 # here: its shoulder is already covered by the torso's own shoulder cap and
 # the disc sat on top of that as a grey ball, which made the fighters read as
 # mannequins with ball joints.
+# How hard a piece shadows the body where it overlaps it, 0..1. The head and the
+# arm are the two seams that read as "detached"; the legs are welded and only
+# need a hint.
+CONTACT = {"head": 0.5, "uarm_n": 0.34, "farm_n": 0.26, "uarm_f": 0.3,
+           "farm_f": 0.24, "arm_n": 0.3, "arm_f": 0.26,
+           "thigh_n": 0.14, "thigh_f": 0.12}
+
 SOCKETED = ("uarm_", "arm_", "farm_", "hand_", "thigh_", "shin_", "foot_",
             "head")
 
@@ -653,6 +660,29 @@ def _join_pieces(img, minpx=40):
     return out
 
 
+def _contact(dst, added, strength=0.35, radius=2.4, ss=1.0):
+    """Shade the body where a piece meets it.
+
+    A cut piece pasted onto a body reads as a sticker however exactly its pivot
+    is placed, because neither side acknowledges the other: the jaw meets the
+    collar on a line of equal brightness, the bicep meets the chest on another,
+    and the eye reads two separate cutouts instead of one figure. Light occludes
+    in both places. This darkens a narrow ring just OUTSIDE the piece, clipped to
+    the body that is already painted, so the seam becomes a shadow.
+    """
+    if added is None or not added.getbbox():
+        return
+    ring = added.filter(ImageFilter.GaussianBlur(radius * ss))
+    ring = ImageChops.subtract(ring, added)
+    if not ring.getbbox():
+        return
+    ring = ImageChops.multiply(ring, dst.getchannel("A"))
+    ring = ring.point(lambda v: int(v * strength))
+    shade = Image.new("RGBA", dst.size, (0, 0, 0, 0))
+    shade.putalpha(ring)
+    dst.alpha_composite(shade)
+
+
 def _fill_air(dst, mask, col, feather=1.0):
     """Paint ``mask`` only where the canvas is still empty."""
     air_alpha = dst.getchannel("A")
@@ -972,7 +1002,15 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                     # swell of shoulder the art never had. The hole a swing opens
                     # is at the armpit, below the socket, so the weld is a short
                     # fat capsule from the socket to the middle of the bicep.
-                    _weld(out, joints[name], None, elbow,
+                    # From inside the CHEST to the middle of the bicep. The gap a
+                    # forward swing opens is the armpit, which is below and
+                    # behind the socket - a capsule that only runs down the arm
+                    # leaves it open, and the arm hangs off the collar. Reaching
+                    # toward the hip keeps it inside the body and away from the
+                    # neck.
+                    armpit = (joints[name][0] + (hip[0] - joints[name][0]) * 0.45,
+                              joints[name][1] + (hip[1] - joints[name][1]) * 0.30)
+                    _weld(out, joints[name], armpit, elbow,
                           _joint_radius(part, ss) * 1.2,
                           _near_rgb(part["image"], *part["pivot"]),
                           feather=1.0 * ss)
@@ -988,13 +1026,19 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 img = part["image"]
                 # Narrow enough to stay inside the throat: a capsule as wide as
                 # a fraction of the head's box bulges out in front of the neck.
-                r = max(4, int(img.width * 0.075 * ss))
+                r = max(5, int(img.width * 0.09 * ss))
                 # Up the NECK, i.e. along the head's own axis, not the canvas's:
                 # a capsule left pointing straight up stays behind the throat
                 # when the head tips and pokes out through the collar instead.
-                up = _seg(joints["head"], 180.0 + angles.get("head", 0.0),
-                          r * 4.0)
-                _weld(out, joints["head"], None, up, r,
+                # Start it a full radius ABOVE the collar. Anchored on the joint
+                # its own rounded end hangs below the collar line, out of the
+                # neck and onto the chest, where it reads as a lump of skin
+                # stuck to his vest in every pose.
+                ha = 180.0 + angles.get("head", 0.0)
+                base = _seg((joints["head"][0] - r * 0.6, joints["head"][1]),
+                            ha, r * 1.15)
+                up = _seg(base, ha, r * 2.4)
+                _weld(out, base, None, up, r,
                       _near_rgb(img, *part["pivot"]), feather=1.5 * ss)
             elif name in links and not name.startswith("foot") \
                     and name not in rig.welds_off:
@@ -1013,7 +1057,11 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                       _joint_radius(part, ss), _near_rgb(part["image"],
                                                          *part["pivot"]),
                       feather=1.0 * ss)
+        before = out.getchannel("A") if name in CONTACT else None
         _place(out, part, angles.get(name, 0.0), joints[name])
+        if before is not None:
+            added = ImageChops.subtract(out.getchannel("A"), before)
+            _contact(out, added, strength=CONTACT[name], ss=ss)
         if name == "torso" and pending_bridge:
             for p, j, elbow in pending_bridge:
                 _weld(out, j, None, elbow, _joint_radius(p, ss),

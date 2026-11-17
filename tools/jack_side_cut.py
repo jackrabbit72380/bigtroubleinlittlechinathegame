@@ -328,12 +328,28 @@ def _head_mask(cut):
     # The bottom edge must reach past the body's own cut at the collar (the torso
     # is trimmed at NECK[1] - 8), or the strip between the two cuts is a hole, and
     # whatever fills it - the throat weld - shows as a lump of neck on his chest.
-    d.polygon([(x0, y0), (x1 - 1, y0), (x1 - 1, y1 - 1), (NECK[0] - 46, y1 - 1),
-               (x0, NECK[1] - 81)], fill=255)
-    # Hard, not feathered. A soft bottom edge is a SEE-THROUGH bottom edge: the
-    # skull's last few rows are then part alpha, and wherever the body behind them
-    # is not solid the stage shows through as a dark fringe under his jaw. The
-    # body keeps its own jaw, so the head's cut sits over solid pixels anyway.
+    # Down the face, under the jaw, down the throat - NOT to the box's bottom
+    # corner. That corner holds his far shoulder and the front of his tank top,
+    # and they swung with his head: a slab of shoulder and vest pivoting beside
+    # his jaw, which is most of what "his head is detached" looks like.
+    d.polygon([(x0, y0), (x1 - 1, y0), (x1 - 1, 232), (656, 292),
+               (NECK[0], 332), (x0, NECK[1] - 81)], fill=255)
+    # The bottom edge fades out over the last rows instead of ending on a line.
+    # That cut runs across the throat, the most visible skin on the figure, and a
+    # straight edge there slides over the body's own neck as a step the moment he
+    # turns his head - which is what reads as the head being a separate piece. The
+    # body behind it is solid (the torso keeps its own neck and collar), so the
+    # fade has something to fade INTO.
+    px = m.load()
+    fade = 24
+    for i in range(fade):
+        y = y1 - fade + i
+        if not (0 <= y < m.height):
+            continue
+        v = max(0, int(255 * (1.0 - (i + 1) / float(fade))))
+        for x in range(x0, x1):
+            if px[x, y] > v:
+                px[x, y] = v
     return m
 
 
@@ -439,7 +455,12 @@ def _fill_hole(cut, hole, box):
     mp = mask.load()
     for x, y in holes:
         mp[x, y] = 255
-    mask = mask.filter(ImageFilter.GaussianBlur(6))
+    # Blur the hole to lose the ruled edge, but keep the blur INSIDE the hole. A
+    # six pixel blur also paints cloth six pixels outside the arm's footprint,
+    # i.e. over the shoulder art beside it, which is the pale haze that made his
+    # far shoulder look cut off from his neck.
+    limit = mask.filter(ImageFilter.MaxFilter(5))
+    mask = ImageChops.darker(mask.filter(ImageFilter.GaussianBlur(6)), limit)
 
     shade = Image.new("RGBA", src.size, cloth + (255,))
     spx = shade.load()
