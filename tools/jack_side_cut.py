@@ -107,7 +107,9 @@ BOXES = {
     # gap. They start at the hip line, not at the waist: a thigh that carried
     # the belt swung it out of the hip on every step.
     "thigh_n": (448, 685, 798, 1025),
-    "shin_n": (608, 985, 808, 1531),
+        # x1 covers the whole toe: the boot reaches x=890 and the old edge at 808 cut
+    # the front of the foot off square, which read as a boot with no toes.
+"shin_n": (608, 985, 892, 1531),
     "thigh_f": (158, 685, 478, 1025),
     "shin_f": (3, 980, 268, 1531),
 }

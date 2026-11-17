@@ -1511,10 +1511,10 @@ POSE_SETS = {
         # everything else is carried by the lean, the step and the legs.
         "stance": dict(lean=3, head=-1,
                        arm_n=(20, 152, 0), arm_f=(-20, 0, 0),
-                       leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
+                       leg_n=(29.85, -6.01, 88), leg_f=(-20.97, -22.62, 92)),
         "breath": dict(lean=2, head=-2, lift=1,
                        arm_n=(20, 152, 0), arm_f=(-19, 0, 0),
-                       leg_n=(12, -10, 88), leg_f=(-14, 6, 92)),
+                       leg_n=(29.85, -6.01, 88), leg_f=(-20.97, -22.62, 92)),
         "walk_a": dict(lean=6, head=-3, shift=1,
                        arm_n=(20, 152, 0), arm_f=(-22, 0, 0),
                        leg_n=(30, -22, 92), leg_f=(-26, 8, 86)),
