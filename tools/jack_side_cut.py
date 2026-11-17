@@ -111,7 +111,12 @@ BOXES = {
     # the front of the foot off square, which read as a boot with no toes.
 "shin_n": (608, 985, 892, 1531),
     "thigh_f": (158, 685, 478, 1025),
-    "shin_f": (3, 980, 268, 1531),
+    # The far leg is the wide one below the knee: its inner edge is still at
+    # x=304 on row 985 and does not come in past 268 until well down the shin.
+    # Cut at 268 the shin could not cover the bottom corner of the thigh piece,
+    # which laps down to y=1025 with a square cut - so that corner stuck out
+    # past the shin as a flat blue tab of denim behind his knee.
+    "shin_f": (3, 980, 310, 1531),
 }
 
 JOINTS = {
