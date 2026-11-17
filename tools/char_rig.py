@@ -795,7 +795,7 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     hip = (axis[0] * ss + shift * ss, (axis[1] + m["hip_y"] + lift) * ss)
     torso_dir = lean
     shoulder = _seg_up(hip, torso_dir, m["torso_len"] * ss)
-    neck = _seg_up(shoulder, torso_dir * 0.7, m["neck_len"] * ss)
+    neck = _seg_up(shoulder, torso_dir * 0.85, m["neck_len"] * ss)
 
     # shoulders ride the torso's perpendicular
     pa = math.radians(torso_dir)
@@ -871,7 +871,12 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         "thigh_f": hip_f, "shin_f": kn_f, "foot_f": ank_f,
     }
     angles = {
-        "torso": torso_dir, "head": torso_dir * 0.4 + head_a, "pelvis": 0.0,
+        # The head follows almost ALL of the lean, not a fraction of it. Its art
+        # stops at the collar and is cut square there, so a head that holds back
+        # while the torso turns opens a wedge under the jaw - the "second jaw"
+        # every leaned pose had. A few degrees of counter-rotation is what is
+        # left of the human touch.
+        "torso": torso_dir, "head": torso_dir * 0.85 + head_a, "pelvis": 0.0,
         "arm_n": arm_n[0] + torso_dir, "arm_f": arm_f[0] + torso_dir,
         "uarm_n": arm_n[0] + torso_dir,
         "farm_n": arm_n[0] + arm_n[1] + torso_dir,

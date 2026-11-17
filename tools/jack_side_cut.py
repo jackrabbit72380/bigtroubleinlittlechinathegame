@@ -318,114 +318,88 @@ def _thigh_mask(cut, name):
 
 
 def _fill_hole(cut, hole, box):
-    """Replace the near arm's pixels in the torso with the body around them.
+    """Paint the body where the near arm is drawn over it.
 
-    The arm is cut out of the body, which is right - the arm is its own part and
-    is drawn back into the hole in every pose - but a hole is not: on a jab the
-    arm leaves the chest and the stage shows THROUGH him. The photo has no chest
-    under that arm, so the fabric around the hole is carried inward: each empty
-    pixel takes the colour of the nearest body pixel beside it, which gives plain
-    vest where the vest runs beside the arm and skin where the armpit does.
-
-    Two things this has to keep out of the result. The arm's silhouette is not
-    the body's: the raised arm sticks out past his ribs, so filling its whole
-    footprint would leave the body bulging into air where the arm used to be -
-    the torso's side is therefore clipped to the edge it has above and below the
-    arm, interpolated across it. And the arm's soft drop shadow is not body
-    either: the hole is grown a few pixels past the mask so that shadow is filled
-    too, instead of surviving as a brown smear on the chest.
+    The arm is its own part, so the body cannot keep the arm's pixels - swing the
+    arm and a second bicep stays painted on his chest. But the photo has no chest
+    under that arm either, so cut out it leaves a hole the stage shows through on
+    every punch. Behind the arm is his tank top: the gap between the straps is
+    above it and the print is to its left, so the hole is filled with the colour
+    of the cloth AROUND it - weighed on the rim, where the vest is lit the way it
+    is beside the arm - and that fill is blended into the art through a feathered
+    mask, because a fill with its own edges reads as a card pasted on him.
     """
     img = cut.copy()
+    src = img.copy()
     px = img.load()
+    sp = src.load()
     hp = hole.load()
     x0, y0, x1, y1 = box
 
     def solid(x, y):
-        return 0 <= x < img.width and 0 <= y < img.height and px[x, y][3] > 40
+        return 0 <= x < src.width and 0 <= y < src.height and sp[x, y][3] > 40
 
     holes = {(x, y) for y in range(y0, y1) for x in range(x0, x1)
-             if hp[x, y] > 127 and px[x, y][3] > 40}
+             if hp[x, y] > 127 and sp[x, y][3] > 40}
     if not holes:
         return img
 
-    # The body's own side, above and below the arm, carried across it.
+    # The cloth on the rim of the hole: bright and neutral, i.e. the tank top.
+    rim = []
+    for x, y in holes:
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            n = (x + dx, y + dy)
+            if n in holes or not solid(*n):
+                continue
+            r, g, b, a = sp[n]
+            if min(r, g, b) > 120 and max(r, g, b) - min(r, g, b) < 60:
+                rim.append((r + g + b, r, g, b))
+    if rim:
+        rim.sort()
+        # Lit end of the rim, not the middle: the rim's darker half is the arm's
+        # own shadow, and filling with it left a grey cloud on a white vest.
+        _, r, g, b = rim[int(len(rim) * 0.75)]
+        cloth = (r, g, b)
+    else:
+        cloth = (190, 188, 184)
+
+    # The body's own side, above and below the arm, carried across it: the raised
+    # arm sticks out past his ribs, so the fill may not run out where the arm did.
     rows = sorted({y for _, y in holes})
-    top, bot = rows[0] - 1, rows[-1] + 1
+    top_row, bot_row = rows[0] - 1, rows[-1] + 1
     def side(y):
         for x in range(x1 - 1, x0 - 1, -1):
             if hp[x, y] < 128 and solid(x, y):
                 return x
         return None
-    x_top, x_bot = side(max(y0, top)), side(min(y1 - 1, bot))
-    if x_top is None or x_bot is None:
-        x_top = x_bot = None
-
-    # Clip the arm's bulge off the body, and keep the fill inside the same edge.
-    # Only below the armpit: above it the arm IS the shoulder, and his shoulder
-    # cap has to stay part of the body - cut away, a raised arm left a notch of
-    # background between his jaw and his sleeve.
+    x_top, x_bot = side(max(y0, top_row)), side(min(y1 - 1, bot_row))
     clip_from = 470
-    if x_top is not None and bot > top:
-        for y in [r for r in rows if r >= clip_from]:
-            edge = x_top + (x_bot - x_top) * (y - top) / float(bot - top)
+    if x_top is not None and x_bot is not None and bot_row > top_row:
+        for y in rows:
+            if y < clip_from:
+                continue
+            edge = x_top + (x_bot - x_top) * (y - top_row) / float(bot_row - top_row)
             for x in range(int(edge) + 1, x1):
-                px[x, y] = (0, 0, 0, 0)
                 holes.discard((x, y))
 
-    steps = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1))
-    filled = set()
+    # Composite it: a mask of the hole, blurred, over the art. The blur is what
+    # takes the ruled edge off both the fill and the body's cut side.
+    mask = Image.new("L", src.size, 0)
+    mp = mask.load()
+    for x, y in holes:
+        mp[x, y] = 255
+    mask = mask.filter(ImageFilter.GaussianBlur(6))
 
-    def fabric(c):
-        """Tank top: bright and neutral. Skin is warm, denim and the print dark."""
-        r, g, b, a = c
-        return a > 40 and min(r, g, b) > 130 and max(r, g, b) - min(r, g, b) < 55
-
-    def beside(x, y, want_fabric=False):
-        """The first pixel next to this one that already has its colour.
-
-        The vest is preferred even where skin is nearer: the fill is what shows
-        through the arm's own soft edge at rest and what his chest turns into
-        when the arm reaches out, and skin there reads as a bruise over the
-        vest. Skin is still taken where no cloth is within reach at all.
-        """
-        fallback = None
-        for dx, dy in steps:
-            n = (x + dx, y + dy)
-            if n in holes and n not in filled:
-                continue
-            if not solid(*n):
-                continue
-            if fabric(px[n]):
-                return px[n]
-            if fallback is None:
-                fallback = px[n]
-        return None if want_fabric else fallback
-
-    q = deque((x, y) for x, y in holes if beside(x, y, True) or beside(x, y))
-    while q:
-        x, y = q.popleft()
-        if (x, y) in filled:
-            continue
-        src = beside(x, y, True) or beside(x, y)
-        if src is None:
-            continue
-        px[x, y] = (src[0], src[1], src[2], 255)
-        filled.add((x, y))
-        for dx, dy in steps:
-            n = (x + dx, y + dy)
-            if n in holes and n not in filled:
-                q.append(n)
-
-    # Soften it: a nearest-pixel copy leaves streaks that follow the arm's
-    # outline, and streaks read as a smudge on a plain tank top.
-    blur = img.filter(ImageFilter.GaussianBlur(5))
-    bp = blur.load()
-    for x, y in filled:
-        # Colour only: the blur also smooths ALPHA, and the arm's soft edge alpha
-        # carried into the chest makes the fill a translucent band you can see the
-        # stage through - a ghost of the arm across his vest.
-        px[x, y] = (bp[x, y][0], bp[x, y][1], bp[x, y][2], 255)
-    return img
+    shade = Image.new("RGBA", src.size, cloth + (255,))
+    spx = shade.load()
+    for x, y in holes:
+        # A little darker into the armpit, lit along the ribs: a flat tone reads
+        # as paper even when the colour is right.
+        t = max(0.0, min(1.0, (y - rows[0]) / 220.0))
+        k = 0.86 + 0.14 * t
+        spx[x, y] = (int(cloth[0] * k), int(cloth[1] * k), int(cloth[2] * k), 255)
+    shade.putalpha(ImageChops.multiply(shade.getchannel("A"), mask))
+    return Image.alpha_composite(img, shade)
 
 
 def _largest_blob(alpha):
