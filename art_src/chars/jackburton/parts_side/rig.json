@@ -1,5 +1,5 @@
 {
-  "scale": 0.371,
+  "scale": 0.368,
   "canvas": [
     640,
     780
@@ -9,57 +9,57 @@
     700
   ],
   "metrics": {
-    "torso_len": 200.3,
+    "torso_len": 168.9,
     "neck_len": 0.0,
-    "uarm": 94.6,
-    "farm": 38.7,
+    "uarm": 93.9,
+    "farm": 37.2,
     "hand": 34.0,
-    "thigh": 101.3,
-    "shin": 163.4,
-    "ankle_y": -37.8,
-    "hip_half": 29.3,
-    "shoulder_half": 51.6,
+    "thigh": 129.4,
+    "shin": 105.5,
+    "ankle_y": -85.4,
+    "hip_half": 38.6,
+    "shoulder_half": 51.5,
     "arm_socket": [
-      51.6,
-      170.7
+      51.5,
+      150.9
     ],
-    "knee_y": -201.2,
-    "hip_y": -302.5,
-    "shoulder_y": -502.8,
-    "neck_y": -502.8
+    "knee_y": -190.9,
+    "hip_y": -320.3,
+    "shoulder_y": -489.2,
+    "neck_y": -489.2
   },
   "pivots": {
     "head": [
-      146,
-      329
+      189,
+      230
     ],
     "torso": [
-      333,
-      600
+      250,
+      470
     ],
     "arm_n": [
-      40,
-      34
+      70,
+      18
     ],
     "pelvis": [
-      125,
+      147,
       0
     ],
     "thigh_n": [
-      29,
-      0
+      115,
+      10
     ],
     "shin_n": [
-      86,
-      20
+      130,
+      15
     ],
     "thigh_f": [
-      216,
-      0
+      195,
+      10
     ],
     "shin_f": [
-      223,
-      20
+      235,
+      15
     ],
     "prop_knife": [
       39.6,
@@ -73,19 +73,21 @@
   "arm_joints": {
     "n": [
       [
-        160,
-        259
+        215,
+        228
       ],
       [
-        190,
-        159
+        200,
+        128
       ]
     ]
   },
   "hand_pieces": false,
   "welds_off": [
     "thigh_n",
-    "thigh_f"
+    "thigh_f",
+    "head",
+    "torso"
   ],
   "order": [
     "cape",
@@ -110,13 +112,13 @@
     "pelvis": 0.0,
     "arm_f": 0.0,
     "arm_n": 0.0,
-    "thigh_n": 42.92,
-    "shin_n": 2.86,
-    "thigh_f": -26.05,
-    "shin_f": -23.11,
+    "thigh_n": 29.85,
+    "shin_n": -6.01,
+    "thigh_f": -20.97,
+    "shin_f": -22.62,
     "prop": 0.0,
     "holster_gun": -28.0,
     "holster_knife": 172.0
   },
-  "_note": "Side set cut from jack faceing right_cut.png, the hand-cut profile render. Both hips and shoulders are drawn, so the joints carry a half-width. The near arm is cut at the elbow and wrist it is DRAWN bent at (arm_joints), so it folds and reaches; the far one is painted across the chest by the artist and stays part of torso.png, since the chest behind it only exists as that arm."
+  "_note": "Side set cut from jack faceing right.png, the right-facing profile render. Both hips and shoulders are drawn, so the joints carry a half-width. The near arm is cut at the elbow and wrist it is DRAWN bent at (arm_joints), so it folds and reaches; the far one is painted across the chest by the artist and stays part of torso.png, since the chest behind it only exists as that arm."
 }
