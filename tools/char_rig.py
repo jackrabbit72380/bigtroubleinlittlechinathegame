@@ -966,24 +966,36 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 if name.endswith("_f"):
                     pending_bridge.append((part, joints[name], elbow))
                 else:
-                    # A cut arm swings its own deltoid clear of the collar, so
-                    # its weld has to be wider than the arm's painted thickness:
-                    # the air it leaves is the shoulder CAP, which is a third of
-                    # the joint's width again on the outside of the pivot.
-                    _weld(out, joints[name], shoulder, elbow,
-                          _joint_radius(part, ss) * 1.6,
+                    # Down the arm only, NOT up into the collar. A capsule that
+                    # reaches toward the shoulder joint passes through the neck
+                    # and lays a slab of skin across the collar, which reads as a
+                    # swell of shoulder the art never had. The hole a swing opens
+                    # is at the armpit, below the socket, so the weld is a short
+                    # fat capsule from the socket to the middle of the bicep.
+                    _weld(out, joints[name], None, elbow,
+                          _joint_radius(part, ss) * 1.2,
                           _near_rgb(part["image"], *part["pivot"]),
                           feather=1.0 * ss)
             elif name == "head":
-                # The neck: the head is a separate piece and a lean opens a gap
-                # above the collar, which read as a head floating over the
-                # shoulders. Weld it up the neck into the skull.
-                up = (neck[0] + (neck[0] - shoulder[0]) * 0.5,
-                      neck[1] + (neck[1] - shoulder[1]) * 0.5)
-                _weld(out, joints["head"], shoulder, up,
-                      _joint_radius(part, ss) + 2,
-                      _near_rgb(part["image"], *part["pivot"]),
-                      feather=1.0 * ss)
+                # A THROAT, not just a disc at the collar.
+                #
+                # The head is cut off at the collar and there is no neck in the
+                # art below it, so the moment a pose tips the head - and every
+                # low or leaning pose does - the jaw lifts off the chest and air
+                # shows in the gap. A capsule of throat drawn under the head
+                # from the collar up into the skull cannot open: the head's own
+                # art hides all of it except the strip the gap needs.
+                img = part["image"]
+                # Narrow enough to stay inside the throat: a capsule as wide as
+                # a fraction of the head's box bulges out in front of the neck.
+                r = max(4, int(img.width * 0.075 * ss))
+                # Up the NECK, i.e. along the head's own axis, not the canvas's:
+                # a capsule left pointing straight up stays behind the throat
+                # when the head tips and pokes out through the collar instead.
+                up = _seg(joints["head"], 180.0 + angles.get("head", 0.0),
+                          r * 4.0)
+                _weld(out, joints["head"], None, up, r,
+                      _near_rgb(img, *part["pivot"]), feather=1.5 * ss)
             elif name in links and not name.startswith("foot") \
                     and name not in rig.welds_off:
                 par, ch = links[name]
@@ -1004,7 +1016,7 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         _place(out, part, angles.get(name, 0.0), joints[name])
         if name == "torso" and pending_bridge:
             for p, j, elbow in pending_bridge:
-                _weld(out, j, shoulder, elbow, _joint_radius(p, ss),
+                _weld(out, j, None, elbow, _joint_radius(p, ss),
                       _near_rgb(p["image"], *p["pivot"]), feather=1.0 * ss)
             pending_bridge.clear()
 
@@ -1459,14 +1471,17 @@ POSE_SETS = {
         "upper": dict(lean=-6, lift=-12, shift=2, head=3,
                       arm_n=(52, 110, 0), arm_f=(-20, 0, 0),
                       leg_n=(38, -46, 90), leg_f=(-30, 24, 92)),
-        "crouch": dict(lean=14, head=6,
-                       arm_n=(34, 146, 0), arm_f=(-19, 0, 0),
+        # The crouch guard stays LOW. Swung up as far as a standing guard it puts
+        # his fist beside his jaw, where at sprite size it reads as a piece of
+        # head floating next to the skull rather than as a hand.
+        "crouch": dict(lean=14, head=4,
+                       arm_n=(14, 146, 0), arm_f=(-19, 0, 0),
                        leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
         "jump": dict(lean=7, head=-3, lift=-20, ground=False,
                      arm_n=(45, 120, 0), arm_f=(-22, 0, 0),
                      leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
-        "boot": dict(lean=-12, head=5, shift=-5,
-                     arm_n=(8, 140, 0), arm_f=(-17, 0, 0),
+        "boot": dict(lean=-12, head=3, shift=-5,
+                     arm_n=(2, 140, 0), arm_f=(-17, 0, 0),
                      leg_n=(84, -6, 60), leg_f=(-16, 10, 92)),
         "low_kick": dict(lean=-5, head=3, lift=-22,
                          arm_n=(14, 145, 0), arm_f=(-20, 0, 0),

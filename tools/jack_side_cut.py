@@ -271,6 +271,50 @@ def _torso_mask(cut):
     return m
 
 
+def _close_mask(m):
+    """Fill the holes inside a mask.
+
+    The arm mask is grown by walking the vest in from the box's border, and a
+    bright highlight on the forearm passes for vest: the walk eats into the arm
+    and leaves islands of BACKGROUND inside it. Those holes are not vest, they
+    are arm - left unfilled, the pixels inside them stay in the torso, and the
+    drawn guard arm hangs there as a ghost of its own forearm on every punch.
+    Only holes are closed, so the mask's outer edge is untouched.
+    """
+    w, h = m.size
+    px = m.load()
+    seen = bytearray(w * h)
+    q = deque()
+    for x in range(w):
+        for y in (0, h - 1):
+            if px[x, y] < 128 and not seen[y * w + x]:
+                seen[y * w + x] = 1
+                q.append((x, y))
+    for y in range(h):
+        for x in (0, w - 1):
+            if px[x, y] < 128 and not seen[y * w + x]:
+                seen[y * w + x] = 1
+                q.append((x, y))
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if not (0 <= nx < w and 0 <= ny < h):
+                continue
+            i = ny * w + nx
+            if seen[i] or px[nx, ny] >= 128:
+                continue
+            seen[i] = 1
+            q.append((nx, ny))
+    out = m.copy()
+    op = out.load()
+    for y in range(h):
+        for x in range(w):
+            if not seen[y * w + x] and px[x, y] < 128:
+                op[x, y] = 255
+    return out
+
+
 def _head_mask(cut):
     """The head, the mullet and the throat - not the shoulder it stands on.
 
@@ -281,8 +325,15 @@ def _head_mask(cut):
     x0, y0, x1, y1 = BOXES["head"]
     m = Image.new("L", cut.size, 0)
     d = ImageDraw.Draw(m)
+    # The bottom edge must reach past the body's own cut at the collar (the torso
+    # is trimmed at NECK[1] - 8), or the strip between the two cuts is a hole, and
+    # whatever fills it - the throat weld - shows as a lump of neck on his chest.
     d.polygon([(x0, y0), (x1 - 1, y0), (x1 - 1, y1 - 1), (NECK[0] - 46, y1 - 1),
                (x0, NECK[1] - 81)], fill=255)
+    # Hard, not feathered. A soft bottom edge is a SEE-THROUGH bottom edge: the
+    # skull's last few rows are then part alpha, and wherever the body behind them
+    # is not solid the stage shows through as a dark fringe under his jaw. The
+    # body keeps its own jaw, so the head's cut sits over solid pixels anyway.
     return m
 
 
@@ -392,12 +443,29 @@ def _fill_hole(cut, hole, box):
 
     shade = Image.new("RGBA", src.size, cloth + (255,))
     spx = shade.load()
+    # Row by row, take the cloth the vest has on that same row to the left of the
+    # hole: the light falls across his chest, so a single flat tone reads as a
+    # card however well its average matches. Darker where the row is darker.
+    row_col = {}
+    for y in rows:
+        tot, n = [0, 0, 0], 0
+        for x in range(x0, min(x1, x0 + 440), 3):
+            if (x, y) in holes or not solid(x, y):
+                continue
+            r, g, b, a = sp[x, y]
+            if min(r, g, b) > 120 and max(r, g, b) - min(r, g, b) < 60:
+                tot[0] += r
+                tot[1] += g
+                tot[2] += b
+                n += 1
+        row_col[y] = tuple(v // n for v in tot) if n >= 4 else cloth
     for x, y in holes:
-        # A little darker into the armpit, lit along the ribs: a flat tone reads
-        # as paper even when the colour is right.
-        t = max(0.0, min(1.0, (y - rows[0]) / 220.0))
-        k = 0.86 + 0.14 * t
-        spx[x, y] = (int(cloth[0] * k), int(cloth[1] * k), int(cloth[2] * k), 255)
+        c = row_col[y]
+        spx[x, y] = (c[0], c[1], c[2], 255)
+    # Feathering the mask pushes its soft edge past the body's own outline, so
+    # the fill would paint cloth into the air beside his chest - a pale smear
+    # along his ribs in every pose. Clip it to the silhouette it is filling.
+    mask = ImageChops.multiply(mask, src.getchannel("A"))
     shade.putalpha(ImageChops.multiply(shade.getchannel("A"), mask))
     return Image.alpha_composite(img, shade)
 
@@ -457,6 +525,10 @@ def _part(cut, name, mask=None):
         solid = ImageChops.multiply(solid, mask.crop(box))
     # Keep only the biggest island, then put the art's soft edge back inside it.
     alpha = ImageChops.multiply(soft, _largest_blob(solid))
+    if mask is not None:
+        # ... and keep the mask's own softness. The island mask is a threshold, so
+        # on its own it re-hardens a feathered cut into a staircase edge.
+        alpha = ImageChops.multiply(alpha, mask.crop(box))
     bb = alpha.getbbox() or (0, 0, 1, 1)
     # The joint has to stay inside the piece or its pivot cannot be expressed in
     # part pixels; a lap that starts above the joint would otherwise be clamped
@@ -496,7 +568,7 @@ def build():
     # its own copy showed a second bicep on the chest wherever the arm swung
     # away, and painting that copy over with cloth only traded it for a pale
     # patch with a hard edge. He has air there, and the arm is drawn into it.
-    arm = _arm_mask(cut, BOXES["arm_n"])
+    arm = _close_mask(_arm_mask(cut, BOXES["arm_n"]))
     # The body the arm is drawn over does not exist in the photo, so the torso is
     # cut from a copy of the art whose arm has been replaced by the fabric around
     # it. The arm part still covers its own hole exactly at rest.
@@ -587,7 +659,7 @@ def build():
         # shoulder is the same story from the other side: the arm's art already
         # covers its own socket, so the weld has no air to close and instead
         # washes a skin tinted sash over the soft edge of his vest.
-        "welds_off": ["thigh_n", "thigh_f", "uarm_n"],
+        "welds_off": ["thigh_n", "thigh_f"],
         "order": ORDER,
         "angles": {"head": 0.0, "torso": 0.0, "pelvis": 0.0,
                    "arm_f": 0.0, "arm_n": 0.0,

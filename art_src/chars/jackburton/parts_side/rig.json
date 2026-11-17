@@ -85,8 +85,7 @@
   "hand_pieces": false,
   "welds_off": [
     "thigh_n",
-    "thigh_f",
-    "uarm_n"
+    "thigh_f"
   ],
   "order": [
     "cape",
