@@ -24,8 +24,12 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHAR = "jackburton"
+# The FIGURE is no longer cut here: tools/jack_front_cut.py measures the
+# forward-facing render (jack_faceing_farward1.png) for that. This tool stays for
+# the turnaround's props - the only art that has the pistol and the knife - and
+# keeps the measured constants it always had.
 SOURCE = os.path.join(ROOT, "concept_art", "fighters", "jack_burton",
-                      "jack_faceing_farward1.png")
+                      "bernardo-mercurio-jack-turnable.jpg")
 OUT = os.path.join(ROOT, "art_src", "chars", CHAR, "parts")
 WORK = os.path.join(ROOT, "art_src", "chars", CHAR, "work")
 
@@ -243,7 +247,8 @@ def main():
         if dropped:
             print(f"dropped {dropped} stray component(s) from the crop")
 
-    art.save(os.path.join(WORK, "front.png"))
+    # its own working copy: jack_front_cut.py owns work/front.png
+    art.save(os.path.join(WORK, "front_turnaround.png"))
     print(f"front cutout {art.size}, background {bg}")
 
     parts, pivots, angles = {}, {}, {}
