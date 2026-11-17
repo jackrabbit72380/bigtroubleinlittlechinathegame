@@ -70,24 +70,20 @@
       1
     ]
   },
-  "arm_joints": {
-    "n": [
-      [
-        215,
-        228
-      ],
-      [
-        200,
-        128
-      ]
-    ]
-  },
+  "arm_joints": null,
+  "one_piece_arms": true,
   "hand_pieces": false,
   "welds_off": [
     "thigh_n",
     "thigh_f",
     "head",
-    "torso"
+    "torso",
+    "arm_n",
+    "arm_f",
+    "uarm_n",
+    "farm_n",
+    "uarm_f",
+    "farm_f"
   ],
   "order": [
     "cape",

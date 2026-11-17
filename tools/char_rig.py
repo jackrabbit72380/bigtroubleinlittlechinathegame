@@ -342,7 +342,11 @@ def load_rig(char_id, view=None):
     # because they are only meaningful for the art they were measured on: the
     # front set and the profile set are different pictures of the same man, and
     # the shared table below cuts the profile arm across the biceps.
-    jt = cfg.get("arm_joints") or ARM_JOINTS.get(char_id)
+    # A set may say it keeps each arm as ONE piece. The shared table below would
+    # otherwise cut it at the elbow (and so would any rig that states its own
+    # joints), which is what this set explicitly does not want.
+    jt = None if cfg.get("one_piece_arms") else (
+        cfg.get("arm_joints") or ARM_JOINTS.get(char_id))
     if jt:
         for side in ("n", "f"):
             one = "arm_" + side
@@ -1028,7 +1032,11 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                     # neck.
                     armpit = (joints[name][0] + (hip[0] - joints[name][0]) * 0.45,
                               joints[name][1] + (hip[1] - joints[name][1]) * 0.30)
-                    _weld(out, joints[name], armpit, elbow,
+                    # To the armpit and no further. Run on to the elbow as well
+                    # and the capsule lies along the forearm, and its tint - lit
+                    # skin, sampled at the shoulder - paints the arm a flat pale
+                    # orange over its own shading on every straight punch.
+                    _weld(out, joints[name], armpit, None,
                           _joint_radius(part, ss) * 1.2,
                           _near_rgb(part["image"], *part["pivot"]),
                           feather=1.0 * ss)
@@ -1511,10 +1519,10 @@ POSE_SETS = {
         # The punches: the arm unfolds out in front of the shoulder, the far one
         # tucks back, and the lean puts his weight behind it.
         "jab": dict(lean=7, shift=2, head=-1,
-                    arm_n=(80, 12, 0), arm_f=(-22, 0, 0),
+                    arm_n=(38, 0, 0), arm_f=(-22, 0, 0),
                     leg_n=(20, -14, 88), leg_f=(-18, 8, 92)),
         "cross": dict(lean=12, shift=4, head=-3,
-                      arm_n=(88, 4, 0), arm_f=(-23, 0, 0),
+                      arm_n=(46, 0, 0), arm_f=(-23, 0, 0),
                       leg_n=(30, -20, 88), leg_f=(-24, 10, 94)),
         "upper": dict(lean=-6, lift=-12, shift=2, head=3,
                       arm_n=(52, 110, 0), arm_f=(-20, 0, 0),
@@ -1535,7 +1543,7 @@ POSE_SETS = {
                          arm_n=(14, 145, 0), arm_f=(-20, 0, 0),
                          leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
         "gun_aim": dict(lean=4, head=-1,
-                        arm_n=(70, 20, 0), arm_f=(-21, 0, 0),
+                        arm_n=(34, 0, 0), arm_f=(-21, 0, 0),
                         leg_n=(16, -14, 88), leg_f=(-16, 8, 92)),
         "gun_fire": dict(lean=1, head=-2, shift=-2,
                          arm_n=(74, 8, 0), arm_f=(-22, 0, 0),
@@ -1544,7 +1552,7 @@ POSE_SETS = {
                       arm_n=(10, 160, 0), arm_f=(-19, 0, 0),
                       leg_n=(18, -14, 88), leg_f=(-18, 8, 92)),
         "knife_throw": dict(lean=14, shift=3, head=-4,
-                            arm_n=(86, 6, 0), arm_f=(-23, 0, 0),
+                            arm_n=(44, 0, 0), arm_f=(-23, 0, 0),
                             leg_n=(26, -18, 88), leg_f=(-22, 10, 92)),
         "block": dict(lean=-3, lift=-3, head=4,
                       arm_n=(55, 128, 0), arm_f=(-22, 0, 0),

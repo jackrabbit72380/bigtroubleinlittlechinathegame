@@ -86,7 +86,10 @@ BOXES = {
     # inner edge left a hole at the armpit the moment the arm swung forward, and
     # starting at 240 left a notch of background behind the jaw, because the head
     # part stops at the throat.
-    "torso": (208, 225, 628, 695),
+    # right edge past the whole deltoid: at 628 the box cut the shoulder cap in
+    # half, and the arm - which swings around that cap - left the cut showing as
+    # a gap of background between his vest and his own bicep.
+    "torso": (208, 225, 704, 695),
     # THROUGH the shoulder cap, so the piece owns the deltoid it swings from. Cut
     # under the cap the arm had nothing over its socket, and every pose that
     # swung it out left the bicep floating beside a bare shoulder.
@@ -648,7 +651,7 @@ def build():
     # covers the joint at every angle. Without it the arm's drawn shoulder cap
     # swings away from the body's and leaves a gap between bicep and vest on every
     # punch, which is what made the arm look pinned on rather than joined.
-    PAD = 84
+    PAD = 104
     pad = Image.new("L", cut.size, 0)
     ImageDraw.Draw(pad).ellipse([SHOULDER_N[0] - PAD, SHOULDER_N[1] - PAD,
                                  SHOULDER_N[0] + PAD, SHOULDER_N[1] + PAD],
@@ -672,9 +675,9 @@ def build():
     skin = ImageChops.multiply(arm, _warm_mask(cut, BOXES["arm_n"]))
     ax0, ay0, ax1, ay1 = BOXES["arm_n"]
     below = Image.new("L", cut.size, 0)
-    ImageDraw.Draw(below).rectangle([ax0, SHOULDER_N[1] + 60, ax1, ay1], fill=255)
+    ImageDraw.Draw(below).rectangle([ax0, SHOULDER_N[1] + 96, ax1, ay1], fill=255)
     skin = ImageChops.multiply(skin, below)
-    body = _fill_hole(cut, skin.filter(ImageFilter.MaxFilter(5)), BOXES["torso"])
+    body = cut  # no fill: see NOTE below
 
     parts, pivots, offsets = {}, {}, {}
     for name in BOXES:
@@ -753,7 +756,12 @@ def build():
         "axis": [300, 700],
         "metrics": metrics,
         "pivots": {k: [round(v[0], 1), round(v[1], 1)] for k, v in pivots.items()},
-        "arm_joints": arm_joints,
+        # NO arm_joints: the arm is cut and posed as ONE piece. Cut at the elbow
+        # it came apart - the forearm piece drew pale over the bicep on every
+        # extended punch - and the drawn guard already has the elbow bent, so a
+        # second joint buys nothing the art does not already show.
+        "arm_joints": None,
+        "one_piece_arms": True,
         "hand_pieces": HAND_PIECES,
         # Both thighs are cut with a lap disc on their own hip and the hip band
         # sits between them, so the hip joints have no air to weld: welded, the
@@ -769,7 +777,8 @@ def build():
         # across that cut has nothing to fill - and welded it paints a pale
         # capsule over the joint that stretches into a ghost of the arm the
         # moment the elbow bends.
-        "welds_off": ["thigh_n", "thigh_f", "head", "torso"],
+        "welds_off": ["thigh_n", "thigh_f", "head", "torso",
+                      "arm_n", "arm_f", "uarm_n", "farm_n", "uarm_f", "farm_f"],
         "order": ORDER,
         "angles": {"head": 0.0, "torso": 0.0, "pelvis": 0.0,
                    "arm_f": 0.0, "arm_n": 0.0,
