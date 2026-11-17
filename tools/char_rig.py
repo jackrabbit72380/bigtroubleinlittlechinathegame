@@ -1546,9 +1546,16 @@ POSE_SETS = {
         # The crouch guard stays LOW. Swung up as far as a standing guard it puts
         # his fist beside his jaw, where at sprite size it reads as a piece of
         # head floating next to the skull rather than as a hand.
+        # The far thigh turns only as far as the art can carry. The set is cut
+        # from one narrow-stance guard, so the far leg's inner face is painted as
+        # the side of his leg in that stance: swing that thigh 50 degrees off the
+        # angle it is drawn at and a flat, brightly lit panel of denim turns to
+        # the camera between his legs - the blue paint he saw behind the knee in
+        # the crouch. The depth comes from the knee instead, which the shin can
+        # fold without exposing anything, and the hip drops as far as before.
         "crouch": dict(lean=14, head=4,
                        arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
-                       leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
+                       leg_n=(38, -48, 86), leg_f=(10, -66, 94)),
         "jump": dict(lean=7, head=-3, lift=-20, ground=False,
                      arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
                      leg_n=(38, -74, 70), leg_f=(8, 26, 96)),

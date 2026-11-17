@@ -77,6 +77,20 @@ SOLE = 1517
 HIP_MID = (458, 695)
 
 # A part box clips one limb out of the cut; the joint is where it hangs from.
+# How far a shin laps over its knee, in art pixels. A shin box starts a little
+# above the joint so the two pieces overlap at rest, and that overlap is a
+# straight edge cut through the jeans: they are the same pixels in the same
+# place while the leg stands as drawn, so nothing shows, but a bent knee swings
+# the thigh's cut and the shin's cut apart and the thigh's face of the cut
+# stands out behind the knee as a flat tab of denim. A disc centred ON the joint
+# is the one shape a rotation about that joint cannot move, so the shin's own
+# denim covers the fold at every angle a pose can ask for.
+# How far the thigh stops short of the knee, in art pixels, so that the shin's
+# lap (which is the bigger circle) covers its edge. See _thigh_mask.
+KNEE_CUT = 38
+KNEE_LAP = 46
+
+
 BOXES = {
     # stops under the chin: the tank strap starts around y=286 and a head part
     # that clips it pastes a vest shoulder under his jaw when the head turns
@@ -109,14 +123,16 @@ BOXES = {
     "thigh_n": (448, 685, 798, 1025),
         # x1 covers the whole toe: the boot reaches x=890 and the old edge at 808 cut
     # the front of the foot off square, which read as a boot with no toes.
-"shin_n": (608, 985, 892, 1531),
+    # The top stops KNEE_LAP above the knee, because the piece carries a disc of
+    # that radius on the joint (see _shin_mask).
+    "shin_n": (608, KNEE_N[1] - KNEE_LAP, 892, 1531),
     "thigh_f": (158, 685, 478, 1025),
     # The far leg is the wide one below the knee: its inner edge is still at
     # x=304 on row 985 and does not come in past 268 until well down the shin.
     # Cut at 268 the shin could not cover the bottom corner of the thigh piece,
     # which laps down to y=1025 with a square cut - so that corner stuck out
     # past the shin as a flat blue tab of denim behind his knee.
-    "shin_f": (3, 980, 310, 1531),
+    "shin_f": (3, KNEE_F[1] - KNEE_LAP, 310, 1531),
 }
 
 JOINTS = {
@@ -419,10 +435,37 @@ def _thigh_mask(cut, name):
     # or it is the band's static denim that shows when the leg swings.
     lap = 30 if name == "thigh_n" else 24
     d.ellipse([hip[0] - lap, hip[1] - lap, hip[0] + lap, hip[1] + lap], fill=255)
+    # The bottom is a circle about the KNEE, not the straight line of the box.
+    # That line is a cut across the jeans: hidden behind the shin while the leg
+    # stands as drawn, but a bent knee swings the two cuts apart and the thigh's
+    # face of it is a flat slab of denim standing out behind the knee - the
+    # blue paint he had in the crouch. A circle about the knee cannot move when
+    # the shin turns about that same point, and the shin laps over it with a
+    # bigger one (KNEE_LAP), so the seam stays under denim at every angle.
+    knee = JOINTS["shin_" + name[-1]]
+    d.ellipse([knee[0] - KNEE_CUT, knee[1] - KNEE_CUT,
+               knee[0] + KNEE_CUT, knee[1] + KNEE_CUT], fill=0)
     if name == "thigh_n":
         d.rectangle([0, 0, CROTCH_X, cut.height], fill=0)
     else:
         d.rectangle([CROTCH_X, 0, cut.width, cut.height], fill=0)
+    return m
+
+
+def _shin_mask(cut, name):
+    """The shin from its knee down, lapped over the knee with a disc.
+
+    See KNEE_LAP: the box alone is a straight cut across the jeans, and a bent
+    knee opens it. The disc is centred on the joint the piece pivots on, so it
+    turns with the shin and still covers exactly the same ground.
+    """
+    box = BOXES[name]
+    knee = JOINTS[name]
+    m = Image.new("L", cut.size, 0)
+    d = ImageDraw.Draw(m)
+    d.rectangle([box[0], box[1], box[2] - 1, box[3] - 1], fill=255)
+    d.ellipse([knee[0] - KNEE_LAP, knee[1] - KNEE_LAP,
+               knee[0] + KNEE_LAP, knee[1] + KNEE_LAP], fill=255)
     return m
 
 
@@ -731,6 +774,8 @@ def build():
             mask = head_cut
         elif name in ("thigh_n", "thigh_f"):
             mask = _thigh_mask(cut, name)
+        elif name in ("shin_n", "shin_f"):
+            mask = _shin_mask(cut, name)
         src = body if name == "torso" else cut
         parts[name], pivots[name], offsets[name] = _part(src, name, mask)
 
