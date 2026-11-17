@@ -89,7 +89,7 @@ BOXES = {
     # right edge past the whole deltoid: at 628 the box cut the shoulder cap in
     # half, and the arm - which swings around that cap - left the cut showing as
     # a gap of background between his vest and his own bicep.
-    "torso": (208, 150, 704, 695),
+    "torso": (208, 0, 895, 695),
     # THROUGH the shoulder cap, so the piece owns the deltoid it swings from. Cut
     # under the cap the arm had nothing over its socket, and every pose that
     # swung it out left the bicep floating beside a bare shoulder.
@@ -275,15 +275,11 @@ def _torso_mask(cut, head_mask=None):
     cut_at = 738
     m = Image.new("L", cut.size, 0)
     ImageDraw.Draw(m).rectangle([x0, y0, x1 - 1, cut_at - 1], fill=255)
-    if head_mask is not None:
-        # Only the SKULL comes out of the body: the head's face and hair are a
-        # hole the head part fills exactly, so the seam between them is nothing.
-        # The throat is not taken out - it is skin over skin, and the head's own
-        # throat band ends on a straight line, so subtracting all of it left that
-        # line standing on his chest as soon as he turned his head.
-        skull = Image.new("L", cut.size, 0)
-        ImageDraw.Draw(skull).rectangle([0, 0, cut.width - 1, 214], fill=255)
-        m = ImageChops.subtract(m, ImageChops.multiply(head_mask, skull))
+    # The body keeps its own head, and the head piece is drawn over it. Cutting a
+    # head shaped hole in the body was tried twice - exact, and with a lap - and
+    # both leave something: the hole shows as a black crescent at the nape the
+    # moment he turns his head, and growing the head to cover it drags the art's
+    # shadow ring with it. Skin over skin is invisible; a hole in him is not.
     # Fade the last few rows instead of stopping dead: a hard cut through denim
     # is a one pixel bright seam across his belt in every pose.
     feather = 6
@@ -341,7 +337,7 @@ def _close_mask(m):
     return out
 
 
-def _head_mask(cut):
+def _head_mask(cut, grow=0):
     """The head, the mullet and the throat - and nothing that is cloth.
 
     The box runs left past the jaw to keep the hair, which also takes in the top
@@ -374,6 +370,16 @@ def _head_mask(cut):
             if a > 40 and (r - b >= 18 or (max(r, g, b) < 120 and r > b + 8)):
                 fp[x, y] = 255
     flesh = _close_mask(flesh)
+    # The head laps over the body's own cut: the body is cut away in the shape of
+    # this mask, so at rest the seam is nothing, but the head turns a couple of
+    # degrees in most poses and the body does not, which is enough to open a
+    # crescent of background along his jaw. Grown by a few pixels the head covers
+    # the edge of the hole at any small angle, and the ring it gains is skin and
+    # hair either way, because only those pass the test. `grow` is 0 for the hole
+    # the body is cut with, so the body is never cut away further than the head
+    # itself reaches - that left a dark tab of background at the nape.
+    if grow:
+        m = m.filter(ImageFilter.MaxFilter(grow))
     # No feather on the bottom edge. It used to fade from y=196 - the MOUTH - so
     # the chin and the whole throat came out half transparent and his head ended
     # at the jaw: a hard cut across the neck is exactly what that looked like.
@@ -706,14 +712,14 @@ def build():
     # always the same pixels in the same place and there is nothing to ghost.
     body = cut
 
-    head_cut = _head_mask(cut)
+    head_cut = _head_mask(cut)               # the part
     parts, pivots, offsets = {}, {}, {}
     for name in BOXES:
         mask = None
         if name == "arm_n":
             mask = arm
         elif name == "torso":
-            mask = _torso_mask(cut, head_cut)
+            mask = _torso_mask(cut)
         elif name == "pelvis":
             mask = _pelvis_mask(cut)
         elif name == "head":
@@ -730,6 +736,21 @@ def build():
             parts["prop_knife"] = Image.open(os.path.join(OUT, keep)).convert("RGBA")
             pivots["prop_knife"] = [round(parts["prop_knife"].width * 0.55, 1),
                                     round(parts["prop_knife"].height * 0.08, 1)]
+    # No arm part. It is drawn on the body, and a rigid arm on a body that leans
+    # cannot be a separate piece: the same angle about the hip (the body) and
+    # about the socket (the arm) are the same rotation around two different
+    # points, which is a rotation plus a slide - so the piece sat a few pixels off
+    # its own copy and the two upper arms showed at once. What is left is nothing
+    # to draw: the body already has him.
+    parts["arm_n"] = Image.new("RGBA", (2, 2), (0, 0, 0, 0))
+    pivots["arm_n"] = [1, 1]
+    # No head part either. A head on a body it is welded to is either doubled -
+    # the piece turned a few degrees off its own drawn face - or cut with a hole
+    # that shows as black at the nape. Drawn as one piece with the body, his head
+    # is simply his head, and it cannot be cut off at the neck because nothing
+    # cuts it.
+    parts["head"] = Image.new("RGBA", (2, 2), (0, 0, 0, 0))
+    pivots["head"] = [1, 1]
     parts["prop"] = Image.new("RGBA", (2, 2), (0, 0, 0, 0))
     pivots["prop"] = [1, 1]
 
