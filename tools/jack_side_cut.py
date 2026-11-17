@@ -163,12 +163,14 @@ def _trim_white_collar(part):
     """
     px = part.load()
     w, h = part.size
+    # Real white only: saturation under 26 and every channel over 150. The old
+    # test took anything merely neutral, which is most of the lit skin of a neck,
+    # and punched holes in it - the torso's copy of that skin showed through them
+    # slightly displaced and the seam came out as brickwork of pale rectangles.
     for y in range(int(h * 0.60), h):
         for x in range(w):
             r, g, b, a = px[x, y]
-            # Fabric, not hair: the vest is neutral grey-white in both its lit
-            # and its shaded parts, the hair is warm and the throat is skin.
-            if a and max(r, g, b) - min(r, g, b) < 46 and min(r, g, b) > 60:
+            if a and max(r, g, b) - min(r, g, b) < 26 and min(r, g, b) > 150:
                 px[x, y] = (0, 0, 0, 0)
     return part
 
@@ -332,8 +334,14 @@ def _head_mask(cut):
     # corner. That corner holds his far shoulder and the front of his tank top,
     # and they swung with his head: a slab of shoulder and vest pivoting beside
     # his jaw, which is most of what "his head is detached" looks like.
-    d.polygon([(x0, y0), (x1 - 1, y0), (x1 - 1, 232), (656, 292),
-               (NECK[0], 332), (x0, NECK[1] - 81)], fill=255)
+    # Face, jaw, then DOWN THE NECK COLUMN and back up the mullet. The neck has to
+    # stay with the head - it is the only art that reaches from the jaw to the
+    # chest, and cutting at the jaw line leaves the skull floating over a gap -
+    # but the trapezius behind the neck is shoulder and must not come with it, or
+    # a few degrees of head turn drags the shoulder along and the head looks
+    # pulled off the body.
+    d.polygon([(x0, y0), (x1 - 1, y0), (x1 - 1, 226), (660, 248),
+               (620, 302), (600, 332), (556, 332), (x0, 300)], fill=255)
     # The bottom edge fades out over the last rows instead of ending on a line.
     # That cut runs across the throat, the most visible skin on the figure, and a
     # straight edge there slides over the body's own neck as a step the moment he

@@ -100,7 +100,7 @@ RELATIVE = ("arm_n", "arm_f")
 # How hard a piece shadows the body where it overlaps it, 0..1. The head and the
 # arm are the two seams that read as "detached"; the legs are welded and only
 # need a hint.
-CONTACT = {"head": 0.5, "uarm_n": 0.34, "farm_n": 0.26, "uarm_f": 0.3,
+CONTACT = {"head": 0.28, "uarm_n": 0.34, "farm_n": 0.26, "uarm_f": 0.3,
            "farm_f": 0.24, "arm_n": 0.3, "arm_f": 0.26,
            "thigh_n": 0.14, "thigh_f": 0.12}
 
@@ -660,6 +660,24 @@ def _join_pieces(img, minpx=40):
     return out
 
 
+def _skin_rgb(img):
+    """The lit skin of a part: bright, warm, low blue."""
+    tot = [0, 0, 0]
+    n = 0
+    w, h = img.size
+    for y in range(max(0, int(h * 0.75)), h):
+        for x in range(0, w, 2):
+            r, g, b, a = img.getpixel((x, y))
+            if a > 200 and r > 120 and r > g > b and r - b > 18:
+                tot[0] += r
+                tot[1] += g
+                tot[2] += b
+                n += 1
+    if not n:
+        return (214, 168, 138)
+    return tuple(v // n for v in tot)
+
+
 def _contact(dst, added, strength=0.35, radius=2.4, ss=1.0):
     """Shade the body where a piece meets it.
 
@@ -1015,31 +1033,13 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                           _near_rgb(part["image"], *part["pivot"]),
                           feather=1.0 * ss)
             elif name == "head":
-                # A THROAT, not just a disc at the collar.
-                #
-                # The head is cut off at the collar and there is no neck in the
-                # art below it, so the moment a pose tips the head - and every
-                # low or leaning pose does - the jaw lifts off the chest and air
-                # shows in the gap. A capsule of throat drawn under the head
-                # from the collar up into the skull cannot open: the head's own
-                # art hides all of it except the strip the gap needs.
-                img = part["image"]
-                # Narrow enough to stay inside the throat: a capsule as wide as
-                # a fraction of the head's box bulges out in front of the neck.
-                r = max(5, int(img.width * 0.09 * ss))
-                # Up the NECK, i.e. along the head's own axis, not the canvas's:
-                # a capsule left pointing straight up stays behind the throat
-                # when the head tips and pokes out through the collar instead.
-                # Start it a full radius ABOVE the collar. Anchored on the joint
-                # its own rounded end hangs below the collar line, out of the
-                # neck and onto the chest, where it reads as a lump of skin
-                # stuck to his vest in every pose.
-                ha = 180.0 + angles.get("head", 0.0)
-                base = _seg((joints["head"][0] - r * 0.6, joints["head"][1]),
-                            ha, r * 1.15)
-                up = _seg(base, ha, r * 2.4)
-                _weld(out, base, None, up, r,
-                      _near_rgb(img, *part["pivot"]), feather=1.5 * ss)
+                # NO weld. The neck column is cut WITH the head and runs down
+                # past the top of the torso, so the two pieces already overlap by
+                # the whole collar and there is no air between them to fill. A
+                # capsule welded in there anyway paints patches of invented skin
+                # over the neck - the brickwork that was left under his jaw - and
+                # the head reads as a separate chunk sitting on the body.
+                pass
             elif name in links and not name.startswith("foot") \
                     and name not in rig.welds_off:
                 par, ch = links[name]
