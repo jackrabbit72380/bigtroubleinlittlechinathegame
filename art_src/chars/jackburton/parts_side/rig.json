@@ -76,6 +76,8 @@
   "welds_off": [
     "thigh_n",
     "thigh_f",
+    "shin_n",
+    "shin_f",
     "head",
     "torso",
     "arm_n",

@@ -826,7 +826,13 @@ def build():
         # across that cut has nothing to fill - and welded it paints a pale
         # capsule over the joint that stretches into a ghost of the arm the
         # moment the elbow bends.
-        "welds_off": ["thigh_n", "thigh_f", "head", "torso",
+        # The shins are off too. A weld is a capsule through the joint filled
+        # with the limb's own colour, and for a shin that capsule runs down past
+        # the ankle; clipped to the air around the boot it painted a rounded pad
+        # of boot leather under the sole and out past the toe. Jack's boot is
+        # drawn whole - knee to sole in one piece - so there is no seam for a
+        # weld to close, and the pad was the second boot standing behind his.
+        "welds_off": ["thigh_n", "thigh_f", "shin_n", "shin_f", "head", "torso",
                       "arm_n", "arm_f", "uarm_n", "farm_n", "uarm_f", "farm_f"],
         "order": ORDER,
         "angles": {"head": 0.0, "torso": 0.0, "pelvis": 0.0,
