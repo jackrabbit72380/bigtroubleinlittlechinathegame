@@ -424,8 +424,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                     img = art_poses[pose_name].copy()
                 else:
                     img = char_rig.render(use, pose_table[pose_name])
+                # BOX, not LANCZOS. This is a downscale by about half, and
+                # Lanczos rings on a hard edge - every boot and every jeans seam
+                # gets a pale halo of itself a pixel out, which at game size reads
+                # as a second leg standing behind his leg. Box averaging has no
+                # ringing: it only mixes the pixels that are actually there.
                 img = img.resize((max(1, round(img.width * kk)),
-                                  max(1, round(img.height * kk))), Image.LANCZOS)
+                                  max(1, round(img.height * kk))), Image.BOX)
                 axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
                 local[pose_name] = len(local)
                 sprites.append({"group": number, "number": local[pose_name],
@@ -455,8 +460,13 @@ def bake(char_id, target_height=TARGET_HEIGHT):
                 use = side_rig if side else front_rig
                 kk = fit["side" if side else "front"]
                 img = char_rig.render(use, pose_table[pose])
+                # BOX, not LANCZOS. This is a downscale by about half, and
+                # Lanczos rings on a hard edge - every boot and every jeans seam
+                # gets a pale halo of itself a pixel out, which at game size reads
+                # as a second leg standing behind his leg. Box averaging has no
+                # ringing: it only mixes the pixels that are actually there.
                 img = img.resize((max(1, round(img.width * kk)),
-                                  max(1, round(img.height * kk))), Image.LANCZOS)
+                                  max(1, round(img.height * kk))), Image.BOX)
                 axis = (round(use.axis[0] * kk), round(use.axis[1] * kk))
                 local[pose] = len(local)
                 sprites.append({"group": action, "number": local[pose],
