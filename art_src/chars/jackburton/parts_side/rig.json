@@ -12,7 +12,7 @@
     "torso_len": 200.3,
     "neck_len": 0.0,
     "uarm": 78.1,
-    "farm": 79.2,
+    "farm": 38.7,
     "hand": 34.0,
     "thigh": 101.3,
     "shin": 163.4,
@@ -27,31 +27,31 @@
   "pivots": {
     "head": [
       146,
-      328
+      329
     ],
     "torso": [
       333,
-      540
+      600
     ],
     "arm_n": [
-      66,
-      62
+      76,
+      66
     ],
     "pelvis": [
       175,
       0
     ],
     "thigh_n": [
-      80,
-      20
+      29,
+      30
     ],
     "shin_n": [
       86,
       20
     ],
     "thigh_f": [
-      212,
-      20
+      216,
+      30
     ],
     "shin_f": [
       223,
@@ -61,15 +61,36 @@
       39.6,
       7.8
     ],
-    "arm_f": [
-      1,
-      1
-    ],
     "prop": [
       1,
       1
     ]
   },
+  "arm_joints": {
+    "n": [
+      [
+        160,
+        259
+      ]
+    ]
+  },
+  "order": [
+    "cape",
+    "thigh_f",
+    "shin_f",
+    "foot_f",
+    "pelvis",
+    "torso",
+    "head",
+    "thigh_n",
+    "shin_n",
+    "foot_n",
+    "arm_n",
+    "uarm_n",
+    "farm_n",
+    "hand_n",
+    "prop"
+  ],
   "angles": {
     "head": 0.0,
     "torso": 0.0,
@@ -84,5 +105,5 @@
     "holster_gun": -28.0,
     "holster_knife": 172.0
   },
-  "_note": "Side set cut from jack faceing right_cut.png, the hand-cut profile render. Both hips and shoulders are drawn, so the joints carry a half-width. The art's hands are empty: no pistol or knife is painted in, and the knife sprite kept from the old set is only the thrown prop."
+  "_note": "Side set cut from jack faceing right_cut.png, the hand-cut profile render. Both hips and shoulders are drawn, so the joints carry a half-width. The near arm is cut at the elbow and wrist it is DRAWN bent at (arm_joints), so it folds and reaches; the far one is painted across the chest by the artist and stays part of torso.png, since the chest behind it only exists as that arm."
 }
