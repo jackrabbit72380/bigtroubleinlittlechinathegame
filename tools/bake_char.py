@@ -166,14 +166,24 @@ except Exception:      # a partial checkout without the gang painter still bakes
 
 
 # Poses the rig cannot make out of its one drawing, baked from their own art.
-# A punch needs an arm at full extension; the profile set is a guard, and swinging
-# a guard arm out as far as a punch goes tears it off the shoulder. So the punch
-# has its own render and each strike frame is that drawing, whole.
+# A punch needs an arm at full extension and a kick needs a leg off the floor;
+# the profile set is a guard on two planted feet, and swinging a guard arm out
+# as far as a punch goes tears it off the shoulder. So each of these poses has
+# its own render and every strike frame is that drawing, whole.
+#
+# The renders are all one camera on one 1024x1536 sheet, so they share a height
+# and scale onto the rig unchanged; only the pose differs. ``boot`` is the high
+# kick, ``low_kick`` the waist-high one, and the punches are handed the way the
+# strike table asks for them: the lead hand for the light punch, the rear hand
+# at full extension for the medium. ``upper`` still borrows the straight punch
+# until an uppercut render exists.
 ART_POSES = {
     "jackburton": {
-        "jab": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
-        "cross": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
+        "jab": "concept_art/fighters/jack_burton/jack_faceing_right_left_hit.png",
+        "cross": "concept_art/fighters/jack_burton/jack_faceing_right_right_punch.png",
         "upper": "concept_art/fighters/jack_burton/jack_faceing_right_punch.png",
+        "boot": "concept_art/fighters/jack_burton/jack_faceing_right.png",
+        "low_kick": "concept_art/fighters/jack_burton/jack_faceing_right_medium_kick.png",
     },
 }
 
