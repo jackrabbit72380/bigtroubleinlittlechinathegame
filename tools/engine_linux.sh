@@ -46,6 +46,12 @@ ENGINE_URL="https://github.com/ikemen-engine/Ikemen-GO/releases/download/${ENGIN
 OUT="$ROOT/artifacts/engine"
 SCRIPT=""
 DISPLAY_NUM="${IKEMEN_DISPLAY:-:99}"
+# How long a drive key stays down. A menu reads the key once per frame, so a
+# long hold repeats it (eight Down taps can end where they started) and a
+# 1 ms tap can fall between two frames and vanish.
+KEY_HOLD="${IKEMEN_KEY_HOLD:-0.05}"
+# Extra engine command-line options, empty by default (see IKEMEN_ARGS below).
+IKEMEN_ARGS="${IKEMEN_ARGS:-}"
 
 # Packages the engine and the virtual display need. The engine links GTK for its
 # file dialogs, ALSA/Pulse for sound and Wayland/EGL for display fallbacks, so
@@ -171,8 +177,35 @@ DISPLAY=$DISPLAY_NUM xdotool getdisplaygeometry >/dev/null 2>&1 \\
   || { echo "virtual display did not come up:"; tail -5 "$STACK/xvfb.log"; kill \$XPID; exit 4; }
 
 cd "$ENGINE"
-DISPLAY=$DISPLAY_NUM "$ENGINE_BIN" -log > "$STACK/engine.log" 2>&1 &
+# IKEMEN_ARGS passes engine command-line options through, so a script can skip
+# the title menu entirely (Quick VS: -p1 <char> -p2 <char> -s <stage>).
+DISPLAY=$DISPLAY_NUM "$ENGINE_BIN" $IKEMEN_ARGS -log > "$STACK/engine.log" 2>&1 &
 EPID=\$!
+# No window manager runs on the virtual display, so the engine window never
+# takes input focus by itself and every xdotool key lands nowhere: the title
+# screen just sits there until attract mode starts demo fights, which reads
+# exactly like a drive script that was ignored. Focus the game window (the
+# largest mapped window of the engine process) once it has mapped.
+WID=""
+for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+  for w in \$(DISPLAY=$DISPLAY_NUM xdotool search --pid \$EPID 2>/dev/null); do
+    geo=\$(DISPLAY=$DISPLAY_NUM xdotool getwindowgeometry --shell \$w 2>/dev/null)
+    gw=\$(echo "\$geo" | sed -n 's/^WIDTH=//p')
+    gh=\$(echo "\$geo" | sed -n 's/^HEIGHT=//p')
+    if [ -n "\$gw" ] && [ "\$gw" -ge 640 ] && [ -n "\$gh" ] && [ "\$gh" -ge 480 ]; then
+      WID=\$w
+      echo "engine window \$w: \$(DISPLAY=$DISPLAY_NUM xdotool getwindowname \$w 2>/dev/null) \${gw}x\${gh}"
+    fi
+  done
+  [ -n "\$WID" ] && break
+  sleep 1
+done
+if [ -n "\$WID" ]; then
+  DISPLAY=$DISPLAY_NUM xdotool windowfocus \$WID 2>/dev/null || true
+  echo "focused engine window \$WID"
+else
+  echo "no engine window to focus: keys will not reach the game"
+fi
 SESSION
 
   # each drive command becomes one line of the session script
@@ -181,7 +214,11 @@ SESSION
       [ -n "${verb:-}" ] || continue
       case "$verb" in
         wait) printf 'sleep %s\n' "$arg" >> "$file" ;;
-        key)  printf 'DISPLAY=%s xdotool key --clearmodifiers %s\n' "$DISPLAY_NUM" "$arg" >> "$file" ;;
+        # Hold the key for a few frames: xdotool key is press and release in the
+        # same millisecond, and the engine polls input once a frame, so a tap
+        # lands or vanishes depending on where the frame boundary falls.
+        key)  printf 'DISPLAY=%s xdotool keydown %s; sleep %s; DISPLAY=%s xdotool keyup %s\n' \
+                "$DISPLAY_NUM" "$arg" "$KEY_HOLD" "$DISPLAY_NUM" "$arg" >> "$file" ;;
         shot) printf 'DISPLAY=%s xwd -root -silent > %s/%s.xwd 2>/dev/null\n' \
                 "$DISPLAY_NUM" "$OUT" "$arg" >> "$file" ;;
         log)  printf 'grep -viE "ALSA|Gdk-WARNING|Failed to assign" %s/engine.log | tail -20\n' "$STACK" >> "$file" ;;

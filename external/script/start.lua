@@ -868,7 +868,7 @@ function start.f_animGet(ref, side, member, params, velParams, loop, srcAnim)
 	local velParams = velParams or params
 	local pn = 2 * (member - 1) + side
 	-- Animation/sprite priority order
-	for _, v in ipairs({{params.anim, -1}, params.spr}) do
+	for _, v in ipairs(main.f_animSprLookups(params)) do
 		local anim = v[1]
 		if anim ~= nil and anim ~= -1 then
 			-- Determine whether to apply palette
@@ -1010,7 +1010,7 @@ local function drawPortraitSlot(slotCfg, side, member, paramsSide, offsetKey)
 end
 
 local function hasPortraitAnim(params)
-	return params ~= nil and params.AnimData ~= nil and ((params.anim or -1) ~= -1 or (params.spr ~= nil and params.spr[1] ~= -1))
+	return params ~= nil and params.AnimData ~= nil and #main.f_animSprLookups(params) > 0
 end
 
 local function getPortraitDrawData(v, side, member, params, dataField)

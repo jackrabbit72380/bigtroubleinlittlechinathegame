@@ -896,13 +896,47 @@ function main.f_preloadSetCharHighlight(player, ref)
 	end
 end
 
+-- [Select Info] portrait and the stage portraits read their anim/spr from motif
+-- fields that current engines expose as lists - several anims to try, then
+-- group/index pairs - and older ones as a single anim and one pair. Both shapes
+-- are turned into the same lookup list here, so the select screen runs on either
+-- build instead of handing animGetPreloadedCharData() a table where it wants a
+-- number.
+function main.f_animSprLookups(params)
+	local lookups = {}
+	if params == nil then
+		return lookups
+	end
+	local anims = params.anim
+	if type(anims) == 'table' then
+		for _, a in ipairs(anims) do
+			if a ~= nil and a >= 0 then
+				table.insert(lookups, {a, -1})
+			end
+		end
+	elseif anims ~= nil and anims >= 0 then
+		table.insert(lookups, {anims, -1})
+	end
+	local sprs = params.spr
+	if type(sprs) == 'table' then
+		for i = 1, #sprs - 1, 2 do
+			if sprs[i] ~= nil and sprs[i + 1] ~= nil and sprs[i] >= 0 and sprs[i + 1] >= 0 then
+				table.insert(lookups, {sprs[i], sprs[i + 1]})
+			end
+		end
+	elseif sprs ~= nil and sprs >= 0 then
+		table.insert(lookups, {sprs, 0})
+	end
+	return lookups
+end
+
 function main.f_materializeCharCell(row)
 	local ch = main.t_selChars[row]
 	if ch == nil or ch.playable ~= true or ch.char_ref == nil or ch.cell_data_ready then
 		return ch and ch.cell_data_ready or false
 	end
 	local params = motif.select_info.portrait
-	for _, v in pairs({{params.anim, -1}, params.spr}) do
+	for _, v in ipairs(main.f_animSprLookups(params)) do
 		if v[1] ~= -1 then
 			local a = animGetPreloadedCharData(ch.char_ref, v[1], v[2])
 			if a then
@@ -938,7 +972,7 @@ function main.f_materializeStagePortrait(stageNo)
 		return st and st.anim_data_ready or false
 	end
 	local function f_makeStageAnim(params, fieldName)
-		for _, v in pairs({{params.anim, -1}, params.spr}) do
+		for _, v in ipairs(main.f_animSprLookups(params)) do
 			if #v > 0 and v[1] ~= -1 then
 				local a = animGetPreloadedStageData(stageNo, v[1], v[2])
 				if a then
