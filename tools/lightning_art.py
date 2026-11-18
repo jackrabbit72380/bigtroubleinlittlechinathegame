@@ -1,11 +1,15 @@
-"""Lightning: the puppet rig's second fighter, painted from the concept sheet.
+"""Lightning: the puppet rig's second fighter, painted in code.
 
 Jack's parts are cut out of a photographic turnaround by ``jack_cut.py``.
-Lightning has no turnaround - the references are painted concepts, a statue
-and a sprite - so his parts are drawn here instead: the wide low straw hat with
-its dark band, the black robe under a plated silver bib, the black cloak with
-its oxblood lining, the black leather trousers and tall boots, and the blue
-lightning crawling over his hands and his hat brim.
+Lightning's turnarounds are renders rather than a clean cut sheet, so his parts
+are drawn here instead - to their measurements. What the references wear, and
+what this paints: the wide low straw hat with the straw fan on its crown, a
+black high-collared robe under a blued-steel cuirass quilted in diamonds with a
+stud at every crossing, riveted pauldrons with a brass medallion at each collar
+bone, a leather belt with a brass lion's head for the buckle, the pointed plate
+faulds below it, black baggy trousers and boots laced up the shin, an oxblood
+velvet cloak, and electric-blue eyes with lightning crawling over his hands and
+his hat brim.
 
 Output is exactly what ``char_rig`` expects:
 
@@ -47,15 +51,28 @@ SKIN_LIT = (238, 198, 170)
 SKIN_DK = (156, 112, 84)
 SKIN_DEEP = (98, 68, 52)
 
-BEAD = (86, 102, 122)
-BEAD_LIT = (128, 148, 172)
-BEAD_DK = (46, 58, 76)
+BEAD = (72, 86, 106)
+BEAD_LIT = (118, 136, 162)
+BEAD_DK = (34, 43, 58)
 
-CAPE = (34, 30, 30)
-CAPE_LIT = (60, 52, 50)
-CAPE_DK = (16, 13, 14)
-CAPE_LINING = (68, 14, 30)
-CAPE_LINING_LIT = (96, 24, 42)
+# Oxblood velvet, as the turnarounds have it: the outside of the cloak is
+# maroon rather than near-black, and the lining turned out at the front is a
+# brighter crimson. It reads as one red mass at fighting size, which is what
+# makes him a Storm from across the screen.
+CAPE = (104, 22, 36)
+CAPE_LIT = (138, 36, 52)
+CAPE_DK = (50, 9, 18)
+CAPE_LINING = (150, 32, 46)
+CAPE_LINING_LIT = (184, 58, 68)
+
+# The belt buckle is a lion's head worked in brass, and the shin guards are
+# laced leather over the boot.
+GOLD = (188, 152, 82)
+GOLD_LIT = (232, 204, 138)
+GOLD_DK = (104, 78, 36)
+STRAP = (62, 46, 34)
+STRAP_LIT = (112, 88, 64)
+THREAD = (152, 146, 134)
 
 STRAW = (206, 184, 140)
 STRAW_LIT = (238, 220, 180)
@@ -113,8 +130,45 @@ def _stroke(img, pts, width=3, glow=True):
 
 
 # ----------------------------------------------------------------------- torso
+def _rivets(img, mask, spots, colour=BEAD_LIT, r=1):
+    """Bright studs, but only where the plate they belong to actually is."""
+    d = ImageDraw.Draw(img)
+    for x, y in spots:
+        if mask.getpixel((max(0, min(mask.width - 1, int(x))),
+                          max(0, min(mask.height - 1, int(y))))) > 40:
+            d.ellipse([x - r, y - r, x + r, y + r], fill=colour + (255,))
+
+
+def _lion_buckle(d, cx, cy, r):
+    """The brass lion's head on the belt, in about twenty pixels."""
+    # mane: a ring of short brass spikes
+    for i in range(12):
+        a = i * math.pi / 6.0
+        x0, y0 = cx + math.cos(a) * (r - 1), cy + math.sin(a) * (r - 1)
+        x1, y1 = cx + math.cos(a) * (r + 3), cy + math.sin(a) * (r + 3)
+        d.line([(x0, y0), (x1, y1)], fill=GOLD_LIT + (255,), width=2)
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=GOLD + (255,))
+    d.arc([cx - r, cy - r, cx + r, cy + r], 210, 330, fill=GOLD_LIT + (255,), width=2)
+    # muzzle and eyes: two dark pits and a snout, which is all that survives
+    for sx in (-1, 1):
+        d.point([(cx + sx * 4, cy - 2)], fill=GOLD_DK + (255,))
+        d.ellipse([cx + sx * 4 - 1, cy - 3, cx + sx * 4 + 1, cy - 1],
+                  fill=(26, 20, 14, 255))
+    d.polygon([(cx, cy + 1), (cx - 3, cy + 6), (cx + 3, cy + 6)],
+              fill=GOLD_DK + (255,))
+    d.line([(cx - 1, cy + 6), (cx + 1, cy + 6)], fill=(22, 16, 10, 255), width=1)
+
+
 def torso():
-    """Slate robe, beaded demon-face apron, grey waist chevron."""
+    """Black robe under a steel diamond-quilted cuirass and a brass lion belt.
+
+    The references changed the chest: the beaded demon-face apron of the older
+    painting is gone. What he wears now is a cold blued-steel plate quilted in
+    diamonds with a stud at every crossing, riveted pauldrons at the shoulders,
+    a leather belt, and a lion's head worked in brass for the buckle - and under
+    the belt the pointed plates of the faulds, drawn with the skirt in
+    ``pelvis()`` so they are not painted twice.
+    """
     W, H = 132, 130
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
@@ -128,87 +182,147 @@ def torso():
     img = char_rig._shade(mask, ROBE, ROBE_LIT, ROBE_DK)
     d = ImageDraw.Draw(img)
 
-    # --- silver bib, scalloped at the hem ----------------------------------
-    # The concept wears a plated silver bib over the black robe rather than the
-    # slate bead apron he started with; the hem hangs in points over the belly.
+    # --- folds, laid on the robe before any plate covers it -----------------
+    # These used to be drawn last, so a set of dark lines ran straight over
+    # the steel and the belt and read as green streaks down his chest.
+    for x, y1 in ((38, 124), (52, 118), (80, 118), (94, 124)):
+        d.line([(x, 58), (x + (2 if x < 66 else -2), y1)],
+               fill=ROBE_DK + (160,), width=2)
+    for x in (33, 99):
+        d.line([(x, 30), (x - 1, 120)], fill=ROBE_LIT + (70,), width=2)
+
+    # --- the cuirass: a quilted steel panel, hem squared off ----------------
     pm = Image.new("L", (W, H), 0)
     pd = ImageDraw.Draw(pm)
-    pd.polygon([(27, 24), (105, 24), (101, 76), (31, 76)], fill=255)
-    for i in range(7):
-        x = 30 + i * 10.4
-        pd.polygon([(x, 74), (x + 10.4, 74), (x + 5.2, 96)], fill=255)
+    pd.polygon([(28, 23), (104, 23), (100, 84), (32, 84)], fill=255)
     img.alpha_composite(char_rig._shade(pm, BEAD, BEAD_LIT, BEAD_DK))
 
-    beads = _blank((W, H))
-    bd = ImageDraw.Draw(beads)
-    for row in range(10):
-        y = 28 + row * 6.2
-        for col in range(12):
-            x = 31 + col * 6.6 + (3.3 if row % 2 else 0.0)
-            r = 2.7
-            if not (pm.getpixel((min(W - 1, int(x)), min(H - 1, int(y)))) > 40):
-                continue
-            bd.ellipse([x - r, y - r, x + r, y + r], fill=BEAD + (255,))
-            bd.arc([x - r, y - r, x + r, y + r], 200, 340,
-                   fill=BEAD_LIT + (255,), width=1)
-            bd.point([(x + 0.6, y + 0.7)], fill=BEAD_DK + (180,))
-    beads.putalpha(ImageChops.multiply(beads.getchannel("A"), pm))
-    img.alpha_composite(beads)
+    # diamond quilting: two families of diagonals, then a stud at each crossing
+    quilt = _blank((W, H))
+    qd = ImageDraw.Draw(quilt)
+    step = 13
+    for i in range(-10, 22):
+        x = 32 + i * step
+        qd.line([(x - 40, 23), (x + 40, 84)], fill=BEAD_DK + (150,), width=1)
+        qd.line([(x + 40, 23), (x - 40, 84)], fill=BEAD_DK + (135,), width=1)
+    quilt.putalpha(ImageChops.multiply(quilt.getchannel("A"), pm))
+    img.alpha_composite(quilt)
 
-    # --- the demon face worked into the bib --------------------------------
-    # A mask the size of the wearer's own face read as a second head stuck to
-    # his chest; on the concept it is a small motif stamped on the plate.
-    d.ellipse([55, 46, 77, 74], fill=(22, 22, 28, 235))
-    d.arc([55, 46, 77, 74], 200, 340, fill=BEAD_LIT + (200,), width=2)
-    for sx in (61, 71):
-        d.ellipse([sx - 3.5, 51, sx + 3.5, 58], fill=(214, 52, 46, 255))
-        d.ellipse([sx - 1.8, 53, sx + 1.8, 56], fill=(255, 176, 118, 255))
-    for x in range(58, 76, 4):
-        d.polygon([(x, 61), (x + 3, 61), (x + 1.5, 67)], fill=(238, 240, 246, 255))
-    for x in range(59, 75, 7):
-        d.polygon([(x, 73), (x + 3, 73), (x + 1.5, 67)], fill=(206, 212, 222, 255))
-    # small horns curling off the mask
-    for sgn, x in ((-1, 57), (1, 75)):
-        d.line([(x, 52), (x + sgn * 5, 46), (x + sgn * 3, 41)],
-               fill=BEAD_LIT + (235,), width=2)
+    studs = []
+    for i in range(-4, 8):
+        for j in range(-2, 4):
+            x = 36 + i * step + j * step
+            y = 30 + j * step
+            if 30 <= y <= 80:
+                studs.append((x, y))
+    _rivets(img, pm, studs)
+    # a bright rim around the plate and a row of studs down its border
+    d.rectangle([28, 23, 104, 84], outline=BEAD_LIT + (170,), width=1)
+    _rivets(img, pm, [(x, 27) for x in range(34, 102, 9)] + \
+                       [(x, 80) for x in range(34, 102, 9)])
 
-    # --- grey waist chevron and belt --------------------------------------
-    d.polygon([(44, 90), (66, 103), (88, 90), (88, 99), (66, 113), (44, 99)],
-              fill=(78, 82, 94, 255))
-    d.polygon([(44, 90), (66, 103), (66, 108), (44, 95)],
-              fill=(104, 110, 124, 255))
-    d.rectangle([33, 108, 99, 120], fill=(16, 14, 16, 255))
-    d.rectangle([58, 106, 74, 122], fill=(178, 156, 106, 255))
-    d.rectangle([62, 110, 70, 118], fill=(96, 78, 46, 255))
+    # --- pauldrons: two curved plates capping each shoulder ------------------
+    # A flat slab sitting on top of the shoulder read as a pale box bolted to
+    # his arm. The references are curved lamés that hug the joint - a dark
+    # lower plate under a lighter upper one, a lit rim and a row of studs.
+    # Dark steel, not pale: at 26px across, a light dome met its twin at the
+    # collar and he read as a mushroom. The plates are the robe's own silhouette
+    # with a lit edge, so they sit on the shoulder instead of over it.
+    for cx in (33, 99):
+        for y0, radius, base, lit in ((22, 21, (26, 32, 44), BEAD),
+                                      (10, 21, BEAD_DK, BEAD_LIT)):
+            cap = Image.new("L", (W, H), 0)
+            cd = ImageDraw.Draw(cap)
+            cd.chord([cx - radius, y0, cx + radius, y0 + radius * 2], 186, 354,
+                     fill=255)
+            img.alpha_composite(char_rig._shade(cap, base, lit, (16, 20, 28)))
+            d.arc([cx - radius, y0, cx + radius, y0 + radius * 2], 186, 354,
+                  fill=BEAD_LIT + (140,), width=1)
+        cy = 10 + 21
+        for i in range(4):
+            a = math.radians(206 + i * 43)
+            x, y = cx + math.cos(a) * 16, cy + math.sin(a) * 16
+            d.ellipse([x - 1, y - 1, x + 1, y + 1], fill=BEAD_LIT + (220,))
 
-    # --- collar and folds --------------------------------------------------
+    # --- brass medallions at the collar bones -------------------------------
+    for cx in (40, 92):
+        d.ellipse([cx - 5, 23, cx + 5, 33], fill=GOLD + (255,))
+        d.arc([cx - 5, 23, cx + 5, 33], 200, 340, fill=GOLD_LIT + (255,), width=2)
+        d.point([(cx, 28)], fill=GOLD_DK + (255,))
+
+    # --- collar, belt and the lion ------------------------------------------
     d.polygon([(52, 20), (66, 34), (80, 20), (74, 18), (66, 26), (58, 18)],
               fill=(22, 26, 36, 255))
-    for x, y1 in ((40, 112), (52, 100), (80, 100), (92, 112)):
-        d.line([(x, 56), (x + (2 if x < 66 else -2), y1)],
-               fill=ROBE_DK + (150,), width=2)
-    for x in (36, 96):
-        d.line([(x, 34), (x - 1, 100)], fill=ROBE_LIT + (90,), width=2)
+    d.polygon([(30, 92), (102, 92), (100, 106), (32, 106)],
+              fill=(26, 18, 14, 255))
+    d.line([(32, 95), (100, 95)], fill=STRAP_LIT + (170,), width=2)
+    d.line([(32, 101), (100, 101)], fill=(14, 10, 8, 255), width=2)
+    _lion_buckle(d, 66, 99, 11)
+
+    # --- folds -------------------------------------------------------------
+    d.polygon([(52, 20), (66, 34), (80, 20), (74, 18), (66, 26), (58, 18)],
+              fill=(22, 26, 36, 255))
     # trim the over-wide canvas so the part is as wide as the shoulders it has
     return img.resize((114, H), Image.LANCZOS)
 
 
 # ---------------------------------------------------------------------- pelvis
 def pelvis():
-    """The robe's skirt, flaring from a sash."""
+    """Trousered hips under the faulds: two rows of pointed steel plates.
+
+    The references hang a plate skirt off the belt - a long row of riveted
+    points over a second, shorter row, with the dark cloth apron showing in the
+    gaps - rather than the plain robe skirt he used to wear.
+    """
     W, H = 100, 76
     mask = Image.new("L", (W, H), 0)
     d = ImageDraw.Draw(mask)
     d.polygon([(31, 6), (69, 6), (95, 62), (72, 74), (28, 74), (5, 62)], fill=255)
     d.ellipse([6, 50, 94, 78], fill=255)
-    img = char_rig._shade(mask, ROBE, ROBE_LIT, ROBE_DK)
+    img = char_rig._shade(mask, TROUSER, TROUSER_LIT, TROUSER_DK)
     d = ImageDraw.Draw(img)
-    d.rectangle([28, 4, 72, 18], fill=(16, 14, 16, 255))
-    d.rectangle([44, 2, 58, 20], fill=(178, 156, 106, 255))
-    for x in (30, 42, 56, 70):
-        d.line([(x, 22), (x + (3 if x < 50 else -3), 70)],
-               fill=ROBE_DK + (130,), width=2)
-    d.line([(12, 60), (24, 70)], fill=ROBE_LIT + (80,), width=2)
+
+    # cloth apron behind the plates, pointed like the references'
+    d.polygon([(30, 12), (70, 12), (66, 58), (50, 70), (34, 58)],
+              fill=ROBE_DK + (255,))
+
+    # Two rows of plates across the whole hip: the upper row's points hang over
+    # the lower one, and the centre point of each is the longest, the way the
+    # references' faulds fall. They have to reach the pelvis' full width, or
+    # the torso covers the sides and what is left reads as a loincloth.
+    for row, (top, drop) in enumerate(((14, 30), (30, 26))):
+        plates = Image.new("L", (W, H), 0)
+        pdraw = ImageDraw.Draw(plates)
+        width = 17.0
+        count = 5
+        for i in range(count):
+            x = 5 + i * width + (0 if row == 0 else width / 2.0)
+            tip = top + drop + (7 if i == 2 else (3 if i in (1, 3) else 0))
+            pdraw.polygon([(x, top), (x + width - 1, top),
+                           (x + width - 1, tip - 8),
+                           (x + width / 2.0, tip),
+                           (x, tip - 8)], fill=255)
+        img.alpha_composite(char_rig._shade(plates, BEAD, BEAD_LIT, BEAD_DK))
+        # lit top edge, dark under-edge, and a stud on each plate
+        for i in range(count):
+            x = 5 + i * width + (0 if row == 0 else width / 2.0)
+            tip = top + drop + (7 if i == 2 else (3 if i in (1, 3) else 0))
+            d.line([(x + 1, top), (x + width - 2, top)],
+                   fill=BEAD_LIT + (200,), width=1)
+            d.polygon([(x + 1, tip - 8), (x + width / 2.0, tip),
+                       (x + width - 2, tip - 8)],
+                      fill=BEAD_DK + (150,))
+            _rivets(img, plates, [(x + width / 2.0, top + 5)], BEAD_LIT, 1)
+
+    # belt above the plates, with the buckle's lower half showing
+    d.rectangle([28, 4, 72, 16], fill=(26, 18, 14, 255))
+    d.line([(30, 6), (70, 6)], fill=STRAP_LIT + (150,), width=1)
+    d.polygon([(44, 10), (56, 10), (54, 20), (46, 20)], fill=GOLD + (255,))
+    d.line([(46, 12), (54, 12)], fill=GOLD_LIT + (255,), width=1)
+
+    for x in (22, 78):
+        d.line([(x, 26), (x + (2 if x < 50 else -2), 66)],
+               fill=ROBE_DK + (110,), width=2)
     return img.resize((86, H), Image.LANCZOS)
 
 
@@ -274,14 +388,24 @@ def head():
     d = ImageDraw.Draw(img)
 
     # --- eyes, drawn last so they still burn under the brim ----------------
+    # The turnarounds light them electric blue, not human: a hot white slit in
+    # a blue halo, the same colour as the current crawling over his hands, so
+    # the eyes and the electricity read as one power.
+    glow = _blank((W, H))
+    gd = ImageDraw.Draw(glow)
     for sx in (-1, 1):
         ex = cx + sx * 12
-        d.polygon([(ex - 7, 77), (ex, 73), (ex + 7, 77), (ex, 80)],
-                  fill=(222, 226, 236, 255))
-        d.ellipse([ex - 3, 74, ex + 3, 81], fill=(44, 52, 74, 255))
-        d.ellipse([ex - 1, 75, ex + 1, 77], fill=(250, 253, 255, 255))
-        d.line([(ex - 8, 77), (ex, 72), (ex + 8, 77)],
-               fill=(26, 18, 16, 240), width=2)
+        gd.ellipse([ex - 8, 73, ex + 8, 84], fill=BOLT + (170,))
+    img.alpha_composite(glow.filter(ImageFilter.GaussianBlur(2.6)))
+    d = ImageDraw.Draw(img)
+    for sx in (-1, 1):
+        ex = cx + sx * 12
+        d.polygon([(ex - 7, 78), (ex, 74), (ex + 7, 78), (ex, 81)],
+                  fill=BOLT + (255,))
+        d.line([(ex - 5, 78), (ex + 5, 78)], fill=BOLT_CORE + (255,), width=2)
+        d.point([(ex, 76)], fill=BOLT_CORE + (255,))
+        d.line([(ex - 8, 78), (ex, 72), (ex + 8, 78)],
+               fill=(26, 18, 16, 230), width=2)
 
     # --- the hat, straight out of the render -------------------------------
     # The concept's brim is a little under half the figure's width; the body is
@@ -406,7 +530,12 @@ def thigh():
 
 
 def shin():
-    """Baggy trouser above, tall black boot below.
+    """Baggy trouser above, tall boot below, laced up the calf.
+
+    The references wrap the shin in a laced guard: crossed leather straps from
+    the ankle to below the knee, over the boot shaft. At fighting size the
+    crossings are what read, so they are drawn two pixels wide and lit rather
+    than shaded.
 
     The part is drawn only as long as the shin metric (77px), because the rig
     hangs it from the knee and the ankle is exactly one shin-length below: art
@@ -422,8 +551,17 @@ def shin():
     boot = char_rig._shade(bootmask, BOOT, BOOT_LIT, BOOT_DK)
     img = Image.alpha_composite(leg, boot)
     d = ImageDraw.Draw(img)
-    d.line([(5, 30), (41, 30)], fill=(104, 108, 118, 190), width=2)   # cuff
-    d.line([(10, 38), (34, 38)], fill=BOOT_LIT + (110,), width=2)
+    d.line([(5, 30), (41, 30)], fill=STRAP + (255,), width=3)          # cuff
+    d.line([(6, 31), (40, 31)], fill=STRAP_LIT + (170,), width=1)
+
+    # laced guard: four crossings, each a pair of straps meeting at the front.
+    # The straps are boot leather with a pale thread along them; a brown strap
+    # on a navy boot went olive at sprite size, which read as green laces.
+    for i, y in enumerate((40, 49, 58, 67)):
+        for x0, x1 in ((13, 33), (33, 13)):
+            d.line([(x0, y), (x1, y + 7)], fill=BOOT_DK + (255,), width=3)
+            d.line([(x0, y), (x1, y + 7)], fill=THREAD + (170,), width=1)
+    d.line([(23, 36), (23, 73)], fill=BOOT_LIT + (80,), width=1)
     return img
 
 
@@ -446,12 +584,14 @@ def foot():
 
 # ------------------------------------------------------------------------ cape
 def cape():
-    """Wool cloak to the floor, hanging open with its lining turned out.
+    """Oxblood velvet cloak to the floor, hanging open with its lining out.
 
-    The concept wears it that way: the left front swung clear of the body so a
-    long wedge of oxblood lining faces the camera, the wool gathering in deep
-    folds down the right, and the hem ragged along the ground. It reads as one
-    mass at fighting size, which is what a cape should do.
+    The references wear it that way: the left front swung clear of the body so
+    a long wedge of crimson lining faces the camera, the velvet gathering in
+    deep folds down the right, and the hem ragged along the ground. Both faces
+    are red now - the older painting had it near-black outside and only the
+    lining red, which at fighting size read as a black coat. It is one red mass
+    across the screen, which is what a Storm's cloak should be.
     """
     W, H = 190, 240
     mask = Image.new("L", (W, H), 0)

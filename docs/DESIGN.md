@@ -67,13 +67,21 @@ on hit or at the end of the round without cleanup code.
 
 ## Lightning: the second fighter cut from parts
 
-Jack's parts come from a photographic turnaround. Lightning has none, so
-`tools/lightning_art.py` paints his parts from the concept sheet instead: the
-huge fringed straw hat, the slate robe with its beaded demon-face chest and grey
-waist chevron, the crimson cloak, the black boots, and the blue current that
-crawls over his hands and his hat brim. It writes the same
-`art_src/chars/lightning/parts/` a hand-drawn turnaround would, so the rig,
-the baker and the validator do not care where the pixels came from.
+Jack's parts come from a photographic turnaround. Lightning's turnarounds are
+renders rather than a clean cut sheet, so `tools/lightning_art.py` paints his
+parts instead - holding to their measurements rather than cutting them up: the
+wide straw hat with its straw fan, the black robe under a blued-steel cuirass
+quilted in diamonds with a stud at every crossing, riveted pauldrons with a
+brass medallion at each collar bone, the belt with a brass lion's head for a
+buckle, the pointed plate faulds below it, black trousers and boots laced up the
+shin, the oxblood velvet cloak, and the electric-blue eyes and current that give
+him his name. It writes the same `art_src/chars/lightning/parts/` a hand-drawn
+turnaround would, so the rig, the baker and the validator do not care where the
+pixels came from.
+
+The paint was redone when three turnarounds of the character went up in
+`concept_art/fighters/lightning/`: the older painting had a beaded demon-face
+apron and a near-black cloak, and the references wear none of that.
 
 The rig grew one part for him: `cape`. It is drawn first, behind everything
 else, hangs from the shoulder joint and rides only 35% of the torso's lean, so
