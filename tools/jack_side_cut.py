@@ -157,7 +157,15 @@ JOINTS = {
     "head": NECK,
     "torso": (HIP_MID[0], 695),
     "arm_n": SHOULDER_N,
-    "pelvis": (455, 640),
+    # ON the hip line, in the middle of the band - NOT 55px up it. The pelvis
+    # piece is never rotated (a band that turns with the chest is a belt sliding
+    # round his hips), so this pivot is nothing but its placement: char_rig hangs
+    # the piece on the hip joint, which is where the TORSO and both THIGHS hang
+    # too. Taken 55px higher up the band, the whole waistband was pasted 20 rig
+    # px below the jeans it is cut from - and the shirt hem it carries with it
+    # (the piece reaches up to y=615, over the vest) came out from under the
+    # torso's own hem as a white sliver lying across his crotch in every pose.
+    "pelvis": (HIP_MID[0], HIP_MID[1]),
     "thigh_n": HIP_N,
     "shin_n": KNEE_N,
     "thigh_f": HIP_F,
