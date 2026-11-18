@@ -264,15 +264,22 @@ def pose_for(action, frame):
     if 40 <= a <= 59:
         return "jump"
     if 100 <= a <= 109:
-        return "cross" if a % 2 else "jab"
+        # Run and its steps. These were mapped to the punch poses, so he ran
+        # (and hopped backwards) throwing jabs: a run is the walk cycle.
+        return "walk_a" if frame % 2 == 0 else "walk_b"
     if 110 <= a <= 119:
         return "crouch"
     if 120 <= a <= 129:
-        return "jump"
+        # GUARDSTART. The guard, not a jump: holding back used to snap him into
+        # the airborne pose for the one frame before the guard itself.
+        return "block"
     if 130 <= a <= 139:
-        return "boot"
+        # GUARD (stand / crouch / air). These were mapped to the boot pose, so
+        # Jack blocked with a head-high kick.
+        return "block"
     if 140 <= a <= 149:
-        return "low_kick"
+        # GUARDEND - the frames the guard is released on.
+        return "block"
     if 150 <= a <= 159:
         return "block"
     if 180 <= a <= 199:
