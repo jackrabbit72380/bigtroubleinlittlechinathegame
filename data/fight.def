@@ -2465,16 +2465,16 @@ p2.face.window = 1193, 23, 1253, 111
 [Name]
 
 ;Player 1
-p1.pos = 13,132
+p1.pos = 342,62
 p1.name.scale = 0.32, 0.32
 ;p1.bg. =
-p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.font = 10,0, 0, 255, 228, 140
 
 ;Player 2
 p2.name.scale = 0.32, 0.32
-p2.pos = 1267,132
+p2.pos = 938,62
 ;p2.bg. =
-p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.font = 10,0, 0, 255, 228, 140
 
 [Simul Name]
 leaderontop = 1 ; This allows the names to render from top to bottom.

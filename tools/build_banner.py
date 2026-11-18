@@ -11,6 +11,7 @@ One dragon per side, and its body IS the HUD:
     y 12..36   top of the body      -> big health bar        ([Lifebar])
     y 32..58   underside / belly    -> audacity bar          ([Powerbar]),
                from the neck all the way to the tip of the tail
+    y 62..91   the two names, centred under each belly      ([Name])
     y 16..72   head at dead centre, turned in to the glowing green/red
                yin-yang with the round timer on it          ([Time])
 
@@ -67,6 +68,15 @@ TAIL_X = 140                # the tip of the tail: the far end of the belly
 BAR_X1 = 545                # p1.pos.x: the inner end of the audacity bar, at
                             # the neck, where the head takes the body over
 METER_W = BAR_X1 - TAIL_X   # fillable length of the audacity bar
+
+# The player names. They sat in the top corners, y=132, against the screen
+# edges: under the portrait box, over the stage, nowhere near the dragon. They
+# belong to the meter under that dragon's belly, so each one is centred on its
+# own belly band, just under the band's bottom edge. NAME_X is the middle of the
+# band (p2's is the mirror of it about the screen centre), and the caption is
+# still the size tools/build_fight_text.py measures out of the font.
+NAME_X = (TAIL_X + BAR_X1) // 2
+NAME_Y = BAR_Y + BAND + 4
 
 # The countdown is a caption, so it is drawn in the caption face at the caption
 # size - the 43.2 units on a 1920x1080 screen that the names, the wins counter
@@ -735,6 +745,22 @@ def patch_def():
     body = "\n".join(lines[s:e])
     body = _set(body, "p1.pos", "586,%d" % (BAR_Y + BAND + 10))
     body = _set(body, "p2.pos", "696,%d" % (BAR_Y + BAND + 10))
+    lines[s:e] = body.split("\n")
+
+    # The names move under the dragon that carries them: centred on each belly
+    # band, just below it, instead of in the top corner by the portrait. Centred
+    # rather than edge-aligned, so the caption sits inside the band's own span
+    # and not out at the tail where the belly is thin. Only [Name] - the 1v1
+    # caption, the one this screen shows; the simul/tag blocks lay out two to
+    # four captions per side and are not this picture.
+    s, e = _section(lines, "Name")
+    body = "\n".join(lines[s:e])
+    for side, x in (("p1", NAME_X), ("p2", 2 * SCREEN - NAME_X)):
+        body = _set(body, "%s.pos" % side, "%d,%d" % (x, NAME_Y))
+        # <font>, <bank>, <align>: align 0 is centred on pos.
+        body = re.sub(r"(?m)^(\s*%s\.name\.font\s*=\s*-?\d+\s*,\s*-?\d+\s*,)\s*-?\d+"
+                      % side,
+                      lambda m: "%s 0" % m.group(1), body)
     lines[s:e] = body.split("\n")
 
     with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",

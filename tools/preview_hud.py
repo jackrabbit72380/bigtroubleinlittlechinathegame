@@ -166,6 +166,45 @@ def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror, add=(0, 0, 0),
                   centre=True)
 
 
+def space_advance(face, default=30):
+    """The width a space takes in this face: its Size.x.
+
+    A bitmap face has no space glyph at all - DisplayK.sff starts at '!' - and
+    the engine advances a space by Size[0] (font.go CharWidth). Without this the
+    preview laid the glyphs out with no gap and "Jack Burton" read as one word.
+    """
+    for path in sorted(glob.glob(os.path.join(FONT_DIR, "*.def"))):
+        with open(path, encoding="utf-8-sig", errors="surrogateescape") as fh:
+            text = fh.read()
+        if not re.search(r"(?mi)^\s*file\s*=\s*" + re.escape(face) + r"\s*$", text):
+            continue
+        m = re.search(r"(?mi)^\s*size\s*=\s*(\d+)", text)
+        if m:
+            return int(m.group(1))
+    return default
+
+
+def draw_caption(canvas, glyphs, text, x, y, scale, align=0, space=0):
+    """A [Name]-style caption: pos is the anchor, align is -1, 0 or 1."""
+    def width(c):
+        if c == " " or ord(c) not in glyphs:
+            return round(space * scale)
+        return round(glyphs[ord(c)][1] * scale)
+
+    total = sum(width(c) for c in text)
+    if align == 0:
+        x -= total / 2.0
+    elif align < 0:
+        x -= total
+    for ch in text:
+        if ch == " " or ord(ch) not in glyphs:
+            x += width(ch)
+            continue
+        img, gw, _gh = glyphs[ord(ch)]
+        blit(canvas, img, x, y, scale)
+        x += round(gw * scale)
+
+
 def draw_text(canvas, glyphs, text, x, y, scale, centre=True):
     widths = [round(glyphs[ord(c)][1] * scale) for c in text if ord(c) in glyphs]
     if centre:
@@ -197,28 +236,28 @@ def draw_timer(canvas, d, by_key, pals, pos, glyphs, seconds):
               py + c_off[1] * S - cell * S, c_scale * S)
 
 
-def timer_face_file():
-    """The bitmap [Time] sets its countdown in, as named by fight.def.
+def face_for(section, field, default="Timer.sff"):
+    """The bitmap a caption draws with, read back from fight.def.
 
     It used to be hard-wired to the stock Timer face, so the preview kept
     drawing 49-unit digits after the def had pointed the clock at another
     face. Reading the slot back means the picture cannot disagree with it.
     """
     text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
-    body = text.split("[Time]", 1)[1].split("\n[", 1)[0]
-    m = re.search(r"(?m)^\s*counter\.font\s*=\s*(-?\d+)", body)
+    body = text.split("[" + section + "]", 1)[1].split("\n[", 1)[0]
+    m = re.search(r"(?m)^\s*%s\s*=\s*(-?\d+)" % re.escape(field), body)
     slot = int(m.group(1)) if m else 8
     slot_def = re.search(r"(?m)^\s*font%d\s*=\s*([^;\r\n]+)" % slot, text)
     if not slot_def:
-        return "Timer.sff"
+        return default
     path = os.path.join(ROOT, "data", slot_def.group(1).strip())
     if not os.path.isfile(path):
-        return "Timer.sff"
+        return default
     with open(path, encoding="utf-8-sig", errors="surrogateescape") as fh:
         for line in fh:
             if line.strip().lower().startswith("file"):
                 return line.split("=", 1)[1].strip()
-    return "Timer.sff"
+    return default
 
 
 def load_glyphs(name):
@@ -243,6 +282,43 @@ def def_xy(section):
 
 
 FACES = {"p1": ("jackburton_rig", False), "p2": ("lopan_rig", True)}
+
+
+def displayname(folder):
+    """The name the character's own def shows on the fight screen."""
+    for path in glob.glob(os.path.join(ROOT, "chars", folder, "*.def")):
+        with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+            for line in fh:
+                if line.strip().lower().startswith("displayname"):
+                    return line.split("=", 1)[1].strip().strip('"')
+    return folder
+
+
+def draw_names(canvas):
+    """[Name]: each fighter's caption, exactly where fight.def puts it.
+
+    The names were missing from the picture, so a change to them could not be
+    reviewed. They are drawn from the same three keys the engine reads - pos,
+    name.font (index, bank, align) and name.scale.
+    """
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[Name]", 1)[1].split("\n[", 1)[0]
+    loaded = {}
+    for side, (folder, _mirror) in FACES.items():
+        p = re.search(r"(?m)^\s*%s\.pos\s*=\s*(-?\d+)\s*,\s*(-?\d+)" % side, body)
+        f = re.search(r"(?m)^\s*%s\.name\.font\s*=\s*(-?\d+)\s*,\s*(-?\d+)"
+                      r"\s*,\s*(-?\d+)" % side, body)
+        s = re.search(r"(?m)^\s*%s\.name\.scale\s*=\s*([\d.]+)" % side, body)
+        if not (p and f):
+            continue
+        align = int(f.group(3))
+        scale = float(s.group(1)) if s else 1.0
+        face = face_for("Name", "%s.name.font" % side, default="Display.sff")
+        if face not in loaded:
+            loaded[face] = load_glyphs(face)
+        draw_caption(canvas, loaded[face], displayname(folder),
+                     int(p.group(1)) * S, int(p.group(2)) * S, scale * S, align,
+                     space_advance(face))
 
 
 def paste_cell(canvas, img, x, y, scale, mirror=False):
@@ -333,7 +409,7 @@ def main():
              GROUND - sp["axis"][1] * CHAR, CHAR)
 
     level_glyphs = load_glyphs("PowerbarNum.sff")
-    timer_glyphs = load_glyphs(timer_face_file())
+    timer_glyphs = load_glyphs(face_for("Time", "counter.font"))
 
     draw_faces(shot, d, by_key, pals)
     draw_banner(shot, d, by_key, pals)
@@ -346,6 +422,7 @@ def main():
     draw_lifebar(shot, d, by_key, pals, life["p2"], 0.55, True,
                  p2_add("Lifebar", "front"))
     draw_timer(shot, d, by_key, pals, time_pos, timer_glyphs, 60)
+    draw_names(shot)
 
     shot.convert("RGB").save(os.path.join(OUT, "hud_ingame.png"))
     print("wrote artifacts/hud_ingame.png")
