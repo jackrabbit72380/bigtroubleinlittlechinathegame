@@ -290,7 +290,7 @@ def load_rig(char_id, view=None):
 
     parts = {}
     default_pivots = cfg.get("pivots", {})
-    extras = ("holster_gun", "holster_knife", "prop_gun")
+    extras = ("holster_gun", "holster_knife", "prop_gun", "prop_knife")
     for name in list(ORDER) + list(extras):
         path = os.path.join(folder, f"{name}.png")
         if not os.path.isfile(path):
@@ -1051,7 +1051,14 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                 part = dict(rig.parts[which])
                 part["name"] = "prop"
                 part["base"] = BASE_ANGLE.get("prop", 0.0) + rig.art.get(which, 0.0)
-                _place(out, part, pose.get("prop_angle", 0.0), wri_n)
+                # A rig whose drawing already has the hand painted in (Jack's
+                # side set: one guard drawing, no hand part) states where that
+                # hand is instead of using the skeleton's wrist. The skeleton
+                # arm hangs straight down there, so a weapon placed on it ends
+                # up at his waist, a hand's width below the fist on the art.
+                at = pose.get("prop_at")
+                joint = (at[0] * ss, at[1] * ss) if at else wri_n
+                _place(out, part, pose.get("prop_angle", 0.0), joint)
             continue
         # A holstered weapon is pinned to the body, not to a swinging joint: the
         # gun leans with the waist, the knife only tips slightly with the shin.
@@ -1656,18 +1663,31 @@ POSE_SETS = {
         "low_kick": dict(lean=-5, head=3, lift=-22,
                          arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
                          leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
+        # The weapon poses carry the drawn hand-and-weapon pieces
+        # (tools/jack_side_cut.py), pinned on prop_at: the near fist the guard
+        # drawing has in front of his chest, which is where a gun or a knife
+        # reads as held. The skeleton's own wrist is a hanging arm and would
+        # put the pistol at his waist.
         "gun_aim": dict(lean=4, head=-1,
                         arm_n=(0, 0, 0), arm_f=(-21, 0, 0),
-                        leg_n=(16, -14, 88), leg_f=(-16, 13.5, 92)),
+                        leg_n=(16, -14, 88), leg_f=(-16, 13.5, 92),
+                        prop=True, prop_part="prop_gun", prop_angle=90,
+                        prop_at=(258, 300)),
         "gun_fire": dict(lean=1, head=-2, shift=-2,
                          arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
-                         leg_n=(18, -16, 88), leg_f=(-18, 13.5, 92)),
+                         leg_n=(18, -16, 88), leg_f=(-18, 13.5, 92),
+                         prop=True, prop_part="prop_gun", prop_angle=90,
+                         prop_at=(264, 302)),
         "knife": dict(lean=8, head=-2,
                       arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
-                      leg_n=(18, -14, 88), leg_f=(-18, 13.5, 92)),
+                      leg_n=(18, -14, 88), leg_f=(-18, 13.5, 92),
+                      prop=True, prop_part="prop_knife", prop_angle=90,
+                      prop_at=(258, 300)),
         "knife_throw": dict(lean=14, shift=3, head=-4,
                             arm_n=(0, 0, 0), arm_f=(-23, 0, 0),
-                            leg_n=(26, -18, 88), leg_f=(-22, 17.5, 92)),
+                            leg_n=(26, -18, 88), leg_f=(-22, 17.5, 92),
+                            prop=True, prop_part="prop_knife", prop_angle=90,
+                            prop_at=(262, 302)),
         "block": dict(lean=-3, lift=-3, head=4,
                       arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
                       leg_n=(6, -4, 88), leg_f=(-10, 15, 92)),

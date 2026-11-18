@@ -908,6 +908,29 @@ def build():
     metrics["shoulder_y"] = round(metrics["hip_y"] - metrics["torso_len"], 1)
     metrics["neck_y"] = round(metrics["shoulder_y"] + metrics["neck_len"], 1)
 
+    # --- the weapon pieces ---------------------------------------------------
+    # A hand already gripping the pistol or the knife, cut from the two renders
+    # drawn for the gun and knife specials. This set has no articulated hand -
+    # the guard's fists are painted into torso.png - so a weapon is one whole
+    # piece pinned over the fist in the drawing (the pose's ``prop_at``), not a
+    # barrel hung off a hand part. `rig_scale` is the size the piece should end
+    # up at in rig units, and `hand` is the fist's centre inside the cut, which
+    # becomes its pivot; both are divided by SCALE because every part in this
+    # folder is stored at the art's own scale and shrunk again on load.
+    WEAPONS = (
+        ("prop_gun", "jack_left_hand_gun.png", 0.16, (280, 400)),
+        ("prop_knife", "jack_left_hand_knife.png", 0.30, (161, 348)),
+    )
+    for name, art, rig_scale, hand in WEAPONS:
+        piece = Image.open(os.path.join(ROOT, "concept_art", "fighters",
+                                        "jack_burton", art)).convert("RGBA")
+        piece = piece.crop(piece.getchannel("A").getbbox())
+        k = rig_scale / SCALE
+        piece = piece.resize((max(1, round(piece.width * k)),
+                              max(1, round(piece.height * k))), Image.LANCZOS)
+        parts[name] = piece
+        pivots[name] = (hand[0] * k, hand[1] * k)
+
     cfg = {
         "scale": SCALE,
         "canvas": [640, 780],
