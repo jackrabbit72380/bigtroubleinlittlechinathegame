@@ -66,7 +66,11 @@ def main():
                     ("bake_char.py", "jackburton")]
     # Lightning has no turnaround to cut: his parts are painted in code, so the
     # only inputs are the tools themselves and a clean checkout can build him.
-    scripts += ["lightning_art.py", ("bake_char.py", "lightning")]
+    # lightning_art.py still draws the effect frames lightning.py imports, but
+    # his body parts are cut from his concept render now: the cutter runs after
+    # it and takes the part folder over.
+    scripts += ["lightning_art.py", "lightning_cut.py",
+                ("bake_char.py", "lightning")]
     # Rain is the third Storm and wears the same hat and cloak, so he is painted
     # from the same pieces in pale grey cloth, with a claw rake in each fist.
     scripts += ["rain_art.py", ("bake_char.py", "rain")]

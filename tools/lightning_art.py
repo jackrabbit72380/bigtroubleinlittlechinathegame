@@ -1,8 +1,11 @@
 """Lightning: the puppet rig's second fighter, painted in code.
 
-Jack's parts are cut out of a photographic turnaround by ``jack_cut.py``.
-Lightning's turnarounds are renders rather than a clean cut sheet, so his parts
-are drawn here instead - to their measurements. What the references wear, and
+His parts are CUT from his concept render now, by ``lightning_cut.py`` - this
+module paints an approximation of the same costume that read as a different one,
+and the fighter himself is no longer built from it. What is still generated here
+is the electricity: ``hand_crackle`` draws the arcs that ``lightning.py`` puts on
+his hands. Run it on its own and it will paint his parts too; the cutter runs
+after it and takes the part folder back. What the references wear, and
 what this paints: the wide low straw hat with the straw fan on its crown, a
 black high-collared robe under a blued-steel cuirass quilted in diamonds with a
 stud at every crossing, riveted pauldrons with a brass medallion at each collar

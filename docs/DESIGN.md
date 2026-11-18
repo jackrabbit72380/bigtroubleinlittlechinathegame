@@ -67,21 +67,33 @@ on hit or at the end of the round without cleanup code.
 
 ## Lightning: the second fighter cut from parts
 
-Jack's parts come from a photographic turnaround. Lightning's turnarounds are
-renders rather than a clean cut sheet, so `tools/lightning_art.py` paints his
-parts instead - holding to their measurements rather than cutting them up: the
-wide straw hat with its straw fan, the black robe under a blued-steel cuirass
-quilted in diamonds with a stud at every crossing, riveted pauldrons with a
-brass medallion at each collar bone, the belt with a brass lion's head for a
-buckle, the pointed plate faulds below it, black trousers and boots laced up the
-shin, the oxblood velvet cloak, and the electric-blue eyes and current that give
-him his name. It writes the same `art_src/chars/lightning/parts/` a hand-drawn
-turnaround would, so the rig, the baker and the validator do not care where the
-pixels came from.
+Jack's parts come from a photographic turnaround. Lightning's are renders too,
+but of a figure standing in a guard rather than a cut sheet, so
+`tools/lightning_cut.py` lifts his own pixels into the rig. The joints are read
+off the render once, and every opaque pixel is then given to the bone it is
+nearest: the pieces tile the drawing, a limb can never be cut longer than its
+own bone, and both sides of a joint include it. The cloak is the exception, and
+is taken out first by colour - crimson is the one hue nothing else on him has -
+so it hangs from the shoulders as one piece instead of being split between every
+bone it passes behind. The parts come out as the wide low straw hat with its
+straw fan, the black high-collared robe under a blued-steel cuirass quilted in
+diamonds with a stud at every crossing, riveted pauldrons with a brass medallion
+at each collar bone, the leather belt with a brass lion's head for the buckle,
+the pointed plate faulds below it, the black baggy trousers and boots laced up
+the shin, the oxblood velvet cloak, and the face under the brim.
 
-The paint was redone when three turnarounds of the character went up in
-`concept_art/fighters/lightning/`: the older painting had a beaded demon-face
-apron and a near-black cloak, and the references wear none of that.
+Because the pieces tile him, a pose that swings a limb off the angle it was cut
+at opens a seam rather than closing one, so his stance in `POSE_SETS` is the
+drawing itself and his punches are drawn art (`ART_POSES`). Three things in his
+`rig.json` turn off the rig's seam-hiding: `welds_off`, `join_off` and
+`contact_off`. A weld would paint a capsule of the arm's own colour into his
+chest, the island joiner would draw a red bar between two strips of cloak that
+only look separate, and a contact shadow would smudge an arm that already
+carries the whole photograph's light.
+
+`tools/lightning_art.py` remains, but only for the effect frames
+`tools/lightning.py` imports; it also paints his parts if run on its own, and
+`tools/lightning_cut.py` takes the part folder back afterwards.
 
 The rig grew one part for him: `cape`. It is drawn first, behind everything
 else, hangs from the shoulder joint and rides only 35% of the torso's lean, so

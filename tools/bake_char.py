@@ -185,6 +185,18 @@ ART_POSES = {
         "boot": "concept_art/fighters/jack_burton/jack_faceing_right.png",
         "low_kick": "concept_art/fighters/jack_burton/jack_faceing_right_medium_kick.png",
     },
+    # Lightning's own punch drawings.  His fight art is cut from the same render
+    # these came from, so a punch he threw in the drawing - arm straight out,
+    # feet planted, cloak carried by the swing - is both the truest frame the set
+    # can have and the only one no seam can open on: the rig never bends him for
+    # it at all.  The kick uses the guard drawing, as Jack's does, rather than a
+    # leg swung off the angle it was cut at.
+    "lightning": {
+        "jab": "concept_art/fighters/lightning/lighting faceing right lefr punch.png",
+        "cross": "concept_art/fighters/lightning/lighting _faceing right punch.png",
+        "upper": "concept_art/fighters/lightning/lighting _faceing right punch.png",
+        "boot": "concept_art/fighters/lightning/lighting faceing right.png",
+    },
 }
 
 

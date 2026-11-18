@@ -239,7 +239,8 @@ def _lap_of(alpha, y, frac=0.30, lo=3, hi=8):
 # ----------------------------------------------------------------- load/rig
 class Rig:
     def __init__(self, parts, metrics=None, art_angles=None, canvas=None, axis=None,
-                 order=None, welds_off=None, sole_ground=None):
+                 order=None, welds_off=None, sole_ground=None,
+                 contact_off=None):
         self.metrics = dict(METRICS)
         if metrics:
             self.metrics.update(metrics)
@@ -263,6 +264,11 @@ class Rig:
         # between them - it has no air to fill at rest and paints a dark band
         # across the jeans the moment the torso leans.
         self.welds_off = frozenset(welds_off or ())
+        # Parts that must not be given a contact shadow either. The shadow is
+        # there to sit a painted limb ON the body; a part cut from a photograph
+        # already has the light of the whole figure in it, and shading it again
+        # at its own edge turns an arm into a smudge.
+        self.contact_off = frozenset(contact_off or ())
         # Ground the pose on the SOLE instead of the ankle. See _lowest: a rig
         # whose boot art is big enough that the ankle joint is nowhere near the
         # sole cannot be stood on the floor by a bone length alone.
@@ -464,12 +470,20 @@ def load_rig(char_id, view=None):
 
     # Last pass on the art itself: a part painted as two islands has a hole the
     # joints cannot close, so bridge it here before anything is posed.
+    # A part set cut from one drawing already tiles the figure, so there is
+    # nothing floating to bridge - and bridging it anyway paints a line between
+    # islands that only look separate because a hat's straw is a few pixels
+    # wide.  Those rigs say so with "join_off".
+    join_off = frozenset(cfg.get("join_off") or ())
     for name in list(parts):
+        if name in join_off:
+            continue
         parts[name]["image"] = _join_pieces(parts[name]["image"])
 
     rig = Rig(parts, metrics or None, show,
               cfg.get("canvas"), cfg.get("axis"), cfg.get("order"),
-              cfg.get("welds_off"), cfg.get("sole_ground"))
+              cfg.get("welds_off"), cfg.get("sole_ground"),
+              cfg.get("contact_off"))
     return rig
 
 
@@ -1148,7 +1162,8 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
                       _joint_radius(part, ss), _near_rgb(part["image"],
                                                          *part["pivot"]),
                       feather=1.0 * ss)
-        before = out.getchannel("A") if name in CONTACT else None
+        before = (out.getchannel("A")
+                  if name in CONTACT and name not in rig.contact_off else None)
         _place(out, part, angles.get(name, 0.0), joints[name])
         if before is not None:
             added = ImageChops.subtract(out.getchannel("A"), before)
@@ -1733,20 +1748,70 @@ POSE_SETS = {
                     arm_n=(0, 0, 0), arm_f=(-21, 0, 0),
                     leg_n=(14, -10, 88), leg_f=(-18, 11, 92)),
     },
+    # Lightning is cut from his concept render: hat, cuirass, lion buckle, cloak,
+    # trousers and boots are his own pixels, one piece per joint (see
+    # ``tools/lightning_cut.py``).  His pieces TILE the drawing - each one ends
+    # exactly where the next begins - so a pose that swings a limb away from the
+    # angle it was cut at opens a seam between the pieces instead of closing one,
+    # and there are no welds to hide it.  The stance is therefore the drawing
+    # itself, and every other pose is the drawing with only as much lean, shift
+    # and leg swing as the seams will take.  His punches are drawn art
+    # (``ART_POSES``), because a fist the artist drew beats one a rig swings.
+    #
+    # Numbers: (swing, elbow, wrist) for an arm and (thigh, shin, foot) for a
+    # leg, all as the rig states them for a cut arm - the shoulder angle, then
+    # what the elbow adds, then what the wrist adds.
     "lightning": {
-        # Arms swung only part way down: the parts are cut in a guard, so
-        # hanging them fully (-44) clasped the hands at his waist. Held here the
-        # elbows stay wide and the palms sit forward, which is the stance the
-        # concept draws. The far arm's part is MIRRORED, so its angle runs the
-        # other way to keep the two arms symmetric.
-        "stance": dict(lean=-2, head=1, cape=-4,
-                       arm_n=(-18, 22, 0), arm_f=(14, 22, 0),
-                       leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
-        # He stands nearly upright in the concept; the old 26/-28 split squatted
-        # him into a crab stance that made the boots look enormous.
-        "breath": dict(lean=-3, head=0, lift=1, cape=-2,
-                        arm_n=(-22, 20, 0), arm_f=(18, 20, 0),
-                        leg_n=(10, -6, 86), leg_f=(-12, 8, 94)),
+        "stance": dict(lean=0, head=0, cape=0,
+                       arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                       leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        "breath": dict(lean=-1, head=0, lift=1, cape=-2,
+                       arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                       leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        # The step is in the legs only: the cloak and the cuirass hang off the
+        # same hip, and a lean slides one against the other.
+        "walk_a": dict(lean=2, shift=1, head=1, cape=-3,
+                       arm_n=(30.5, 96, 25.7), arm_f=(-30.7, -14.3, 0),
+                       leg_n=(26, 12, 88), leg_f=(-30, -33, 92)),
+        "walk_b": dict(lean=2, shift=-1, head=-1, cape=-1,
+                       arm_n=(30.5, 100, 25.7), arm_f=(-30.7, -14.3, 0),
+                       leg_n=(13, 27, 92), leg_f=(-17, -21, 88)),
+        "crouch": dict(lean=4, head=2, cape=-2,
+                       arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                       leg_n=(30, 38, 90), leg_f=(-14, -12, 90)),
+        "jump": dict(lean=2, head=-1, lift=-18, ground=False, cape=2,
+                     arm_n=(30.5, 92, 25.7), arm_f=(-30.7, -14.3, 0),
+                     leg_n=(27, 14, 86), leg_f=(-22, -20, 94)),
+        # The guard drawing IS his block.
+        "block": dict(lean=1, head=0, cape=-1,
+                      arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                      leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        "hit": dict(lean=-7, head=6, shift=-2, cape=3,
+                    arm_n=(33, 96, 25.7), arm_f=(-28, -14.3, 0),
+                    leg_n=(16, 24, 90), leg_f=(-26, -29, 90)),
+        "win": dict(lean=-2, head=-3, cape=-2,
+                    arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                    leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        # Kicks swing the near leg clear of the drawing.  The thigh carries most
+        # of it and the knee only a little, so the boot opening does not tear
+        # away from the trouser it was cut from.
+        "boot": dict(lean=-3, head=1, lift=-2, ground=False, cape=2,
+                     arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                     leg_n=(-14, 34, 96), leg_f=(-24, -28, 90)),
+        "low_kick": dict(lean=2, head=0, cape=1,
+                         arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                         leg_n=(40, 6, 86), leg_f=(-24, -28, 90)),
+        # Only used if the drawn punches are ever removed from ART_POSES: a
+        # straight arm out of the guard, thrown without moving the feet.
+        "jab": dict(lean=2, shift=2, head=0, cape=-2,
+                    arm_n=(72, 8, 0), arm_f=(-30.7, -14.3, 0),
+                    leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        "cross": dict(lean=4, shift=3, head=-2, cape=-3,
+                      arm_n=(80, 4, 0), arm_f=(-26, -14.3, 0),
+                      leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
+        "upper": dict(lean=-3, shift=2, head=3, cape=-1,
+                      arm_n=(52, 46, 0), arm_f=(-30.7, -14.3, 0),
+                      leg_n=(19.2, 21, 90), leg_f=(-23.5, -27.05, 90)),
     },
     # Rain wears Lightning's cloak and hat, so he gets the same upright stance -
     # but he carries a claw rake in each fist, and a shaft that long turns every

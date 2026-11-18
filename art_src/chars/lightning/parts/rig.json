@@ -1,28 +1,166 @@
 {
   "pivots": {
+    "torso": [
+      40.2,
+      125.7
+    ],
+    "head": [
+      77.3,
+      82.6
+    ],
     "pelvis": [
-      43,
-      16
+      74.1,
+      36.8
     ],
-    "arm_n": [
-      56,
-      14
+    "uarm_n": [
+      7.1,
+      6.9
     ],
-    "arm_f": [
-      91,
-      14
+    "farm_n": [
+      21.2,
+      25.7
+    ],
+    "hand_n": [
+      -1.0,
+      33.6
+    ],
+    "uarm_f": [
+      52.2,
+      10.1
+    ],
+    "farm_f": [
+      36.3,
+      20.6
+    ],
+    "hand_f": [
+      33.4,
+      9.8
+    ],
+    "thigh_n": [
+      25.9,
+      0.0
+    ],
+    "shin_n": [
+      45.8,
+      15.9
     ],
     "foot_n": [
-      14,
-      25
+      -4.5,
+      32.8
+    ],
+    "thigh_f": [
+      87.9,
+      0.0
+    ],
+    "shin_f": [
+      99.8,
+      29.1
     ],
     "foot_f": [
-      14,
-      25
+      68.8,
+      45.5
     ],
     "cape": [
-      95,
-      12
+      150.6,
+      20.6
     ]
-  }
+  },
+  "welds_off": [
+    "cape",
+    "farm_f",
+    "farm_n",
+    "foot_f",
+    "foot_n",
+    "hand_f",
+    "hand_n",
+    "head",
+    "pelvis",
+    "shin_f",
+    "shin_n",
+    "thigh_f",
+    "thigh_n",
+    "torso",
+    "uarm_f",
+    "uarm_n"
+  ],
+  "join_off": [
+    "cape",
+    "farm_f",
+    "farm_n",
+    "foot_f",
+    "foot_n",
+    "hand_f",
+    "hand_n",
+    "head",
+    "pelvis",
+    "shin_f",
+    "shin_n",
+    "thigh_f",
+    "thigh_n",
+    "torso",
+    "uarm_f",
+    "uarm_n"
+  ],
+  "contact_off": [
+    "cape",
+    "farm_f",
+    "farm_n",
+    "foot_f",
+    "foot_n",
+    "hand_f",
+    "hand_n",
+    "head",
+    "pelvis",
+    "shin_f",
+    "shin_n",
+    "thigh_f",
+    "thigh_n",
+    "torso",
+    "uarm_f",
+    "uarm_n"
+  ],
+  "angles": {
+    "torso": 0.0,
+    "head": 0.0,
+    "pelvis": 0.0,
+    "uarm_n": 30.47,
+    "farm_n": 128.93,
+    "hand_n": 154.65,
+    "uarm_f": -30.7,
+    "farm_f": -45.0,
+    "hand_f": -45.0,
+    "thigh_n": 19.18,
+    "shin_n": 20.96,
+    "foot_n": 0.0,
+    "thigh_f": -23.5,
+    "shin_f": -27.05,
+    "foot_f": 0.0
+  },
+  "metrics": {
+    "hip_y": -123.0,
+    "ankle_y": 0.0,
+    "knee_y": -62.2,
+    "shoulder_y": -247.4,
+    "neck_y": -251.4,
+    "head_y": -295.1,
+    "shoulder_half": 23.8,
+    "hip_half": 23.8,
+    "torso_len": 124.4,
+    "neck_len": 4.0,
+    "uarm": 50.7,
+    "farm": 37.1,
+    "hand": 18.6,
+    "thigh": 64.4,
+    "shin": 66.6,
+    "thigh_f": 66.4,
+    "shin_f": 69.8
+  },
+  "canvas": [
+    400,
+    420
+  ],
+  "axis": [
+    200,
+    380
+  ]
 }
