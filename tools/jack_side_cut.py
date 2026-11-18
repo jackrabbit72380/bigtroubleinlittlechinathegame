@@ -917,9 +917,13 @@ def build():
     # up at in rig units, and `hand` is the fist's centre inside the cut, which
     # becomes its pivot; both are divided by SCALE because every part in this
     # folder is stored at the art's own scale and shrunk again on load.
+    # The knife is the bare blade - its own drawing, with no hand on it - so the
+    # fist already in the guard closes on the handle and nothing doubles up. The
+    # pistol has no such cut: the hand comes with it, and is sized to cover the
+    # drawn fist it is pinned over.
     WEAPONS = (
         ("prop_gun", "jack_left_hand_gun.png", 0.16, (280, 400)),
-        ("prop_knife", "jack_left_hand_knife.png", 0.30, (161, 348)),
+        ("prop_knife", "jack_left_knife.png", 0.26, (84, 349)),
     )
     for name, art, rig_scale, hand in WEAPONS:
         piece = Image.open(os.path.join(ROOT, "concept_art", "fighters",
