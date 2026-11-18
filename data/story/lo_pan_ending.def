@@ -1,0 +1,48 @@
+; The Legacy of Lo Pan - the story mode's ending.
+; Played by external/script/lo_pan.lua after the last fight.
+; Text only, so the card needs no art.
+
+[Info]
+localcoord = 1280,720
+
+[SceneDef]
+stopmusic = 1
+font0 = ikemen1/fonts/Menu2.def
+font1 = ikemen1/fonts/Body.def
+
+[Scene 0]
+fadein.time = 45
+fadein.col = 0,0,0
+fadeout.time = 25
+fadeout.col = 0,0,0
+clearcolor = 9,7,12
+layerall.pos = 640,720
+
+layer0.text = "THE LEGACY OF LO PAN"
+layer0.font = 0
+layer0.offset = 0,-395
+
+layer1.text = "Lo Pan is dead, the exchange is coming down, and\nChinatown is still standing when the dust settles."
+layer1.font = 1
+layer1.offset = 0,-290
+layer1.textdelay = 0
+
+end.time = 480
+
+[Scene 1]
+fadein.time = 25
+fadein.col = 0,0,0
+fadeout.time = 60
+fadeout.col = 0,0,0
+layerall.pos = 640,720
+
+layer0.text = "DAWN"
+layer0.font = 0
+layer0.offset = 0,-395
+
+layer1.text = "Wang Chi has his bride, Egg Shen has his answers, and\nJack Burton has a truck outside with the cargo still in it.\n\nTHE END"
+layer1.font = 1
+layer1.offset = 0,-290
+layer1.textdelay = 0
+
+end.time = 600

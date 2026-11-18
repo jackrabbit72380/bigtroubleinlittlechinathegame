@@ -1,0 +1,52 @@
+; The Legacy of Lo Pan - the story mode's opening.
+; Played by external/script/lo_pan.lua before the first fight.
+; Text only, so the card needs no art.
+
+[Info]
+localcoord = 1280,720
+
+[SceneDef]
+stopmusic = 1
+font0 = ikemen1/fonts/Menu2.def
+font1 = ikemen1/fonts/Body.def
+
+[Scene 0]
+fadein.time = 45
+fadein.col = 0,0,0
+fadeout.time = 25
+fadeout.col = 0,0,0
+clearcolor = 9,7,12
+layerall.pos = 640,720
+
+layer0.text = "BIG TROUBLE IN LITTLE CHINA"
+layer0.font = 1
+layer0.offset = 0,-455
+
+layer1.text = "THE LEGACY OF LO PAN"
+layer1.font = 0
+layer1.offset = 0,-390
+
+layer2.text = "A story mode in two acts.\nYou are Jack Burton. Everything else is Chinatown."
+layer2.font = 1
+layer2.offset = 0,-290
+layer2.textdelay = 0
+
+end.time = 360
+
+[Scene 1]
+fadein.time = 25
+fadein.col = 0,0,0
+fadeout.time = 25
+fadeout.col = 0,0,0
+layerall.pos = 640,720
+
+layer0.text = "ACT I - LITTLE CHINA"
+layer0.font = 0
+layer0.offset = 0,-395
+
+layer1.text = "Miao Yin is taken at the airport and the trail runs from\nthe funeral procession to the sewers under the Wing Kong\nexchange. Lo Pan is waiting at the bottom of it."
+layer1.font = 1
+layer1.offset = 0,-290
+layer1.textdelay = 0
+
+end.time = 480

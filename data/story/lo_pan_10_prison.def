@@ -1,0 +1,34 @@
+; The Legacy of Lo Pan - chapter card: Wing Kong Prison.
+; Played by external/script/lo_pan.lua; text only, so the card needs no art.
+; Layers are centred on layerall.pos and lifted by their offsets.
+
+[Info]
+localcoord = 1280,720
+
+[SceneDef]
+stopmusic = 1
+font0 = ikemen1/fonts/Menu2.def
+font1 = ikemen1/fonts/Body.def
+
+[Scene 0]
+fadein.time = 25
+fadein.col = 0,0,0
+fadeout.time = 25
+fadeout.col = 0,0,0
+clearcolor = 9,7,12
+layerall.pos = 640,720
+
+layer0.text = "ACT II - CHAPTER 2"
+layer0.font = 1
+layer0.offset = 0,-455
+
+layer1.text = "WING KONG PRISON"
+layer1.font = 0
+layer1.offset = 0,-395
+
+layer2.text = "The Chang Sing are in the cages and the stairs go down.\nThunder is here long enough to be sure of it, and then the\nfloor is not the floor any more."
+layer2.font = 1
+layer2.offset = 0,-290
+layer2.textdelay = 0
+
+end.time = 420

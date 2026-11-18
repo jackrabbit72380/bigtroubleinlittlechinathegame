@@ -893,6 +893,98 @@ def check_ladder():
     notes.append("ladder: every roster order has fights in arcade and team")
 
 
+def _story_arcs(text):
+    """Every arc [StoryMode] declares, as a table of its own parameters."""
+    header = re.search(r"(?m)^[ \t]*\[StoryMode\][ \t]*$", text)
+    if header is None:
+        return []
+    arcs, current = [], None
+    for raw in text[header.end():].splitlines():
+        line = raw.split(";", 1)[0].strip()
+        if not line:
+            continue
+        if line.startswith("["):
+            break
+        if "=" not in line:
+            continue
+        key, value = (part.strip() for part in line.split("=", 1))
+        key = key.lower()
+        if key == "name":
+            current = {"name": value, "displayname": "", "path": "", "unlock": "true"}
+            arcs.append(current)
+        elif current is not None and key in current:
+            current[key] = value
+    return arcs
+
+
+def check_story_mode():
+    """The story arc has to be the campaign its own script describes.
+
+    [StoryMode] pointed at the arcade script, which plays a single random fight
+    and returns, so "The Legacy of Lo Pan" ended the moment it began. The arc now
+    carries its own fight list; this reads that list and refuses an opponent or a
+    stage the game does not have, a chapter card that is not there, a player who
+    is not in the roster, or a campaign that never marks itself cleared. Otherwise
+    the first thing to notice is a window of engine errors a few fights in.
+    """
+    sel_text = read(os.path.join(ROOT, "data", "select.def"))
+    arcs = _story_arcs(sel_text)
+    if not arcs:
+        err("story: data/select.def declares no [StoryMode] arc, so the title menu "
+            "drops Story Mode altogether")
+        return
+    roster = {name.lower() for name, _stage in parse_roster(sel_text)[0]}
+    for arc in arcs:
+        path = arc["path"]
+        if not path:
+            err("story: the %s arc has no path" % arc["name"])
+            continue
+        if path == "external/script/default.lua":
+            err("story: the %s arc still points at the arcade script, which plays "
+                "one random fight and returns" % arc["name"])
+            continue
+        full = os.path.join(ROOT, path.replace("/", os.sep))
+        if not os.path.isfile(full):
+            err("story: %s names %s, and there is no such file" % (arc["name"], path))
+            continue
+        code = _lua_code(read(full), keep_strings=True)
+        refs = []
+        for match in re.finditer(r"""['"]([^'"\n]+)['"]""", code):
+            value = match.group(1)
+            if value.endswith(".def") and value not in refs:
+                refs.append(value)
+        fights = len(re.findall(r"\bstage\s*=\s*'stages/[^']+'", code))
+        player = re.search(r"(?m)^\s*local\s+PLAYER\s*=\s*['\"]([^'\"]+)['\"]", code)
+        if player is None:
+            err("story: %s names no PLAYER constant, so the campaign has no "
+                "character of its own" % path)
+        elif player.group(1).lower() not in roster:
+            err("story: %s plays %s, which data/select.def does not list"
+                % (path, player.group(1)))
+        if not re.search(r"setMatchNo\s*\(\s*-1\s*\)", code):
+            err("story: %s never calls setMatchNo(-1), so clearing it is not counted"
+                % path)
+        if fights == 0:
+            err("story: %s names no fights" % path)
+        for ref in refs:
+            low = ref.lower()
+            target = os.path.join(ROOT, ref.replace("/", os.sep))
+            if low.startswith("stages/"):
+                if not os.path.isfile(target):
+                    err("story: %s fights on %s, and there is no such stage" % (path, ref))
+            elif low.startswith("data/"):
+                if not os.path.isfile(target):
+                    err("story: %s shows %s, and there is no such storyboard" % (path, ref))
+            else:
+                if not os.path.isfile(os.path.join(ROOT, "chars", ref.replace("/", os.sep))):
+                    err("story: %s fights %s, and there is no such character" % (path, ref))
+                elif low not in roster:
+                    err("story: %s fights %s, which data/select.def does not list"
+                        % (path, ref))
+        notes.append("story: %s runs %d fight(s), and every opponent, stage and card ships"
+                     % (arc["name"], fights))
+
+
 def check_intro_states():
     """[Statedef 191] must not spawn KFM's wood pieces or their hit sounds.
 
@@ -2297,6 +2389,7 @@ def main():
     check_commands()
     check_command_gates()
     check_ladder()
+    check_story_mode()
     check_intro_states()
     check_stage_aspect()
     check_stage_models()
