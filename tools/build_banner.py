@@ -8,9 +8,10 @@ and the back is flattened so the dragon lies along the top of the screen.
 
 One dragon per side, and its body IS the HUD:
 
-    y  2..26   top of the body      -> big health bar        ([Lifebar])
-    y 30..50   underside / belly    -> audacity bar          ([Powerbar])
-    y  0..52   head at dead centre, turned in to the glowing green/red
+    y 12..36   top of the body      -> big health bar        ([Lifebar])
+    y 32..58   underside / belly    -> audacity bar          ([Powerbar]),
+               from the neck all the way to the tip of the tail
+    y 16..72   head at dead centre, turned in to the glowing green/red
                yin-yang with the round timer on it          ([Time])
 
 The head is drawn on the [Time] layer so it sits over the bar ends rather than
@@ -37,6 +38,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, HERE)
 
+import build_fight_text  # noqa: E402
 import sff  # noqa: E402
 
 FIGHT_SFF = os.path.join(ROOT, "data", "fight.sff")
@@ -45,28 +47,76 @@ FONT = os.path.join(ROOT, "data", "ikemen1", "fonts", "Display.ttf")
 
 GROUP = 20
 TIMER_GROUP = 30
-HALF, H = 640, 60           # one half of the strip, anchored at the screen corner
+HALF = 640                  # one half of the strip, anchored at the screen corner
 SS = 4                      # supersample factor
 SCREEN = 640                # screen centre
 
-LIFE_Y = 2                  # top of the health bar = top of the dragon's back
-BAR_Y = 30                  # top of the audacity bar = the underside
-BAND = 20                   # height of the audacity band
-TIME_Y = 34                 # yin-yang centre
-# The countdown is the Timer bitmap face (49-unit cells) at TIME_NUM_SCALE, so
-# the digits stand 34px tall. The engine anchors that text at the bottom of the
-# glyph cell, so a negative offset lifts the whole block off the disc: at -17 the
-# digits sat above the yin-yang, over the dragon's heads, which read as part of
-# the banner instead of as the clock. +half a cell puts their centre line on the
-# disc's centre, between the two dots.
-TIME_NUM_SCALE = 1.0
-TIME_NUM_CELL = 45          # the Display face's cell, the same as every caption
-TIME_NUM_Y = int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
-METER_W = 202               # fillable length of the audacity bar
-BAR_X1 = 568                # p1.pos.x: inner end of the audacity bar
+# The dragon used to sit on the very top row of pixels, so the screen edge cut
+# its back and its dorsal fins off, and its head - on the [Time] layer, centred
+# on the yin-yang - read as a second animal drawn below the body rather than as
+# the end of it. DRAGON_Y drops the whole assembly this far down, and the half
+# sprite grows by the same amount so the belly still has rows to be drawn in.
+DRAGON_Y = 10
+H = 60 + DRAGON_Y           # one half's height, art included
 
-SPINE_Y = 25                # the dragon's centre line
-BODY_R = 23                 # its half-thickness
+LIFE_Y = DRAGON_Y + 2       # top of the health bar = top of the dragon's back
+BAR_Y = DRAGON_Y + 22       # top of the audacity bar = the top of its belly
+BAND = 26                   # height of the audacity band: the whole underside
+TIME_Y = DRAGON_Y + 34      # yin-yang centre
+TAIL_X = 140                # the tip of the tail: the far end of the belly
+BAR_X1 = 545                # p1.pos.x: the inner end of the audacity bar, at
+                            # the neck, where the head takes the body over
+METER_W = BAR_X1 - TAIL_X   # fillable length of the audacity bar
+
+# The countdown is a caption, so it is drawn in the caption face at the caption
+# size - the 43.2 units on a 1920x1080 screen that the names, the wins counter
+# and ROUND 1 are set at (tools/build_fight_text.py CAPTION_UNITS). At scale 1.0
+# it was the whole 90px cell, three times the caption, and the offset was half
+# the cell of a 45px face [Time] no longer names, so the digits also sat low on
+# the disc. Both are measured off the shipped files instead of being written
+# down: units from the def's localcoord, cell from the face it draws.
+TIME_FONT = 10              # the caption face, [Files] font10
+
+
+def _def_text():
+    with open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape",
+              newline="") as f:
+        return f.read()
+
+
+def timer_cell():
+    """The cell height of the face [Time] draws the countdown with."""
+    slot = re.search(r"(?m)^\s*font%d\s*=\s*([^;\r\n]+)" % TIME_FONT,
+                     _def_text())
+    if slot:
+        path = os.path.join(ROOT, "data", slot.group(1).strip())
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8-sig",
+                      errors="surrogateescape") as fh:
+                for line in fh:
+                    if line.strip().lower().startswith("size"):
+                        try:
+                            return float(line.split("=", 1)[1].split(",")[1])
+                        except (IndexError, ValueError):
+                            break
+    return 90.0
+
+
+def timer_scale(cell):
+    """The scale that draws the countdown at the caption size, in fight space."""
+    height = 720.0
+    hit = re.search(r"(?m)^\s*localcoord\s*=\s*\d+\s*,\s*(\d+)", _def_text())
+    if hit:
+        height = float(hit.group(1)) or 720.0
+    units = build_fight_text.CAPTION_UNITS * height / 1080.0
+    return round(units / cell, 3)
+
+
+TIME_NUM_CELL = timer_cell()
+TIME_NUM_SCALE = timer_scale(TIME_NUM_CELL)
+# The engine anchors that text at the bottom of the glyph cell, so half a cell
+# of offset puts the digits' centre line on the disc's centre, between the dots.
+TIME_NUM_Y = int(round(TIME_NUM_CELL * TIME_NUM_SCALE / 2.0))
 
 # Both dragons are gold now, so player two is no longer tinted: the def used
 # to shift its bars green with palfx.add. Kept as a constant because the
@@ -108,9 +158,13 @@ GOLD = {
 
 # the approved body curve: tail at the outer end, a lazy rise and fall along the
 # back, neck at the inner end where the head takes over
+# The body stops at the neck, x=540, under the skull's front half: it used to
+# run on to 598 as a thin taper, which poked out past the jaw and touched the
+# yin-yang's rim, so the head looked pasted onto a body that carried on without
+# it. The head's own collar takes the last 50 pixels, so the join is covered.
 PATH = ((139, 30), (180, 33), (232, 29), (300, 24), (380, 22), (460, 24),
-        (520, 28), (570, 26), (598, 25))
-PATH_R = (1.5, 5.0, 11.0, 18.0, 22.0, 23.0, 21.0, 16.0, 9.0)
+        (510, 27), (540, 30))
+PATH_R = (1.5, 5.0, 11.0, 18.0, 22.0, 23.0, 20.0, 15.0)
 
 HEAD_JOINT = (480, 26)      # where the neck meets the skull
 
@@ -321,7 +375,7 @@ def paint_body_half(pal, flip):
     """The dragon behind the bars: back, belly, plates, fins, tail."""
     w, h = HALF * SS, H * SS
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    line = _spine(SS)
+    line = _dragon_line()
     _body(img, line, pal)
     _scales(img, line, pal)
     _plates(img, line, pal)
@@ -403,13 +457,33 @@ def paint_timer():
 
 
 # ------------------------------------------------------- the bars as body parts
-def body_silhouette():
-    """Alpha mask of the dragon's own outline, 640x60 at 1:1."""
+def _dragon_line():
+    """The approved spine, dropped to where the dragon hangs on the screen."""
+    return [(x, y + DRAGON_Y * SS, r) for x, y, r in _spine(SS)]
+
+
+def body_silhouette(kind="body"):
+    """Alpha mask of the dragon's outline, its back, or its belly.
+
+    Both bars are parts of the animal, and neither part is a flat strip: the
+    back rises to a crown and falls away at the tail, and the underside rises
+    to meet it. Masking them with the outline alone left each bar a rectangle
+    whose straight edge sat on the dragon - a pale slab across the back once
+    the body came down off the screen edge. "back" is the crown to the spine
+    and "belly" the spine to the underside, so each bar is its half of the
+    body, cut on the body's own lines.
+    """
     img = Image.new("L", (HALF * SS, H * SS), 0)
     d = ImageDraw.Draw(img)
-    line = _spine(SS)
-    d.polygon([(x, y - r) for x, y, r in line]
-              + [(x, y + r) for x, y, r in reversed(line)], fill=255)
+    line = _dragon_line()
+    if kind == "belly":
+        top, low = 0.02, 0.98
+    elif kind == "back":
+        top, low = -0.98, 0.02
+    else:
+        top, low = -1.0, 1.0
+    d.polygon([(x, y + r * top) for x, y, r in line]
+              + [(x, y + r * low) for x, y, r in reversed(line)], fill=255)
     return img.resize((HALF, H), Image.LANCZOS)
 
 
@@ -441,7 +515,7 @@ def _mask_for(sil, right, y0, w, h):
     return sil.crop((x0, y0, x0 + w, y0 + h))
 
 
-def _band(sil, w, h, pal, kind, lit, right, y0, label=None):
+def _band(sil, w, h, pal, kind, lit, right, y0, label=None, label_at=None):
     """A bar sprite cut to the dragon's shape - no rectangle anywhere."""
     img = _gradient(w, h, pal, kind, lit)
     img.putalpha(_mask_for(sil, right, y0, w, h))
@@ -452,7 +526,8 @@ def _band(sil, w, h, pal, kind, lit, right, y0, label=None):
         except OSError:
             font = ImageFont.load_default()
         box = d.textbbox((0, 0), label, font=font)
-        d.text(((w - (box[2] - box[0])) / 2, h * 0.52 - box[1]), label,
+        cx = w / 2.0 if label_at is None else label_at
+        d.text((cx - (box[2] - box[0]) / 2, h * 0.52 - box[1]), label,
                font=font, fill=(18, 24, 14, 235))
     return img
 
@@ -492,6 +567,12 @@ def build_meters(_by_key, sil):
     band was drawn on that canvas instead of on its own 20px one - a pale slab
     across the dragon's whole underside. The geometry below is the definition;
     nothing here is inherited.
+
+    The band is the whole belly now: it used to be 202px long, so a full bar
+    stopped dead in the middle of the dragon with a straight edge, while the
+    tail beyond it kept the plain body colour. It runs from the neck (BAR_X1)
+    to the tip of the tail (TAIL_X), so a full audacity bar is the whole
+    underside and the last of it fills out in the tail.
     """
     out = {}
     out[(40, 0)] = (_band(sil, METER_W + 4, BAND, GOLD, "belly", False,
@@ -502,8 +583,10 @@ def build_meters(_by_key, sil):
     out[(43, 0)] = (_band(sil, METER_W, BAND, GOLD, "belly", True,
                           BAR_X1 - 4, BAR_Y),
                     (METER_W, 0))
+    # AUDACITY stays where it read before the belly grew: just in from the neck.
     out[(44, 0)] = (_band(sil, METER_W, BAND, GOLD, "belly", True,
-                          BAR_X1 - 4, BAR_Y, label="AUDACITY"),
+                          BAR_X1 - 4, BAR_Y, label="AUDACITY",
+                          label_at=METER_W - 76),
                     (METER_W, 0))
     return out
 
@@ -580,7 +663,9 @@ def patch_def():
 
     s, e = _section(lines, "Powerbar")
     body = "\n".join(lines[s:e])
-    for side, x in (("p1", BAR_X1), ("p2", 712)):
+    # p2's meter is the mirror of p1's about the screen centre, so its inner
+    # end moves with BAR_X1 instead of being written down again.
+    for side, x in (("p1", BAR_X1), ("p2", 2 * SCREEN - BAR_X1)):
         body = _set(body, "%s.pos" % side, "%d,%d" % (x, BAR_Y))
         body = _set(body, "%s.bg0.offset" % side, "0,0")
         body = _set(body, "%s.bg1.offset" % side, "0,0")
@@ -589,8 +674,12 @@ def patch_def():
                      "front8000", "front9000", "front10000"):
             body = _set(body, "%s.%s.offset" % (side, name),
                         "%d,0" % (4 if side == "p2" else -4))
+        # p2's max art is not mirrored (frontMax.facing = 1, so AUDACITY still
+        # reads forwards), so its offset carries the sprite's whole length to
+        # put it in the same box as the fill. That length is METER_W now: the
+        # old 208 was the 202px belly written down a second time.
         body = _set(body, "%s.frontMax.offset" % side,
-                    "%d,0" % (208 if side == "p2" else -4))
+                    "%d,0" % (METER_W + 4 if side == "p2" else -4))
         if side == "p2":
             for name in ("bg0", "front500", "front1000", "front2000",
                          "front3000", "front4000", "front5000", "front6000",
@@ -636,10 +725,10 @@ def patch_def():
     body = re.sub(r"(?m)^([ \t]*counter\w*\.scale[ \t]*=[ \t]*)\d+(\.\d+)?[ \t]*,[ \t]*\d+(\.\d+)?[ \t]*$",
                   lambda m: "%s%.2f, %.2f" % (m.group(1), TIME_NUM_SCALE,
                                                TIME_NUM_SCALE), body)
-    # the digits are the Display face now, in the caption's own colour, so the
-    # clock reads as part of the HUD instead of the stock Timer numerals
-    body = re.sub(r"(?m)^([ \t]*counter\w*\.font[ \t]*=[ \t]*)\d+",
-                  r"\g<1>10", body)
+    # the digits are the caption face, in the caption's own colour and at the
+    # caption's size, so the clock reads as part of the HUD's own text
+    body = re.sub(r"(?m)^([ \t]*counter\w*\.font[ \t]*=[ \t]*)-?\d+",
+                  lambda m: "%s%d" % (m.group(1), TIME_FONT), body)
     lines[s:e] = body.split("\n")
 
     s, e = _section(lines, "Score")
@@ -674,9 +763,8 @@ def main():
 
     painted = {(GROUP, 0): (paint_body_half(GOLD, False), (0, 0)),
                (GROUP, 1): (paint_body_half(GOLD, True), (0, 0))}
-    sil = body_silhouette()
-    painted.update(build_bigbars(by_key, sil))
-    painted.update(build_meters(by_key, sil))
+    painted.update(build_bigbars(by_key, body_silhouette("back")))
+    painted.update(build_meters(by_key, body_silhouette("belly")))
     timer, axis = paint_timer()
     painted[(TIMER_GROUP, 0)] = (timer, axis)
     written = _write_sprites(painted)
@@ -693,10 +781,10 @@ def main():
                 key[0], key[1], sp["w"], sp["h"], img.width, img.height))
 
     os.makedirs(os.path.join(ROOT, "artifacts"), exist_ok=True)
-    strip = Image.new("RGBA", (HALF * 2, 64), (0, 0, 0, 0))
+    strip = Image.new("RGBA", (HALF * 2, H), (0, 0, 0, 0))
     for key, x in (((GROUP, 0), 0), ((GROUP, 1), HALF)):
-        strip.alpha_composite(painted[key][0].crop((0, 0, HALF, 64)), (x, 0))
-    strip.alpha_composite(timer.crop((150, 0, 250, 64)), (590, 0))
+        strip.alpha_composite(painted[key][0].crop((0, 0, HALF, H)), (x, 0))
+    strip.alpha_composite(timer.crop((150, 0, 250, H)), (590, 0))
     strip.convert("RGB").save(os.path.join(ROOT, "artifacts", "vs_banner.png"))
     print("strip: sprites %s, back y %d, belly y %d, heads/timer y %d" % (
         written, LIFE_Y, BAR_Y, TIME_Y))

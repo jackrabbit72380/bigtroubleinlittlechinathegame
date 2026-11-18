@@ -92,10 +92,24 @@ def _tint(img, add):
                                 shift(b, add[2]), a))
 
 
-P2_ADD = (-150, 90, -10)
+def p2_add(section, element):
+    """Player two's palfx.add, straight out of fight.def (0,0,0 = no tint).
+
+    It used to be a constant here, -150,90,-10, a green dragon skin from when
+    both sides had their own colour. The def makes both dragons gold now and
+    sets that add to nothing, so the preview was painting a green player two
+    that the game never draws.
+    """
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[" + section + "]", 1)[1].split("\n[", 1)[0]
+    m = re.search(r"(?m)^\s*p2\.%s\.palfx\.add\s*=\s*(-?\d+)\s*,\s*(-?\d+)"
+                  r"\s*,\s*(-?\d+)" % re.escape(element), body)
+    if not m:
+        return (0, 0, 0)
+    return tuple(int(m.group(i)) for i in (1, 2, 3))
 
 
-def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror):
+def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror, add=(0, 0, 0)):
     """[Lifebar]: bg0 trough, top frame, mid fill, front on top of the fill."""
     px, py = pos[0] * S, pos[1] * S
     bg, bw, bh = pic(d, by_key, pals, (10, 0))
@@ -103,8 +117,8 @@ def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror):
     mid, _mw, _mh = pic(d, by_key, pals, (12, 0))
     key = (13, 0 if frac > 0.5 else (1 if frac > 0.25 else 2))
     front, fw, fh = pic(d, by_key, pals, key)
-    if mirror:
-        bg, top, mid, front = (_tint(x, P2_ADD) for x in (bg, top, mid, front))
+    if mirror and add != (0, 0, 0):
+        bg, top, mid, front = (_tint(x, add) for x in (bg, top, mid, front))
 
     if not mirror:
         blit(canvas, bg, px - bw * S, py, S)
@@ -122,7 +136,7 @@ def draw_lifebar(canvas, d, by_key, pals, pos, frac, mirror):
         blit(canvas, piece, px + 4 * S, py, S)
 
 
-def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror,
+def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror, add=(0, 0, 0),
                   glyphs=None, text=None):
     """[Powerbar]: trough, frame, the dragon front, then the level readout."""
     px, py = pos[0] * S, pos[1] * S
@@ -130,8 +144,8 @@ def draw_powerbar(canvas, d, by_key, pals, pos, frac, mirror,
     frame, _fw2, _fh2 = pic(d, by_key, pals, (41, 0))
     key = (44, 0) if frac >= 1.0 else (43, 0)
     front, fw, fh = pic(d, by_key, pals, key)
-    if mirror:
-        bg, frame, front = (_tint(x, P2_ADD) for x in (bg, frame, front))
+    if mirror and add != (0, 0, 0):
+        bg, frame, front = (_tint(x, add) for x in (bg, frame, front))
 
     if not mirror:
         blit(canvas, bg, px - bw * S, py, S)
@@ -181,6 +195,30 @@ def draw_timer(canvas, d, by_key, pals, pos, glyphs, seconds):
     cell = max((h for _img, _w, h in glyphs.values()), default=0) * c_scale
     draw_text(canvas, glyphs, str(seconds), px + c_off[0] * S,
               py + c_off[1] * S - cell * S, c_scale * S)
+
+
+def timer_face_file():
+    """The bitmap [Time] sets its countdown in, as named by fight.def.
+
+    It used to be hard-wired to the stock Timer face, so the preview kept
+    drawing 49-unit digits after the def had pointed the clock at another
+    face. Reading the slot back means the picture cannot disagree with it.
+    """
+    text = open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape").read()
+    body = text.split("[Time]", 1)[1].split("\n[", 1)[0]
+    m = re.search(r"(?m)^\s*counter\.font\s*=\s*(-?\d+)", body)
+    slot = int(m.group(1)) if m else 8
+    slot_def = re.search(r"(?m)^\s*font%d\s*=\s*([^;\r\n]+)" % slot, text)
+    if not slot_def:
+        return "Timer.sff"
+    path = os.path.join(ROOT, "data", slot_def.group(1).strip())
+    if not os.path.isfile(path):
+        return "Timer.sff"
+    with open(path, encoding="utf-8-sig", errors="surrogateescape") as fh:
+        for line in fh:
+            if line.strip().lower().startswith("file"):
+                return line.split("=", 1)[1].strip()
+    return "Timer.sff"
 
 
 def load_glyphs(name):
@@ -295,16 +333,18 @@ def main():
              GROUND - sp["axis"][1] * CHAR, CHAR)
 
     level_glyphs = load_glyphs("PowerbarNum.sff")
-    timer_glyphs = load_glyphs("Timer.sff")
+    timer_glyphs = load_glyphs(timer_face_file())
 
     draw_faces(shot, d, by_key, pals)
     draw_banner(shot, d, by_key, pals)
-    draw_powerbar(shot, d, by_key, pals, power["p2"], 0.35, True)
+    draw_powerbar(shot, d, by_key, pals, power["p2"], 0.35, True,
+                  p2_add("Powerbar", "front"))
     # AUDACITY is painted into the full-power sprite itself, so nothing is
     # drawn under the meter here
     draw_powerbar(shot, d, by_key, pals, power["p1"], 1.0, False)
     draw_lifebar(shot, d, by_key, pals, life["p1"], 0.82, False)
-    draw_lifebar(shot, d, by_key, pals, life["p2"], 0.55, True)
+    draw_lifebar(shot, d, by_key, pals, life["p2"], 0.55, True,
+                 p2_add("Lifebar", "front"))
     draw_timer(shot, d, by_key, pals, time_pos, timer_glyphs, 60)
 
     shot.convert("RGB").save(os.path.join(OUT, "hud_ingame.png"))

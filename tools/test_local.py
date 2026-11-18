@@ -264,7 +264,7 @@ def hud_line() -> str:
     if not definition.is_file():
         return "data/fight.def is MISSING - the game will not load this HUD"
     text = definition.read_text(errors="replace")
-    if "p1.pos = 595,2" in text and "bg1.spr = 20,0" in text:
+    if "p1.bg1.offset = -595," in text and "bg1.spr = 20,0" in text:
         return "dragon HUD - back is health, belly is audacity, heads on the yin-yang"
     return "STOCK bars - data/fight.def in this folder is not the dragon HUD"
 
