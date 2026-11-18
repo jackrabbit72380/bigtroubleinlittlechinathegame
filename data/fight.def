@@ -2466,12 +2466,12 @@ p2.face.window = 1193, 23, 1253, 111
 
 ;Player 1
 p1.pos = 13,132
-p1.name.scale = 0.5, 0.5
+p1.name.scale = 0.32, 0.32
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
 
 ;Player 2
-p2.name.scale = 0.5, 0.5
+p2.name.scale = 0.32, 0.32
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
@@ -2483,11 +2483,13 @@ leaderontop = 1 ; This allows the names to render from top to bottom.
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28,165
@@ -2511,12 +2513,14 @@ leaderontop = 1
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28, 160
@@ -2556,12 +2560,14 @@ leaderontop = 1
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28,158
@@ -2612,11 +2618,13 @@ leaderontop = 1
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28,165
@@ -2639,12 +2647,14 @@ leaderontop = 1
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28, 160
@@ -2682,12 +2692,14 @@ leaderontop = 1
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,0, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 p1.name.layerno = 0
 
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,0, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 3
 p3.pos = 28,158
@@ -2737,10 +2749,12 @@ p8.name.palfx.mul = 178, 178, 178
 p1.pos = 13,132
 ;p1.bg. =
 p1.name.font = 10,3, 1, 255, 228, 140
+p1.name.scale = 0.32, 0.32
 ;Player 2
 p2.pos = 1267,132
 ;p2.bg. =
 p2.name.font = 10,1, -1, 255, 228, 140
+p2.name.scale = 0.32, 0.32
 
 ;Player 1 Teammates
 p1.teammate.pos = 28,160

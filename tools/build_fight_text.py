@@ -92,17 +92,97 @@ ROUND_KEYS = (
 )
 
 
-# The fighter names under the portrait boxes were the one caption left at 1:1
-# while everything around them grew, so they read as a caption for the picture
-# instead of the fighter. 1.6 of the Menu2Small cell puts them just under the
-# height of the VERSUS row without running into y=200.
-NAME_SIZE = (
-    ("p1.name.scale", "1, 1"),
-    ("p2.name.scale", "1, 1"),
-)
+# The fighter names under the portrait boxes are captions, so they are drawn at
+# the CAPTION size - the one line the whole game uses: 43.2 units on a 1920x1080
+# screen, which is what every menu row, every label on the select screen and the
+# round banner beside them is set at (tools/build_text_faces.py CAPTION_UNITS).
+#
+# The fight lays out in its own, smaller space: fight.def is 1280x720, so that
+# same line is 28.8 units here, and the face the names are drawn in (font 10,
+# ikemen1/fonts/DisplayK.def) is baked at a 90px cell - see SUPERSAMPLE in
+# tools/build_fonts.py - which puts the scale at 0.32.
+#
+# It was 0.5, i.e. 67.5 units once the 1280 fight space is drawn on a 1920
+# screen: half again the rest of the game, so the name read as a headline across
+# the top corner instead of as the caption for the portrait above it. 0.5 is the
+# size of a 45px face - it went stale when the face was rebaked at 90px, and a
+# constant cannot notice that. This one is measured out of the two files.
+CAPTION_UNITS = 43.2            # the motif's caption line, in 1920x1080 units
+NAME_FONT = 10                  # the [Files] slot the player names draw with
+CELL_FALLBACK = 90.0            # the Display cell, if the .def cannot be read
 
 
 DISPLAY = "ikemen1/fonts/Display.def"
+
+
+def name_sections(text):
+    """Every section that draws player names: [Name], [Simul Name], [Tag Name]..."""
+    return [m.group(1) for m in re.finditer(r"^\[([^\]]*Name)\]\s*$", text, re.M)]
+
+
+def name_scale(text):
+    """The scale that draws a player name at the caption size, in fight space."""
+    height = 720.0
+    hit = re.search(r"^\s*localcoord\s*=\s*\d+\s*,\s*(\d+)", text, re.M | re.I)
+    if hit:
+        height = float(hit.group(1)) or 720.0
+    cell = CELL_FALLBACK
+    slot = re.search(r"^\s*font%d\s*=\s*([^;\r\n]+)" % NAME_FONT, text, re.M | re.I)
+    if slot:
+        path = os.path.join(ROOT, "data", slot.group(1).strip())
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8-sig", errors="surrogateescape") as fh:
+                for line in fh:
+                    if line.strip().lower().startswith("size"):
+                        try:
+                            cell = float(line.split("=", 1)[1].split(",")[1])
+                        except (IndexError, ValueError):
+                            pass
+                        break
+    units = CAPTION_UNITS * height / 1080.0
+    scale = round(units / (cell or CELL_FALLBACK), 3)
+    return "%g, %g" % (scale, scale)
+
+
+def place_name_sizes(text):
+    """Set both players' name scale in every name block, inside each block.
+
+    [Name] is the 1v1 caption and the one the player sees; [Simul Name],
+    [Tag Name] and [Turns Name] are the same caption for the other match types,
+    and they carried no scale at all - 1.0 of the 90px cell, twice the size
+    again. Every block is set from the same measurement, so a name is one size
+    in every mode.
+    """
+    size = name_scale(text)
+    made = False
+    for section in name_sections(text):
+        head_mark = "[" + section + "]"
+        start = text.find(head_mark)
+        if start < 0:
+            continue
+        nxt = re.compile(r"^\[", re.M).search(text, start + len(head_mark))
+        end = nxt.start() if nxt else len(text)
+        head, body, tail = text[:start], text[start:end], text[end:]
+        for side in ("p1", "p2"):
+            key = "%s.name.scale" % side
+            line = "%s = %s" % (key, size)
+            pattern = re.compile(r"^;?[ \t]*" + re.escape(key) + r"[ \t]*=[^\r\n]*$",
+                                 re.M)
+            if pattern.search(body):
+                new = pattern.sub(line, body, count=1)
+            else:
+                # Next to the face it belongs to, not at the end of the block.
+                face = re.compile(r"^[ \t]*" + re.escape("%s.name.font" % side)
+                                  + r"[^\r\n]*$", re.M)
+                if face.search(body):
+                    new = face.sub(lambda m: m.group(0) + "\n" + line, body, count=1)
+                else:
+                    new = body.rstrip("\r\n") + "\n" + line + "\n"
+            if new != body:
+                made = True
+            body = new
+        text = head + body + tail
+    return text, made
 
 
 def place_name_face(text):
@@ -144,26 +224,6 @@ def place_name_face(text):
                 made = True
         text = head + body + tail
     return text, made
-
-
-def place_name_size(text):
-    """Set the [Name] scale keys, inside that section only."""
-    start = text.find("[Name]")
-    if start < 0:
-        return text, False
-    nxt = re.compile(r"^\[", re.M).search(text, start + len("[Name]"))
-    end = nxt.start() if nxt else len(text)
-    head, body, tail = text[:start], text[start:end], text[end:]
-    made = False
-    for key, value in NAME_SIZE:
-        pattern = re.compile(r"^;?[ \t]*" + re.escape(key) + r"[ \t]*=[^\r\n]*$", re.M)
-        line = "%s = %s" % (key, value)
-        new = pattern.sub(line, body) if pattern.search(body) \
-            else body.rstrip("\r\n") + "\n" + line + "\n"
-        if new != body:
-            made = True
-        body = new
-    return head + body + tail, made
 
 
 def place_round_banner(text):
@@ -310,7 +370,7 @@ def build():
     with open(FIGHT_DEF, encoding="utf-8", errors="surrogateescape",
               newline="") as f:
         text = f.read()
-    text, names = place_name_size(text)
+    text, names = place_name_sizes(text)
     text, faces = place_name_face(text)
     if names or faces:
         with open(FIGHT_DEF + ".tmp", "w", encoding="utf-8",
@@ -342,6 +402,18 @@ def build():
         raise SystemExit("the round banner did not take the wording")
     if "fonts/Display.def" not in check:
         raise SystemExit("the Display face was not registered in fight.def")
+    # Read back the name size in every block: a name block left without one
+    # draws at 1.0, i.e. twice the caption, which is the fault this fixes.
+    want = name_scale(check)
+    for section in name_sections(check):
+        body = check.split("[" + section + "]", 1)[-1].split("\n[", 1)[0]
+        for side in ("p1", "p2"):
+            hit = re.search(r"^\s*%s\.name\.scale\s*=\s*([^;\r\n]+)" % side,
+                            body, re.M)
+            if hit is None or hit.group(1).strip().replace(" ", "") \
+                    != want.replace(" ", ""):
+                raise SystemExit("[%s] %s.name.scale is not the caption size (%s)"
+                                 % (section, side, want))
     mode = check.split("[Mode]", 1)[-1].split("\n[", 1)[0]
     if "fonts/Body.def" not in check or "demo.text.scale = %s" % MODE_SCALE not in mode:
         raise SystemExit("[Mode] did not take the menus' face and size: %r" % mode)
