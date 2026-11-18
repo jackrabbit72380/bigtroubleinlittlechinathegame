@@ -230,12 +230,21 @@ STRIKE_POSES = (
     (230, 239, "stance", "boot", "stance"),      # standing light kick
     (240, 249, "stance", "boot", "low_kick"),    # standing medium kick
     (250, 259, "stance", "low_kick", "boot"),    # standing hard kick
-    (400, 409, "jump", "jab", "jump"),           # jumping light punch
-    (410, 419, "jump", "cross", "jump"),         # jumping medium punch
-    (420, 429, "jump", "upper", "jump"),         # jumping hard punch
-    (430, 439, "jump", "boot", "jump"),          # jumping light kick
-    (440, 449, "jump", "low_kick", "jump"),      # jumping medium kick
-    (450, 459, "jump", "boot", "jump"),          # jumping hard kick
+    # The 400s are the CROUCHING attacks and the 600s the jump attacks. The
+    # 400s were routed to the standing punch and kick art (he stood up out of
+    # the crouch to hit, and hopped while doing it), and the 600s were not in
+    # this table at all, so pose_for fell through to the idle and he threw his
+    # jump attacks standing still in mid-air.
+    (400, 409, "crouch", "crouch_punch", "crouch"),  # crouching light punch
+    (410, 419, "crouch", "crouch_punch", "crouch"),  # crouching strong punch
+    (420, 429, "crouch", "crouch_punch", "crouch"),  # crouching hard punch
+    (430, 439, "crouch", "crouch_kick", "crouch"),   # crouching light kick
+    (440, 449, "crouch", "crouch_kick", "crouch"),   # crouching strong kick
+    (450, 459, "crouch", "crouch_kick", "crouch"),   # crouching hard kick
+    (600, 609, "jump", "air_punch", "jump"),         # jumping light punch
+    (610, 619, "jump", "air_punch", "jump"),         # jumping strong punch
+    (630, 639, "jump", "air_kick", "jump"),          # jumping light kick
+    (640, 649, "jump", "air_kick", "jump"),          # jumping strong kick
 )
 
 

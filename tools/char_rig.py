@@ -1204,6 +1204,24 @@ POSES = {
     "low_kick": dict(lean=-6, head=4, lift=-24,
                      arm_n=(-18, 20, 0), arm_f=(16, 20, 0),
                      leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
+    # Crouching and airborne strikes. A rig cannot throw a punch - its arms are
+    # one piece of art - so these read from the body: a crouch attack stays on
+    # the crouch's own legs and leans into the strike, and an air attack stays
+    # tucked up with the boot out. Without them the crouch attacks were drawn
+    # with the standing punch art (he stood up out of the crouch to hit) and
+    # the jump attacks were not mapped at all, so they drew the idle.
+    "crouch_punch": dict(lean=16, head=6, shift=3,
+                         arm_n=(18, 30, 0), arm_f=(8, 30, 0),
+                         leg_n=(44, -44, 86), leg_f=(30, -56, 94)),
+    "crouch_kick": dict(lean=6, head=4, shift=2,
+                        arm_n=(10, 28, 0), arm_f=(-6, 28, 0),
+                        leg_n=(80, -6, 64), leg_f=(30, -56, 94)),
+    "air_punch": dict(lean=10, head=-3, lift=-20, ground=False, shift=2,
+                      arm_n=(26, 26, 0), arm_f=(-20, 26, 0),
+                      leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
+    "air_kick": dict(lean=6, head=-3, lift=-20, ground=False,
+                     arm_n=(-10, 24, 0), arm_f=(14, 24, 0),
+                     leg_n=(78, -8, 62), leg_f=(8, 30, 96)),
     "gun_aim": dict(lean=6, head=-2,
                     arm_n=(34, 26, 0), arm_f=(10, 26, 0),
                     leg_n=(16, -14, 88), leg_f=(-16, 8, 92),
@@ -1663,6 +1681,23 @@ POSE_SETS = {
         "low_kick": dict(lean=-5, head=3, lift=-22,
                          arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
                          leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
+        # Crouching and airborne strikes. Nothing on this rig throws a punch -
+        # the near arm is painted into the torso - so the body carries these:
+        # the crouch attacks keep the crouch's own legs and lean into the hit,
+        # and the air attacks keep the tucked jump legs or put the boot out,
+        # instead of the standing punch art standing him up out of the crouch.
+        "crouch_punch": dict(lean=17, head=6, shift=3,
+                             arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
+                             leg_n=(38, -48, 86), leg_f=(22, -40, 94)),
+        "crouch_kick": dict(lean=7, head=4, shift=2,
+                            arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
+                            leg_n=(82, -6, 62), leg_f=(22, -40, 94)),
+        "air_punch": dict(lean=10, head=-3, lift=-20, ground=False, shift=2,
+                          arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
+                          leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
+        "air_kick": dict(lean=6, head=-3, lift=-20, ground=False,
+                         arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
+                         leg_n=(78, -8, 62), leg_f=(8, 30, 96)),
         # The weapon poses carry the drawn hand-and-weapon pieces
         # (tools/jack_side_cut.py), pinned on prop_at: the near fist the guard
         # drawing has in front of his chest, which is where a gun or a knife
