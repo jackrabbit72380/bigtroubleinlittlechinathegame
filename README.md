@@ -2,7 +2,7 @@
 
 A fan-made 2D fighting game for [Ikemen GO](https://github.com/ikemen-engine/Ikemen-GO) —
 truckers, sorcerers, the Three Storms, and an emperor who has waited two thousand
-years for a wedding. 48 fighters, 30 maps — 26 painted at 1920×1080,
+years for a wedding. 48 fighters, 31 maps — 27 painted at 1920×1080,
 4 played as 3-D scenes in the engine itself — and a HUD where the dragons *are*
 the meters.
 
@@ -10,7 +10,7 @@ the meters.
 [![Latest release](https://img.shields.io/github/v/release/jackrabbit72380/bigtroubleinlittlechinathegame?label=latest%20release&color=brightgreen)](https://github.com/jackrabbit72380/bigtroubleinlittlechinathegame/releases/latest)
 ![Engine](https://img.shields.io/badge/engine-Ikemen%20GO-blue)
 ![Roster](https://img.shields.io/badge/roster-48%20fighters-red)
-![Stages](https://img.shields.io/badge/stages-30%20maps-orange)
+![Stages](https://img.shields.io/badge/stages-31%20maps-orange)
 ![Status](https://img.shields.io/badge/status-in%20development-yellow)
 
 > **We are looking for people to build this with.** Coders, pixel and HD artists,
@@ -120,7 +120,7 @@ run **Update and Play.bat** on the same day before playing.
 - **48 fighters**, 20 of them Wing Kong and Chang Sing gang rigs, each with its own
   palette set, movelist and victory quotes. The 24 with their own stat tables are in
   [docs/ROSTER.md](docs/ROSTER.md).
-- **30 maps**: 26 painted at **1920×1080** and packed into SFF v2 — the
+- **31 maps**: 27 painted at **1920×1080** and packed into SFF v2 — the
   training room among them — plus 4 **3-D model stages**, whose rooms, furniture
   and lights are a `.glb` scene the engine draws itself. Custom art drops straight in.
 - **A custom screenpack** with a dragon HUD: the health bar is the dragon's back
@@ -170,7 +170,7 @@ for the pipeline, the art rules and the review expectations, and
 | Path | What lives there |
 |---|---|
 | `chars/` | 48 fighters: `.def`, `.cmd`, `.cns`, `.air`, `.sff`, `.snd`, movelists |
-| `stages/` | 30 arena definitions, their SFF art, and the 3-D stages’ `.glb` scenes and environment maps |
+| `stages/` | 31 arena definitions, their SFF art, and the 3-D stages’ `.glb` scenes and environment maps |
 | `data/` | screenpack, `fight.def` HUD, motif, system and select definitions |
 | `tools/` | every asset generator plus `validate.py` |
 | `art_src/` | source art and drop-in folders for stages and characters |

@@ -1,6 +1,6 @@
 # The arenas
 
-30 stages: 26 painted at 1920×1080 by `tools/stages_hd.py` — no bitmaps are committed
+31 stages: 27 painted at 1920×1080 by `tools/stages_hd.py` — no bitmaps are committed
 as source — packed into SFF v2 and named for the film's locations, the engine's
 training room among them, plus 4 3-D model stages whose rooms and lights the engine
 draws from their own `.glb` scenes.

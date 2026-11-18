@@ -164,7 +164,7 @@ half ends where the screen edge does.
 
 Precedence, in `tools/build_all.py` order:
 
-1. `stages_hd.py` — the base painter the 26 painted stages build on
+1. `stages_hd.py` — the base painter the 27 painted stages build on
 2. the `stage_*.py` scripts — the rest of the pool, on the same geometry
 3. `build_hd_stage.py` — overwrites any id that has `art_src/<id>/backdrop.png`,
    on the same 8192×1080 / ±3136 geometry and split at 4096 like the rest

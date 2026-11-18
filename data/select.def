@@ -95,6 +95,7 @@ randomselect
 stages/chinatown_alley.def
 stages/wingkong_exchange.def
 stages/porkchop_express.def
+stages/airport_terminal.def  ; Airport Terminal - the departures hall, its glazed wall and the parked airliners
 stages/lopans_throne.def
 stages/lopans_ceremony.def
 stages/lopans_hallway.def
