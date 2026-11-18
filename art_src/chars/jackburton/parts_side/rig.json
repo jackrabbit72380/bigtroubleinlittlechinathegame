@@ -16,6 +16,8 @@
     "hand": 34.0,
     "thigh": 129.4,
     "shin": 105.5,
+    "thigh_f": 118.2,
+    "shin_f": 119.6,
     "ankle_y": -85.4,
     "hip_half": 38.6,
     "shoulder_half": 51.5,
@@ -23,6 +25,7 @@
       51.5,
       150.9
     ],
+    "leg_f_lift": 6.3,
     "knee_y": -190.9,
     "hip_y": -320.3,
     "shoulder_y": -489.2,
@@ -42,16 +45,16 @@
       1
     ],
     "pelvis": [
-      147,
-      0
+      102,
+      25
     ],
     "thigh_n": [
-      115,
+      161,
       10
     ],
     "shin_n": [
       130,
-      46
+      0
     ],
     "thigh_f": [
       195,
@@ -59,7 +62,7 @@
     ],
     "shin_f": [
       235,
-      46
+      0
     ],
     "prop_knife": [
       39.6,
@@ -89,21 +92,22 @@
   ],
   "order": [
     "cape",
-    "thigh_f",
     "shin_f",
+    "thigh_f",
     "foot_f",
+    "shin_n",
+    "thigh_n",
+    "foot_n",
     "pelvis",
     "torso",
     "head",
-    "thigh_n",
-    "shin_n",
-    "foot_n",
     "arm_n",
     "uarm_n",
     "farm_n",
     "hand_n",
     "prop"
   ],
+  "sole_ground": true,
   "angles": {
     "head": 0.0,
     "torso": 0.0,

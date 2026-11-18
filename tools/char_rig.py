@@ -239,7 +239,7 @@ def _lap_of(alpha, y, frac=0.30, lo=3, hi=8):
 # ----------------------------------------------------------------- load/rig
 class Rig:
     def __init__(self, parts, metrics=None, art_angles=None, canvas=None, axis=None,
-                 order=None, welds_off=None):
+                 order=None, welds_off=None, sole_ground=None):
         self.metrics = dict(METRICS)
         if metrics:
             self.metrics.update(metrics)
@@ -263,6 +263,11 @@ class Rig:
         # between them - it has no air to fill at rest and paints a dark band
         # across the jeans the moment the torso leans.
         self.welds_off = frozenset(welds_off or ())
+        # Ground the pose on the SOLE instead of the ankle. See _lowest: a rig
+        # whose boot art is big enough that the ankle joint is nowhere near the
+        # sole cannot be stood on the floor by a bone length alone.
+        self.sole_ground = bool(sole_ground)
+        self.contours = {}
 
     @property
     def m(self):
@@ -464,8 +469,43 @@ def load_rig(char_id, view=None):
 
     rig = Rig(parts, metrics or None, show,
               cfg.get("canvas"), cfg.get("axis"), cfg.get("order"),
-              cfg.get("welds_off"))
+              cfg.get("welds_off"), cfg.get("sole_ground"))
     return rig
+
+
+def _lowest(part):
+    """The part's own lower edge, one point per column, in pivot coordinates.
+
+    Used to stand a rig on its soles: the sole is not a point on the bone, it is
+    wherever the boot's paint reaches, and rotating the piece about the knee
+    moves that edge. One point per column is all the maximum needs, because
+    every angle a leg takes has a positive cosine.
+    """
+    a = part["image"].getchannel("A")
+    w, h = a.size
+    px = a.load()
+    px0, py0 = part["pivot"]
+    pts = []
+    for x in range(w):
+        for y in range(h - 1, -1, -1):
+            # Solid paint, not the soft drop shadow the cut carries: grounded on
+            # the shadow the boot itself stands 7px clear of the floor.
+            if px[x, y] > 200:
+                pts.append((x - px0, y - py0))
+                break
+    return pts
+
+
+def _sole_drop(rig, name, angle_deg, ss=1.0):
+    """How far below its own joint the named part's art reaches, rotated."""
+    part = rig.parts[name]
+    pts = rig.contours.get(name)
+    if pts is None:
+        pts = rig.contours[name] = _lowest(part)
+    base = BASE_ANGLE.get(name, 0.0) + rig.art.get(name, 0.0)
+    th = math.radians(angle_deg - base)
+    s, c = math.sin(th), math.cos(th)
+    return max(-dx * s + dy * c for dx, dy in pts) * ss
 
 
 def _place(dst, part, angle_deg, joint):
@@ -831,17 +871,46 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
     lean = pose.get("lean", 0.0)
     head_a = pose.get("head", 0.0)
     lift = pose.get("lift", 0.0)
+    # A side-view rig may state the FAR leg's own bone lengths: the art draws
+    # him in a three-quarter stance, so that leg is shorter in the thigh and
+    # longer in the shin than the near one. One shared pair cannot put both
+    # boots on the floor - the far one hung 18px lower in every pose - because
+    # the far knee and ankle then land somewhere the drawing never had them.
+    def bones(side):
+        return (m.get("thigh_" + side, m["thigh"]),
+                m.get("shin_" + side, m["shin"]))
+
     if pose.get("ground", True):
         # Solve the hip height from whichever leg is planted, so a crouch,
         # lunge or kick never sinks into the floor or floats above it.
-        spans = []
+        drops = []
+        on_sole = rig.sole_ground and all(
+            "shin_" + key[-1] in rig.parts for key in ("leg_n", "leg_f"))
         for key in ("leg_n", "leg_f"):
             angles = pose.get(key, (0, 0, 88))
+            thigh, shin = bones(key[-1])
             a1 = math.radians(angles[0])
             a2 = math.radians(angles[1])
-            spans.append(m["thigh"] * math.cos(a1) + m["shin"] * math.cos(a2))
-        span = max(spans)
-        lift = (m["ankle_y"] - m["hip_y"]) - span
+            # Where the boot's paint actually reaches, not where the ankle bone
+            # is: the sole is not a point on the shin, and a bent knee turns the
+            # boot's heel and toe downwards. Measured on the ankle, the crouch
+            # stood 18px INTO the floor while the other boot floated 30px clear.
+            if on_sole:
+                drop = thigh * math.cos(a1) + _sole_drop(
+                    rig, "shin_" + key[-1], angles[1], ss)
+            else:
+                drop = thigh * math.cos(a1) + shin * math.cos(a2)
+            # The far chain is lifted by leg_f_lift (see hip_f), so its sole is
+            # that much higher than this drop says.
+            if key == "leg_f":
+                drop -= m.get("leg_f_lift", 0.0)
+            drops.append(drop)
+        if on_sole:
+            # The LOWEST sole goes on the floor, so no boot can sink into it and
+            # a lifted foot is the only thing that is ever above it.
+            lift = -m["hip_y"] - max(drops)
+        else:
+            lift = (m["ankle_y"] - m["hip_y"]) - max(drops)
     shift = pose.get("shift", 0.0)
 
     hip = (axis[0] * ss + shift * ss, (axis[1] + m["hip_y"] + lift) * ss)
@@ -870,7 +939,13 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         sh_f = (shoulder[0] - perp[0] * m["shoulder_half"] * ss * 0.92,
                 shoulder[1] - perp[1] * m["shoulder_half"] * ss * 0.92)
     hip_n = (hip[0] + m["hip_half"] * ss, hip[1])
-    hip_f = (hip[0] - m["hip_half"] * ss, hip[1])
+    # A three-quarter drawing puts one boot's sole lower than the other's, and
+    # that difference is in the art, not in the pose: the far leg is drawn a few
+    # pixels longer. Lifting the whole far chain by it is the only way both soles
+    # can stand on the same floor - the hips are drawn level, so the leg cannot
+    # be shortened without moving its knee off the paint.
+    hip_f = (hip[0] - m["hip_half"] * ss,
+             hip[1] - m.get("leg_f_lift", 0.0) * ss)
 
     arm_n = pose.get("arm_n", (0, 0, 0))
     arm_f = pose.get("arm_f", (0, 0, 0))
@@ -889,17 +964,18 @@ def render(rig, pose, canvas=None, axis=None, ss=SUPERSAMPLE):
         tip = _seg(wrist, a3, m["hand"] * ss)
         return elbow, wrist, tip
 
-    def leg(joint, angles):
+    def leg(joint, angles, side):
+        thigh, shin = bones(side)
         a1 = angles[0]
-        knee = _seg(joint, a1, m["thigh"] * ss)
+        knee = _seg(joint, a1, thigh * ss)
         a2 = angles[1]
-        ankle = _seg(knee, a2, m["shin"] * ss)
+        ankle = _seg(knee, a2, shin * ss)
         a3 = angles[2] if len(angles) > 2 else 88
         return knee, ankle, a3
 
     elb_f, wri_f, tip_f = arm(sh_f, arm_f)
-    kn_f, ank_f, fa_f = leg(hip_f, leg_f)
-    kn_n, ank_n, fa_n = leg(hip_n, leg_n)
+    kn_f, ank_f, fa_f = leg(hip_f, leg_f, "f")
+    kn_n, ank_n, fa_n = leg(hip_n, leg_n, "n")
     elb_n, wri_n, tip_n = arm(sh_n, arm_n)
 
     # Each socketed part's parent and child joints, so a weld can run through
@@ -1528,21 +1604,32 @@ POSE_SETS = {
                        leg_n=(29.85, -6.01, 88), leg_f=(-20.97, -22.62, 92)),
         "walk_a": dict(lean=6, head=-3, shift=1,
                        arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
-                       leg_n=(30, -22, 92), leg_f=(-26, 8, 86)),
+                       leg_n=(30, -22, 92), leg_f=(-26, 18.3, 86)),
+        # The step back is small on purpose. Swung as far as the other frame
+        # (-20) the near thigh turned 50 degrees off the angle it is drawn at,
+        # and the seat of the drawn jeans swung into the gap between his legs
+        # as a flat panel with a straight hem - he looked like he was wearing
+        # a denim skirt. The step is in the far leg instead, where the art has
+        # room for it.
         "walk_b": dict(lean=5, head=-2, shift=-1,
                        arm_n=(0, 0, 0), arm_f=(-18, 0, 0),
-                       leg_n=(-20, 0, 84), leg_f=(26, -24, 96)),
+                       leg_n=(0, -4, 86), leg_f=(20, -3.8, 92)),
         # The punches: the arm unfolds out in front of the shoulder, the far one
         # tucks back, and the lean puts his weight behind it.
+        # The far shin's angle in these poses is set so its boot stands on the
+        # SAME floor row as the near one: the boot is cut whole with the shin, so
+        # tilting the shin tilts the sole, and only a matching pair of angles puts
+        # both soles down. A few degrees of raised back heel is the fighting
+        # stance; a boot hanging clear of the floor is not.
         "jab": dict(lean=7, shift=2, head=-1,
                     arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
-                    leg_n=(20, -14, 88), leg_f=(-18, 8, 92)),
+                    leg_n=(20, -14, 88), leg_f=(-18, 15, 92)),
         "cross": dict(lean=12, shift=4, head=-3,
                       arm_n=(0, 0, 0), arm_f=(-23, 0, 0),
-                      leg_n=(30, -20, 88), leg_f=(-24, 10, 94)),
+                      leg_n=(30, -20, 88), leg_f=(-24, 20, 94)),
         "upper": dict(lean=-6, lift=-12, shift=2, head=3,
                       arm_n=(0, 0, 0), arm_f=(-20, 0, 0),
-                      leg_n=(38, -46, 90), leg_f=(-30, 24, 92)),
+                      leg_n=(38, -46, 90), leg_f=(-30, 32.5, 92)),
         # The crouch guard stays LOW. Swung up as far as a standing guard it puts
         # his fist beside his jaw, where at sprite size it reads as a piece of
         # head floating next to the skull rather than as a hand.
@@ -1553,9 +1640,13 @@ POSE_SETS = {
         # the camera between his legs - the blue paint he saw behind the knee in
         # the crouch. The depth comes from the knee instead, which the shin can
         # fold without exposing anything, and the hip drops as far as before.
+        # Both boots stand on the floor now. The far leg used to rake back so
+        # hard (-66) that its boot hung 55px clear of the ground while the near
+        # one was planted, which is what read as a floating crouch. The knee bend
+        # is the same 62 degrees, taken further forward, where the sole reaches.
         "crouch": dict(lean=14, head=4,
                        arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
-                       leg_n=(38, -48, 86), leg_f=(10, -66, 94)),
+                       leg_n=(38, -48, 86), leg_f=(22, -40, 94)),
         "jump": dict(lean=7, head=-3, lift=-20, ground=False,
                      arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
                      leg_n=(38, -74, 70), leg_f=(8, 26, 96)),
@@ -1567,25 +1658,25 @@ POSE_SETS = {
                          leg_n=(72, -4, 78), leg_f=(-24, 30, 94)),
         "gun_aim": dict(lean=4, head=-1,
                         arm_n=(0, 0, 0), arm_f=(-21, 0, 0),
-                        leg_n=(16, -14, 88), leg_f=(-16, 8, 92)),
+                        leg_n=(16, -14, 88), leg_f=(-16, 13.5, 92)),
         "gun_fire": dict(lean=1, head=-2, shift=-2,
                          arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
-                         leg_n=(18, -16, 88), leg_f=(-18, 10, 92)),
+                         leg_n=(18, -16, 88), leg_f=(-18, 13.5, 92)),
         "knife": dict(lean=8, head=-2,
                       arm_n=(0, 0, 0), arm_f=(-19, 0, 0),
-                      leg_n=(18, -14, 88), leg_f=(-18, 8, 92)),
+                      leg_n=(18, -14, 88), leg_f=(-18, 13.5, 92)),
         "knife_throw": dict(lean=14, shift=3, head=-4,
                             arm_n=(0, 0, 0), arm_f=(-23, 0, 0),
-                            leg_n=(26, -18, 88), leg_f=(-22, 10, 92)),
+                            leg_n=(26, -18, 88), leg_f=(-22, 17.5, 92)),
         "block": dict(lean=-3, lift=-3, head=4,
                       arm_n=(0, 0, 0), arm_f=(-22, 0, 0),
-                      leg_n=(6, -4, 88), leg_f=(-10, 6, 92)),
+                      leg_n=(6, -4, 88), leg_f=(-10, 15, 92)),
         "hit": dict(lean=-13, head=11, shift=-4,
                     arm_n=(0, 0, 0), arm_f=(-17, 0, 0),
-                    leg_n=(-10, 12, 88), leg_f=(-26, 18, 92)),
+                    leg_n=(-10, 12, 88), leg_f=(-26, 11.5, 92)),
         "win": dict(lean=-3, head=-4,
                     arm_n=(0, 0, 0), arm_f=(-21, 0, 0),
-                    leg_n=(14, -10, 88), leg_f=(-18, 8, 92)),
+                    leg_n=(14, -10, 88), leg_f=(-18, 11, 92)),
     },
     "lightning": {
         # Arms swung only part way down: the parts are cut in a guard, so

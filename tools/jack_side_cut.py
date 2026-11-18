@@ -77,18 +77,20 @@ SOLE = 1517
 HIP_MID = (458, 695)
 
 # A part box clips one limb out of the cut; the joint is where it hangs from.
-# How far a shin laps over its knee, in art pixels. A shin box starts a little
-# above the joint so the two pieces overlap at rest, and that overlap is a
-# straight edge cut through the jeans: they are the same pixels in the same
-# place while the leg stands as drawn, so nothing shows, but a bent knee swings
-# the thigh's cut and the shin's cut apart and the thigh's face of the cut
-# stands out behind the knee as a flat tab of denim. A disc centred ON the joint
-# is the one shape a rotation about that joint cannot move, so the shin's own
-# denim covers the fold at every angle a pose can ask for.
-# How far the thigh stops short of the knee, in art pixels, so that the shin's
-# lap (which is the bigger circle) covers its edge. See _thigh_mask.
-KNEE_CUT = 38
-KNEE_LAP = 46
+# The knee is where the straight edges of two boxes meet, and a straight edge
+# cut through jeans is invisible only while the two pieces sit at the angles
+# they were drawn at. Bend the knee and they swing apart: the thigh's square end
+# and the shin's cut top stand out of the leg as flat tabs of denim - the blue
+# paint behind his knee. A disc centred ON the joint is the one shape a rotation
+# about that joint cannot move, so the knee is built out of discs:
+#
+#   * the thigh keeps a KNEE_CUT disc on the joint, which is the knee cap and is
+#     drawn OVER the shin, so whatever the shin's cut does it stays hidden;
+#   * the shin's box now starts exactly at the knee row (no lap), and every
+#     corner of that cut is inside KNEE_CUT of the joint, so the thigh's disc
+#     covers it at any bend. KNEE_CUT is therefore sized from the widest the
+#     drawn leg is AT the knee row (74px on the far leg), not from taste.
+KNEE_CUT = 78
 
 
 BOXES = {
@@ -113,26 +115,42 @@ BOXES = {
     # and the piece then has wings that are not his body at all. Cut inside the
     # denim instead, every edge of the piece is a seam on jeans of the same
     # colour, and it cannot stick out of the hip when a leg swings away.
-    "pelvis": (308, 650, 608, 752),
+    # The hip band, kept to the two hip joints. A band wider than the hips is a
+    # rectangle of denim hanging in AIR the moment a leg swings out from under
+    # it, and its straight end is the hard edged pale flap that showed beside
+    # his waist on every step and on the raised knee of the kick. Its ends now
+    # stop at the hip joints, where each thigh's own lap disc covers them, and
+    # the shape is a capsule so an edge that does show is a curve, not a corner.
+    # It reaches down past the crotch (the legs part at y=810 in the art), so
+    # the wall where the two thighs are split apart down there is covered: those
+    # two straight cuts are what opened as a step in the jeans when a crouch
+    # spread his legs.
+    "pelvis": (HIP_F[0], 615, HIP_N[0], 845),
     # Leg boxes lap upwards past their joint. The two drawn legs are not the
     # same length (the stance is three-quarter, so the far one is foreshortened)
     # and the skeleton carries one thigh and one shin for both, so the piece
     # that ends short has to be covered by the piece below it, not left with a
     # gap. They start at the hip line, not at the waist: a thigh that carried
     # the belt swung it out of the hip on every step.
-    "thigh_n": (448, 685, 798, 1025),
+    # The bottom reaches a whole KNEE_CUT below the joint so the knee disc is
+    # not sliced off by the box: cropped flat it was a shelf of denim with air
+    # under it, which is what the raised knee of a kick showed.
+    # x0 reaches left of the crotch split: below the crotch the art's own air
+    # gap separates the two legs, and a split line drawn down there cut the near
+    # leg's own denim off square - the step the crouch showed between his legs.
+    "thigh_n": (380, 685, 798, KNEE_N[1] + KNEE_CUT),
         # x1 covers the whole toe: the boot reaches x=890 and the old edge at 808 cut
     # the front of the foot off square, which read as a boot with no toes.
-    # The top stops KNEE_LAP above the knee, because the piece carries a disc of
-    # that radius on the joint (see _shin_mask).
-    "shin_n": (608, KNEE_N[1] - KNEE_LAP, 892, 1531),
-    "thigh_f": (158, 685, 478, 1025),
+    # The top starts AT the knee row: everything the shin has above that is the
+    # thigh's, and the thigh's knee cap covers the cut. See KNEE_CUT.
+    "shin_n": (608, KNEE_N[1], 892, 1531),
+    "thigh_f": (158, 685, 478, KNEE_F[1] + KNEE_CUT),
     # The far leg is the wide one below the knee: its inner edge is still at
     # x=304 on row 985 and does not come in past 268 until well down the shin.
     # Cut at 268 the shin could not cover the bottom corner of the thigh piece,
     # which laps down to y=1025 with a square cut - so that corner stuck out
     # past the shin as a flat blue tab of denim behind his knee.
-    "shin_f": (3, KNEE_F[1] - KNEE_LAP, 310, 1531),
+    "shin_f": (3, KNEE_F[1], 310, 1531),
 }
 
 JOINTS = {
@@ -166,6 +184,10 @@ HAND_PIECES = False
 # fist is a shade off the biceps, so the mask is grown before the walk and
 # shrunk back after it.
 CROTCH_X = 428
+# The row where the drawn legs part. Above it they are one silhouette and the
+# split has to be a line; below it the art's air gap does the job, so the split
+# stops here instead of cutting the near leg's denim off square all the way down.
+CROTCH_Y = 810
 
 # Rig units per art pixel. The old side set drew the figure about 550 rig units
 # tall on a 640x780 canvas from a 648px crop; this art is 1485px tall, so the
@@ -177,8 +199,14 @@ SCALE = 0.368
 # swallowed by the body it is held against. The far leg stays behind, and the
 # near arm in front of everything. Both the one-piece and the cut names are
 # listed: char_rig keeps whichever pair the set actually supplies.
-ORDER = ["cape", "thigh_f", "shin_f", "foot_f", "pelvis", "torso", "head",
-         "thigh_n", "shin_n", "foot_n",
+# Each THIGH is drawn after its own shin: the knee is a disc cut on the thigh
+# and the shin's straight cut ends inside it, so the disc has to be the piece on
+# top or the shin's corners show through the bend. The hip band is drawn after
+# both legs for the same reason from the other end: it is the one piece that
+# does not rotate with a thigh, so it must cover the thigh's cut at the hip
+# instead of being swept out from under it.
+ORDER = ["cape", "shin_f", "thigh_f", "foot_f", "shin_n", "thigh_n", "foot_n",
+         "pelvis", "torso", "head",
          "arm_n", "uarm_n", "farm_n", "hand_n", "prop"]
 
 
@@ -266,7 +294,15 @@ def _pelvis_mask(cut):
     """
     x0, y0, x1, y1 = BOXES["pelvis"]
     m = Image.new("L", cut.size, 0)
-    ImageDraw.Draw(m).rectangle([x0, y0, x1 - 1, y1 - 1], fill=255)
+    d = ImageDraw.Draw(m)
+    # ONE ellipse, reaching a hip joint at each side and the crotch at the
+    # bottom. Every edge of this piece can end up in the open - a leg swinging
+    # back leaves the side of it bare, a crouch opens the crotch under it - and
+    # any straight edge there is a flap or a step of denim in mid air. A curve
+    # is the only shape that reads as his hips whichever way he moves, and the
+    # inscribed ellipse touches the box only where the thighs' own lap discs
+    # already cover him.
+    d.ellipse([x0, y0, x1 - 1, y1 - 1], fill=255)
     px = cut.load()
     mp = m.load()
     for y in range(y0, y1):
@@ -436,36 +472,37 @@ def _thigh_mask(cut, name):
     lap = 30 if name == "thigh_n" else 24
     d.ellipse([hip[0] - lap, hip[1] - lap, hip[0] + lap, hip[1] + lap], fill=255)
     # The bottom is a circle about the KNEE, not the straight line of the box.
-    # That line is a cut across the jeans: hidden behind the shin while the leg
-    # stands as drawn, but a bent knee swings the two cuts apart and the thigh's
-    # face of it is a flat slab of denim standing out behind the knee - the
-    # blue paint he had in the crouch. A circle about the knee cannot move when
-    # the shin turns about that same point, and the shin laps over it with a
-    # bigger one (KNEE_LAP), so the seam stays under denim at every angle.
+    # The box stops at the knee row and a disc of KNEE_CUT takes over below it:
+    # that disc is drawn over the shin (see ORDER) and is the only part of the
+    # piece inside the joint's own arc, so a bent knee can never swing a corner
+    # of it out of the leg. The old shape kept the box all the way down and only
+    # BIT a circle out of it, which left the box's bottom corners to sweep out
+    # from behind the shin as flat tabs of denim.
     knee = JOINTS["shin_" + name[-1]]
+    d.rectangle([box[0], hip[1] - 26, box[2], knee[1]], fill=255)
     d.ellipse([knee[0] - KNEE_CUT, knee[1] - KNEE_CUT,
-               knee[0] + KNEE_CUT, knee[1] + KNEE_CUT], fill=0)
+               knee[0] + KNEE_CUT, knee[1] + KNEE_CUT], fill=255)
     if name == "thigh_n":
-        d.rectangle([0, 0, CROTCH_X, cut.height], fill=0)
+        d.rectangle([0, 0, CROTCH_X, CROTCH_Y], fill=0)
     else:
+        # The far thigh keeps the split to the bottom: the near leg's denim runs
+        # left past CROTCH_X just under the crotch, and this piece must not
+        # carry a second copy of it.
         d.rectangle([CROTCH_X, 0, cut.width, cut.height], fill=0)
     return m
 
 
 def _shin_mask(cut, name):
-    """The shin from its knee down, lapped over the knee with a disc.
+    """The shin from its knee row down. Nothing above it: that is the thigh.
 
-    See KNEE_LAP: the box alone is a straight cut across the jeans, and a bent
-    knee opens it. The disc is centred on the joint the piece pivots on, so it
-    turns with the shin and still covers exactly the same ground.
+    The box's cut is a straight line across the jeans at the knee, and its
+    corners are the widest the drawn leg is there - which is why the thigh's
+    knee cap (KNEE_CUT, drawn over this piece) is sized to cover them.
     """
     box = BOXES[name]
-    knee = JOINTS[name]
     m = Image.new("L", cut.size, 0)
-    d = ImageDraw.Draw(m)
-    d.rectangle([box[0], box[1], box[2] - 1, box[3] - 1], fill=255)
-    d.ellipse([knee[0] - KNEE_LAP, knee[1] - KNEE_LAP,
-               knee[0] + KNEE_LAP, knee[1] + KNEE_LAP], fill=255)
+    ImageDraw.Draw(m).rectangle([box[0], box[1], box[2] - 1, box[3] - 1],
+                                fill=255)
     return m
 
 
@@ -831,6 +868,11 @@ def build():
         # lap over the joints that the shared bones place for it.
         "thigh": round(_dist(HIP_N, KNEE_N) * SCALE, 1),
         "shin": round(_dist(KNEE_N, ANKLE_N) * SCALE, 1),
+        # The far leg is drawn on its own lengths - foreshortened in the thigh
+        # and longer in the shin - and stated here so its boot stands on the
+        # same floor as the near one instead of hanging 18px below it.
+        "thigh_f": round(_dist(HIP_F, KNEE_F) * SCALE, 1),
+        "shin_f": round(_dist(KNEE_F, ANKLE_F) * SCALE, 1),
         "ankle_y": round(-(SOLE - ANKLE_N[1]) * SCALE, 1),
         # both hips and both shoulders are drawn, so the joints sit off centre
         # a distance: the sign would put the near leg on the far hip
@@ -843,6 +885,15 @@ def build():
         "arm_socket": [round((SHOULDER_N[0] - HIP_MID[0]) * SCALE, 1),
                        round((HIP_MID[1] - SHOULDER_N[1]) * SCALE, 1)],
     }
+    # How much lower the far boot's sole is DRAWN than the near one's, measured
+    # on the two pieces themselves. Both hips are drawn on the same row, so the
+    # far leg is simply a few pixels longer, and without this the far boot hangs
+    # that much under the floor whenever the near one stands on it.
+    def sole_row(name):
+        piece = parts[name].getchannel("A")
+        return offsets[name][1] + (piece.getbbox() or (0, 0, 0, piece.height))[3]
+    metrics["leg_f_lift"] = round(max(0.0, (sole_row("shin_f")
+                                           - sole_row("shin_n"))) * SCALE, 1)
     metrics["ankle_y"] = round(metrics["ankle_y"], 1)
     metrics["knee_y"] = round(metrics["ankle_y"] - metrics["shin"], 1)
     metrics["hip_y"] = round(metrics["knee_y"] - metrics["thigh"], 1)
@@ -885,6 +936,11 @@ def build():
         "welds_off": ["thigh_n", "thigh_f", "shin_n", "shin_f", "head", "torso",
                       "arm_n", "arm_f", "uarm_n", "farm_n", "uarm_f", "farm_f"],
         "order": ORDER,
+        # This set's boot is drawn whole, knee to sole, so its sole is nowhere
+        # near the ankle joint: stand the pose on the boot's own lowest pixel
+        # (char_rig._sole_drop) or the crouch sinks one boot and floats the
+        # other.
+        "sole_ground": True,
         "angles": {"head": 0.0, "torso": 0.0, "pelvis": 0.0,
                    "arm_f": 0.0, "arm_n": 0.0,
                    # the bones as the art draws them, in rig units
