@@ -113,7 +113,7 @@ rem ARE the delivery: a fix to this launcher or
 rem tools\test_local.py could never reach a folder that only refreshed the
 rem game folders, which is how the launcher kept a console open over the game
 rem long after the fix for it was on main.
-set "GAMEPATHS=data chars stages font external sound tools "Update and Play.bat" "Apply main.zip.bat" "Dump Stage Art.bat""
+set "GAMEPATHS=data chars stages font external sound tools "Update and Play.bat" "Apply main.zip.bat" "Dump Stage Art.bat" "Dump Fighter Art.bat""
 rem The helpers below take their paths inside PowerShell single quotes, where
 rem an apostrophe ends the string. Doubling it is how PowerShell writes the
 rem character itself, so this is the copy they are given.
@@ -1908,7 +1908,7 @@ for %%F in (data chars stages font external sound tools) do (
 )
 rem The launchers sit at the root, so they are copied by name: a launcher
 rem fix that never arrived is what kept a console open over the game.
-for %%F in ("Update and Play.bat" "Apply main.zip.bat" "Dump Stage Art.bat") do (
+for %%F in ("Update and Play.bat" "Apply main.zip.bat" "Dump Stage Art.bat" "Dump Fighter Art.bat") do (
   if exist "%SRC%\%%~F" if not "%%~F"=="%~nx0" copy /Y "%SRC%\%%~F" "%~dp0%%~F" >nul 2>&1
 )
 exit /b 0
@@ -1932,6 +1932,7 @@ if /i "%TOP%"=="Update and Play.bat" goto syncfile_go
 if /i "%TOP%"==goto syncfile_go
 if /i "%TOP%"=="Apply main.zip.bat" goto syncfile_go
 if /i "%TOP%"=="Dump Stage Art.bat" goto syncfile_go
+if /i "%TOP%"=="Dump Fighter Art.bat" goto syncfile_go
 exit /b 0
 
 :syncfile_go

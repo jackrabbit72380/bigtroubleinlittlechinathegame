@@ -34,6 +34,7 @@ Thumbs.db
 artifacts/*.zip
 artifacts/release/
 artifacts/stage_art/
+artifacts/fighter_art/
 
 # Scratch copies of older revisions and build output, not source.
 .r2/

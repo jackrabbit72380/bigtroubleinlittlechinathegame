@@ -23,6 +23,7 @@ LAUNCHERS = (
     "Update and Play.bat",
     "Apply main.zip.bat",
     "Dump Stage Art.bat",
+    "Dump Fighter Art.bat",
 )
 
 # cmd's own variables: never set by the script, always present

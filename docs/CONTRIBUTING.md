@@ -45,6 +45,7 @@ files they produce are outputs, not places to hand-edit.
 | `tools/build_banner.py`, `tools/build_timer.py` | the dragon HUD in `data/fight.sff` |
 | `tools/build_music.py` | `[Music]` paths in `data/ikemen1/system.def` |
 | `tools/dump_stage_art.py` | unpacks stage sprites to PNG for inspection |
+| `tools/dump_fighter_art.py` | unpacks a fighter's sprites and action frames to PNG for inspection |
 | `tools/validate.py` | the offline checks: roster, `.air` frames, stage layers, previews, palettes, launchers, font faces, the web build |
 | `tools/build_web_files.py` | writes `web/files.json`, the paths the browser build reads the shared folders through |
 | `tools/serve_web.py` | serves this checkout as the web build, for a look in a browser |

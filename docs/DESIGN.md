@@ -103,6 +103,13 @@ the exact size the slot needs, a crosshair at the sprite axis, and a manifest
 listing the size, axis and the actions that use it. For Jack that is 251 frames.
 Templates stay in that subfolder and are ignored by the build.
 
+To see the art a fighter already has rather than a blank template,
+`python3 tools/dump_fighter_art.py <id>` unpacks every sprite into
+`artifacts/fighter_art/<id>/` and writes `actions.txt`, the action-by-action
+list of which sprite each frame draws and where. With no id it walks the roster
+in `data/select.def`; on Windows, `Dump Fighter Art.bat` runs it from a
+double-click.
+
 Each fighter folder is a normal MUGEN/Ikemen character folder. To swap in real
 art for one fighter and leave the rest alone:
 
