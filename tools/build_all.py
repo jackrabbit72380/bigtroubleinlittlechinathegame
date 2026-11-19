@@ -124,6 +124,11 @@ def main():
     # and 9000,1 out of its own SFF, and a character baked from the rig has
     # neither, so they are rendered from its own art after the bake.
     scripts.append("build_portraits.py")
+    # The VS screen plays the character's own action 9000, so the entrance that
+    # slides the 9000,1 portrait in is written back after the bake. It runs
+    # after build_portraits.py because it needs that 9000,1 art to exist, and it
+    # refreshes the block for every fighter, so a bake cannot leave one still.
+    scripts.append("add_vs_portrait_anim.py")
     # The title logo is painted into the screenpack SFF, which a fresh engine
     # data copy resets on every build, so it is regenerated rather than
     # committed by hand.
