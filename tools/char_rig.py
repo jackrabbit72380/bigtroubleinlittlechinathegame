@@ -1782,6 +1782,24 @@ POSE_SETS = {
         "jump": dict(lean=2, head=-1, lift=-18, ground=False, cape=2,
                      arm_n=(30.5, 92, 25.7), arm_f=(-30.7, -14.3, 0),
                      leg_n=(27, 14, 86), leg_f=(-22, -20, 94)),
+        # The crouching and jumping strikes.  Without these four the bake fell
+        # through to the shared table, whose elbow sits at a 30-degree bend where
+        # his drawn forearm is bent 98: the sleeve and the forearm parted at the
+        # elbow and the fist hung in the air.  His arms therefore stay at the
+        # angle they were cut at, and the strike is in the crouch and the knee.
+        "crouch_punch": dict(lean=6, head=3, shift=2, cape=-2,
+                             arm_n=(46, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                             leg_n=(30, 38, 90), leg_f=(-14, -12, 90)),
+        "crouch_kick": dict(lean=3, head=2, shift=1, cape=-1,
+                            arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                            leg_n=(46, 40, 86), leg_f=(-14, -12, 90)),
+        "air_punch": dict(lean=3, head=-1, lift=-18, ground=False, shift=1,
+                          cape=2,
+                          arm_n=(44, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                          leg_n=(27, 14, 86), leg_f=(-22, -20, 94)),
+        "air_kick": dict(lean=2, head=-1, lift=-18, ground=False, cape=2,
+                         arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
+                         leg_n=(44, 42, 84), leg_f=(-22, -20, 94)),
         # The guard drawing IS his block.
         "block": dict(lean=1, head=0, cape=-1,
                       arm_n=(30.5, 98.5, 25.7), arm_f=(-30.7, -14.3, 0),
